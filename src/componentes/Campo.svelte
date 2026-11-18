@@ -23,6 +23,9 @@
     requerido = false,
     grande = false,
     autocomplete,
+    modoEntrada,
+    mayusculas = false,
+    corto = false,
     maximo = 500,
     children,
   }: {
@@ -39,6 +42,12 @@
     /** Alto de 3 rem (el parte diario); sin esto, 2.75 rem. */
     grande?: boolean;
     autocomplete?: "off" | "on";
+    /** Teclado del celular para un texto con dígitos (`numeric`: interno, año). Es `text` y no `number`: sin flechas ni rueda. */
+    modoEntrada?: "numeric" | "text";
+    /** Patentes y similares: teclado en mayúsculas y sin corrector. */
+    mayusculas?: boolean;
+    /** Ancho de 10 caracteres (números cortos como el año). */
+    corto?: boolean;
     /** Tope del contador del tipo `area` (la validación es del dominio). */
     maximo?: number;
     /** Las <option> del tipo `select`. */
@@ -96,9 +105,11 @@
     {:else}
       <input
         id={idControl}
-        class:corto={tipo === "km" || tipo === "litros"}
+        class:corto={corto || tipo === "km" || tipo === "litros"}
         type={tipo === "fecha" ? "date" : "text"}
-        inputmode={tipo === "km" ? "numeric" : tipo === "litros" ? "decimal" : undefined}
+        inputmode={tipo === "km" ? "numeric" : tipo === "litros" ? "decimal" : modoEntrada}
+        autocapitalize={mayusculas ? "characters" : undefined}
+        spellcheck={mayusculas ? false : undefined}
         autocomplete={autocomplete ?? (tipo === "texto" ? undefined : "off")}
         bind:value={valor}
         onblur={reformatear}
