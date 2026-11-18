@@ -294,3 +294,11 @@ vacío" para D11; `resolverNovedad` con `volverAServicio` reutilizando A4; guard
 - Revisión de `redactor-ux` sobre `textos.ts` (la de `revisor-codigo` sobre `dominio/` se hizo el 18/11: ver la entrada de arriba).
 - Verificar antes de publicar el dato de la serie de patentes (todas empiezan con Z) y que los nombres de proyectos no
   coincidan con proyectos mineros reales.
+
+## 18/11/2026 (noche, 7) — Verificación final y cierre de la tanda
+
+- `verificador` (independiente): 695/695 tests (también en UTC, Tokio y Los Ángeles), check 0, buscar sin hallazgos, contraste 158/0, `npm audit` 0, build sin `muestras.html`. Confirmados con Playwright los altos y medios corregidos (toque, Esc, bloqueo durante el reinicio, anuncio repetido, orden de foco, plazo de 8 s, listas dañadas → D7). Sin regresiones.
+- `d85e3a3`: la concordancia de género del parte en "Cómo funciona" quedó corregida ("Está pensado").
+- Docs: fila 3.4 de `plan.md` sin "pantalla de error" (se quitó en `8f38ed9`), 158 mediciones, README al día, ruta local quitada del informe de QA.
+- **Antes de publicar el repo:** `scripts/buscar-prohibidos.mjs` contiene literalmente los patrones prohibidos (nombra a la empresa): moverlos a un archivo no versionado o a una variable de entorno de CI. Historial nuevo (B11) por el correo de autor.
+- Pendiente: humo de interfaz con Playwright en CI (no hay tests de componentes; la vista se verificó a mano); probar Firefox, Safari real y un lector de pantalla; Esc no cierra si el foco quedó en `body` dentro del diálogo (caso forzado, sin impacto práctico); fechas inválidas en datos guardados pasan sin aviso D7 (las pantallas 4.x deben tolerarlas).
