@@ -6,11 +6,12 @@ navegador, con datos ficticios guardados en IndexedDB y un botón para reiniciar
 
 Forma parte del portafolio de Matías Ariel Ormeño.
 
-## Estado: diseño y lógica (sin interfaz)
+## Estado: diseño, lógica y estado de la aplicación (sin pantallas todavía)
 
 El diseño se escribió antes de cualquier línea de código. Desde el 18/11/2026 también están hechas la **lógica de dominio**
 (`src/lib/dominio`, TypeScript puro y probado en tres zonas horarias), el **generador de datos de ejemplo**
-(`src/lib/datos`) y el **repositorio en memoria** (`src/lib/persistencia`). Todavía no hay interfaz ni IndexedDB; el avance
+(`src/lib/datos`) y el **repositorio en memoria** (`src/lib/persistencia`). Desde el 18/11/2026 también están el **repositorio sobre IndexedDB**, el **arranque** (ejemplo, avisos, modo sin
+almacenamiento), el **aviso entre pestañas** y el **estado reactivo** (Svelte 5). Todavía no hay pantallas; el avance
 está en [`docs/registro.md`](docs/registro.md). Documentos:
 
 | Documento | Contenido |

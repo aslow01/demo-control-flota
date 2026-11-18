@@ -1,5 +1,87 @@
 # Registro
 
+## 18/11/2026 (tarde) — Rama `interfaz-etapa-0`: Etapa 0, pasos 2.4 a 2.6 y 3.1 (trabajo autónomo)
+
+**Qué se hizo.** Etapa 0 (proyecto Svelte 5 con Vite, CSP, CI, medición), persistencia sobre IndexedDB con la misma suite de
+contrato, arranque, aviso entre pestañas y el estado reactivo de la aplicación, todo con TDD. Sin pantallas ni estilos
+(`App.svelte` sigue siendo un `h1`). Decisiones en `docs/diseno.md` (sección 16, última parte) y `docs/stack.md` (S3 resuelta).
+
+| Paso | Commit | Qué quedó |
+| --- | --- | --- |
+| 0.1 y 0.2 | `cfd5a95` | Dependencias exactas, `vite.config.ts` con Svelte, `svelte.config.js` (runes en todo), `index.html`, `main.ts`, `App.svelte`. **S3:** TypeScript 6.0.3 (ver abajo). `npm run check` detecta un error de tipo plantado en un `<script lang="ts">`. |
+| 0.3 | `db51887` | `public/_headers` con la CSP de `stack.md`, test que la fija (si alguien agrega `unsafe-*` falla), `scripts/servir-dist.mjs` para ver `dist/` con las cabeceras. Verificado en Chrome (abajo). |
+| 0.4 | `5845f4c` | `.github/workflows/ci.yml` (check, test, matriz TZ, build, búsquedas, audit) y `scripts/buscar-prohibidos.mjs` (7 reglas, probadas plantando cada una). **Sin probar: no hay remoto.** |
+| 0.5 | (en este registro) | Compilación vacía (`App` con un `h1`): **22,86 KB de JS (9,29 KB con gzip)** y sin CSS. Con el componente de prueba de la CSP: 28,81 KB (11,52 KB gzip) y 0,13 KB de CSS. Con todo lo de hoy (dominio, generador, IndexedDB, arranque, estado): **96,37 KB de JS (31,69 KB gzip)**; el tope propuesto es 100 KB gzip. |
+| 2.4 | `b4e5d3e` | `persistencia/indexeddb.ts`. La suite de contrato pasa con las dos implementaciones (32 tests: el contrato más estructura, atomicidad, repositorio cerrado, fábrica que lanza). |
+| 2.5 | `2d39abf` | `persistencia/arranque.ts`: D4, D5 (dos caminos), D6 (`reiniciarDemo`), D7, D8 y D11 (`cambiarPerfil`). 22 tests. |
+| 2.6 | `1924e0b` | `persistencia/pestanas.ts`: D9 con canal inyectable y mensajes validados. 11 tests (uno con el `BroadcastChannel` real de Node). |
+| 3.1 | `70789a5`, `85944f7` | `estado/reloj.ts` (único `new Date()`), `ids.ts`, `enrutador.ts` (49 tests), `ubicacion.ts`, `app.svelte.ts` (33 tests y 3 de reactividad con `$effect.root`) e `instancia.ts`. `main.ts` ya arranca la aplicación real. |
+
+**Versiones elegidas** (fecha de publicación; hoy es 18/11/2026; todas con más de 14 días, que es lo que pide `stack.md`).
+
+| Paquete | Versión | Publicada | Scripts de instalación |
+| --- | --- | --- | --- |
+| `svelte` | 5.57.3 | 26/10/2026 | ninguno (la 5.58.0 salió hoy: descartada) |
+| `@sveltejs/vite-plugin-svelte` | 7.3.1 | 23/09/2026 | ninguno |
+| `svelte-check` | 4.7.8 | 01/11/2026 | ninguno |
+| `fake-indexeddb` | 6.2.7 | 30/10/2026 | ninguno (la 6.2.8 es del 08/11: 10 días, descartada por la regla de 14) |
+| `typescript` | 6.0.3 | 16/04/2026 | ninguno (**baja** desde 7.0.2, ver S3) |
+
+Árbol: 94 paquetes en el lockfile (antes, 88: salen los 20 binarios de TypeScript 7 y entran 26 de Svelte y sus herramientas; 20 son de producción, todos del compilador y el *runtime* de Svelte). Solo `fsevents` (opcional, macOS, ya estaba) tiene `hasInstallScript`.
+`package-lock.json` versionado; `npm ci --ignore-scripts` limpio y los 655 tests verdes tras borrar `node_modules`.
+Dos dependencias indirectas de Svelte salieron ayer (`esrap` 2.4.2 y `vitefu` 1.1.4): se fijaron en 2.4.0 (26/09) y 1.1.3 (01/04)
+con `npm install --before=2026-11-11` sobre esas dos entradas del lockfile. **Quedan 3 paquetes ya existentes con menos de 7 días** (de
+`vite` y `rolldown`: `@rolldown/pluginutils` 1.1.1, `postcss` 8.5.33 y `@jridgewell/resolve-uri` 3.1.3, del 13/11): no se tocaron porque
+venían en el lockfile anterior.
+
+**S3 (TypeScript 7 y `svelte-check`).** No son compatibles: `svelte-check` 4.7.8 declara `typescript ^5 || ^6` (npm lo rechaza con 7.0.2 por
+resolución de pares) y, forzándolo con `--legacy-peer-deps`, se detiene con "TypeScript 7 support currently requires both TypeScript 7 and
+TypeScript 6 installed in your project, and requires using the --tsgo or --tsgo-experimental-api flag". La Demo 2 queda con TypeScript 6.0.3
+(sin alias ni opciones experimentales); `tsc` y los 655 tests no notaron la diferencia. Si Matías prefiere TypeScript 7 en el repo, la
+alternativa es `typescript@~6` más `@typescript/native@npm:typescript@7` y `svelte-check --tsgo` (un paquete más y una opción experimental).
+
+**CSP con Svelte (0.3), medido en Chrome** con `dist/` servido con las cabeceras de `_headers` (y un registro de `securitypolicyviolation`):
+sin plantar nada, **0 violaciones** y la marca con `style:grid-column-start={3}` cae en la columna 3 (el atributo se asigna por CSSOM);
+con un `style="color: red"` estático plantado, **1 violación `style-src-attr`**. El CSS de los componentes salió a `assets/*.css`, sin
+`<style>` en línea. Hallazgo: Chrome igual aplicó el estilo plantado (probablemente porque Svelte clona la plantilla y el clon no se bloquea; no se investigó más), así que la
+regla "nada de `style` en el marcado" sigue valiendo por Firefox y Safari y se vigila por la CSP, no por mirar si se ve. El componente de
+prueba se borró. La consola de la herramienta de navegador no capturó las violaciones de carga: por eso se midió con un oyente propio.
+Prueba de punta a punta en Chrome con la compilación real: IndexedDB creada en la versión 1 con 24 unidades, 140 documentos, 1.044
+partes y 1.112 eventos (como pide el diseño); recargar no regenera nada; `#/unidad/zk214bd` queda como `#/unidad/ZK214BD`.
+
+**Verificación.**
+
+- `npm test`: 655 tests en 31 archivos, verdes (antes: 490 en 22). `npm run test:tz`: los 655 en `UTC`, `Asia/Tokyo` y `America/Los_Angeles`.
+- `npm run typecheck` y `npm run check` (svelte-check sobre 232 archivos y tsc): 0 errores, 0 advertencias. `npm run build`: ok.
+- `npm run buscar`: sin hallazgos (sin `{@html}`, sin `Math.random` en `src/lib`, sin reloj fuera de `reloj.ts`, sin transiciones, sin nombres de terceros ni correos personales).
+- `npm audit`: **0 vulnerabilidades** al cierre. Durante la instalación aparecieron 7 altas, todas por `picomatch` (GHSA-fc5q-39xc-vjpf, la misma excepción
+  anterior, que subió de 5 a 7 porque `svelte-check` y el plugin de Svelte cuelgan de `fdir` y `vite`); después el aviso dejó de alcanzar a la 4.0.7 y
+  el CI volvió a `--audit-level=high`. Si reaparece, se documenta con fecha.
+- Mutaciones: la CSP con `unsafe-inline` hace fallar el test de cabeceras; cada regla de `buscar` detecta lo plantado.
+
+**Decisiones que no estaban en la especificación** (están en `docs/diseno.md`, sección 16):
+
+1. Los almacenes de IndexedDB llevan clave automática más un índice único `id` (el orden de inserción es el de lectura).
+2. `reemplazarTodo` es una sola transacción que también reemplaza el historial; no hace falta `vaciar` antes.
+3. Cualquier falla del almacenamiento en el arranque cae al modo memoria (D8); D7 también cubre un `meta` dañado; el perfil se conserva en D5 y D6 pero no en D7.
+4. "Preparando…" se pide si todo el arranque pasa de 300 ms.
+5. El aviso entre pestañas no lleva datos; se manda tras cada escritura exitosa; en modo memoria no hay canal.
+6. El perfil decide la pantalla: el conductor no ve las del encargado (redirección al inicio) y viceversa; una ruta mal escrita es un error de pantalla en cualquier perfil.
+7. `EstadoApp` rechaza con `sin-permiso` los comandos del encargado cuando el perfil es conductor (defensa extra, no seguridad).
+8. Los ids nuevos salen de `crypto.getRandomValues`; en los tests, `vite.config.ts` compila Svelte en modo cliente para que `$effect` funcione.
+
+**Lo que quedó sin resolver o a confirmar.**
+
+- CI (0.4) sin probar: no hay remoto. Hay que correrlo en el primer *push*.
+- Matías confirma S3: TypeScript 6.0.3 en vez de 7.0.2 (o la vía oficial con alias).
+- Todavía vacío y de la vista (3.3 y 3.4): `document.title`, el foco al `h1`, refrescar `hoy` (`actualizarReloj` cada minuto y al volver a la pestaña) y los botones
+  "Actualizar" y "Reiniciar demo". El estado ya expone lo necesario: `titulo`, `versionDePantalla`, `hayCambiosEnOtraPestana`, `avisos`, `fase`, `errorDeArranque`.
+- Al leer un `$derived` fuera de un efecto, Svelte lo recalcula en cada lectura (los tests lo notaron con `app.alertas`): en las pantallas se lee dentro del marcado, que sí lo guarda.
+- Si el arranque falla de verdad (fase `error`), el botón "Reiniciar demo" de 5.19 no tiene almacenamiento donde actuar: la vista solo puede pedir recargar.
+- Si dos pestañas escriben a la vez, el `secuencia` de los eventos puede repetirse (B9); los ids no.
+- `redactor-ux` no revisó los textos nuevos (avisos y errores del estado).
+- Los otros pendientes del registro anterior siguen igual (B6, B10, B11 y la revisión de `redactor-ux` sobre `textos.ts`).
+
 ## 18/11/2026 (noche) — Correcciones de la revisión del dominio (trabajo autónomo)
 
 **Qué se hizo.** Se corrigieron los 6 hallazgos medios y los bajos triviales de `docs/revision-dominio.md` (revisor-codigo),

@@ -29,7 +29,6 @@ jobs:
       - run: npm run build
       # Sin {@html}, sin Math.random en src/lib, sin reloj fuera de estado/reloj.ts, sin nombres de terceros.
       - run: npm run buscar
-      # Excepción conocida: 7 altas por `picomatch` (ReDoS en extglobs, GHSA-fc5q-39xc-vjpf) en herramientas de
-      # desarrollo (vite, vitest, svelte-check), sin versión corregida publicada. Por eso el umbral es `critical`.
-      # Volver a `high` cuando salga el parche.
-      - run: npm audit --audit-level=critical
+      # Sin altas ni críticas (el 18/11/2026 el aviso de `picomatch`, GHSA-fc5q-39xc-vjpf, dejó de alcanzar a la 4.0.7).
+      # Si una herramienta de desarrollo vuelve a traer un aviso sin parche, documentarlo con fecha y bajar a `critical`.
+      - run: npm audit --audit-level=high

@@ -48,7 +48,7 @@ manuales de foco. Viable, no recomendado.
 
 ## 4. Reglas para que Svelte cumpla la CSP
 
-1. **Nada de atributo `style` en el marcado** (`<div style="…">`): Svelte lo pone en la plantilla HTML y la CSP lo
+1. **Nada de atributo `style` en el marcado** (medido el 18/11/2026 en Chrome con la CSP real: un `style="…"` estático **sí produce la violación `style-src-attr`**, aunque Chrome igual aplica el estilo porque Svelte clona la plantilla; Firefox y Safari pueden no hacerlo. La regla se mantiene) (`<div style="…">`): Svelte lo pone en la plantilla HTML y la CSP lo
    bloquea. Para valores dinámicos (posición de las marcas del horizonte) se usa **la directiva `style:propiedad`**, que
    asigna por CSSOM (`element.style.setProperty`), que la CSP permite. Se comprueba en el paso 0 del plan con un
    componente de prueba y la CSP real.
@@ -77,11 +77,11 @@ Versiones **exactas** (sin `^`), publicadas hace más de 14 días al instalar, r
 | --- | --- | --- | --- |
 | `vite` 8.3.5 | desarrollo | Servidor de desarrollo y compilación. | Igual que Demo 1. |
 | `vitest` 5.1.0 | desarrollo | Tests. | Igual que Demo 1. |
-| `typescript` 7.0.2 | desarrollo | Tipos. | Igual que Demo 1. **Ver S3.** |
-| `svelte` (5.x, la última estable con ≥ 14 días) | producción (compilada) | Componentes y reactividad. | Revisar su árbol de dependencias al instalar. |
-| `@sveltejs/vite-plugin-svelte` (la compatible con Vite 8) | desarrollo | Compila `.svelte` en Vite. | — |
-| `svelte-check` | desarrollo | Tipos dentro de los `.svelte` (CI). | **Ver S3.** |
-| `fake-indexeddb` | desarrollo | IndexedDB en Node para la suite de contrato del repositorio. | **Decisión S2.** Verificar que no tenga dependencias de ejecución. |
+| `typescript` **6.0.3** | desarrollo | Tipos. | **Distinto de la Demo 1 (7.0.2), resuelto S3:** `svelte-check` 4.7.8 pide TypeScript 5 o 6 y con 7 no arranca (ver sección 9). |
+| `svelte` **5.57.3** (26/10/2026) | producción (compilada) | Componentes y reactividad. | 13 dependencias propias (compilador); ninguna con script de instalación. Entra en el paquete solo su *runtime* (~20 KB). |
+| `@sveltejs/vite-plugin-svelte` **7.3.1** (23/09/2026) | desarrollo | Compila `.svelte` y `.svelte.ts` en Vite. | Acepta Vite 8 y Svelte 5.46.4 o más. |
+| `svelte-check` **4.7.8** (01/11/2026) | desarrollo | Tipos dentro de los `.svelte` (CI). | Pide TypeScript 5 o 6 (S3). |
+| `fake-indexeddb` **6.2.7** (30/10/2026) | desarrollo | IndexedDB en Node para la suite de contrato del repositorio. | Decisión S2 aprobada. Cero dependencias. Su `prepare: husky` no corre al instalar desde el registro. |
 
 **No se usan** (y por qué): enrutador (uno propio por *hash* de ~50 líneas, con tests); envoltorio de IndexedDB tipo
 `idb` (uno propio de ~100 líneas: solo hacen falta transacciones con varios almacenes); librería de fechas (`Intl`
@@ -135,5 +135,5 @@ como se decidió para la Demo 1.
 | --- | --- | --- | --- |
 | S1 | Stack | A sin framework · **B Svelte 5 sin Kit** · C SvelteKit · D Astro con islas · E Preact | B, por las razones de la sección 3. Confirmar que Svelte es distinto del stack del sistema de la empresa (lo sabe Matías; acá no se consultó). |
 | S2 | IndexedDB en los tests | `fake-indexeddb` en Node (una dependencia de desarrollo) · tests en navegador real (Vitest modo navegador + Playwright: mucho más pesado) · sin tests automáticos del adaptador | `fake-indexeddb`: prueba el adaptador real con la misma suite que el repositorio en memoria; no viaja en el paquete. |
-| S3 | TypeScript 7 y `svelte-check` | Mantener TS 7.0.2 si `svelte-check` lo soporta · fijar la versión de TS que pida `svelte-check` | Comprobarlo en el paso 0 del plan. Si no son compatibles, usar la versión que pida `svelte-check` y anotarlo (la diferencia con la Demo 1 queda explicada). |
+| S3 | TypeScript 7 y `svelte-check` | Mantener TS 7.0.2 si `svelte-check` lo soporta · fijar la versión de TS que pida `svelte-check` | **Resuelta el 18/11/2026: TypeScript 6.0.3.** `svelte-check` 4.7.8 declara `typescript ^5 || ^6` (npm rechaza la instalación con 7.0.2) y, forzándola, se detiene con "TypeScript 7 support currently requires both TypeScript 7 and TypeScript 6 installed ... and requires using the --tsgo flag". La vía oficial (TS 6 y TS 7 con un alias, más una opción experimental) agrega un paquete y una pieza frágil sin ganar nada acá. Volver a mirar cuando `svelte-check` soporte 7 sin alias. |
 | S4 | Rutas | *Hash* (`#/flota`) · historial (`/flota` con reescritura en Pages) | *Hash*: cero configuración y funciona igual en la vista previa y en el dominio. |

@@ -679,3 +679,32 @@ inactivo); B6 (una unidad con `proyectoId` inexistente sale como «Puede salir»
 `checklistVacio`/`reemplazarOAgregar`, rutas «desconocido» inalcanzables, test de forma de `datos` entre el generador y los
 comandos); B10 (verificar la serie de patentes y que los nombres de proyectos no coincidan con reales); B11 (el correo del
 autor en los 17 primeros commits: decide Matías si reescribir el historial antes de publicar).
+
+**Persistencia, arranque y estado de la aplicación (18/11/2026, pasos 2.4 a 2.6 y 3.1)**
+
+- **IndexedDB (2.4).** Los almacenes de listas usan clave automática (el orden de lectura es el de inserción, igual que en la memoria)
+  y un índice único `id`; reemplazar por `id` es buscar la clave en ese índice y hacer `put`. Además de los índices de la sección 10,
+  todos tienen `id`. Los eventos se agregan con `add`: un id repetido es `evento-repetido`. Toda escritura es una transacción sobre
+  todos los almacenes; un dato que no se puede guardar (DataCloneError) o una cuota agotada abortan todo (P12, D10).
+  `reemplazarTodo` también borra el historial (es una sola transacción; `vaciar` queda para quien quiera una base vacía).
+- **Arranque (2.5).** D7 vale también para un registro `meta` ilegible (fecha inválida, semilla que no es entera): se trata como
+  esquema distinto. En D5 (regeneración silenciosa) y en D6 se conservan el perfil y la semilla guardada; en D7 no se arrastra
+  el perfil (no se sabe leer ese formato). Si el perfil conductor apunta a alguien que ya no existe, vuelve al encargado.
+  Cualquier falla del almacenamiento a mitad del arranque (abrir, leer o escribir) cae al modo memoria con el aviso de D8, sin
+  avisos de D5 o D7. "Preparando la flota de ejemplo…" se pide si **todo el arranque** pasa de 300 ms, no solo la primera visita.
+- **Aviso entre pestañas (2.6).** El mensaje es solo `{ tipo: "cambio" }` (sin datos); lo demás se ignora. Se avisa después de
+  cada escritura exitosa (también el autoguardado de borradores y el cambio de perfil). Sin `BroadcastChannel` no pasa nada.
+  En modo memoria no se crea el canal (cada pestaña tiene su propia memoria). Límite conocido: dos pestañas escribiendo a la
+  vez pueden repetir un `secuencia` de evento (B9); los ids son únicos.
+- **Estado reactivo (3.1).** `EstadoApp` (`src/lib/estado/app.svelte.ts`) guarda el `Estado` en `$state.raw` y lo reemplaza entero con cada
+  comando. Escribe en el repositorio **antes** de cambiar el estado en memoria (D10), y los comandos se hacen de a uno (cola).
+  `hoy` se refresca con `actualizarReloj()` (la vista lo llama al volver a la pestaña o cada minuto); `document.title`, el foco al
+  `h1` y las redirecciones son de la vista: el estado expone `titulo`, `ruta` y `versionDePantalla` (sube al llegar a otra pantalla).
+- **Perfil y rutas.** La ruta se resuelve con el perfil: el conductor solo ve `#/conductor` y `#/parte/…`; si abre una del encargado
+  se lo lleva a su inicio, y al revés (diseno-ui.md, tabla de la sección 2). Una ruta mal escrita es `desconocida` (estado de error
+  de la pantalla) en cualquier perfil y **no** guarda el texto que se escribió. Hash canónico: patente normalizada sin espacios.
+  El perfil Conductor solo ejecuta `guardarBorrador`, `enviarParte` y `descartarBorrador`: el dominio no lo controla, lo controla `EstadoApp`
+  (`sin-permiso`) como defensa extra; no es seguridad.
+- **Ids nuevos.** 24 caracteres hexadecimales de `crypto.getRandomValues` (no `randomUUID`, que no existe fuera de contextos seguros).
+- **Textos nuevos** (`textos.ts`): `TEXTO_AVISO` (D4, D7, D8, D9), `textoDatosDeOtraFecha` (D5), `TEXTO_ERROR_ARRANQUE` (5.19) y errores
+  `noPudoGuardar`, `sinPermiso`, `sinDatos`, `noPudoActualizar`. `redactor-ux` todavía no los revisó.
