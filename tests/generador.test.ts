@@ -1,0 +1,610 @@
+import { describe, expect, it } from "vitest";
+import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
+import { aptitud } from "../src/lib/dominio/aptitud.ts";
+import { ejecutar } from "../src/lib/dominio/comandos.ts";
+import { unidadesEnServicioConNovedadCritica } from "../src/lib/dominio/estado.ts";
+import { diasEntre, fechaEnArgentina, formatearFecha, parsearFechaCivil, sumarDias } from "../src/lib/dominio/fechas.ts";
+import { kmActual, validarKilometraje } from "../src/lib/dominio/kilometraje.ts";
+import { documentacionVencidaEn } from "../src/lib/dominio/parte.ts";
+import { formatoDePatente } from "../src/lib/dominio/patente.ts";
+import type { Documento, Estado, Parte, TipoDocumento, Unidad } from "../src/lib/dominio/tipos.ts";
+import { clasificar, documentoVigente } from "../src/lib/dominio/vencimientos.ts";
+import { cuitValido } from "../src/lib/datos/cuit.ts";
+import { APELLIDOS, EMPRESA, ENCARGADA, NOMBRES, SEMILLA_POR_DEFECTO, generar } from "../src/lib/datos/generador.ts";
+import { contexto } from "./ayuda.ts";
+
+const H = "2026-11-18";
+const e: Estado = generar(SEMILLA_POR_DEFECTO, H);
+const d = (n: number) => sumarDias(H, n);
+
+function unidad(interno: number): Unidad {
+  const u = e.unidades.find((x) => x.interno === interno && x.estado.tipo !== "baja") ?? e.unidades.find((x) => x.interno === interno);
+  if (u === undefined) throw new Error(`no hay unidad ${interno}`);
+  return u;
+}
+
+function vigente(u: Unidad, tipo: TipoDocumento): Documento {
+  const doc = documentoVigente(e.documentos, { tipo: "unidad", id: u.id }, tipo);
+  if (doc === undefined) throw new Error(`la unidad ${u.interno} no tiene ${tipo}`);
+  return doc;
+}
+
+const partesDe = (u: Unidad): Parte[] => e.partes.filter((p) => p.unidadId === u.id).sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+const alertas = () => calcularAlertas(e, H);
+
+/** Corre todas las fechas del estado `n` días (en ISO y en dd/mm/aaaa) para comparar dos fechas base. */
+function correrFechas(estado: Estado, n: number): unknown {
+  const texto = JSON.stringify(estado)
+    .replace(/\d{4}-\d{2}-\d{2}/g, (f) => sumarDias(f, n))
+    .replace(/(\d{2})\/(\d{2})\/(\d{4})/g, (_m, dd: string, mm: string, aaaa: string) => formatearFecha(sumarDias(`${aaaa}-${mm}-${dd}`, n)));
+  return JSON.parse(texto);
+}
+
+/** Hash FNV-1a de 32 bits (solo para fijar el contenido del ejemplo en un test). */
+function hash(texto: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < texto.length; i++) {
+    h ^= texto.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+
+describe("D1: el generador es determinista", () => {
+  it("D1: dos llamadas con (20261118, 2026-11-18) dan exactamente lo mismo", () => {
+    const otra = generar(20261118, "2026-11-18");
+    expect(JSON.stringify(otra)).toBe(JSON.stringify(e));
+    expect(hash(JSON.stringify(otra))).toBe(hash(JSON.stringify(e)));
+  });
+
+  it("D1: con fechaBase 2026-11-25 son las mismas entidades con todas las fechas corridas 7 días", () => {
+    const siete = generar(20261118, "2026-11-25");
+    expect(correrFechas(e, 7)).toEqual(JSON.parse(JSON.stringify(siete)));
+  });
+
+  it("D1: otra semilla da otra flota (pero igual de coherente)", () => {
+    const otra = generar(7, H);
+    expect(JSON.stringify(otra)).not.toBe(JSON.stringify(e));
+    expect(calcularAlertas(otra, H).resumen.protagonista).toBe(4);
+  });
+
+  it("D1: el contenido del ejemplo está fijado (si cambia, cambia a propósito: actualizar este hash y el registro)", () => {
+    // Si este test falla, se cambió el generador o el orden de las llamadas al azar (docs/diseno.md, 9.3).
+    expect(hash(JSON.stringify(e))).toBe(HASH_DEL_EJEMPLO);
+  });
+
+  it("el estado generado no comparte referencias entre llamadas (se puede mutar sin afectar a la otra)", () => {
+    const a = generar(1, H);
+    const b = generar(1, H);
+    a.unidades[0]!.interno = 999;
+    expect(b.unidades[0]!.interno).not.toBe(999);
+  });
+
+  it("tarda poco (el diseño espera menos de 100 ms en Node; acá, con margen para equipos lentos)", () => {
+    const t0 = performance.now();
+    generar(20261118, H);
+    expect(performance.now() - t0).toBeLessThan(500);
+  });
+});
+
+describe("D3: todo es ficticio y se nota", () => {
+  it("la empresa tiene 'Demo' en el nombre y un CUIT ficticio con dígito verificador válido", () => {
+    expect(EMPRESA.nombre).toContain("Demo");
+    expect(cuitValido(EMPRESA.cuit)).toBe(true);
+  });
+
+  it("D3: todas las patentes son válidas y empiezan con Z (serie no emitida)", () => {
+    expect(e.unidades.length).toBeGreaterThan(0);
+    for (const u of e.unidades) {
+      expect(u.patente.startsWith("Z"), u.patente).toBe(true);
+      expect(formatoDePatente(u.patente), u.patente).not.toBeNull();
+    }
+    expect(new Set(e.unidades.map((u) => u.patente)).size).toBe(e.unidades.length);
+  });
+
+  it("D3: las unidades de 2016 en adelante tienen patente Mercosur; las anteriores, el formato anterior", () => {
+    for (const u of e.unidades) {
+      expect(formatoDePatente(u.patente), `${u.patente} (${u.anio})`).toBe(u.anio >= 2016 ? "mercosur" : "anterior");
+    }
+  });
+
+  it("D3: los nombres salen de las listas inventadas y no se repiten", () => {
+    expect(e.conductores).toHaveLength(16);
+    const completos = new Set<string>();
+    for (const c of e.conductores) {
+      const [nombre, apellido] = c.nombre.split(" ");
+      expect(NOMBRES).toContain(nombre);
+      expect(APELLIDOS).toContain(apellido);
+      completos.add(c.nombre);
+    }
+    expect(completos.size).toBe(16);
+    expect(ENCARGADA).toBe("Rocío Medina");
+    expect(NOMBRES).not.toContain("Rocío");
+    expect(APELLIDOS).not.toContain("Medina");
+  });
+
+  it("los números de documento llevan prefijo DEMO- y los emisores 'Demo'", () => {
+    for (const doc of e.documentos) {
+      expect(doc.numero.startsWith("DEMO-"), doc.numero).toBe(true);
+      expect(doc.emisor, doc.id).toMatch(/Demo/);
+    }
+  });
+
+  it("los proyectos son tres, inventados, y la base de mantenimiento no exige habilitación", () => {
+    expect(e.proyectos.map((p) => [p.nombre, p.requiereHabilitacion])).toEqual([
+      ["Proyecto Piedra Lunar", true],
+      ["Proyecto Arroyo Escondido", true],
+      ["Base de mantenimiento", false],
+    ]);
+  });
+
+  it("ningún texto del ejemplo menciona empresas ni sistemas reales", () => {
+    const todo = JSON.stringify(e).toLowerCase();
+    for (const prohibido of ["@gmail", "@hotmail", "http"]) expect(todo.includes(prohibido), prohibido).toBe(false);
+  });
+});
+
+describe("la flota de relleno", () => {
+  it("24 unidades: 14 camionetas, 4 utilitarios, 3 camiones livianos, 2 minibuses activos y 1 de baja", () => {
+    expect(e.unidades).toHaveLength(24);
+    const activas = e.unidades.filter((u) => u.estado.tipo !== "baja");
+    const cuenta = (t: string) => activas.filter((u) => u.tipo === t).length;
+    expect([cuenta("camioneta"), cuenta("utilitario"), cuenta("camion-liviano"), cuenta("minibus")]).toEqual([14, 4, 3, 2]);
+    expect(e.unidades.filter((u) => u.estado.tipo === "baja")).toHaveLength(1);
+  });
+
+  it("los números internos de las unidades activas son únicos y van de 1 a 24", () => {
+    const internos = e.unidades.filter((u) => u.estado.tipo !== "baja").map((u) => u.interno);
+    expect(new Set(internos).size).toBe(internos.length);
+    for (const n of internos) expect(n >= 1 && n <= 24).toBe(true);
+  });
+
+  it("referencias consistentes: todo apunta a algo que existe y los ids no se repiten", () => {
+    const ids = (lista: { id: string }[]) => new Set(lista.map((x) => x.id));
+    const unidades = ids(e.unidades);
+    const conductores = ids(e.conductores);
+    const proyectos = ids(e.proyectos);
+    for (const lista of [e.unidades, e.conductores, e.documentos, e.partes, e.novedades, e.correccionesKm, e.eventos]) {
+      expect(ids(lista).size).toBe(lista.length);
+    }
+    for (const u of e.unidades) {
+      expect(proyectos.has(u.proyectoId)).toBe(true);
+      if (u.conductorId !== null) expect(conductores.has(u.conductorId)).toBe(true);
+    }
+    for (const doc of e.documentos) {
+      expect((doc.titular.tipo === "unidad" ? unidades : conductores).has(doc.titular.id)).toBe(true);
+      if (doc.reemplazaA !== null) expect(e.documentos.some((x) => x.id === doc.reemplazaA)).toBe(true);
+    }
+    for (const p of e.partes) {
+      expect(unidades.has(p.unidadId)).toBe(true);
+      if (p.conductorId !== null) expect(conductores.has(p.conductorId)).toBe(true);
+    }
+    for (const n of e.novedades) expect(unidades.has(n.unidadId)).toBe(true);
+    for (const ev of e.eventos) if (ev.unidadId !== null) expect(unidades.has(ev.unidadId)).toBe(true);
+  });
+
+  it("partes: uno por unidad y fecha, todas las fechas válidas y ninguna futura", () => {
+    const claves = new Set<string>();
+    for (const p of e.partes) {
+      claves.add(`${p.unidadId}|${p.fecha}`);
+      expect(parsearFechaCivil(p.fecha)).toBe(p.fecha);
+      expect(diasEntre(p.fecha, H)).toBeGreaterThanOrEqual(1);
+    }
+    expect(claves.size).toBe(e.partes.length);
+  });
+
+  it("hay unos 900 partes enviados (45 días por unidad en servicio) y 1 solo borrador", () => {
+    const enviados = e.partes.filter((p) => p.estado === "enviado");
+    expect(enviados.length).toBeGreaterThan(800);
+    expect(enviados.length).toBeLessThan(1100);
+    expect(e.partes.filter((p) => p.estado === "borrador")).toHaveLength(1);
+  });
+
+  it("recorrido diario de 40 a 260 km en los partes normales", () => {
+    const normales = e.partes.filter((p) => p.estado === "enviado" && p.advertenciasAceptadas.length === 0);
+    for (const p of normales) {
+      const km = (p.kmFin as number) - (p.kmInicio as number);
+      expect(km >= 40 && km <= 260, `${p.id}: ${km}`).toBe(true);
+    }
+  });
+
+  it("el kilometraje de cada unidad es coherente: K2, K3 y K4 pasan en todos los partes enviados", () => {
+    for (const p of e.partes.filter((x) => x.estado === "enviado")) {
+      const u = e.unidades.find((x) => x.id === p.unidadId)!;
+      const r = validarKilometraje({ unidad: u, fecha: p.fecha, kmInicio: p.kmInicio as number, kmFin: p.kmFin as number, partes: e.partes, correcciones: e.correccionesKm });
+      expect(r.ok, `${u.patente} ${p.fecha}`).toBe(true);
+    }
+  });
+
+  it("los partes enviados tienen todo completo y enviado dentro de su día (hora de Argentina)", () => {
+    for (const p of e.partes.filter((x) => x.estado === "enviado")) {
+      expect(p.combustible).not.toBeNull();
+      expect(p.conductorId).not.toBeNull();
+      expect(p.enviado).not.toBeNull();
+      expect(fechaEnArgentina(p.enviado as string), p.id).toBe(p.fecha);
+      expect(Object.values(p.checklist).every((r) => r.estado !== "sin-responder")).toBe(true);
+      if (p.litrosCargados !== null) {
+        expect(p.litrosCargados).toBeGreaterThan(0);
+        expect(p.litrosCargados).toBeLessThanOrEqual(200);
+      }
+    }
+  });
+
+  it("A3: nunca hay una unidad en servicio con una novedad crítica abierta", () => {
+    expect(unidadesEnServicioConNovedadCritica(e)).toEqual([]);
+  });
+
+  it("las novedades del pasado están resueltas (solo quedan abiertas las de C11 y C19)", () => {
+    const abiertas = e.novedades.filter((n) => n.estado === "abierta");
+    expect(abiertas).toHaveLength(2);
+    expect(e.novedades.filter((n) => n.estado === "resuelta").length).toBeGreaterThan(3);
+    for (const n of e.novedades.filter((x) => x.estado === "resuelta")) {
+      expect(n.resolucion).not.toBeNull();
+      expect(n.gravedad).toBe("normal");
+    }
+  });
+
+  it("H3: los eventos están ordenados en el tiempo y su secuencia crece de a uno", () => {
+    expect(e.eventos.length).toBeGreaterThan(900);
+    e.eventos.forEach((ev, i) => {
+      expect(ev.secuencia).toBe(i + 1);
+      if (i > 0) expect(ev.instante >= e.eventos[i - 1]!.instante).toBe(true);
+      expect(ev.instante <= `${H}T23:59:59.999Z`).toBe(true);
+    });
+  });
+
+  it("hay un evento 'parte-enviado' por cada parte enviado", () => {
+    const enviados = e.partes.filter((p) => p.estado === "enviado").length;
+    expect(e.eventos.filter((x) => x.tipo === "parte-enviado")).toHaveLength(enviados);
+  });
+
+  it("meta: esquema 1, semilla, fecha base, sin modificar y perfil de encargado", () => {
+    expect(e.meta).toEqual({ versionEsquema: 1, semilla: 20261118, fechaBase: H, modificada: false, perfil: { tipo: "encargado" } });
+  });
+
+  it("D2: los vencimientos aleatorios caen a más de 30 días (H+31 a H+400)", () => {
+    // Los documentos vigentes que vencen en 30 días o menos son solo los plantados: C01 a C08, C12, C17 y el seguro de la baja (C16).
+    const vigentes = e.documentos.filter((doc) => documentoVigente(e.documentos, doc.titular, doc.tipo)?.id === doc.id);
+    const cercanos = vigentes.filter((doc) => diasEntre(H, doc.vence) <= 30);
+    expect(cercanos).toHaveLength(11);
+    for (const doc of vigentes) expect(diasEntre(H, doc.vence)).toBeLessThanOrEqual(400);
+  });
+});
+
+describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
+  it("C01: el seguro de ZK 214 BD venció ayer: 'Vencido hace 1 día', hoy no puede salir y su parte de ayer es legítimo", () => {
+    const u = e.unidades.find((x) => x.patente === "ZK214BD")!;
+    expect(u.interno).toBe(7);
+    const seguro = vigente(u, "seguro");
+    expect(seguro.vence).toBe(d(-1));
+    expect(clasificar(seguro.vence, H).texto).toBe("Vencido hace 1 día");
+    const a = aptitud(u, e, H);
+    expect(a.puedeSalir).toBe(false);
+    expect(a.motivos.map((m) => m.texto)).toEqual(["Seguro vencido hace 1 día"]);
+    const ayer = partesDe(u).find((p) => p.fecha === d(-1))!;
+    expect(ayer.estado).toBe("enviado");
+    expect(ayer.documentacionVencida).toEqual([]);
+    expect(partesDe(u).some((p) => p.fecha === H)).toBe(false);
+  });
+
+  it("C02: una revisión técnica que vence hoy; la unidad puede salir", () => {
+    const u = unidad(1);
+    expect(vigente(u, "revision-tecnica").vence).toBe(H);
+    expect(aptitud(u, e, H).puedeSalir).toBe(true);
+    expect(alertas().alertas.find((a) => a.unidadId === u.id)?.texto).toBe("Vence hoy · Revisión técnica");
+  });
+
+  it("C03: una revisión técnica que vence mañana", () => {
+    expect(vigente(unidad(2), "revision-tecnica").vence).toBe(d(1));
+    expect(clasificar(d(1), H).texto).toBe("Vence mañana");
+  });
+
+  it("C04: un seguro que vence en H + 7 (grupo 7)", () => {
+    const doc = vigente(unidad(3), "seguro");
+    expect(doc.vence).toBe(d(7));
+    expect(clasificar(doc.vence, H).grupo).toBe("7");
+  });
+
+  it("C05: un matafuego que vence en H + 8 (grupo 15)", () => {
+    const doc = vigente(unidad(4), "matafuego");
+    expect(doc.vence).toBe(d(8));
+    expect(clasificar(doc.vence, H).grupo).toBe("15");
+  });
+
+  it("C06: una habilitación que vence en H + 15 (grupo 15)", () => {
+    const u = unidad(5);
+    expect(e.proyectos.find((p) => p.id === u.proyectoId)?.requiereHabilitacion).toBe(true);
+    expect(vigente(u, "habilitacion-proyecto").vence).toBe(d(15));
+  });
+
+  it("C07: un seguro que vence en H + 16 (grupo 30)", () => {
+    const doc = vigente(unidad(6), "seguro");
+    expect(doc.vence).toBe(d(16));
+    expect(clasificar(doc.vence, H).grupo).toBe("30");
+  });
+
+  it("C08: una revisión técnica que vence en H + 30 (grupo 30)", () => {
+    expect(vigente(unidad(8), "revision-tecnica").vence).toBe(d(30));
+  });
+
+  it("C09: un seguro que vence en H + 31: no está en las alertas y en la ficha figura vigente", () => {
+    const u = unidad(9);
+    const doc = vigente(u, "seguro");
+    expect(doc.vence).toBe(d(31));
+    expect(clasificar(doc.vence, H).estado).toBe("vigente");
+    expect(alertas().alertas.some((a) => a.unidadId === u.id)).toBe(false);
+  });
+
+  it("C10: una unidad reasignada hoy de la Base a Piedra Lunar, sin habilitación (sus partes anteriores eran válidos)", () => {
+    const u = unidad(10);
+    expect(e.proyectos.find((p) => p.id === u.proyectoId)?.nombre).toBe("Proyecto Piedra Lunar");
+    const cambio = e.eventos.find((x) => x.unidadId === u.id && x.tipo === "asignacion-cambiada")!;
+    expect(fechaEnArgentina(cambio.instante)).toBe(H);
+    expect((cambio.datos["antes"] as { proyectoId: string }).proyectoId).toBe(e.proyectos.find((p) => p.nombre === "Base de mantenimiento")!.id);
+    expect(documentoVigente(e.documentos, { tipo: "unidad", id: u.id }, "habilitacion-proyecto")).toBeUndefined();
+    expect(aptitud(u, e, H).motivos.map((m) => m.texto)).toEqual(["Falta cargar: Habilitación de ingreso al proyecto"]);
+    expect(partesDe(u).every((p) => p.documentacionVencida.length === 0)).toBe(true);
+    expect(partesDe(u).some((p) => p.fecha === d(-1))).toBe(true);
+  });
+
+  it("C11: fuera de servicio por una novedad crítica de frenos del parte de H - 2 (y A4 impide volver)", () => {
+    const u = unidad(11);
+    expect(u.estado).toMatchObject({ tipo: "fuera-de-servicio", desde: d(-2), origen: "novedad-critica", motivo: `Novedad crítica en el parte del ${formatearFecha(d(-2))}: Frenos` });
+    const n = e.novedades.find((x) => x.unidadId === u.id && x.estado === "abierta")!;
+    expect(n).toMatchObject({ gravedad: "critica", fecha: d(-2), origen: { tipo: "parte", item: "frenos" } });
+    expect(u.estado.tipo === "fuera-de-servicio" && u.estado.novedadIds).toEqual([n.id]);
+    const parte = partesDe(u).at(-1)!;
+    expect(parte.fecha).toBe(d(-2));
+    expect(parte.estado).toBe("enviado");
+    expect(parte.checklist.frenos.estado).toBe("con-novedad");
+    const r = ejecutar(e, { tipo: "volverAServicio", unidadId: u.id }, contexto());
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.mensaje).toBe(`Antes de volver a servicio, resuelva: Frenos (parte del ${formatearFecha(d(-2))}).`);
+    // los tres eventos del envío
+    const mismos = e.eventos.filter((x) => x.unidadId === u.id && x.instante === parte.enviado);
+    expect(mismos.map((x) => x.tipo)).toEqual(["parte-enviado", "novedad-abierta", "fuera-de-servicio"]);
+  });
+
+  it("C12: fuera de servicio a mano ('En taller: cambio de embrague') desde H - 5, con la revisión a H + 5", () => {
+    const u = unidad(12);
+    expect(u.estado).toEqual({ tipo: "fuera-de-servicio", desde: d(-5), motivo: "En taller: cambio de embrague", origen: "manual", novedadIds: [] });
+    expect(vigente(u, "revision-tecnica").vence).toBe(d(5));
+    expect(alertas().alertas.find((a) => a.unidadId === u.id)).toMatchObject({ grupo: "7", texto: "Vence en 5 días · Revisión técnica" });
+    expect(partesDe(u).every((p) => p.fecha < d(-5))).toBe(true);
+  });
+
+  it("C13: un borrador de parte de H - 1 sin enviar", () => {
+    const b = e.partes.find((p) => p.estado === "borrador")!;
+    expect(b.fecha).toBe(d(-1));
+    expect(b.enviado).toBeNull();
+    const a = alertas().alertas.filter((x) => x.tipo === "parte-sin-enviar");
+    expect(a).toHaveLength(1);
+    expect(a[0]?.unidadId).toBe(b.unidadId);
+    expect(a[0]?.texto).toMatch(/^Parte del \d{2}\/\d{2}\/\d{4} sin enviar \(empezado por [A-ZÁÉÍÓÚÑ]\. \S+\)$/);
+  });
+
+  it("C14: dos unidades en servicio sin parte de H - 1", () => {
+    const sin = alertas().alertas.filter((x) => x.tipo === "sin-parte");
+    expect(sin).toHaveLength(2);
+    for (const a of sin) {
+      const u = e.unidades.find((x) => x.id === a.unidadId)!;
+      expect(u.estado.tipo).toBe("en-servicio");
+      expect(partesDe(u).some((p) => p.fecha === d(-1))).toBe(false);
+      expect(partesDe(u).some((p) => p.fecha === d(-2))).toBe(true);
+    }
+  });
+
+  it("C15: un parte de H - 4 con un salto de 1.250 km aceptado", () => {
+    const p = e.partes.find((x) => x.advertenciasAceptadas.some((a) => a.tipo === "salto-km"))!;
+    expect(p.fecha).toBe(d(-4));
+    expect(p.advertenciasAceptadas).toEqual([{ tipo: "salto-km", km: 1250 }]);
+    const anterior = partesDe(e.unidades.find((u) => u.id === p.unidadId)!).find((x) => x.fecha === d(-5))!;
+    expect((p.kmInicio as number) - (anterior.kmFin as number)).toBe(1250);
+    const ev = e.eventos.find((x) => x.datos["parteId"] === p.id)!;
+    expect(ev.datos["advertencias"]).toEqual([{ tipo: "salto-km", km: 1250 }]);
+  });
+
+  it("C16: una unidad dada de baja con el seguro vencido, que no alerta; conserva todo", () => {
+    const u = e.unidades.find((x) => x.estado.tipo === "baja")!;
+    expect(u.estado).toMatchObject({ tipo: "baja", desde: d(-28) });
+    const seguro = documentoVigente(e.documentos, { tipo: "unidad", id: u.id }, "seguro")!;
+    expect(diasEntre(H, seguro.vence)).toBeLessThan(0);
+    expect(alertas().alertas.some((a) => a.unidadId === u.id)).toBe(false);
+    expect(partesDe(u).length).toBeGreaterThan(5);
+    expect(e.eventos.some((x) => x.unidadId === u.id && x.tipo === "unidad-baja")).toBe(true);
+    expect(calcularAlertas(e, H).resumen.activas).toBe(23);
+  });
+
+  it("C17: la licencia de un conductor vence en H + 12 (grupo 15)", () => {
+    const licencias = e.documentos.filter((doc) => doc.tipo === "licencia" && doc.vence === d(12));
+    expect(licencias).toHaveLength(1);
+    const a = alertas().alertas.find((x) => x.documentoId === licencias[0]!.id)!;
+    expect(a).toMatchObject({ grupo: "15", texto: "Vence en 12 días · Licencia de conducir" });
+    expect(a.conductorId).toBe(licencias[0]!.titular.id);
+  });
+
+  it("C18: revisión vencida en H - 7, parte de H - 6 con la advertencia aceptada y renovada ese día, después del parte", () => {
+    const p = e.partes.find((x) => x.documentacionVencida.length > 0)!;
+    expect(p.fecha).toBe(d(-6));
+    expect(p.documentacionVencida).toEqual(["revision-tecnica"]);
+    expect(p.advertenciasAceptadas).toEqual([{ tipo: "documentacion-vencida", documentos: ["revision-tecnica"] }]);
+    const u = e.unidades.find((x) => x.id === p.unidadId)!;
+    const nueva = vigente(u, "revision-tecnica");
+    const vieja = e.documentos.find((x) => x.id === nueva.reemplazaA)!;
+    expect(vieja.vence).toBe(d(-7));
+    expect(fechaEnArgentina(nueva.cargado)).toBe(p.fecha);
+    expect(nueva.cargado > (p.enviado as string)).toBe(true);
+    expect(diasEntre(H, nueva.vence)).toBeGreaterThan(30);
+    // la alerta crítica dura hasta H - 6 + 30
+    const alerta = (hoy: string) => calcularAlertas(e, hoy).alertas.filter((x) => x.tipo === "uso-con-documentacion-vencida");
+    expect(alerta(H)).toHaveLength(1);
+    expect(alerta(H)[0]?.gravedad).toBe("critica");
+    expect(alerta(d(24))).toHaveLength(1);
+    expect(alerta(d(25))).toHaveLength(0);
+    expect(e.eventos.some((x) => x.tipo === "documento-renovado" && x.datos["documentoId"] === nueva.id)).toBe(true);
+  });
+
+  it("C18: ningún otro parte tiene documentación vencida: las renovaciones del pasado se hicieron antes de vencer", () => {
+    const con = e.partes.filter((x) => x.documentacionVencida.length > 0);
+    expect(con).toHaveLength(1);
+    // recalculado a la fecha de cada parte (salvo C10, que cambió de proyecto hoy, y el propio C18)
+    const c10 = unidad(10);
+    for (const p of e.partes.filter((x) => x.estado === "enviado" && x.unidadId !== c10.id && x.id !== con[0]!.id)) {
+      const u = e.unidades.find((x) => x.id === p.unidadId)!;
+      const proyecto = e.proyectos.find((x) => x.id === u.proyectoId)!;
+      const c = e.conductores.find((x) => x.id === p.conductorId) ?? null;
+      expect(documentacionVencidaEn({ fecha: p.fecha, unidad: u, proyecto, conductor: c, documentos: e.documentos }), `${u.patente} ${p.fecha}`).toEqual([]);
+    }
+  });
+
+  it("C19: una novedad normal abierta desde H - 9 ('Luz de patente quemada')", () => {
+    const n = e.novedades.find((x) => x.gravedad === "normal" && x.estado === "abierta")!;
+    expect(n).toMatchObject({ descripcion: "Luz de patente quemada", fecha: d(-9) });
+    expect(alertas().alertas.find((a) => a.id === `novedad:${n.id}`)?.texto).toBe("Luz de patente quemada · abierta hace 9 días");
+    const parte = e.partes.find((p) => n.origen.tipo === "parte" && p.id === n.origen.parteId)!;
+    expect(parte.fecha).toBe(d(-9));
+    expect(parte.otraNovedad).toEqual({ descripcion: "Luz de patente quemada", impideUso: false });
+  });
+
+  it("C20: una corrección de kilometraje en H - 20 (cambio de tablero) que K3 y K8 respetan", () => {
+    expect(e.correccionesKm).toHaveLength(1);
+    const k = e.correccionesKm[0]!;
+    expect(k.desde).toBe(d(-20));
+    expect(k.kmBase).toBe(120);
+    expect(k.motivo).toMatch(/tablero/i);
+    const u = e.unidades.find((x) => x.id === k.unidadId)!;
+    const despues = partesDe(u).filter((p) => p.fecha >= k.desde);
+    expect(despues[0]!.kmInicio).toBe(120);
+    expect(kmActual(u.id, e.partes, e.correccionesKm)).toBe(despues.at(-1)!.kmFin);
+    expect(e.eventos.some((x) => x.tipo === "km-corregido" && x.unidadId === u.id)).toBe(true);
+  });
+});
+
+describe("D2: el ejemplo completo con H = 2026-11-18 (docs/diseno.md, 9.2)", () => {
+  const { resumen } = alertas();
+
+  it("protagonista 4 (2 no pueden salir + 2 fuera de servicio) y 19 disponibles de 23 activas", () => {
+    expect(resumen.protagonista).toBe(4);
+    expect(resumen.noPuedenSalir).toHaveLength(2);
+    expect(resumen.fueraDeServicio).toHaveLength(2);
+    expect(resumen.disponibles).toBe(19);
+    expect(resumen.activas).toBe(23);
+  });
+
+  it("vencidos y faltantes 2; 7 días o menos 4; 8 a 15 días 3; 16 a 30 días 2", () => {
+    expect(resumen.porGrupo).toEqual({ vencidos: 2, "7": 4, "15": 3, "30": 2 });
+  });
+
+  it("pendientes de operación 6: C11, C18, C13, C14 (x2) y C19", () => {
+    expect(resumen.totalOperacion).toBe(6);
+    expect(resumen.operacion).toEqual({
+      "novedad-critica": 1,
+      "uso-con-documentacion-vencida": 1,
+      "parte-sin-enviar": 1,
+      "sin-parte": 2,
+      "novedad-abierta": 1,
+    });
+  });
+
+  it("alertas críticas (insignia de la pestaña) 4: C01, C10, C11 y C18", () => {
+    expect(resumen.criticas).toBe(4);
+  });
+
+  it("el horizonte tiene 9 puntos (4 + 3 + 2)", () => {
+    const { horizonte } = alertas();
+    expect(horizonte).toHaveLength(9);
+    expect(horizonte.map((p) => p.dia)).toEqual([0, 1, 5, 7, 8, 12, 15, 16, 30]);
+  });
+
+  it("la coherencia se mantiene con otra fecha base: mismas cifras con H = 2026-12-01 y H = 2027-02-28", () => {
+    for (const base of ["2026-12-01", "2027-02-28", "2028-02-29"]) {
+      const otro = generar(20261118, base);
+      const r = calcularAlertas(otro, base).resumen;
+      expect(r.protagonista, base).toBe(4);
+      expect(r.porGrupo, base).toEqual({ vencidos: 2, "7": 4, "15": 3, "30": 2 });
+      expect(r.totalOperacion, base).toBe(6);
+      expect(r.criticas, base).toBe(4);
+      expect(unidadesEnServicioConNovedadCritica(otro), base).toEqual([]);
+    }
+  });
+});
+
+describe("el ejemplo reacciona a los comandos (criterio de la pantalla 4.2)", () => {
+  const ctx = () => contexto();
+
+  it("renovar el seguro de ZK 214 BD (C01) lo saca de la lista y de 'No pueden salir'", () => {
+    const u = e.unidades.find((x) => x.patente === "ZK214BD")!;
+    const seguro = vigente(u, "seguro");
+    const r = ejecutar(e, { tipo: "renovarDocumento", documentoId: seguro.id, numero: "DEMO-88-9999", emisor: "Seguros Puna Demo", vence: d(365), emitido: null }, ctx());
+    if (!r.ok) throw new Error(r.error.mensaje);
+    const { resumen, alertas: lista } = calcularAlertas(r.valor.estado, H);
+    expect(resumen.protagonista).toBe(3);
+    expect(resumen.porGrupo.vencidos).toBe(1);
+    expect(resumen.disponibles).toBe(20);
+    expect(lista.some((a) => a.unidadId === u.id)).toBe(false);
+  });
+
+  it("volver a servicio la unidad del taller (C12) se permite y deja de contar como fuera de servicio (A5)", () => {
+    const u = unidad(12);
+    const r = ejecutar(e, { tipo: "volverAServicio", unidadId: u.id }, ctx());
+    if (!r.ok) throw new Error(r.error.mensaje);
+    expect(calcularAlertas(r.valor.estado, H).resumen.fueraDeServicio).toHaveLength(1);
+    expect(unidadesEnServicioConNovedadCritica(r.valor.estado)).toEqual([]);
+  });
+
+  it("resolver la novedad de frenos (C11) y volver a servicio en un paso", () => {
+    const n = e.novedades.find((x) => x.estado === "abierta" && x.gravedad === "critica")!;
+    const r = ejecutar(e, { tipo: "resolverNovedad", novedadId: n.id, texto: "Se cambiaron las pastillas", volverAServicio: true }, ctx());
+    if (!r.ok) throw new Error(r.error.mensaje);
+    const resumen = calcularAlertas(r.valor.estado, H).resumen;
+    expect(resumen.protagonista).toBe(3);
+    expect(resumen.operacion["novedad-critica"]).toBe(0);
+    expect(r.valor.eventos.map((x) => x.tipo)).toEqual(["novedad-resuelta", "vuelta-a-servicio"]);
+  });
+
+  it("completar y enviar el borrador de ayer (C13) saca la alerta de 'Parte sin enviar', con aviso de fuera de término", () => {
+    const b = e.partes.find((p) => p.estado === "borrador")!;
+    const guardado = ejecutar(
+      e,
+      {
+        tipo: "guardarBorrador",
+        parteId: b.id,
+        unidadId: b.unidadId,
+        fecha: b.fecha,
+        conductorId: b.conductorId,
+        kmInicio: b.kmInicio,
+        kmFin: (b.kmInicio as number) + 120,
+        combustible: "medio",
+        litrosCargados: null,
+        checklist: Object.fromEntries(Object.keys(b.checklist).map((k) => [k, { estado: "en-orden" }])) as Parte["checklist"],
+        otraNovedad: null,
+      },
+      ctx(),
+    );
+    if (!guardado.ok) throw new Error(guardado.error.mensaje);
+    const enviado = ejecutar(guardado.valor.estado, { tipo: "enviarParte", parteId: b.id, advertenciasAceptadas: [] }, ctx());
+    if (!enviado.ok) throw new Error(enviado.error.mensaje);
+    expect(enviado.valor.eventos[0]?.datos["fueraDeTermino"]).toBe(true);
+    expect(calcularAlertas(enviado.valor.estado, H).resumen.operacion["parte-sin-enviar"]).toBe(0);
+  });
+
+  it("el parte de hoy de una unidad en servicio se puede abrir y enviar (kilometraje continúa)", () => {
+    const u = unidad(1);
+    const km = kmActual(u.id, e.partes, e.correccionesKm)!;
+    const c = ctx();
+    const g = ejecutar(
+      e,
+      {
+        tipo: "guardarBorrador", parteId: null, unidadId: u.id, fecha: H, conductorId: u.conductorId, kmInicio: km, kmFin: km + 90, combustible: "lleno", litrosCargados: 45.5,
+        checklist: Object.fromEntries(Object.keys(partesDe(u)[0]!.checklist).map((k) => [k, { estado: "en-orden" }])) as Parte["checklist"], otraNovedad: null,
+      },
+      c,
+    );
+    if (!g.ok) throw new Error(g.error.mensaje);
+    const id = g.valor.cambios.partes[0]!.id;
+    const enviado = ejecutar(g.valor.estado, { tipo: "enviarParte", parteId: id, advertenciasAceptadas: [] }, c);
+    expect(enviado.ok).toBe(true);
+  });
+});
+
+const HASH_DEL_EJEMPLO = "3d866c2a";
