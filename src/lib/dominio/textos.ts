@@ -112,6 +112,13 @@ export function errParteDuplicado(patente: string, fecha: FechaCivil, estado: "b
   return `Ya hay un parte de ${patente} para el ${formatearFecha(fecha)} (${estado}). ${final}`;
 }
 
+/** M3: la corrección de kilometraje no cambiaría nada porque hay un registro posterior. */
+export function errKmCorreccionAnterior(registro: "parte" | "correccion", fecha: FechaCivil): string {
+  const que = registro === "parte" ? `un parte enviado el ${formatearFecha(fecha)}` : `una corrección de kilometraje del ${formatearFecha(fecha)}`;
+  const cual = registro === "parte" ? "de ese parte" : "de esa corrección";
+  return `Ya hay ${que}, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha ${cual} o una posterior.`;
+}
+
 export function errUnidadFueraDeServicio(desde: FechaCivil, motivo: string): string {
   return `La unidad está fuera de servicio desde el ${formatearFecha(desde)} (${motivo}). Pida al encargado que la vuelva a servicio.`;
 }

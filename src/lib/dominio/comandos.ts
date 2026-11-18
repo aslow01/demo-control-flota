@@ -4,7 +4,7 @@
 
 import { aplicarCambios, sinCambios, type Cambios } from "./estado.ts";
 import { diasEntre, fechaEnArgentina, formatearFecha, parsearFechaCivil, parsearInstante } from "./fechas.ts";
-import { kmActual, validarKilometraje } from "./kilometraje.ts";
+import { kmActual, registrosDeKm, validarKilometraje } from "./kilometraje.ts";
 import { novedadesCriticasAbiertas, rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
 import {
   ITEMS_CHECKLIST,
@@ -16,7 +16,7 @@ import {
   validarFechaParte,
 } from "./parte.ts";
 import { formatearPatente, validarPatente } from "./patente.ts";
-import { ERRORES, RESUMEN_EVENTO, errAnioFueraDeRango, errDocumentoExistente, errInternoRepetido, errNovedadesCriticasAbiertas, errParteDuplicado, errPatenteRepetida, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
+import { ERRORES, RESUMEN_EVENTO, errAnioFueraDeRango, errDocumentoExistente, errInternoRepetido, errKmCorreccionAnterior, errNovedadesCriticasAbiertas, errParteDuplicado, errPatenteRepetida, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
 import {
   fallo,
   ok,
@@ -505,6 +505,12 @@ function corregirKilometraje(
   if (!motivo.ok) return motivo;
 
   const u = unidad.valor;
+  // M3 (a confirmar): kmActual es el último registro por fecha; una corrección anterior a un registro ya cargado no cambiaría
+  // el kilometraje actual ni K3/K4 aunque el historial dijera que sí. Se rechaza en vez de aceptar algo que no tiene efecto.
+  const posterior = registrosDeKm(u.id, estado.partes, estado.correccionesKm).filter((r) => r.fecha > desde.valor).pop();
+  if (posterior !== undefined) {
+    return fallo("km-correccion-anterior", errKmCorreccionAnterior(posterior.tipo, posterior.fecha), { campo: "desde" });
+  }
   const anterior = kmActual(u.id, estado.partes, estado.correccionesKm);
   const correccion = {
     id: ctx.nuevoId(),

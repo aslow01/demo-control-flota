@@ -4,7 +4,7 @@ import { aptitud } from "../src/lib/dominio/aptitud.ts";
 import { kmActual } from "../src/lib/dominio/kilometraje.ts";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
 import type { Novedad } from "../src/lib/dominio/tipos.ts";
-import { PROYECTO_BASE, PROYECTO_PIEDRA, conductor, contexto, ejecutarError, ejecutarOk, flotaDePrueba, novedad } from "./ayuda.ts";
+import { PROYECTO_BASE, PROYECTO_PIEDRA, checklistVacio, conductor, contexto, ejecutarError, ejecutarOk, flotaDePrueba, novedad } from "./ayuda.ts";
 
 const H = "2026-11-18";
 
@@ -311,7 +311,49 @@ describe("corregirKilometraje (K5)", () => {
     const e = flotaDePrueba();
     expect(ejecutarError(e, { ...base, desde: "2026-11-19" }).mensaje).toBe("La fecha no puede ser posterior a hoy.");
     expect(ejecutarError(e, { ...base, desde: "2026-02-30" }).codigo).toBe("fecha-invalida");
-    expect(ejecutarOk(e, { ...base, desde: "2026-11-16" }).estado.correccionesKm).toHaveLength(1);
+    expect(ejecutarOk(e, { ...base, desde: "2026-11-17" }).estado.correccionesKm).toHaveLength(1);
+  });
+
+  describe("M3 (a confirmar): una corrección con fecha anterior a registros ya cargados se rechaza", () => {
+    it("desde anterior al último parte enviado: error claro, sin corrección ni evento", () => {
+      const e = flotaDePrueba(); // el último parte de u1 es del 17/11/2026
+      const err = ejecutarError(e, { ...base, desde: "2026-11-16" });
+      expect(err.codigo).toBe("km-correccion-anterior");
+      expect(err.campo).toBe("desde");
+      expect(err.mensaje).toBe(
+        "Ya hay un parte enviado el 17/11/2026, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha de ese parte o una posterior.",
+      );
+      expect(e.correccionesKm).toHaveLength(0);
+    });
+
+    it("desde igual a la fecha del último parte: se acepta y pasa a ser el kilometraje actual", () => {
+      const r = ejecutarOk(flotaDePrueba(), { ...base, desde: "2026-11-17" });
+      expect(kmActual("u1", r.estado.partes, r.estado.correccionesKm)).toBe(120);
+    });
+
+    it("el kilometraje actual no cambia con un rechazo", () => {
+      const e = flotaDePrueba();
+      ejecutarError(e, { ...base, desde: "2026-11-10" });
+      expect(kmActual("u1", e.partes, e.correccionesKm)).toBe(84320);
+    });
+
+    it("tampoco se acepta una fecha anterior a otra corrección ya cargada", () => {
+      const e = ejecutarOk(flotaDePrueba(), { ...base, desde: "2026-11-18" }).estado;
+      const err = ejecutarError(e, { ...base, desde: "2026-11-17", kmBase: 500 });
+      expect(err.codigo).toBe("km-correccion-anterior");
+      expect(err.mensaje).toContain("corrección de kilometraje del 18/11/2026");
+    });
+
+    it("un borrador posterior no cuenta (K9) y una unidad sin partes acepta cualquier fecha pasada", () => {
+      const e = flotaDePrueba();
+      const conBorrador = ejecutarOk(e, {
+        tipo: "guardarBorrador", parteId: null, unidadId: "u1", fecha: H, conductorId: "c1", kmInicio: 84320, kmFin: null,
+        combustible: null, litrosCargados: null, checklist: checklistVacio(), otraNovedad: null,
+      }).estado;
+      expect(ejecutarOk(conBorrador, { ...base, desde: "2026-11-17" }).estado.correccionesKm).toHaveLength(1);
+      const sinPartes = { ...e, partes: e.partes.filter((p) => p.unidadId !== "u1") };
+      expect(ejecutarOk(sinPartes, { ...base, desde: "2026-01-05" }).estado.correccionesKm).toHaveLength(1);
+    });
   });
 
   it("K1: el kilometraje base es un entero de 0 a 2.000.000", () => {
