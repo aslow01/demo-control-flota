@@ -86,7 +86,7 @@ export const TEXTO_COMO_FUNCIONA = {
   ],
   tituloParte: "El parte diario",
   parte:
-    "Está pensada para usarse desde el celular: el conductor carga el kilometraje, 10 puntos de revisión y, si cargó, el combustible. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
+    "Está pensado para usarse desde el celular: el conductor carga el kilometraje, 10 puntos de revisión y, si cargó, el combustible. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
   tituloDatos: "Dónde se guardan los datos",
   datos:
     "Los datos que usted carga quedan solo en este navegador y no se envían a ningún servidor. «Reiniciar demo» borra esos cambios y vuelve a la flota de ejemplo con las fechas de hoy.",
