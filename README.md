@@ -6,7 +6,7 @@ navegador, con datos ficticios guardados en IndexedDB y un botón para reiniciar
 
 Forma parte del portafolio de Matías Ariel Ormeño.
 
-## Estado: diseño, lógica y estado de la aplicación (sin pantallas todavía)
+## Estado: diseño, lógica, estado de la aplicación y marco de la interfaz (pasos 3.2 a 3.4); faltan las pantallas internas
 
 El diseño se escribió antes de cualquier línea de código. Desde el 18/11/2026 también están hechas la **lógica de dominio**
 (`src/lib/dominio`, TypeScript puro y probado en tres zonas horarias), el **generador de datos de ejemplo**

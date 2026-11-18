@@ -2,7 +2,7 @@
 
 Fecha: 18/11/2026. Rama `interfaz-etapa-0`, diff `abc02e0..HEAD` (último commit `4b0d65f`). Revisión de solo lectura: no se tocó
 código ni se commiteó. Todo lo generado (build, scripts, capturas) está fuera del repositorio, en el scratchpad
-`C:\Users\matia\AppData\Local\Temp\claude\ffcbbd6502dd7960\155075df-f9ed-4064-a995-cf0eb42f2bca\scratchpad\qa\` (scripts `t1.py` a `t41.py`,
+una carpeta temporal fuera del repositorio (scripts `t1.py` a `t41.py`,
 capturas en `caps\`).
 
 ## Cómo se probó
