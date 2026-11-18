@@ -1,5 +1,23 @@
 # Registro
 
+## 18/11/2026 (noche, 6) — Revisiones de 3.2 a 3.4: segunda tanda de lógica (programador)
+
+**Qué se hizo.** Cinco tareas chicas en `src/lib/` y tests, con TDD (cada test nuevo se vio fallar antes del código; el de «Cómo funciona», al romper a propósito
+el texto y el umbral). Un commit por tarea, sin push.
+
+| Qué | Cómo quedó |
+| --- | --- |
+| Listas guardadas dañadas (hueco del QA) | `arrancar` valida la forma mínima de cada lista (arreglo de objetos con `id` y los campos básicos de su tipo) y prueba que `calcularAlertas` no falle; si no, esquema inválido: se regenera el ejemplo con el aviso D7. Tests con fake-indexeddb escribiendo a mano en los almacenes (6 casos, más uno de forma correcta que rompe el cálculo). |
+| Revisión 13 | `nombreDePantalla(ruta)` en `enrutador.ts`; `tituloDePagina` lo usa; `EstadoApp.nombrePantalla`; `App.svelte` ya no recorta con una expresión regular. |
+| Revisión 12 | `tests/textos-marco.test.ts`: los números de «Cómo funciona» (7, 8 a 15, 16 a 30, más de 30; 10 puntos de revisión; punto crítico e «Impide usar la unidad») se comparan con `clasificar`, `ITEMS_CHECKLIST` y `novedadesDelParte`. El texto visible no cambió. |
+| QA B5 | `cambiarPerfil` reemplaza la entrada del historial (`reemplazarHash`) en vez de agregar una. Límite: las entradas anteriores al cambio siguen y se redirigen. `ubicacionEnMemoria` cuenta `entradas`. |
+| QA D6 (alternativa barata) | `cambiarPerfil` devuelve `cambios-en-otra-pestana` con `ERRORES.cambiosEnOtraPestana` mientras `hayCambiosEnOtraPestana`. |
+
+**Verificación.** `npm test` 695 (antes 678), `npm run test:tz` (UTC, Tokio, Los Ángeles), `npm run check` 0 errores, `npm run buscar` sin hallazgos y `npm run build` en verde.
+
+**Sin hacer.** Operación atómica «guardar solo el perfil» en el repositorio (D6 completo); humo de interfaz con Playwright. `App.svelte` solo cambió una línea (nombre de la pantalla).
+**Para la vista.** `TEXTO_COMO_FUNCIONA.parte` empieza con «Está pensada para usarse desde el celular» después de «El parte diario»: el género no concuerda (no se tocó el texto visible).
+
 ## 18/11/2026 (noche, 5) — Revisiones de 3.2 a 3.4: correcciones de la vista (maquetador)
 
 **Qué se hizo.** Todo lo que cae en `src/componentes/`, `src/App.svelte` y `src/estilos/`; sin tocar la lógica. Cada informe de revisión lleva al final su

@@ -101,3 +101,10 @@ en 40 rem o más), **17** (`contraste.mjs` falla con mensaje claro), **18** (nom
 Queda para el programador o sin hacer: **5** y **6** (los resolvió la lógica: se quitó el reinicio desde `error`), **12** (test que compare los textos con
 las reglas), **13** (`enrutador.ts` debería exportar el nombre sin sufijo), **15** (hecho en la lógica), **16** (humo de interfaz con Playwright en CI: no se
 agregó; las comprobaciones de touch y teclado se hicieron a mano con scripts fuera del repositorio).
+
+## Estado de las correcciones de la lógica, segunda tanda (programador, 18/11/2026)
+
+Corregido: **12** (`tests/textos-marco.test.ts` compara con el dominio los umbrales de 7, 15 y 30 días, la cantidad de puntos de revisión y el criterio de punto
+crítico; no hizo falta armar el texto desde constantes: el test lee los números del texto y los contrasta con `clasificar` y `ITEMS_CHECKLIST`; se vio fallar
+cambiando el texto y el umbral), **13** (`nombreDePantalla` en `enrutador.ts`, `app.nombrePantalla` y `App.svelte` sin la expresión regular). Siguen sin hacer: **16**
+(humo de interfaz con Playwright en CI).

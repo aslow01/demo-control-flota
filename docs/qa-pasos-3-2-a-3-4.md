@@ -175,3 +175,10 @@ lleva el foco a `main`), **D3** (orden visual igual al de foco a 360 px).
 
 Sin hacer: **M1, M4, B4, D1, D6** (lógica y arranque: los resolvió el programador o están anotados), **B5** (el «Atrás» tras cambiar de perfil es del enrutador:
 `replaceState` en `leerUbicacion`), **D2** (clic afuera no cierra: se deja como está, `diseno-ui.md` 5.17 no lo pide), **D4, D5, D7** (no son de la vista).
+
+## Estado de las correcciones de la lógica, segunda tanda (programador, 18/11/2026)
+
+Corregido: **B5** (`cambiarPerfil` reemplaza la entrada del historial en vez de agregar otra; queda el límite de las entradas visitadas antes del cambio, anotado en
+`docs/diseno.md`), **D6** en su alternativa barata (`cambiarPerfil` se niega con `cambios-en-otra-pestana` mientras `hayCambiosEnOtraPestana`; la solución completa,
+una operación atómica en el repositorio, sigue pendiente). Además, el hueco que el propio QA encontró después de M4: una lista guardada con elementos dañados
+(`unidades = [1, null]`) dejaba la fase en `lista` y `calcularAlertas` fallaba al dibujar; ahora cuenta como esquema inválido (D7) y se regenera el ejemplo con aviso.
