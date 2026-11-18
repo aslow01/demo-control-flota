@@ -87,3 +87,17 @@ el pedido de borrado sigue pendiente en el navegador y puede ejecutarse más tar
 16. **Sin pruebas de interfaz**: ~2400 líneas de componentes y el foco/trampa de Tab/Esc de `Dialogo` se verifican solo a mano, y por eso pasaron 1 y 2. Un humo con Playwright (touch y teclado) en CI, aunque sea manual, o un caso en la lista de `diseno-ui.md` sección 12.
 17. **`scripts/contraste.mjs`** recorta el CSS con `indexOf("\n  }\n")`: se rompe si cambia la indentación de `tokens.css`; fallar con un mensaje claro si no encuentra los bloques.
 18. Nombre `reiniciar` para el booleano del diálogo en `App.svelte:35` choca en la lectura con `app.reiniciar()`; `diálogoReiniciarAbierto` o similar.
+
+## Estado de las correcciones de la vista (maquetador, 18/11/2026)
+
+Corregido: **1** (`BotonConfirmar` solo desarma con `pointerleave` de mouse, vence a los 4 s; probado con toque y con mouse), **2** (Esc en `keydown`;
+Esc ×5 con cambios no cierra; red de seguridad si el navegador cierra solo), **3** (`bloqueado`: sin Esc, X ni Cancelar mientras reinicia),
+**4** (el anuncio se vacía, se escribe 250 ms después de cerrar y se limpia a los 6 s; se anuncia en el 1.º, 2.º y 3.º reinicio),
+**7** (comentarios de `Dialogo` y `Panel`), **8** (foco al `h1` si el reinicio cambió de pantalla), **9** (el error de «Encargado» se limpia al
+elegir conductor), **10** (el selector ya no parpadea: son botones sin estado propio), **11** (`untrack` y `bind:this`), **14** (`scrollbar-gutter`
+en 40 rem o más), **17** (`contraste.mjs` falla con mensaje claro), **18** (nombres de los booleanos de diálogo). También B2 del QA
+(contador de diálogos apilados).
+
+Queda para el programador o sin hacer: **5** y **6** (los resolvió la lógica: se quitó el reinicio desde `error`), **12** (test que compare los textos con
+las reglas), **13** (`enrutador.ts` debería exportar el nombre sin sufijo), **15** (hecho en la lógica), **16** (humo de interfaz con Playwright en CI: no se
+agregó; las comprobaciones de touch y teclado se hicieron a mano con scripts fuera del repositorio).

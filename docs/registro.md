@@ -1,5 +1,26 @@
 # Registro
 
+## 18/11/2026 (noche, 5) — Revisiones de 3.2 a 3.4: correcciones de la vista (maquetador)
+
+**Qué se hizo.** Todo lo que cae en `src/componentes/`, `src/App.svelte` y `src/estilos/`; sin tocar la lógica. Cada informe de revisión lleva al final su
+sección «Estado de las correcciones».
+
+| Qué | Cómo quedó |
+| --- | --- |
+| `BotonConfirmar` (revisión 1, QA A1) | Con toque confirma: `pointerleave` solo desarma con mouse; también desarma con Esc, al mover el foco y a los 4 s. |
+| `Dialogo` (revisión 2, 3, 7; QA M2, M3, B2, B3, B6) | Esc en `keydown` (Esc ×5 con cambios no cierra); `bloqueado` mientras hay una acción en curso (Esc, X y Cancelar); contador de diálogos para el bloqueo del fondo; `focoInicial="titulo"`; cuerpo como región con nombre y enfocable solo si desborda; el segundo clic de un doble clic no atraviesa; en alturas bajas todo el cuadro se desplaza. |
+| Avisos (accesibilidad A2, A3, M1, M4) | Región `.avisos` con `role="status"` siempre presente y avisos sin rol propio (`alert` solo para el error de cambiar de vista); «Demo reiniciada» se vacía, se escribe 250 ms después de cerrar el diálogo y se limpia a los 6 s (se anuncia en cada reinicio); «Flota de ejemplo lista.» tras «Preparando…»; foco al aviso siguiente o al `h1` al cerrar un aviso y tras «Actualizar». |
+| Selector de perfil (accesibilidad A1, M2; revisión 10) | Dos botones con `aria-pressed` (no radios): la flecha no abre el diálogo; «Conductor…» con descripción previa; a menos de 40 rem va debajo de las pestañas (orden visual = orden de foco). |
+| Bajos | `main` con `tabindex="-1"` («Ir al contenido» en el arranque); colores forzados sin sombra; foco al `h1` si el reinicio cambia de pantalla; `scrollbar-gutter: stable` desde 40 rem; `contraste.mjs` robusto y con el borde del secundario sobre los avisos (158 mediciones, 0 fallan, 9 justas). |
+| Textos (`textos-marco.ts`) | Los 2 necesarios y los opcionales de la revisión del marco, más «Cambiar conductor», «Ver como este conductor» y «Más de 30 días: Sin alerta.». |
+
+**Verificación.** `npm test` 678, `npm run check` 0 errores, `npm run buscar` sin hallazgos, `npm run build` y el build servido con la CSP real sin violaciones
+(touch a 320 y 360, mouse a 1280, claro y oscuro, D8 real). En desarrollo con Playwright: toque y mouse en `BotonConfirmar`, Esc ×5, bloqueo del reinicio, anuncio en 3 reinicios
+con `MutationObserver`, doble clic (1 clic llega al documento), pila de diálogos, orden de Tab, foco tras cerrar avisos, «Preparando…» y colores forzados.
+
+**Sin hacer.** Humo de interfaz con Playwright en CI; que `enrutador.ts` exporte el nombre de la pantalla sin sufijo; el «Atrás» tras cambiar de perfil (enrutador); clic afuera para
+cerrar diálogos (la especificación no lo pide); prueba con lector de pantalla real, Firefox y Safari.
+
 ## 18/11/2026 (noche, 4) — Revisiones de 3.2 a 3.4: correcciones de la lógica (programador)
 
 **Qué se hizo.** Se commitearon los cuatro informes (`docs/revision-codigo-…`, `qa-…`, `accesibilidad-…`, `revision-textos-marco-…`) y se

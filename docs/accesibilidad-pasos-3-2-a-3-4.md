@@ -103,3 +103,16 @@ Pasa sin hallazgos: contraste de texto y de componentes (el peor texto medido es
 - `D:\demo-control-flota\src\componentes\Aviso.svelte` (`role` propio)
 - `D:\demo-control-flota\src\componentes\Dialogo.svelte` (foco inicial, `.cuerpo`)
 - `D:\demo-control-flota\src\componentes\DialogoComoFunciona.svelte`
+
+## Estado de las correcciones (maquetador, 18/11/2026)
+
+Corregidos **todos**: **A1** (se quitó `order: -1`: a 360 px el selector va debajo de las pestañas y el orden visual es el de foco), **A2** (región `.avisos` con
+`role="status"` siempre presente, avisos adentro sin rol propio; `alert` solo para el error de cambiar de vista), **A3** (anuncio vaciado, escrito 250 ms después de
+cerrar el diálogo y restaurar el foco, limpiado a los 6 s; verificado en el 1.º, 2.º y 3.º reinicio), **M1** (el foco pasa al aviso siguiente o anterior, y si no hay, al `h1`;
+tras «Actualizar», al `h1`), **M2** (el selector son dos botones con `aria-pressed`, la flecha no abre nada, «Conductor…» con puntos suspensivos y descripción
+«Al elegir «Conductor» se abre una lista…»), **M3** (foco inicial en el `h2` de «Cómo funciona»), **M4** («Flota de ejemplo lista.» si «Preparando…» llegó a mostrarse),
+**B1** (`main` con `tabindex="-1"`), **B2** (cuerpo con `role="region"` con nombre y `tabindex="0"` solo si desborda), **B3** (la región se vacía a los 6 s), **B4**
+(en alturas menores de 30 rem todo el cuadro se desplaza y el pie queda al final), **B5** (`box-shadow: none` en colores forzados), **B6** (`contraste.mjs` mide el
+borde del botón secundario sobre los avisos). También: radios del diálogo de conductores a 24 px.
+
+**Sigue pendiente de verificación real:** NVDA y VoiceOver (el anuncio se verificó con `MutationObserver` y por el árbol de accesibilidad, no con un lector).

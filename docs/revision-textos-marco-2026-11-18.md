@@ -59,3 +59,11 @@ Alcance: `src/componentes/textos-marco.ts` completo (`TEXTO_MARCO`, `TEXTO_DIALO
 ## Resumen de cantidad
 
 12 filas con cambio propuesto: 2 necesarias (`reglas[0]`, `parte`) y 10 opcionales.
+
+## Estado de las correcciones (maquetador, 18/11/2026)
+
+Aplicados en `src/componentes/textos-marco.ts`: los 2 **N** (`reglas[0]`: distingue documento de la unidad y del conductor; `parte`: resolver la novedad y volver a poner
+en servicio) y los **O**: `reglas[1]` (7 días, A2), `reglas[3]` («Vence dentro del mes.»), fila nueva «Más de 30 días: Sin alerta.», `datos` («Los datos que usted carga…»),
+`verComo`, «Cambiar» → «Cambiar conductor», «Continuar» → «Ver como este conductor», `pantallaEnPreparacion` («…no está disponible.»). Decisiones del dueño: `parte` dice
+«Está pensada para usarse desde el celular» y no lo afirma como hecho; «Entendido» se conserva. No se aplicó el «No se puede deshacer.» opcional de la descripción
+del reinicio. Textos nuevos: `ayudaPerfilConductor` y `listo`.

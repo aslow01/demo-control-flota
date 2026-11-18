@@ -165,3 +165,13 @@ Doble y triple clic en «Continuar» y en «Reiniciar demo»: una sola escritura
 - Cuota de almacenamiento llena de verdad (solo se simuló con excepciones).
 - Las cabeceras de Cloudflare Pages reales (se usó la copia local de `servir-dist.mjs`).
 - `BotonConfirmar` y `hayCambios` solo en `/muestras.html`; los flujos con datos modificados llegan con la Etapa 4.
+
+## Estado de las correcciones de la vista (maquetador, 18/11/2026)
+
+Corregido: **A1** (toque), **M2** (bloqueo mientras reinicia), **M3** (Esc ×5), **M5** (anuncio repetible, comprobado con un `MutationObserver`: 3 anuncios en 3
+reinicios), **B1** (foco tras cerrar un aviso y tras «Actualizar»), **B2** (contador de diálogos apilados), **B3** (el segundo clic de un doble clic ya no atraviesa:
+1 clic llega al documento), **B6** (cuerpo del diálogo como región con nombre, enfocable solo si desborda), **B7** («Ir al contenido» durante el arranque
+lleva el foco a `main`), **D3** (orden visual igual al de foco a 360 px).
+
+Sin hacer: **M1, M4, B4, D1, D6** (lógica y arranque: los resolvió el programador o están anotados), **B5** (el «Atrás» tras cambiar de perfil es del enrutador:
+`replaceState` en `leerUbicacion`), **D2** (clic afuera no cierra: se deja como está, `diseno-ui.md` 5.17 no lo pide), **D4, D5, D7** (no son de la vista).
