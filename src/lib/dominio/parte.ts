@@ -1,8 +1,8 @@
 // Parte diario (P2, P4, P5, P9 a P11, P13) y advertencias de envío (K6, K7, P9).
 
-import { diasEntre, parsearFechaCivil } from "./fechas.ts";
-import { advertenciasDeKm, type EntradaKm } from "./kilometraje.ts";
-import { ERRORES, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos } from "./textos.ts";
+import { diasEntre, parsearFechaCivil, parsearInstante } from "./fechas.ts";
+import { KM_MAXIMO, advertenciasDeKm, type EntradaKm } from "./kilometraje.ts";
+import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos } from "./textos.ts";
 import { hayDocumentoQueAmpare, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 import {
   fallo,
@@ -13,6 +13,7 @@ import {
   type FechaCivil,
   type Instante,
   type ItemChecklist,
+  type NivelCombustible,
   type Parte,
   type Perfil,
   type Proyecto,
@@ -43,6 +44,7 @@ export const ITEMS_CHECKLIST: readonly ItemInfo[] = [
 ];
 
 export const DIAS_ATRAS_PARTE = 7;
+const NIVELES: readonly NivelCombustible[] = ["reserva", "cuarto", "medio", "tres-cuartos", "lleno"];
 export const LITROS_MAXIMO = 200;
 export const DESCRIPCION_MINIMO = 3;
 export const DESCRIPCION_MAXIMO = 500;
@@ -235,7 +237,8 @@ export function nuevoBorrador(entrada: EntradaBorrador): Parte {
  * completados por P13): guardarlo o descartarlo no cuenta como un cambio del visitante.
  */
 export function esBorradorVacio(parte: Parte, kmActualDeLaUnidad: number | null): boolean {
-  const sinRespuestas = ITEMS_CHECKLIST.every((i) => parte.checklist[i.id].estado === "sin-responder");
+  // `?.`: un borrador con la forma rota (almacenamiento editado a mano) no es «vacío», pero tampoco tiene que impedir descartarlo.
+  const sinRespuestas = ITEMS_CHECKLIST.every((i) => (parte.checklist as Partial<Parte["checklist"]> | undefined)?.[i.id]?.estado === "sin-responder");
   const kmInicioPropio = parte.kmInicio !== null && parte.kmInicio !== kmActualDeLaUnidad;
   return (
     sinRespuestas &&
@@ -245,4 +248,90 @@ export function esBorradorVacio(parte: Parte, kmActualDeLaUnidad: number | null)
     parte.litrosCargados === null &&
     parte.otraNovedad === null
   );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Lectura tolerante de un parte guardado
+// ---------------------------------------------------------------------------------------------
+
+function esObjeto(valor: unknown): valor is Record<string, unknown> {
+  return typeof valor === "object" && valor !== null && !Array.isArray(valor);
+}
+
+function kmLegible(valor: unknown): number | null {
+  return typeof valor === "number" && Number.isInteger(valor) && valor >= 0 && valor <= KM_MAXIMO ? valor : null;
+}
+
+function tipoDeDocumentoLegible(valor: unknown): valor is TipoDocumento {
+  return typeof valor === "string" && Object.hasOwn(NOMBRES_DOCUMENTO, valor);
+}
+
+function respuestaLegible(valor: unknown): RespuestaItem {
+  if (!esObjeto(valor)) return { estado: "sin-responder" };
+  if (valor["estado"] === "en-orden") return { estado: "en-orden" };
+  if (valor["estado"] === "con-novedad") {
+    return {
+      estado: "con-novedad",
+      descripcion: typeof valor["descripcion"] === "string" ? valor["descripcion"] : "",
+      impideUso: valor["impideUso"] === true,
+    };
+  }
+  return { estado: "sin-responder" };
+}
+
+function advertenciaLegible(valor: unknown): Advertencia | null {
+  if (!esObjeto(valor)) return null;
+  const km = valor["km"];
+  if ((valor["tipo"] === "salto-km" || valor["tipo"] === "recorrido-largo") && typeof km === "number" && Number.isFinite(km)) {
+    return { tipo: valor["tipo"], km };
+  }
+  if (valor["tipo"] === "documentacion-vencida" && Array.isArray(valor["documentos"])) {
+    return { tipo: "documentacion-vencida", documentos: valor["documentos"].filter(tipoDeDocumentoLegible) };
+  }
+  return null;
+}
+
+function instanteLegible(valor: unknown): string | null {
+  return typeof valor === "string" && parsearInstante(valor) !== null ? valor : null;
+}
+
+/**
+ * Lo que se puede leer de un parte guardado. Los datos del almacenamiento son entrada externa (se pueden editar desde las herramientas del navegador, o
+ * venir de otra versión del código que pasó la revisión mínima de D7): las pantallas del parte pasan todo por acá y nunca ven un campo con la forma rota.
+ * Lo que no se puede leer queda vacío (`null`, «sin responder», lista vacía; un instante ilegible queda `""`): no se inventa nada. `null` si no hay ni
+ * identificador, unidad, fecha o estado: ese registro no es un parte.
+ */
+export function parteLegible(crudo: unknown): Parte | null {
+  if (!esObjeto(crudo)) return null;
+  const { id, unidadId, fecha, estado } = crudo;
+  if (typeof id !== "string" || id === "" || typeof unidadId !== "string" || typeof fecha !== "string" || parsearFechaCivil(fecha) === null) return null;
+  if (estado !== "borrador" && estado !== "enviado") return null;
+
+  const lista = esObjeto(crudo["checklist"]) ? crudo["checklist"] : {};
+  const checklist = {} as Parte["checklist"];
+  for (const item of ITEMS_CHECKLIST) checklist[item.id] = respuestaLegible(lista[item.id]);
+
+  const otra = crudo["otraNovedad"];
+  const litros = crudo["litrosCargados"];
+  const combustible = crudo["combustible"];
+  return {
+    id,
+    unidadId,
+    fecha,
+    conductorId: typeof crudo["conductorId"] === "string" ? crudo["conductorId"] : null,
+    estado,
+    kmInicio: kmLegible(crudo["kmInicio"]),
+    kmFin: kmLegible(crudo["kmFin"]),
+    combustible: typeof combustible === "string" && NIVELES.includes(combustible as NivelCombustible) ? (combustible as NivelCombustible) : null,
+    litrosCargados: typeof litros === "number" && validarLitros(litros).ok ? litros : null,
+    checklist,
+    otraNovedad:
+      esObjeto(otra) && typeof otra["descripcion"] === "string" ? { descripcion: otra["descripcion"], impideUso: otra["impideUso"] === true } : null,
+    advertenciasAceptadas: Array.isArray(crudo["advertenciasAceptadas"]) ? crudo["advertenciasAceptadas"].map(advertenciaLegible).filter((a): a is Advertencia => a !== null) : [],
+    documentacionVencida: Array.isArray(crudo["documentacionVencida"]) ? crudo["documentacionVencida"].filter(tipoDeDocumentoLegible) : [],
+    creado: instanteLegible(crudo["creado"]) ?? "",
+    actualizado: instanteLegible(crudo["actualizado"]) ?? "",
+    enviado: instanteLegible(crudo["enviado"]),
+    autor: typeof crudo["autor"] === "string" ? crudo["autor"] : "",
+  };
 }

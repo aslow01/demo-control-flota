@@ -358,6 +358,10 @@ describe("enviar el parte (P4, P12, K2, K3)", () => {
     const uid = idDe(app, "ZYN469");
     const v = completo(edicion(app).valoresIniciales);
     v.checklist.frenos = { respuesta: "con-novedad", descripcion: "Pedal blando y ruido al frenar", impideUso: false };
+    await app.cambiarPerfil({ tipo: "encargado" });
+    const horizonteAntes = JSON.stringify(app.centroDeAlertas?.vencimientos.horizonte);
+    const criticasAntes = app.centroDeAlertas?.operacion.filas.find((f) => f.tipo === "novedad-critica")?.cifra ?? 0;
+    await app.cambiarPerfil(C01);
     const r = await app.enviarParte(uid, H, v);
     expect(r.tipo).toBe("enviado");
     if (r.tipo !== "enviado") return;
@@ -372,6 +376,9 @@ describe("enviar el parte (P4, P12, K2, K3)", () => {
     expect(protagonista?.items.find((i) => i.patente === "ZYN469")).toMatchObject({ categoria: "fuera-de-servicio", patenteTexto: "ZYN 469" });
     expect(app.alertas?.resumen.fueraDeServicio.map((u) => u.patente)).toContain("ZYN469");
     expect(app.alertas?.alertas.some((a) => a.tipo === "novedad-critica" && a.unidadId === uid)).toBe(true);
+    expect(app.centroDeAlertas?.operacion.filas.find((f) => f.tipo === "novedad-critica")?.cifra).toBe(criticasAntes + 1);
+    // El parte no toca los vencimientos: el Horizonte queda igual.
+    expect(JSON.stringify(app.centroDeAlertas?.vencimientos.horizonte)).toBe(horizonteAntes);
     // Y es la pantalla de la unidad la que dice por qué.
     app.irA({ tipo: "unidad", patente: "ZYN469" });
     expect(app.fichaDeUnidad && app.fichaDeUnidad.encontrada && app.fichaDeUnidad.aptitud.categoria).toBe("fuera-de-servicio");
@@ -394,6 +401,35 @@ describe("enviar el parte (P4, P12, K2, K3)", () => {
     expect(r.tipo === "enviado" && r.panel.avisoCritica).toBeNull();
     expect(app.alertas?.resumen.protagonista).toBe(4);
     expect(eventos(app).slice(-2)).toEqual(["parte-enviado", "novedad-abierta"]);
+  });
+
+  it("un salto absurdo (de 120.720 a 1.500.000 km) no es un error: pide aceptar la advertencia y, aceptada, queda registrado como kilometraje actual", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    const uid = idDe(app, "ZYN469");
+    const v = completo(edicion(app).valoresIniciales, { kmInicio: "1.500.000", kmFin: "1.500.100" });
+    const r = await app.enviarParte(uid, H, v);
+    expect(r.tipo === "advertencias" && r.advertencias[0]?.texto).toBe("1.379.280 km sin registrar desde el último parte");
+    expect((await app.enviarParte(uid, H, v, ["salto-km"])).tipo).toBe("enviado");
+    expect(app.inicioDelConductor()?.unidad?.ultimoRegistro).toBe("Último registro: 1.500.100 km (parte del 18/11/2026).");
+  });
+
+  it("más de 2.000.000 km es un error de formato, no una advertencia", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    const r = await app.enviarParte(idDe(app, "ZYN469"), H, completo(edicion(app).valoresIniciales, { kmInicio: "2.000.001", kmFin: "2.000.100" }));
+    expect(r.tipo === "errores" && r.errores.porCampo.kmInicio).toBe("El kilometraje no puede superar 2.000.000 km.");
+  });
+
+  it("encargado y una unidad sin conductor asignado (ZW 827 VD): hay que elegir quién conduce; con uno elegido, se envía a su nombre", async () => {
+    const { app } = await iniciada({ patente: "ZW827VD" });
+    const uid = idDe(app, "ZW827VD");
+    const v = edicion(app);
+    expect(v.valoresIniciales.conductorId).toBe("");
+    const sin = await app.enviarParte(uid, H, completo(v.valoresIniciales));
+    expect(sin.tipo === "errores" && sin.errores.lista[0]).toEqual({ campo: "conductor", mensaje: "Elija quién conduce la unidad." });
+    expect(sin.tipo === "errores" && sin.primerCampo).toBe("conductor");
+    const con = await app.enviarParte(uid, H, completo(v.valoresIniciales, { conductorId: "c-02" }));
+    expect(con.tipo).toBe("enviado");
+    expect(estadoDe(app).partes.find((p) => p.unidadId === uid && p.fecha === H)).toMatchObject({ conductorId: "c-02", autor: "Rocío Medina", estado: "enviado" });
   });
 
   it("K6: un salto de más de 1.000 km pide aceptar la advertencia; el borrador queda y al aceptar se envía", async () => {

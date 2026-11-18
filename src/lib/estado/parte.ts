@@ -4,11 +4,11 @@
 
 import type { ResultadoAlertas } from "../dominio/alertas.ts";
 import { aptitud } from "../dominio/aptitud.ts";
-import { diasEntre, fechaEnArgentina, formatearFecha, formatearHora, formatearInstante } from "../dominio/fechas.ts";
+import { diasEntre, fechaEnArgentina, formatearFecha, formatearHora, formatearInstante, parsearInstante } from "../dominio/fechas.ts";
 import { opcionesDeConductor, type OpcionDeConductor } from "../dominio/formulario.ts";
-import { OPCIONES_COMBUSTIBLE, valoresDeParte, valoresIniciales, type ValoresParte } from "../dominio/formulario-parte.ts";
+import { OPCIONES_COMBUSTIBLE, faltantesDeValores, valoresDeParte, valoresIniciales, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { describirRegistro, kmDeRegistro, registroAnterior, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
-import { ITEMS_CHECKLIST, faltantesParaEnviar, novedadesDelParte, validarFechaParte } from "../dominio/parte.ts";
+import { ITEMS_CHECKLIST, novedadesDelParte, parteLegible, validarFechaParte } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import {
   NOMBRES_COMBUSTIBLE,
@@ -130,8 +130,15 @@ function hrefDelParte(unidad: Unidad, fecha: FechaCivil): string {
   return aHash({ tipo: "parte", patente: unidad.patente, fecha });
 }
 
+/** Los datos del almacenamiento son entrada externa: todo parte pasa por `parteLegible` antes de dibujarlo (uno que no se puede leer no existe). */
 function parteDe(estado: Estado, unidadId: string, fecha: FechaCivil): Parte | undefined {
-  return estado.partes.find((p) => p.unidadId === unidadId && p.fecha === fecha);
+  const crudo = estado.partes.find((p) => p.unidadId === unidadId && p.fecha === fecha);
+  return crudo === undefined ? undefined : (parteLegible(crudo) ?? undefined);
+}
+
+/** `14:32`, o `null` si el instante guardado no se puede leer. */
+function horaDe(instante: string | null): string | null {
+  return instante !== null && parsearInstante(instante) !== null ? formatearHora(instante) : null;
 }
 
 function textoDeNoPuedeSalir(estado: Estado, unidad: Unidad, hoy: FechaCivil, alConductor: boolean): string | null {
@@ -177,11 +184,12 @@ export function inicioDelConductor(
     const delDia = parteDe(estado, unidad.id, hoy);
     const href = hrefDelParte(unidad, hoy);
     if (delDia?.estado === "enviado") {
-      hoyEstado = { tipo: "enviado", etiqueta: textoEnviadoALas(formatearHora(delDia.enviado ?? delDia.actualizado)), enlace: { texto: TI.verParte, href } };
+      const hora = horaDe(delDia.enviado ?? delDia.actualizado);
+      hoyEstado = { tipo: "enviado", etiqueta: hora === null ? TI.enviado : textoEnviadoALas(hora), enlace: { texto: TI.verParte, href } };
     } else if (delDia !== undefined) {
       hoyEstado = {
         tipo: "borrador",
-        texto: textoBorradorDelConductor(faltantesParaEnviar(delDia).length),
+        texto: textoBorradorDelConductor(faltantesDeValores(valoresDeParte(delDia)).length),
         primario: { texto: TI.continuar, href },
         descartar: { texto: TI.descartar, parteId: delDia.id },
       };
@@ -193,8 +201,9 @@ export function inicioDelConductor(
   // Pendientes: borradores de días anteriores (de la unidad asignada o empezados por este conductor) y los días sin parte de las unidades asignadas.
   const idsAsignadas = new Set(asignadas.map((u) => u.id));
   const pendientes: (PendienteDelConductor & { fecha: FechaCivil })[] = [];
-  for (const p of estado.partes) {
-    if (p.estado !== "borrador" || p.fecha >= hoy) continue;
+  for (const crudo of estado.partes) {
+    const p = parteLegible(crudo);
+    if (p === null || p.estado !== "borrador" || p.fecha >= hoy) continue;
     if (p.conductorId !== conductor.id && !idsAsignadas.has(p.unidadId)) continue;
     const u = estado.unidades.find((x) => x.id === p.unidadId);
     if (u === undefined || u.estado.tipo === "baja") continue;
@@ -222,6 +231,7 @@ export function inicioDelConductor(
 
   // Mis últimos partes.
   const filas: FilaDeParteReciente[] = estado.partes
+    .flatMap((crudo) => parteLegible(crudo) ?? [])
     .filter((p) => p.estado === "enviado" && p.conductorId === conductor.id && p.kmInicio !== null && p.kmFin !== null)
     .sort((a, b) => (a.fecha !== b.fecha ? (a.fecha < b.fecha ? 1 : -1) : (b.enviado ?? "") < (a.enviado ?? "") ? -1 : 1))
     .slice(0, MAXIMO_ULTIMOS_PARTES)
@@ -345,7 +355,7 @@ export interface ParteEnEdicion {
   /** El id del borrador guardado; `null` si todavía no se guardó nada (se crea con el primer cambio). */
   parteId: string | null;
   /** Un borrador que ya existía al abrir (por ejemplo, tras recargar): cuándo se guardó. */
-  borrador: { guardadoEl: string; hora: string; mensaje: string } | null;
+  borrador: { guardadoEl: string | null; hora: string | null; mensaje: string } | null;
   /** Perfil Conductor: el conductor es quien completa (texto fijo). Perfil Encargado: un `select`. */
   conductor: { tipo: "fijo"; id: string; nombre: string } | { tipo: "elegir"; etiqueta: string; opciones: OpcionDeConductor[] };
   /**
@@ -382,15 +392,14 @@ function nombreDelPunto(item: ItemChecklist | "otra"): string {
   return item === "otra" ? "Otra novedad" : (ITEMS_CHECKLIST.find((i) => i.id === item)?.texto ?? item);
 }
 
-/** El panel «Parte enviado» de un parte enviado. */
-export function panelDeParteEnviado(estado: Estado, parte: Parte, perfil: Perfil): PanelParteEnviado {
+/** El panel «Parte enviado» de un parte enviado. Un parte con la forma rota se lee con `parteLegible`: lo que no se puede leer se muestra como «—», sin inventar nada. */
+export function panelDeParteEnviado(estado: Estado, entrada: Parte, perfil: Perfil): PanelParteEnviado {
+  const parte = parteLegible(entrada) ?? entrada;
   const unidad = estado.unidades.find((u) => u.id === parte.unidadId);
   const patente = unidad === undefined ? "" : formatearPatente(unidad.patente);
-  const instante = parte.enviado ?? parte.actualizado;
-  const diaDeEnvio = fechaEnArgentina(instante);
-  const fueraDeTermino = diasEntre(parte.fecha, diaDeEnvio) > 0;
-  const inicio = parte.kmInicio ?? 0;
-  const fin = parte.kmFin ?? inicio;
+  const instante = parte.enviado ?? (parte.actualizado === "" ? null : parte.actualizado);
+  const diaDeEnvio = instante === null ? null : fechaEnArgentina(instante);
+  const fueraDeTermino = diaDeEnvio !== null && diasEntre(parte.fecha, diaDeEnvio) > 0;
 
   const novedades = novedadesDelParte(parte);
   const criticas = novedades.filter((n) => n.gravedad === "critica").map((n) => nombreDelPunto(n.item));
@@ -398,9 +407,9 @@ export function panelDeParteEnviado(estado: Estado, parte: Parte, perfil: Perfil
 
   return {
     titulo: TP.enviado,
-    linea: textoLineaParteEnviado(patente, parte.fecha, diaDeEnvio, formatearHora(instante)),
+    linea: textoLineaParteEnviado(patente, parte.fecha, diaDeEnvio, horaDe(instante)),
     filas: [
-      { rotulo: TP.rotulos.recorrido, valor: `${textoRecorrido(fin - inicio)} (${textoRangoKm(inicio, fin)})` },
+      { rotulo: TP.rotulos.recorrido, valor: parte.kmInicio === null || parte.kmFin === null ? TEXTO_FORMULARIO_PARTE.sinRecorrido : `${textoRecorrido(parte.kmFin - parte.kmInicio)} (${textoRangoKm(parte.kmInicio, parte.kmFin)})` },
       { rotulo: TP.rotulos.combustible, valor: parte.combustible === null ? TEXTO_FORMULARIO_PARTE.sinRecorrido : NOMBRES_COMBUSTIBLE[parte.combustible] },
       { rotulo: TP.rotulos.litros, valor: parte.litrosCargados === null ? TP.noCargo : `Cargó ${textoLitros(parte.litrosCargados)}` },
       { rotulo: TP.rotulos.novedades, valor: textoNovedadesDelParte(criticas, normales) },
@@ -427,6 +436,17 @@ function lecturaDe(estado: Estado, unidad: Unidad, parte: Parte, perfil: Perfil)
     puntosEnOrden: enOrden.length === 0 ? null : textoPuntosEnOrdenConNombres(enOrden),
     novedades: novedadesDelParte(parte).map((n) => ({ rotulo: nombreDelPunto(n.item), texto: n.descripcion, critica: n.gravedad === "critica" })),
     vuelta: enlaceDeVuelta(perfil, unidad),
+  };
+}
+
+/** Cuándo se guardó el borrador que se retoma; sin un instante legible, solo «Borrador recuperado.» */
+function borradorRecuperado(p: Parte): NonNullable<ParteEnEdicion["borrador"]> {
+  const hora = horaDe(p.actualizado === "" ? null : p.actualizado);
+  if (hora === null) return { guardadoEl: null, hora: null, mensaje: TEXTO_GUARDADO.recuperadoSinFecha };
+  return {
+    guardadoEl: formatearInstante(p.actualizado),
+    hora,
+    mensaje: TEXTO_GUARDADO.recuperado(formatearFecha(fechaEnArgentina(p.actualizado)), hora),
   };
 }
 
@@ -495,14 +515,7 @@ export function vistaDeParte(estado: Estado, hoy: FechaCivil, perfil: Perfil, pa
     avisoFueraDeTermino: fecha < hoy ? TEXTO_FORMULARIO_PARTE.fueraDeTermino(fecha) : null,
     avisoAptitud: aviso,
     parteId: existente?.id ?? null,
-    borrador:
-      existente === undefined
-        ? null
-        : {
-            guardadoEl: formatearInstante(existente.actualizado),
-            hora: formatearHora(existente.actualizado),
-            mensaje: TEXTO_GUARDADO.recuperado(formatearFecha(fechaEnArgentina(existente.actualizado)), formatearHora(existente.actualizado)),
-          },
+    borrador: existente === undefined ? null : borradorRecuperado(existente),
     conductor,
     valoresIniciales: valores,
     ayudaKmInicio: previo === null ? TEXTO_FORMULARIO_PARTE.ayudaPrimerRegistro : textoUltimoRegistro(kmDeRegistro(previo), describirRegistro(previo)),

@@ -958,6 +958,8 @@ export const TEXTO_GUARDADO = {
   anuncioConErroresDeCampo: "Hay datos que no se pueden guardar: revise los campos marcados.",
   /** Un borrador que ya existía al abrir el parte (sobrevivió a una recarga). */
   recuperado: (fecha: string, hora: string) => `Borrador recuperado, guardado en este equipo el ${fecha} a las ${hora}.`,
+  /** El instante guardado no se puede leer (almacenamiento con la forma rota): no se inventa una hora. */
+  recuperadoSinFecha: "Borrador recuperado.",
 } as const;
 
 // ---------------------------------------------------------------------------------------------
@@ -969,6 +971,7 @@ export const TEXTO_INICIO_CONDUCTOR = {
   continuar: "Continuar el parte",
   descartar: "Descartar borrador",
   verParte: "Ver el parte",
+  enviado: "Enviado",
   usarOtra: "Usar otra unidad",
   elegirUnidad: "Elija la unidad",
   continuarPendiente: "Continuarlo",
@@ -1045,8 +1048,9 @@ export const TEXTO_PANTALLA_PARTE = {
   rotulos: { recorrido: "Recorrido", combustible: "Combustible", litros: "Combustible cargado", novedades: "Novedades" },
 } as const;
 
-/** Línea del panel «Parte enviado»: «ZK 214 BD, 18/11/2026, enviado a las 18:42.»; fuera de término, con el día del envío. */
-export function textoLineaParteEnviado(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil, hora: string): string {
+/** Línea del panel «Parte enviado»: «ZK 214 BD, 18/11/2026, enviado a las 18:42.»; fuera de término, con el día del envío. Sin hora legible: «ZK 214 BD, 16/11/2026, enviado.» */
+export function textoLineaParteEnviado(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil | null, hora: string | null): string {
+  if (diaDeEnvio === null || hora === null) return `${patente}, ${formatearFecha(fecha)}, enviado.`;
   if (fecha === diaDeEnvio) return `${patente}, ${formatearFecha(fecha)}, enviado a las ${hora}.`;
   return `${patente}, ${formatearFecha(fecha)}, enviado el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de término).`;
 }
