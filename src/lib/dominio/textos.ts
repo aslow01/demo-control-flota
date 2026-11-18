@@ -914,3 +914,48 @@ export function textoUnidadDadaDeBaja(patente: string): string {
 export function textoLitros(litros: number | null): string {
   return litros === null ? TEXTO_FICHA.historial.sinCarga : `${String(litros).replace(".", ",")} ${litros === 1 ? "litro" : "litros"}`;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Formulario del parte (docs/diseno-ui.md, 5.12 a 5.15 y 6.5; paso 4.5). `redactor-ux` los revisa.
+// ---------------------------------------------------------------------------------------------
+
+export const TEXTO_FORMULARIO_PARTE = {
+  /** P4: lo que falta, con el mensaje que va sobre el campo y en el resumen de arriba (5.15). */
+  faltante: {
+    conductor: "Elija quién conduce la unidad.",
+    kmInicio: "Escriba el kilometraje al iniciar.",
+    kmFin: "Escriba el kilometraje al terminar.",
+    combustible: "Elija el nivel de combustible.",
+    otraNovedad: "Cuente qué pasó en «Otra novedad» (al menos 3 caracteres) o déjela vacía.",
+  },
+  itemSinResponder: (punto: string) => `Elija una opción para ${punto}.`,
+  itemSinDescripcion: (punto: string) => `Cuente qué encontró en ${punto} (al menos 3 caracteres).`,
+  /** Título del resumen de errores: todo lo que hay son faltantes (P4), o hay también errores de reglas o de formato. */
+  tituloFaltan: (n: number) => `${textoFaltantes(n)} para enviar el parte`,
+  tituloRevise: (n: number) => `Revise ${pluralizar(n, "dato", "datos")} para enviar el parte`,
+  tituloGeneral: "No se pudo enviar el parte",
+  /** Barra de envío (5.14). */
+  barraLista: "Listo para enviar",
+  sinRecorrido: "—",
+  /** Ayudas de los campos (5.11). */
+  ayudaPrimerRegistro: "Es el primer registro de esta unidad.",
+  ayudaKmFin: "Complételo al final del día.",
+  ayudaLitros: "Deje vacío si no cargó.",
+  fueraDeTermino: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: se va a enviar fuera de término.`,
+  borradorDescartado: "Borrador descartado.",
+} as const;
+
+/** Indicador de guardado (5.15): lo que se ve y lo que se anuncia al lector (solo cuando cambia de estado, no en cada guardado). */
+export const TEXTO_GUARDADO = {
+  guardando: "Guardando…",
+  guardado: (hora: string) => `Guardado en este equipo a las ${hora}`,
+  /** P3: un dato con un error de formato no se guarda. */
+  conErroresDeCampo: "Sin guardar: corrija los campos marcados.",
+  /** D10 y 5.15: la escritura falló; lo escrito sigue en pantalla. */
+  error: "No se pudo guardar en este equipo. Lo escrito sigue en pantalla; no cierre la pestaña.",
+  anuncioGuardado: "Borrador guardado en este equipo.",
+  anuncioRecuperado: "Se volvió a guardar el borrador.",
+  anuncioConErroresDeCampo: "Hay datos que no se pueden guardar: revise los campos marcados.",
+  /** Un borrador que ya existía al abrir el parte (sobrevivió a una recarga). */
+  recuperado: (fecha: string, hora: string) => `Borrador recuperado, guardado en este equipo el ${fecha} a las ${hora}.`,
+} as const;

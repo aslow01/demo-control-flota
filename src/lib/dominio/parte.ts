@@ -95,8 +95,11 @@ function descripcionValida(texto: string): boolean {
   return largo >= DESCRIPCION_MINIMO && largo <= DESCRIPCION_MAXIMO;
 }
 
+/** Lo que P4 mira de un parte: sirve igual para un `Parte` guardado y para los valores de un formulario ya convertidos. */
+export type DatosParaEnviar = Pick<Parte, "conductorId" | "kmInicio" | "kmFin" | "checklist" | "combustible" | "otraNovedad">;
+
 /** P4: lo que falta para poder enviar el parte, en el orden del formulario. Vacío = se puede enviar. */
-export function faltantesParaEnviar(parte: Parte): CampoFaltante[] {
+export function faltantesParaEnviar(parte: DatosParaEnviar): CampoFaltante[] {
   const faltan: CampoFaltante[] = [];
   if (parte.conductorId === null) faltan.push("conductor");
   if (parte.kmInicio === null) faltan.push("kmInicio");
