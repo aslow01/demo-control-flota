@@ -19,6 +19,14 @@ html {
   scroll-padding-block: var(--e-4);
 }
 
+/* Con un diálogo abierto el fondo no se desplaza y la barra desaparece: en pantallas anchas el hueco queda reservado para que el diseño no se corra
+   (en el celular las barras se superponen y no ocupan lugar). */
+@media (min-width: 40rem) {
+  html {
+    scrollbar-gutter: stable;
+  }
+}
+
 body {
   margin: 0;
   background: var(--c-escritorio);
@@ -242,3 +250,4 @@ html.dialogo-abierto {
     scroll-behavior: auto !important;
   }
 }
+

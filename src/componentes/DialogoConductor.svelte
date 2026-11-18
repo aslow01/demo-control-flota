@@ -2,6 +2,7 @@
   // Diálogo "¿Quién completa el parte?" (5.2 y 5.17): lista de conductores activos (ficticios) con su unidad, en radios.
   // El foco inicial va al conductor elegido (o al primero). "Continuar" no se deshabilita: sin elección muestra el error en el diálogo.
   // Quien lo usa recibe la lista armada y hace el cambio de perfil (`alConfirmar`); si falla, `error` se muestra acá y el diálogo sigue abierto.
+  import { untrack } from "svelte";
   import Boton from "./Boton.svelte";
   import Dialogo from "./Dialogo.svelte";
   import Icono from "./Icono.svelte";
@@ -33,11 +34,13 @@
 
   let elegido = $state<string | null>(null);
   let sinElegir = $state(false);
+  let lista = $state<HTMLElement | null>(null);
 
   // Cada vez que se abre, parte del conductor actual y sin errores.
+  // `untrack`: si el perfil cambia con el diálogo abierto (al confirmar), no se reinicia lo elegido.
   $effect(() => {
     if (abierto) {
-      elegido = elegidoInicial;
+      elegido = untrack(() => elegidoInicial);
       sinElegir = false;
     }
   });
@@ -48,21 +51,21 @@
   function continuar(): void {
     if (elegido === null) {
       sinElegir = true;
-      document.querySelector<HTMLElement>("dialog[open] [data-foco-inicial]")?.focus();
+      lista?.querySelector<HTMLElement>("[data-foco-inicial]")?.focus();
       return;
     }
     alConfirmar(elegido);
   }
 </script>
 
-<Dialogo titulo={T.titulo} bind:abierto descripcionId={idAyuda} {focoDestino}>
+<Dialogo titulo={T.titulo} bind:abierto bloqueado={cargando} descripcionId={idAyuda} {focoDestino}>
   <p id={idAyuda} class="nota">{T.ayuda}</p>
   <fieldset aria-describedby={mensaje !== "" ? idError : undefined}>
     <legend class="nota">{T.leyenda}</legend>
     {#if mensaje !== ""}
       <p class="error" id={idError} role="alert"><Icono nombre="vencido" /><span>{mensaje}</span></p>
     {/if}
-    <ul class="lista">
+    <ul class="lista" bind:this={lista}>
       {#each conductores as c (c.id)}
         <li>
           <label class="opcion">
@@ -130,8 +133,8 @@
   }
   input {
     flex: none;
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
     margin: 0;
     accent-color: var(--c-acento);
   }

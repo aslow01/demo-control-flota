@@ -1,21 +1,45 @@
 <script lang="ts" module>
   // Safari y Firefox en Mac no enfocan un botón al hacer clic: sin esto, un diálogo abierto con el mouse no sabría a dónde devolver el foco.
   let ultimoPuntero: HTMLElement | null = null;
+  let ultimoPunteroEn = 0;
   if (typeof document !== "undefined") {
     document.addEventListener(
       "pointerdown",
       (evento) => {
         const blanco = evento.target;
         ultimoPuntero = blanco instanceof Element ? blanco.closest<HTMLElement>("button, a[href], [tabindex]") : null;
+        ultimoPunteroEn = performance.now();
       },
       true,
     );
   }
 
+  // Cuántos diálogos hay abiertos: el fondo recién se desbloquea cuando se cierra el último.
+  let abiertos = 0;
+  function bloquearFondo(bloquear: boolean): void {
+    abiertos = Math.max(0, abiertos + (bloquear ? 1 : -1));
+    document.documentElement.classList.toggle("dialogo-abierto", abiertos > 0);
+  }
+
   const ENFOCABLES = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const ABSORBER_CLICS_MS = 350;
 
   function enfocables(raiz: ParentNode): HTMLElement[] {
     return [...raiz.querySelectorAll<HTMLElement>(ENFOCABLES)].filter((e) => e.getClientRects().length > 0);
+  }
+
+  /**
+   * El segundo clic de un doble clic no tiene que caer sobre lo que había debajo del diálogo que acaba de cerrarse. Solo si el
+   * diálogo se cerró tras un toque o clic muy reciente: cerrarlo con el teclado no frena nada.
+   */
+  function absorberClics(): void {
+    if (performance.now() - ultimoPunteroEn > 800) return;
+    const absorber = (evento: Event): void => {
+      evento.stopPropagation();
+      evento.preventDefault();
+    };
+    document.addEventListener("click", absorber, true);
+    setTimeout(() => document.removeEventListener("click", absorber, true), ABSORBER_CLICS_MS);
   }
 </script>
 
@@ -24,10 +48,15 @@
   //  - >= 40 rem: centrado, ancho min(34 rem, 100% - 2 rem), alto máximo 85 %, barra de título con botón cerrar (44 × 44),
   //    interior con desplazamiento propio y pie con los botones a la izquierda, primario primero y después "Cancelar" (botón-texto).
   //  - < 40 rem: hoja a pantalla completa; pie fijo abajo con el primario a todo el ancho y "Cancelar" debajo.
-  //  - Foco al abrir: el primer campo (o el elemento con data-foco-inicial); en confirmaciones destructivas, "Cancelar" (`focoInicial="cancelar"`).
-  //    Al cerrar: vuelve al botón que lo abrió; si ya no existe, a `focoDestino()` o, si no, al h1 de la pantalla.
-  //  - Tab y Mayús+Tab dan la vuelta dentro del diálogo. Esc = Cancelar. El fondo no se desplaza.
+  //  - Foco al abrir: el primer campo (o el elemento con data-foco-inicial); `focoInicial="cancelar"` en confirmaciones destructivas;
+  //    `focoInicial="titulo"` en los que solo informan (se lee el nombre y se sigue desde el principio).
+  //    Al cerrar: va a `focoDestino()` si lo hay (por ejemplo, el h1 de la pantalla nueva o el h2 del panel); si no, vuelve al botón
+  //    que lo abrió; si ese ya no existe, al h1 de la pantalla.
+  //  - Tab y Mayús+Tab dan la vuelta dentro del diálogo. Esc = Cancelar (se maneja en keydown: el evento `cancel` del navegador
+  //    deja de ser cancelable tras varios Esc seguidos). El fondo no se desplaza (con varios abiertos, hasta que se cierra el último).
   //  - Con `hayCambios`, cancelar muestra "Tiene cambios sin guardar." con "Descartar cambios" y "Seguir editando" (el foco va a este último).
+  //  - Con `bloqueado` (una acción en curso) no se puede cerrar: ni Esc, ni la X, ni "Cancelar".
+  //  - El interior es una región con nombre; si desborda, se puede enfocar para desplazarlo con el teclado (en todos los navegadores).
   //  - Los errores de validación viven en el contenido (5.11): el diálogo no se cierra solo.
   // Quien lo usa controla `abierto` (bind:abierto) y pone el primario en el fragmento `pie`.
   import { tick, onDestroy, type Snippet } from "svelte";
@@ -38,6 +67,7 @@
     titulo,
     abierto = $bindable(false),
     hayCambios = false,
+    bloqueado = false,
     cancelar = TEXTO_DIALOGO.cancelar,
     focoInicial = "campo",
     descripcionId,
@@ -48,9 +78,10 @@
     titulo: string;
     abierto?: boolean;
     hayCambios?: boolean;
+    bloqueado?: boolean;
     /** Texto del botón "Cancelar"; `null` si el diálogo solo tiene un botón que lo cierra ("Entendido"). */
     cancelar?: string | null;
-    focoInicial?: "campo" | "cancelar";
+    focoInicial?: "campo" | "cancelar" | "titulo";
     /** Id del texto que describe el diálogo (aria-describedby). */
     descripcionId?: string;
     /** A dónde va el foco al cerrar, si hay un lugar mejor que el botón que lo abrió (por ejemplo, el h1 de la pantalla nueva). */
@@ -63,8 +94,12 @@
   const idTitulo = $derived(`${uid}-titulo`);
 
   let dialogo = $state<HTMLDialogElement | null>(null);
+  let cuerpo = $state<HTMLElement | null>(null);
+  let contenido = $state<HTMLElement | null>(null);
   let confirmandoDescarte = $state(false);
+  let desborda = $state(false);
   let disparador: HTMLElement | null = null;
+  let bloqueandoFondo = false;
 
   $effect(() => {
     if (dialogo === null) return;
@@ -72,8 +107,21 @@
     else if (!abierto && dialogo.open) dialogo.close();
   });
 
+  // El interior se puede enfocar solo si desborda (si no, sería una parada de Tab sin nada que hacer).
+  $effect(() => {
+    if (cuerpo === null || contenido === null) return;
+    const medir = (): void => {
+      desborda = cuerpo !== null && cuerpo.scrollHeight > cuerpo.clientHeight + 1;
+    };
+    const observador = new ResizeObserver(medir);
+    observador.observe(cuerpo);
+    observador.observe(contenido);
+    medir();
+    return () => observador.disconnect();
+  });
+
   onDestroy(() => {
-    document.documentElement.classList.remove("dialogo-abierto");
+    if (bloqueandoFondo) bloquearFondo(false);
   });
 
   function abrir(el: HTMLDialogElement): void {
@@ -81,23 +129,36 @@
     disparador = activo instanceof HTMLElement && activo !== document.body ? activo : ultimoPuntero;
     confirmandoDescarte = false;
     el.showModal();
-    document.documentElement.classList.add("dialogo-abierto");
+    if (!bloqueandoFondo) {
+      bloqueandoFondo = true;
+      bloquearFondo(true);
+    }
     void tick().then(() => enfocarInicial(el));
   }
 
   function enfocarInicial(el: HTMLDialogElement): void {
     if (!el.open) return;
-    const cuerpo = el.querySelector<HTMLElement>(".cuerpo");
     const pieEl = el.querySelector<HTMLElement>(".pie");
     let destino: HTMLElement | null | undefined;
     if (focoInicial === "cancelar") destino = el.querySelector<HTMLElement>("[data-foco-cancelar]");
+    else if (focoInicial === "titulo") destino = el.querySelector<HTMLElement>("h2");
     else destino = el.querySelector<HTMLElement>("[data-foco-inicial]") ?? (cuerpo && enfocables(cuerpo)[0]) ?? (pieEl && enfocables(pieEl)[0]);
     (destino ?? el).focus();
   }
 
-  /** Corre cuando el diálogo ya se cerró (por `abierto = false`): suelta el desplazamiento del fondo y devuelve el foco. */
+  /** Corre cuando el diálogo ya se cerró: suelta el fondo y devuelve el foco. */
   function alCerrarse(): void {
-    document.documentElement.classList.remove("dialogo-abierto");
+    if (abierto && dialogo !== null && (hayCambios || bloqueado)) {
+      // Lo cerró el navegador sin pasar por acá (por ejemplo, un Esc no cancelable): no se pierde lo escrito ni se corta lo que está en curso.
+      dialogo.showModal();
+      if (hayCambios && !bloqueado) confirmandoDescarte = true;
+      return;
+    }
+    if (bloqueandoFondo) {
+      bloqueandoFondo = false;
+      bloquearFondo(false);
+    }
+    absorberClics();
     if (abierto) abierto = false;
     confirmandoDescarte = false;
     const lugar = focoDestino?.() ?? null;
@@ -112,6 +173,7 @@
   }
 
   function pedirCierre(): void {
+    if (bloqueado) return;
     if (hayCambios && !confirmandoDescarte) {
       confirmandoDescarte = true;
       void tick().then(() => dialogo?.querySelector<HTMLElement>("[data-seguir-editando]")?.focus());
@@ -126,13 +188,20 @@
   }
 
   function alCancelar(evento: Event): void {
-    // Esc: no se cierra solo, se trata igual que "Cancelar".
+    // Red de seguridad: el Esc ya se manejó en keydown. Si llega un `cancel` suelto, tampoco se cierra solo.
     evento.preventDefault();
-    if (confirmandoDescarte) seguirEditando();
-    else pedirCierre();
   }
 
   function alTeclear(evento: KeyboardEvent): void {
+    if (evento.key === "Escape") {
+      // Esc se maneja acá y se cancela el evento: así el navegador no abre su propio cierre del diálogo.
+      evento.preventDefault();
+      evento.stopPropagation();
+      if (bloqueado) return;
+      if (confirmandoDescarte) seguirEditando();
+      else pedirCierre();
+      return;
+    }
     if (evento.key !== "Tab" || dialogo === null) return;
     const lista = enfocables(dialogo);
     const primero = lista[0];
@@ -162,10 +231,14 @@
 >
   <div class="caja">
     <div class="barra">
-      <h2 id={idTitulo}>{titulo}</h2>
-      <Boton variante="icono" icono="cerrar" etiqueta={TEXTO_DIALOGO.cerrar} onclick={pedirCierre} />
+      <h2 id={idTitulo} tabindex="-1">{titulo}</h2>
+      <Boton variante="icono" icono="cerrar" etiqueta={TEXTO_DIALOGO.cerrar} cargando={bloqueado} onclick={pedirCierre} />
     </div>
-    <div class="cuerpo">{@render children()}</div>
+    <!-- Región desplazable: si desborda debe poder enfocarse para desplazarla con el teclado (no todos los navegadores lo hacen solos). -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <div class="cuerpo" bind:this={cuerpo} role="region" aria-labelledby={idTitulo} tabindex={desborda ? 0 : undefined}>
+      <div class="contenido" bind:this={contenido}>{@render children()}</div>
+    </div>
     <div class="pie">
       {#if confirmandoDescarte}
         <p class="cambios">{TEXTO_DIALOGO.tieneCambios}</p>
@@ -177,7 +250,7 @@
         <div class="acciones">
           {@render pie?.()}
           {#if cancelar !== null}
-            <Boton variante="texto" data-foco-cancelar onclick={pedirCierre}>{cancelar}</Boton>
+            <Boton variante="texto" data-foco-cancelar cargando={bloqueado} onclick={pedirCierre}>{cancelar}</Boton>
           {/if}
         </div>
       {/if}
@@ -245,14 +318,16 @@
   }
 
   .cuerpo {
-    display: flex;
     flex: 1;
-    flex-direction: column;
-    gap: var(--e-4);
     min-height: 0;
     padding: var(--e-4);
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+  .contenido {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-4);
   }
 
   .pie {
@@ -309,4 +384,16 @@
       align-items: center;
     }
   }
+
+  /* Pantalla muy baja (teléfono apaisado, zoom 400 %): el pie no se come el cuerpo; todo el cuadro se desplaza y el pie va al final. */
+  @media (max-height: 30rem) {
+    .caja {
+      overflow-y: auto;
+    }
+    .cuerpo {
+      flex: none;
+      overflow: visible;
+    }
+  }
 </style>
+

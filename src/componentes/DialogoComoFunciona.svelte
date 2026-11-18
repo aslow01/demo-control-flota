@@ -16,10 +16,11 @@
     { tono: "semana", icono: "alerta" },
     { tono: "quincena", icono: "calendario" },
     { tono: "mes", icono: "anillo" },
+    { tono: "vigente", icono: "check" },
   ];
 </script>
 
-<Dialogo titulo={T.titulo} bind:abierto cancelar={null}>
+<Dialogo titulo={T.titulo} bind:abierto cancelar={null} focoInicial="titulo">
   <div class="bloque">
     {#each T.queEs as parrafo (parrafo)}
       <p class="parrafo">{parrafo}</p>

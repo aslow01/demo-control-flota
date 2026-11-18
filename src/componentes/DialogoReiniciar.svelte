@@ -25,7 +25,14 @@
   const idDescripcion = $derived(`${uid}-descripcion`);
 </script>
 
-<Dialogo titulo={TEXTO_REINICIO.titulo} bind:abierto focoInicial="cancelar" descripcionId={idDescripcion} {focoDestino}>
+<Dialogo
+  titulo={TEXTO_REINICIO.titulo}
+  bind:abierto
+  bloqueado={cargando}
+  focoInicial="cancelar"
+  descripcionId={idDescripcion}
+  {focoDestino}
+>
   <p id={idDescripcion} class="parrafo">{TEXTO_REINICIO.descripcion}</p>
   {#if error !== ""}
     <p class="error" role="alert"><Icono nombre="vencido" /><span>{error}</span></p>
