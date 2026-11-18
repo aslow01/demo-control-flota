@@ -23,6 +23,10 @@ const claro = declaraciones(css.slice(abre, cierraClaro));
 const mediaOscuro = css.indexOf("prefers-color-scheme: dark");
 const abreOscuro = css.indexOf(":root {", mediaOscuro);
 const cierraOscuro = css.indexOf("\n  }\n", abreOscuro);
+if ([abre, cierraClaro, mediaOscuro, abreOscuro, cierraOscuro].some((i) => i < 0)) {
+  console.error("No se encontraron los bloques `:root` (claro y oscuro) en src/estilos/tokens.css: ¿cambió la estructura o la sangría del archivo?");
+  process.exit(2);
+}
 const oscuro = { ...claro, ...declaraciones(css.slice(abreOscuro, cierraOscuro)) };
 
 function resolver(tokens, nombre, profundidad = 0) {
@@ -84,6 +88,7 @@ par("Botón secundario deshabilitado", "texto-3", "superficie", 4.5);
 par("Texto de botón de texto sobre barra", "acento", "ventana-barra", 4.5);
 
 for (const f of ["superficie", "superficie-2", "patente-fondo"]) par("Bordes de controles (1.4.11)", "borde-fuerte", f, 3);
+for (const t of tonos) par("Borde del botón secundario sobre los avisos (3:1)", "borde-fuerte", `${t}-f`, 3);
 par("Línea elegida del acento", "acento", "superficie", 3);
 par("Línea elegida del acento", "acento", "acento-suave", 3);
 
