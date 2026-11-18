@@ -603,7 +603,8 @@ convence, se cambia acá y en el código a la vez.
   al de su renovación. La fecha de emisión no puede ser posterior al vencimiento. Cargar un documento exige número (1 a 40).
 - Topes de texto: marca y modelo 40; motivo de baja y de fuera de servicio 5 a 200; corrección de kilometraje 10 a 200;
   descripción de novedad 3 a 500; resolución 5 a 500; número 1 a 40; emisor 0 a 80.
-- Una unidad de baja no recibe ningún comando salvo ninguno: `unidad-de-baja` (ni documentos, ni novedades, ni kilometraje).
+- Una unidad de baja rechaza con `unidad-de-baja` todo comando que la modifique (asignación, documentos, novedades nuevas,
+  kilometraje, partes, fuera de servicio y vuelta a servicio). Lo único que se conserva y se puede cerrar son sus novedades abiertas.
 
 **Datos de ejemplo**
 

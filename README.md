@@ -6,9 +6,12 @@ navegador, con datos ficticios guardados en IndexedDB y un botón para reiniciar
 
 Forma parte del portafolio de Matías Ariel Ormeño.
 
-## Estado: diseño
+## Estado: diseño y lógica (sin interfaz)
 
-Por ahora el repositorio contiene **solo el diseño**, escrito antes de cualquier línea de código:
+El diseño se escribió antes de cualquier línea de código. Desde el 18/11/2026 también están hechas la **lógica de dominio**
+(`src/lib/dominio`, TypeScript puro y probado en tres zonas horarias), el **generador de datos de ejemplo**
+(`src/lib/datos`) y el **repositorio en memoria** (`src/lib/persistencia`). Todavía no hay interfaz ni IndexedDB; el avance
+está en [`docs/registro.md`](docs/registro.md). Documentos:
 
 | Documento | Contenido |
 | --- | --- |
