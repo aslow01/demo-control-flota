@@ -118,6 +118,15 @@ function conPerfilValido(guardado: Estado): Estado {
 /** Todo el camino feliz sobre un almacenamiento que anda. Cualquier falla sube y `arrancar` pasa a la memoria. */
 async function arrancarConAlmacenamiento(opciones: OpcionesArranque, semilla: number): Promise<ResultadoArranque> {
   const repositorio = await abrirConPlazo(opciones);
+  try {
+    return await usarAlmacenamiento(repositorio, opciones, semilla);
+  } catch (error) {
+    repositorio.cerrar?.(); // se sigue en memoria: no dejar la conexión abierta
+    throw error;
+  }
+}
+
+async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesArranque, semilla: number): Promise<ResultadoArranque> {
   const guardado = await repositorio.cargar();
   const { hoy } = opciones;
 

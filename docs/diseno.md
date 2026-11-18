@@ -726,6 +726,13 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   textos del parte con la acción real; `diseno-ui.md` (wireframe del parte, panel «Parte enviado» y tabla de textos) quedó igual.
   Falta, del lado de la vista, el mismo cambio en `TEXTO_COMO_FUNCIONA.parte` (`textos-marco.ts`). La regla P9 no cambia: la licencia
   vencida del conductor solo avisa al enviar el parte.
+- **«Último en escribir gana» en `meta` (QA D6): anotado, no arreglado.** `cambiarPerfil` escribe `{ ...estado.meta, perfil }` con el `meta`
+  que esta pestaña tiene en memoria. Si otra pestaña reinició o modificó datos y esta todavía no pulsó «Actualizar» (aviso D9), pisa
+  `fechaBase`, `modificada` y `semilla` con valores viejos. Hoy no se nota (la interfaz no modifica datos todavía); con la Etapa 4 sí:
+  si la otra pestaña marcó `modificada = true`, al día siguiente el ejemplo se corre en silencio y se pierden sus cambios. Un arreglo
+  seguro necesita una operación atómica en el repositorio («guardar solo el perfil», leyendo y escribiendo `meta` en la misma transacción)
+  en las dos implementaciones y en la suite de contrato; no es chico. Alternativa barata para la Etapa 4: que `cambiarPerfil` se niegue
+  (o pida «Actualizar») mientras `hayCambiosEnOtraPestana` sea verdadero.
 - **Plazo para abrir el almacenamiento (18/11/2026, QA M1).** Algunos navegadores dejan `indexedDB.open` sin responder. `arrancar`
   espera `PLAZO_ABRIR_MS` (8 s; inyectable con `plazoAbrirMs` en `OpcionesArranque` y en `DependenciasApp`) y, si vence, lo trata como
   almacenamiento no disponible: modo memoria con el aviso D8. Si la conexión llega después, se cierra. El plazo cubre solo la

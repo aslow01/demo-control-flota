@@ -1,5 +1,26 @@
 # Registro
 
+## 18/11/2026 (noche, 4) — Revisiones de 3.2 a 3.4: correcciones de la lógica (programador)
+
+**Qué se hizo.** Se commitearon los cuatro informes (`docs/revision-codigo-…`, `qa-…`, `accesibilidad-…`, `revision-textos-marco-…`) y se
+aplicó lo que cae en `src/lib/`. Con TDD: cada test nuevo se vio fallar antes del código. Sin tocar `src/componentes/` ni estilos.
+
+| Qué | Cómo quedó |
+| --- | --- |
+| Reinicio desde la fase `error` (revisión M5/M6, QA M4 y D1) | Se **quitó**: a esa fase solo llega un error de programación o del entorno (reloj, `generar`, barra de direcciones), no los datos guardados (se probó con perfil corrupto, listas ausentes o nulas, elementos basura y `meta` dañado: siempre termina en `lista`, o en el ejemplo con aviso D7, o en memoria con aviso D8). Fuera `deps.borrarAlmacenamiento` y `borrarIndexedDB`; `reiniciar()` sin estado devuelve `sin-datos`. `TEXTO_ERROR_ARRANQUE.mensaje` ya no manda a «reiniciar». |
+| Plazo de apertura (QA M1) | `PLAZO_ABRIR_MS` = 8 s, inyectable (`plazoAbrirMs`); vencido, modo memoria con aviso D8; la conexión tardía se cierra. |
+| Perfil guardado (QA B4) | Un conductor inexistente o un tipo inválido vuelve al encargado al arrancar. |
+| Conexión colgada (revisión 15) | Si abrir anda pero cargar o guardar falla y se cae a memoria, se cierra la conexión. |
+| Textos (revisión del marco) | `TEXTO_PARTE.puntoCritico` y `enviadoConCritica`: «…hasta que el encargado resuelva la novedad y la vuelva a poner en servicio». `diseno-ui.md` alineado. P9 no cambia. |
+| QA D6 | Anotado en `docs/diseno.md`, no arreglado (pide una operación atómica en el repositorio). |
+
+**API para la vista.** `reiniciar()` en fase `error` devuelve `sin-datos` con `ERRORES.sinDatos`: la pantalla de error solo debe ofrecer
+«Recargar la página». Se sacó de `App.svelte` solo el botón «Reiniciar demo» de esa pantalla; quedan sin uso `errorAlReiniciarDesdeError`
+y `desdeError` en `App.svelte`. Falta, en `textos-marco.ts`, cambiar `TEXTO_COMO_FUNCIONA.parte` («…hasta que el encargado la revise») y
+usar `TEXTO_PARTE` en las pantallas del parte.
+
+**Verificación.** `npm test` 678 (antes 675), `npm run test:tz`, `npm run check`, `npm run buscar` y `npm run build` en verde.
+
 ## 18/11/2026 (noche, 3) — Pasos 3.2 a 3.4: sistema visual, marco de la aplicación y diálogos (maquetador)
 
 **Qué se hizo.** Rama `interfaz-etapa-0`, sin tocar el dominio ni el estado.

@@ -187,6 +187,20 @@ describe("D8: sin almacenamiento", () => {
     expect(b.avisos).toEqual([{ tipo: "sin-almacenamiento" }]);
   });
 
+  it("si abre pero falla al leer o al guardar, la conexión abierta se cierra (no queda colgada)", async () => {
+    for (const falla of ["cargar", "reemplazarTodo"] as const) {
+      const repo: Repositorio = new RepositorioMemoria();
+      let cerrada = 0;
+      repo.cerrar = () => void cerrada++;
+      repo[falla] = async () => {
+        throw new Error("rota");
+      };
+      const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(repo) });
+      expect(r.enMemoria).toBe(true);
+      expect(cerrada).toBe(1);
+    }
+  });
+
   it("sin IndexedDB real (fábrica que lanza) arranca igual", async () => {
     const fabricaRota = {
       open() {
