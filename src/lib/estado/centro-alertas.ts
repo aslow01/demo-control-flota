@@ -266,7 +266,7 @@ function armarProtagonista(estado: Estado, r: ResultadoAlertas, hoy: FechaCivil)
     tono: cifra > 0 ? "critico" : "vigente",
     textoLector: textoProtagonistaLector(cifra),
     items: todas.slice(0, MAX_PROTAGONISTA),
-    masEnLaFlota: todas.length > MAX_PROTAGONISTA ? { texto: textoVerTodasEnLaFlota(todas.length), href: aHash({ tipo: "flota" }) } : null,
+    masEnLaFlota: todas.length > MAX_PROTAGONISTA ? { texto: textoVerTodasEnLaFlota(todas.length), href: aHash({ tipo: "flota", filtro: "no-disponibles" }) } : null,
     disponibles: textoDisponibles(disponibles, activas),
   };
 }

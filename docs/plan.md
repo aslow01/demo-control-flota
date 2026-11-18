@@ -64,9 +64,9 @@ Orden pensado para que cada paso use solo lo anterior.
 
 | Paso | Pantalla | Hecho cuando |
 | --- | --- | --- |
-| 4.1 | **Lógica y componente hechos (18/11/2026); enchufado en el centro de alertas (4.2); faltan la ficha (4.4) y la flota (4.3).** Horizonte (5.6) en sus tres variantes, con datos del generador. | Las marcas caen en el día correcto (comparado con la lista); `aria-label` correcto; colores forzados legibles; CSP limpia. |
+| 4.1 | **Lógica y componente hechos (18/11/2026); enchufado en el centro de alertas (4.2); la flota (4.3) ya tiene los datos de la pista mínima, falta su pantalla; falta la ficha (4.4).** Horizonte (5.6) en sus tres variantes, con datos del generador. | Las marcas caen en el día correcto (comparado con la lista); `aria-label` correcto; colores forzados legibles; CSP limpia. |
 | 4.2 | **Hecho (18/11/2026): lógica y pantalla.** Centro de alertas (6.1) + diálogos Renovar y Cargar documento. | Con el ejemplo: protagonista "4 unidades", 11 vencimientos en los grupos esperados, 6 pendientes de operación. Renovar C01 lo saca de la lista y de "No pueden salir" sin recargar; el foco cae donde dice 5.17. |
-| 4.3 | Flota (6.2) + Agregar unidad. | Búsqueda "zk214" encuentra la unidad; filtros y orden; alta nueva aparece con sus faltantes (U5). |
+| 4.3 | **Lógica hecha (18/11/2026); falta la pantalla (maquetador).** Flota (6.2) + Agregar unidad. | Búsqueda "zk214" encuentra la unidad; filtros y orden; alta nueva aparece con sus faltantes (U5). |
 | 4.4 | Ficha (6.3) + diálogos restantes (resolver novedad, fuera de servicio, volver a servicio, corregir kilometraje, cambiar asignación, dar de baja, corregir documento, cargar novedad). | Cada comando de la sección 8 se ejecuta desde la interfaz y su evento aparece arriba del historial. A4 y N2 visibles con C11. |
 | 4.5 | Inicio del conductor (6.4) y parte diario (6.5), con autoguardado y "Parte enviado". | En un celular (o emulación táctil a 360 px): parte completo con el pulgar; recargar a mitad y encontrar el borrador; enviar vacío → resumen con foco; K3 con 1 km menos → error; frenos con novedad → la unidad aparece en "No pueden salir" del encargado. |
 

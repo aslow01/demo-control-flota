@@ -2,7 +2,7 @@
 // Lo único que queda afuera: los mensajes de un contexto mal armado (error de programación, no de la persona) en comandos.ts.
 
 import { diaDeLaSemana, formatearFecha } from "./fechas.ts";
-import type { Advertencia, FechaCivil, TipoDocumento } from "./tipos.ts";
+import type { Advertencia, FechaCivil, TipoDocumento, TipoUnidad } from "./tipos.ts";
 
 /** Nombre en pantalla de cada tipo de documento (5.1). */
 export const NOMBRES_DOCUMENTO: Record<TipoDocumento, string> = {
@@ -543,3 +543,121 @@ export const TEXTO_CARGAR = {
   titulo: (nombre: string, titular: string) => `Cargar: ${nombre} de ${titular}`,
   primario: "Guardar documento",
 } as const;
+
+// ---------------------------------------------------------------------------------------------
+// Flota (docs/diseno-ui.md, 5.10 y 6.2) y diálogo «Agregar unidad» (5.17). `redactor-ux` los revisa.
+// ---------------------------------------------------------------------------------------------
+
+/** Cómo se llama cada tipo de unidad en la descripción de la fila y en el `select` «Tipo». */
+export const NOMBRES_TIPO_UNIDAD: Record<TipoUnidad, string> = {
+  camioneta: "Camioneta",
+  utilitario: "Utilitario",
+  "camion-liviano": "Camión liviano",
+  minibus: "Minibús",
+};
+
+/** Rótulos fijos de la flota (los que llevan números se arman con las funciones de abajo). */
+export const TEXTO_FLOTA = {
+  /** Título del panel (el `h1` de la pantalla es «Flota»). */
+  panel: "Unidades",
+  todosLosProyectos: "Todos",
+  /** Filtros por estado (5.8). «No disponibles» solo aparece cuando viene de «Ver las N en la flota». */
+  filtros: {
+    activas: "Activas",
+    "pueden-salir": "Pueden salir",
+    "no-pueden-salir": "No pueden salir",
+    "fuera-de-servicio": "Fuera de servicio",
+    "de-baja": "De baja",
+    "no-disponibles": "No disponibles",
+  },
+  ordenes: {
+    prioridad: "Prioridad",
+    patente: "Patente",
+    interno: "Interno",
+    "proximo-vencimiento": "Próximo vencimiento",
+    "ultimo-parte": "Último parte",
+  },
+  /** Etiqueta de estado de la fila (5.7). */
+  estado: {
+    "puede-salir": "Puede salir",
+    "no-puede-salir": "No puede salir",
+    "fuera-de-servicio": "Fuera de servicio",
+    baja: "De baja",
+  },
+  sinRegistros: "Sin registros",
+  sinPartes: "Sin partes",
+  /** Próximo vencimiento de una unidad que no alerta (de baja). */
+  sinVencimientos: "—",
+  sinUnidades: "Todavía no hay unidades.",
+} as const;
+
+/** Línea bajo el título: «23 unidades activas · 19 pueden salir · 2 no pueden salir · 2 fuera de servicio · 1 de baja». */
+export function textoResumenFlota(r: { activas: number; pueden: number; noPueden: number; fuera: number; baja: number }): string {
+  return [
+    pluralizar(r.activas, "unidad activa", "unidades activas"),
+    `${r.pueden} ${r.pueden === 1 ? "puede" : "pueden"} salir`,
+    `${r.noPueden} ${r.noPueden === 1 ? "no puede" : "no pueden"} salir`,
+    `${r.fuera} fuera de servicio`,
+    `${r.baja} de baja`,
+  ].join(" · ");
+}
+
+/** Segunda línea del estado: «y 1 motivo más», «y 2 motivos más». */
+export function textoMotivosMas(n: number): string {
+  return `y ${pluralizar(n, "motivo", "motivos")} más`;
+}
+
+/** «Toyota Hilux 2022 · Camioneta». */
+export function textoDescripcionUnidad(marca: string, modelo: string, anio: number, tipo: TipoUnidad): string {
+  return `${marca} ${modelo} ${anio} · ${NOMBRES_TIPO_UNIDAD[tipo]}`;
+}
+
+/** Nombre accesible del enlace de la patente: «Ficha de ZK 214 BD». */
+export function textoFichaDe(patente: string): string {
+  return `Ficha de ${patente}`;
+}
+
+/** «Revisión técnica · en 6 días»: la parte de plazo (hoy, mañana, en N días). */
+export function textoPlazoCorto(d: number): string {
+  if (d === 0) return "hoy";
+  if (d === 1) return "mañana";
+  return `en ${d} días`;
+}
+
+/** Columna «Novedades»: la cifra de abiertas y, si hay críticas, cuántas («1 (crítica)», «3 (2 críticas)»). */
+export function textoNovedadesDeUnidad(abiertas: number, criticas: number): string {
+  if (criticas === 0) return String(abiertas);
+  if (abiertas === 1) return "1 (crítica)";
+  return `${abiertas} (${criticas} ${criticas === 1 ? "crítica" : "críticas"})`;
+}
+
+/** Barra de estado de la flota: «Mostrando 23 de 23 unidades.» */
+export function textoMostrandoUnidades(mostradas: number, total: number): string {
+  return `Mostrando ${mostradas} de ${pluralizar(total, "unidad", "unidades")}.`;
+}
+
+/** Vacío por filtro: «Ninguna unidad coincide con «zz9» en Proyecto Piedra Lunar.» (la búsqueda ya viene acortada). */
+export function textoSinCoincidencias(c: { busqueda: string | null; proyecto: string | null; filtro: string | null }): string {
+  const con = c.busqueda === null ? "" : ` con «${c.busqueda}»`;
+  const en = c.proyecto === null ? "" : ` en ${c.proyecto}`;
+  const filtro = c.filtro === null ? "" : ` (filtro: ${c.filtro})`;
+  return `Ninguna unidad coincide${con}${en}${filtro}.`;
+}
+
+/** Diálogo «Agregar unidad» (5.17). */
+export const TEXTO_AGREGAR = {
+  titulo: "Agregar unidad",
+  primario: "Agregar unidad",
+  /** Primera opción del `select` Conductor: el valor es el texto vacío. */
+  sinConductor: "Sin conductor asignado",
+  patenteVacia: "Escriba la patente.",
+  internoVacio: "Escriba el número interno.",
+  anioVacio: "Escriba el año.",
+  proyectoVacio: "Elija el proyecto.",
+} as const;
+
+/** Mensaje al agregar una unidad (se muestra en su ficha): «Unidad agregada. Le faltan 4 documentos: cárguelos desde aquí.» */
+export function textoUnidadAgregada(faltantes: number): string {
+  if (faltantes === 0) return "Unidad agregada.";
+  return `Unidad agregada. ${textoLeFaltan(faltantes)}: ${faltantes === 1 ? "cárguelo" : "cárguelos"} desde aquí.`;
+}

@@ -511,3 +511,125 @@ filtros por clic y con flechas con anuncio «Mostrando 4 de 11 vencimientos.»; 
 guardar con Enter → foco en el `h2` «Vencimientos», barra «Seguro de ZK 214 BD renovado. Quedan 10 vencimientos.», 10 filas, protagonista «3 unidades», pestaña «3 críticas»; Cargar la habilitación de ZZD 563 con su mensaje y foco; recorrido completo con Tab (orden lógico, Tab no sale del diálogo); claro y oscuro a 360, 768 y 1280 px sin desborde
 horizontal (también el diálogo con errores, con el pie a la vista); consola sin errores ni avisos; sin `securitypolicyviolation`. `npm run check`: 0; `npm test`: 794 verdes; `npm run contraste`: 158 mediciones, 0 fallan; `npm run buscar` y `npm audit`: sin hallazgos. Capturas `alertas-*` en el directorio de trabajo temporal.
 No probado: Firefox y Safari, lector de pantalla real, contraste alto de Windows real (solo `forced-colors` emulado), pantalla táctil real.
+
+## 18/11/2026 (noche, 12) — Paso 4.3 (lógica): flota y diálogo Agregar unidad
+
+**Qué se hizo.** Tres piezas, sin DOM y sin reglas nuevas (reusan `calcularAlertas`, `aptitud`, `kmActual`, `horizonteMinimo` y el comando `altaUnidad`): `src/lib/estado/flota.ts` (filas de 5.10, búsqueda, filtros y
+orden de 6.2), `src/lib/dominio/formulario-unidad.ts` (contexto, validación por campo, comando y errores del diálogo; con `dominio/formulario.ts`, que ahora comparte con `formulario-documento.ts` el tipo genérico de errores) y dos
+cosas nuevas en `EstadoApp` (`panelDeFlota` y `agregarUnidad`). El enrutador entiende `#/flota?filtro=…` y el enlace «Ver las N en la flota» del 4.2 ya lo usa (se ajustó en `centro-alertas.ts`, no en la vista). En el dominio solo se movió
+código: las comprobaciones de patente, interno y año del alta pasaron de `comandos.ts` a `validacion.ts` para que el formulario diga todos los errores juntos con el mismo código. `textos.ts` suma los textos (`TEXTO_FLOTA`, `TEXTO_AGREGAR`,
+`NOMBRES_TIPO_UNIDAD` y funciones). 125 tests nuevos, escritos primero (`flota.test.ts` 68, `formulario-unidad.test.ts` 20, `flota-app.test.ts` 19, `textos-flota.test.ts` 6, doce en `enrutador.test.ts`, uno ajustado en `centro-alertas.test.ts`); cinco
+mutaciones (sin quitar tildes, orden de prioridad, total del anuncio, filtro de proyecto, «todas las palabras» → «alguna») comprobaron que los tests detectan el error. Las decisiones que la especificación no cubría están en `diseno.md`, sección 16, última viñeta
+(doce puntos). No se tocaron estilos ni componentes.
+
+**API para el maquetador.**
+
+```ts
+// estado/flota.ts — la consulta es estado de la vista ($state); el panel viene de la aplicación.
+app.panelDeFlota: PanelFlota | null          // se recalcula con cada comando y al cambiar el día; null hasta que termina el arranque
+interface PanelFlota {
+  titulo: string;                            // "Unidades" (título del panel; el h1 es app.nombrePantalla = "Flota")
+  cantidad: number;                          // 23 (activas) -> "Unidades │ 23"
+  resumen: string;                           // "23 unidades activas · 19 pueden salir · 2 no pueden salir · 2 fuera de servicio · 1 de baja"
+  filas: FilaFlota[];                        // todas, también las de baja; el orden lo pone vistaDeFlota
+  proyectos: { valor: string; etiqueta: string }[];             // [{ valor: "todos", etiqueta: "Todos" }, { valor: "proy-…", etiqueta: "Proyecto Piedra Lunar" }, …]
+  ordenes: { id: OrdenFlota; etiqueta: string }[];              // Prioridad, Patente, Interno, Próximo vencimiento, Último parte
+}
+interface FilaFlota {
+  unidadId; patente: "ZK214BD"; patenteTexto: "ZK 214 BD"; interno: "Int. 07"; internoNumero: 7; proyectoId: string;
+  href: "#/unidad/ZK214BD"; nombreAccesible: "Ficha de ZK 214 BD"; descripcion: "Toyota Hilux 2022 · Camioneta";
+  estado: { categoria: "puede-salir" | "no-puede-salir" | "fuera-de-servicio" | "baja"; etiqueta: "No puede salir";
+            motivo: "Seguro vencido hace 1 día" | null; motivosMas: "y 1 motivo más" | null; motivos: string[] };
+  franja: "critico" | "semana" | "neutro" | null;               // null si puede salir (sin franja)
+  proximoVencimiento: { tipo: "faltante" | "vencido" | "por-vencer" | "vigente" | "ninguno"; documento: string | null; etiqueta: string | null;
+                        texto: "Revisión técnica · en 6 días" | "Seguro · 12/05/2027" | "Vencido hace 1 día · Seguro" | "Falta cargar · …" | "—";
+                        dias: number | null; horizonte: Horizonte | null };   // horizonte (variante minima) solo en "por-vencer"
+  km: { valor: number | null; texto: "84.320 km" | "Sin registros" };
+  ultimoParte: { fecha: FechaCivil | null; texto: "17/11/2026" | "Sin partes"; etiqueta: "Sin enviar" | "Sin parte" | null };
+  novedades: { abiertas: number; criticas: number; texto: "0" | "1 (crítica)" | "3 (2 críticas)" };   // criticas > 0 -> ícono i-octogono
+  proyecto: string | null; conductor: string | null;            // nombres completos (el recorte "P. Arroyo" es de la vista)
+  claveDeBusqueda: string;                                      // interna, no se muestra
+}
+interface ConsultaFlota { filtro: IdFiltroFlota; busqueda: string; proyecto: string /* "todos" o id */; orden: OrdenFlota }
+type IdFiltroFlota = "activas" | "pueden-salir" | "no-pueden-salir" | "fuera-de-servicio" | "de-baja" | "no-disponibles";
+CONSULTA_INICIAL                                              // { filtro: "activas", busqueda: "", proyecto: "todos", orden: "prioridad" }
+consultaDeRuta(ruta: Ruta): ConsultaFlota                     // el filtro de #/flota?filtro=… ; sin filtro, CONSULTA_INICIAL
+quitarFiltros(c: ConsultaFlota): ConsultaFlota                // "Quitar filtros": todo menos el orden
+vistaDeFlota(panel: PanelFlota, c: ConsultaFlota): VistaFlota
+interface VistaFlota {
+  filtros: { id: IdFiltroFlota; etiqueta: string; cantidad: number }[];   // 5 radios (23, 19, 2, 2, 1); con filtro "no-disponibles" elegido, una sexta opción "No disponibles" (4)
+  filas: FilaFlota[];                        // ya filtradas y ordenadas
+  mostradas: number; total: number;          // total = las del filtro de estado elegido (sin búsqueda ni proyecto)
+  anuncio: string;                           // "Mostrando 1 de 23 unidades." -> region role="status" (la vista pone los 500 ms de pausa al escribir)
+  vacio: { tipo: "sin-unidades"; texto } | { tipo: "por-filtro"; texto: "Ninguna unidad coincide con «zz9» en Proyecto Piedra Lunar."; conQuitarFiltros: boolean } | null;
+  hayFiltros: boolean;
+}
+normalizarBusqueda("ZK 214 BD") === "zk214bd"                 // por si la vista quiere resaltar o contar
+
+// dominio/formulario-unidad.ts
+contextoDeAgregarUnidad(estado, hoy): { titulo: "Agregar unidad"; primario: "Agregar unidad"; valoresIniciales: ValoresUnidad /* todos "" */;
+  tipos: { valor: TipoUnidad; etiqueta }[]; proyectos: { valor: id; etiqueta }[];
+  conductores: { valor: id | ""; etiqueta; asignadoA: "ZK 214 BD" | null }[] /* primero "Sin conductor asignado" con valor "" */; anios: { minimo: 1980; maximo: 2027 } }
+interface ValoresUnidad { patente; interno; tipo; marca; modelo; anio; proyectoId; conductorId }          // todo texto, como lo dan los input y los select
+CAMPOS_UNIDAD = ["patente", "interno", "tipo", "marca", "modelo", "anio", "proyectoId", "conductorId"]    // orden del formulario y del resumen de errores
+
+// Guardar (EstadoApp). Nunca rechaza: devuelve el resultado.
+app.agregarUnidad(valores: ValoresUnidad): Promise<ResultadoAgregarUnidad>
+type ResultadoAgregarUnidad =
+  | { ok: true; mensaje: string; foco: "titulo-de-la-ficha"; href: string; ruta: Ruta }   // "Unidad agregada. Le faltan 4 documentos: cárguelos desde aquí." · "#/unidad/ZK999AA"
+  | { ok: false; errores: ErroresDeFormularioUnidad };   // { porCampo, lista, general }: el mismo molde que los diálogos de documento, con CampoUnidad en vez de CampoDocumento
+```
+
+```svelte
+<script lang="ts">
+  import { app } from "../lib/estado/instancia.ts";
+  import { consultaDeRuta, vistaDeFlota, type ConsultaFlota } from "../lib/estado/flota.ts";
+  import { contextoDeAgregarUnidad, type ValoresUnidad } from "../lib/dominio/formulario-unidad.ts";
+
+  const panel = $derived(app.panelDeFlota);
+  let consulta = $state<ConsultaFlota>(consultaDeRuta(app.ruta));
+  // Al llegar a la flota por otro enlace (p. ej. «Ver las 9 en la flota» estando ya en #/flota), volver a leer la ruta:
+  $effect(() => { app.versionDePantalla; consulta = consultaDeRuta(app.ruta); });
+  const v = $derived(panel === null ? null : vistaDeFlota(panel, consulta));
+
+  let abierto = $state.raw<ReturnType<typeof contextoDeAgregarUnidad> | null>(null);
+  let valores = $state<ValoresUnidad>({ patente: "", interno: "", tipo: "", marca: "", modelo: "", anio: "", proyectoId: "", conductorId: "" });
+  let errores = $state.raw<{ porCampo: Record<string, string>; lista: { campo: string; mensaje: string }[]; general: string | null } | null>(null);
+
+  function abrirAgregar() {
+    if (app.estado === null) return;
+    abierto = contextoDeAgregarUnidad(app.estado, app.hoy);
+    valores = { ...abierto.valoresIniciales }; errores = null;
+  }
+  async function guardar() {
+    const r = await app.agregarUnidad(valores);
+    if (!r.ok) { errores = r.errores; return; }   // el diálogo no se cierra y lo escrito se conserva
+    abierto = null;                                  // cerrar el <dialog>
+    app.irA(r.ruta);                                 // a la ficha (4.4); el cambio de pantalla ya mueve el foco al h1. Hasta que exista: mostrar r.mensaje en la barra de estado del panel
+  }
+</script>
+{#if v}
+  <input bind:value={consulta.busqueda} />
+  {#each v.filtros as f (f.id)}<label><input type="radio" bind:group={consulta.filtro} value={f.id} /> {f.etiqueta} {f.cantidad}</label>{/each}
+  {#each v.filas as f (f.unidadId)}<a href={f.href}>{f.patenteTexto}</a> {f.estado.etiqueta} {f.estado.motivo} {f.proximoVencimiento.texto}{/each}
+  {#if v.vacio}<p>{v.vacio.texto}</p>{/if}
+{/if}
+```
+
+**Cosas para tener en cuenta al maquetar.**
+- La clave de `each` de las filas es `unidadId`. El enlace de la patente lleva `nombreAccesible` («Ficha de ZK 214 BD») como texto oculto.
+- Los radios de estado son `v.filtros` (cinco; la sexta, «No disponibles», solo existe si la consulta ya la trae de la ruta). Los conteos no cambian al escribir: lo que cambia es `v.anuncio` (con 500 ms de pausa, en un `role="status"`).
+- El filtro no escribe el hash: la consulta es estado de la vista y arranca en `consultaDeRuta(app.ruta)`. Si se llega a `#/flota` desde otro enlace sin salir de la pantalla, `app.versionDePantalla` sube y hay que volver a leerla.
+- «Quitar filtros» (solo si `v.vacio.conQuitarFiltros`): `consulta = quitarFiltros(consulta)`. Sin ninguna unidad (`vacio.tipo === "sin-unidades"`): «Todavía no hay unidades.» con el botón «Agregar unidad».
+- Las unidades de baja salen con `franja: "neutro"`, etiqueta «De baja» y «—» como próximo vencimiento. La mínima (`proximoVencimiento.horizonte`) viene armada, con una sola marca; el texto es el de la celda.
+- La ficha de la unidad es del paso 4.4: `app.irA(r.ruta)` llega a la ruta `#/unidad/…`, que hoy no tiene pantalla. Hasta entonces conviene quedarse en la flota y mostrar `r.mensaje` en la barra de estado (el texto dice «desde aquí», que es la ficha).
+- Interno y año son `input type="text"` con `inputmode="numeric"` (como el kilometraje): el dominio acepta solo dígitos y dice el rango. La ayuda del año sale de `contexto.anios`.
+- «Conductor»: `asignadoA` sirve para avisar «ya tiene la unidad ZK 214 BD» junto a la opción; no se impide.
+- Con el perfil Conductor la flota no se muestra (ruta del encargado); si se llegara a guardar igual, el error general dice «Esta acción es solo del encargado…».
+- Todo el texto sale de `textos.ts` (flota y diálogo); las etiquetas de los campos del formulario («Patente», «Interno»…) y sus ayudas son de presentación (`textos-marco.ts`).
+
+**Verificación.** Aceptación del plan con el ejemplo del generador (fechaBase 2026-11-18): «zk214» encuentra ZK 214 BD (y «Mostrando 1 de 23 unidades.»); filtros 23 / 19 / 2 / 2 / 1; «No disponibles» da las mismas 4 unidades que el protagonista del centro de alertas;
+orden de prioridad ZZD 563, ZK 214 BD, ZR 536 MZ, ZU 899 QE, … ; una alta nueva (ZK 999 AA en Piedra Lunar) aparece en la flota como «No puede salir» con «Falta cargar: Seguro» y «y 3 motivos más», sube el protagonista de 4 a 5, los vencidos y faltantes de 2 a 6 y el total a 15,
+con el mensaje «Unidad agregada. Le faltan 4 documentos: cárguelos desde aquí.» (3 en la base de mantenimiento); se guarda la unidad y su evento en una escritura; los errores salen juntos y por campo, sin guardar nada. `npm test`: 919 tests (794 + 125), verdes también con `npm run test:tz`
+(UTC, Asia/Tokyo y America/Los_Angeles); `npm run check`: 0 errores; `npm audit`: 0 vulnerabilidades; `npm run build` y `npm run buscar` sin hallazgos.
+Pendiente: la pantalla (maquetador), la ficha y el diálogo de cargar documento «otro» (4.4).

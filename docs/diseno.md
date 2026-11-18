@@ -758,8 +758,8 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   (diálogos) y `EstadoApp` (`centroDeAlertas`, `renovarDocumento`, `cargarDocumento`) no agregan reglas: reusan `calcularAlertas`, `aptitud` y los comandos.
   Lo que la especificación no fijaba, con el criterio más conservador:
   (1) *Orden del protagonista* («por prioridad», 6.1): primero las unidades en servicio que no pueden salir y después las fuera de servicio; cada grupo por patente.
-  Tope de 6; «Ver las N en la flota» dice el total (N = todas las del protagonista, no las que faltan) y enlaza a `#/flota` **sin filtro**: la flota (4.3) todavía
-  no tiene el filtro «No pueden salir» + «Fuera de servicio»; cuando lo tenga, el enlace lo lleva.
+  Tope de 6; «Ver las N en la flota» dice el total (N = todas las del protagonista, no las que faltan) y enlazaba a `#/flota` sin filtro porque la flota todavía no tenía el filtro «No pueden salir» + «Fuera de servicio»;
+  con el paso 4.3 enlaza a `#/flota?filtro=no-disponibles` (ver la viñeta siguiente).
   (2) *«Vencimientos · 11»* cuenta también los vencidos y faltantes (2 + 4 + 3 + 2 del ejemplo), igual que «Todos» y que «Quedan 10 vencimientos».
   (3) *Fila de «novedad abierta» en Operación diaria:* dice la antigüedad de la más antigua («1 novedad abierta hace 9 días»; con varias: «3 novedades abiertas, la más
   antigua hace 9 días»). El resto de las filas solo lleva la cantidad.
@@ -778,3 +778,29 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   (8) *Foco al guardar bien:* siempre al título (`h2`) del panel de vencimientos. La fila que abrió el diálogo no puede seguir existiendo: su alerta se resuelve, o pasa a
   ser la del documento nuevo (otro id), aunque la renovación siga alertando dentro de los 30 días. Al cancelar, el foco vuelve al botón (lo resuelve la vista).
   (9) *Mensaje de la barra de estado:* «Seguro de ZK 214 BD renovado. Quedan 10 vencimientos.» (género según el documento); se arma con el estado ya actualizado.
+- **Flota y «Agregar unidad», lógica (paso 4.3, 18/11/2026).** `estado/flota.ts` (filas, búsqueda, filtros y orden), `dominio/formulario-unidad.ts` (diálogo) y `EstadoApp`
+  (`panelDeFlota`, `agregarUnidad`) no agregan reglas: reusan `calcularAlertas`, `aptitud`, `kmActual`, `horizonteMinimo` y `altaUnidad`. Lo único que se movió en el dominio:
+  las comprobaciones de patente (U1, U2), interno (U3) y año (U4) del alta pasaron a `validacion.ts` (`validarPatenteDeAlta`, `validarInternoDeAlta`, `validarAnioDeAlta`) para que el
+  formulario diga todos los errores juntos con el mismo código que el comando; el comando valida en el mismo orden de antes. Lo que la especificación no fijaba, con el criterio más conservador:
+  (1) *Filtro en la ruta:* `#/flota?filtro=no-disponibles` (valores: `pueden-salir`, `no-pueden-salir`, `fuera-de-servicio`, `de-baja`, `no-disponibles`; «activas» es el de por defecto y no viaja).
+  Solo la flota admite consulta; un valor desconocido, vacío o roto se ignora (es `#/flota`, y la barra de direcciones se corrige: no se repite lo escrito); en las demás pantallas un `?` sigue siendo ruta desconocida.
+  Elegir un radio **no** escribe el hash (sería otra pantalla para el enrutador: bajaría el foco al `h1` y sumaría entradas al historial): la consulta es estado de la vista y arranca en `consultaDeRuta(app.ruta)`.
+  (2) *«No disponibles»* (no pueden salir + fuera de servicio, las que cuenta el protagonista de 6.1) es una sexta opción de los filtros que solo aparece cuando es la elegida (6.2 dibuja cinco radios, 6.1 pide ese enlace):
+  así se ve qué se está mirando y se sale eligiendo otra. Los conteos de los filtros son de la flota entera y no cambian con la búsqueda ni con el proyecto; «Mostrando X de Y unidades» usa como Y las del filtro de estado elegido.
+  (3) *Búsqueda:* las palabras se separan por espacios, todas tienen que aparecer, y cada una se compara sin mayúsculas, tildes, espacios, guiones ni puntos (`zk214`, `ZK-214-BD`, `int 07`, `andres`). Mira patente, interno
+  («Int. 07»), marca, modelo, año, tipo y conductor; no el proyecto (tiene su `select`). Entrada hostil: se leen como mucho 60 caracteres y 6 palabras; un texto de solo símbolos no busca nada (no filtra).
+  (4) *Orden «Prioridad»:* no puede salir, fuera de servicio, puede salir y de baja al final; dentro de cada grupo, próximo vencimiento (falta un documento, vencido, por vencer del más cercano al más lejano, vigente, sin vencimientos) y patente.
+  «Último parte»: el más antiguo primero (quien hace más que no envía), con las que no tienen partes antes de todas. «Patente»: alfabético; «Interno»: numérico. Un valor de orden desconocido vuelve a «Prioridad»; un proyecto que no existe, a «Todos».
+  (5) *Próximo vencimiento:* sale de las alertas de la unidad (la más urgente, que es la primera): «Revisión técnica · en 6 días» (con la pista mínima), o la etiqueta crítica y el nombre si falta o está vencido. Sin alertas, el documento vigente
+  que vence primero, con su fecha y sin pista («Seguro · 12/05/2027»). Una unidad **de baja** muestra «—»: sus vencimientos no alertan (V14) y se ven en su ficha.
+  (6) *Último parte:* el último **enviado** (un borrador no cuenta); la etiqueta chica sale de las alertas de operación de la unidad («Sin enviar» gana sobre «Sin parte»). Sin ninguno: «Sin partes».
+  (7) *Novedades:* cifra de abiertas; con críticas, «1 (crítica)», «3 (1 crítica)», «3 (2 críticas)».
+  (8) *Estado:* la etiqueta de 5.7 y, en línea 2, el primer motivo de `aptitud` («Seguro vencido hace 1 día»; las fuera de servicio y de baja, el motivo del dominio: «Fuera de servicio desde 13/11/2026: …»); con más de uno, «y N motivos más».
+  (9) *Vacío:* «Ninguna unidad coincide con «zz9» en Proyecto Piedra Lunar.» (con filtro de estado distinto de «Activas», al final «(filtro: De baja)»); lo buscado se repite como texto, sin espacios de más y acortado a 40 caracteres.
+  «Quitar filtros» vuelve a «Activas», sin búsqueda y «Todos» y deja el orden (el orden no es un filtro); se ofrece solo si hay algún filtro puesto. Sin ninguna unidad: «Todavía no hay unidades.» y se ofrece agregar.
+  (10) *Agregar unidad:* todos los campos empiezan vacíos (no hay nada que precargar ni se sugiere un interno); el `select` de conductor ofrece «Sin conductor asignado» (valor vacío) y los conductores activos con la unidad que ya tienen
+  (`asignadoA`, para avisarlo junto a la opción: el dominio no impide que dos unidades compartan conductor). La validación previa dice, juntos y en el orden de 5.17, patente (U1, U2), interno (U3), tipo, marca, modelo, año (U4) y «Elija el proyecto»;
+  que el proyecto o el conductor existan lo dice el comando al ejecutarse (solo pasa si cambió en otra pestaña), con el campo mapeado (`tipoUnidad` del dominio es `tipo` del formulario). Interno y año aceptan solo dígitos (nada de `1e2`, `7.5` ni `-3`).
+  (11) *Al guardar bien:* `agregarUnidad` **no navega**: devuelve `ruta` y `href` de la ficha y el mensaje «Unidad agregada. Le faltan 4 documentos: cárguelos desde aquí.» (la cantidad sale de las alertas de la unidad nueva, 4 en un proyecto que pide habilitación y 3 en la base).
+  El mensaje habla de «aquí» porque 5.17 lo muestra en la ficha, que es del paso 4.4: hasta entonces la vista puede quedarse en la flota y mostrarlo en la barra de estado del panel (o no navegar). El foco va al título de la ficha, que ya lo mueve el cambio de pantalla.
+  (12) *Permiso y doble envío:* la validación de campos va antes que el permiso (con el perfil Conductor y datos bien escritos, el error general es «sin permiso»); dos envíos seguidos no duplican la unidad (el segundo ve la patente repetida en su campo).

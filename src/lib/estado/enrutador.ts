@@ -6,9 +6,16 @@ import { formatearFechaConDia, parsearFechaCivil } from "../dominio/fechas.ts";
 import { formatearPatente, formatoDePatente, normalizarPatente } from "../dominio/patente.ts";
 import type { FechaCivil, Perfil } from "../dominio/tipos.ts";
 
+/**
+ * Filtros de la flota que pueden viajar en la ruta (`#/flota?filtro=no-disponibles`). «activas» es el de por defecto y no viaja.
+ * `no-disponibles` junta «No pueden salir» y «Fuera de servicio»: es el que usa «Ver las N en la flota» del centro de alertas.
+ */
+export const FILTROS_DE_FLOTA_EN_RUTA = ["pueden-salir", "no-pueden-salir", "fuera-de-servicio", "de-baja", "no-disponibles"] as const;
+export type FiltroDeFlotaEnRuta = (typeof FILTROS_DE_FLOTA_EN_RUTA)[number];
+
 export type Ruta =
   | { tipo: "alertas" }
-  | { tipo: "flota" }
+  | { tipo: "flota"; filtro?: FiltroDeFlotaEnRuta }
   | { tipo: "unidad"; patente: string }
   | { tipo: "conductor" }
   | { tipo: "parte"; patente: string; fecha: FechaCivil }
@@ -35,24 +42,39 @@ function patenteDeRuta(texto: string): string | null {
   return formatoDePatente(patente) === null ? null : patente;
 }
 
+/** El filtro de `?filtro=…`: solo los valores conocidos; cualquier otra cosa se ignora (la flota sin filtro) y no se repite en ningún lado. */
+function filtroDeConsulta(consulta: string): FiltroDeFlotaEnRuta | null {
+  const valor = new URLSearchParams(consulta).get("filtro");
+  return FILTROS_DE_FLOTA_EN_RUTA.find((f) => f === valor) ?? null;
+}
+
 export function parsearHash(hash: string): RutaLeida {
   if (hash.length > LARGO_MAXIMO_HASH) return DESCONOCIDA;
   const sinNumeral = hash.startsWith("#") ? hash.slice(1) : hash;
   if (sinNumeral === "" || sinNumeral === "/") return { tipo: "inicio" };
   if (!sinNumeral.startsWith("/")) return DESCONOCIDA;
 
+  // Solo la flota admite consulta (`?filtro=…`); en las demás pantallas un `?` es una ruta que no se entiende.
+  const signo = sinNumeral.indexOf("?");
+  const camino = signo === -1 ? sinNumeral : sinNumeral.slice(0, signo);
+  const consulta = signo === -1 ? null : sinNumeral.slice(signo + 1);
+
   const segmentos: string[] = [];
-  for (const crudo of sinNumeral.slice(1).replace(/\/$/, "").split("/")) {
+  for (const crudo of camino.slice(1).replace(/\/$/, "").split("/")) {
     const s = decodificar(crudo);
     if (s === null) return DESCONOCIDA;
     segmentos.push(s);
   }
 
   const [pantalla, a, b] = segmentos;
+  if (consulta !== null && !(segmentos.length === 1 && pantalla === "flota")) return DESCONOCIDA;
   switch (segmentos.length) {
     case 1:
       if (pantalla === "alertas") return { tipo: "alertas" };
-      if (pantalla === "flota") return { tipo: "flota" };
+      if (pantalla === "flota") {
+        const filtro = consulta === null ? null : filtroDeConsulta(consulta);
+        return filtro === null ? { tipo: "flota" } : { tipo: "flota", filtro };
+      }
       if (pantalla === "conductor") return { tipo: "conductor" };
       return DESCONOCIDA;
     case 2: {
@@ -75,7 +97,7 @@ export function aHash(ruta: Ruta): string {
     case "alertas":
       return "#/alertas";
     case "flota":
-      return "#/flota";
+      return ruta.filtro === undefined ? "#/flota" : `#/flota?filtro=${ruta.filtro}`;
     case "conductor":
       return "#/conductor";
     case "unidad":

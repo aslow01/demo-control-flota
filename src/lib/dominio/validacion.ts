@@ -2,8 +2,18 @@
 
 import { diasEntre, parsearFechaCivil, sumarAnios } from "./fechas.ts";
 import { KM_MAXIMO } from "./kilometraje.ts";
-import { ERRORES, TEXTOS_DE_CAMPO, errTextoCorto, errTextoLargo, errVenceFueraDeRango } from "./textos.ts";
-import { fallo, ok, type FechaCivil, type Resultado } from "./tipos.ts";
+import { formatearPatente, validarPatente } from "./patente.ts";
+import {
+  ERRORES,
+  TEXTOS_DE_CAMPO,
+  errAnioFueraDeRango,
+  errInternoRepetido,
+  errPatenteRepetida,
+  errTextoCorto,
+  errTextoLargo,
+  errVenceFueraDeRango,
+} from "./textos.ts";
+import { fallo, ok, type FechaCivil, type Resultado, type Unidad } from "./tipos.ts";
 
 export interface ReglaTexto {
   /** Nombre del campo en el formulario. */
@@ -85,4 +95,36 @@ export function validarVencimiento(texto: string, hoy: FechaCivil, campo = "venc
     return fallo("vence-fuera-de-rango", errVenceFueraDeRango(maxima), { campo });
   }
   return fecha;
+}
+
+/** U1 y U2: formato de la patente y que no la tenga otra unidad (las de baja también cuentan). Devuelve la patente normalizada. */
+export function validarPatenteDeAlta(unidades: readonly Unidad[], texto: string): Resultado<string> {
+  const patente = validarPatente(texto);
+  if (!patente.ok) return patente;
+  const repetida = unidades.find((u) => u.patente === patente.valor);
+  if (repetida !== undefined) {
+    return fallo("patente-repetida", errPatenteRepetida(formatearPatente(repetida.patente), repetida.interno), { campo: "patente" });
+  }
+  return patente;
+}
+
+/** U3: entero de 1 a 999, único entre las unidades que no están de baja. */
+export function validarInternoDeAlta(unidades: readonly Unidad[], interno: number): Resultado<number> {
+  const valido = validarEntero(interno, 1, 999, "interno", "interno-rango", ERRORES.internoRango);
+  if (!valido.ok) return valido;
+  const igual = unidades.find((u) => u.interno === valido.valor && u.estado.tipo !== "baja");
+  if (igual !== undefined) {
+    return fallo("interno-repetido", errInternoRepetido(valido.valor, formatearPatente(igual.patente)), { campo: "interno" });
+  }
+  return valido;
+}
+
+/** U4: de 1980 al año de hoy más uno. */
+export function rangoDeAnios(hoy: FechaCivil): { minimo: number; maximo: number } {
+  return { minimo: 1980, maximo: Number(hoy.slice(0, 4)) + 1 };
+}
+
+export function validarAnioDeAlta(anio: number, hoy: FechaCivil): Resultado<number> {
+  const { minimo, maximo } = rangoDeAnios(hoy);
+  return validarEntero(anio, minimo, maximo, "anio", "anio-rango", errAnioFueraDeRango(minimo, maximo));
 }

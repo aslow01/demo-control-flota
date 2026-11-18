@@ -6,6 +6,7 @@
 
 import type { Comando } from "./comandos.ts";
 import { diasEntre } from "./fechas.ts";
+import { armarErrores, type ErroresDeFormularioDe } from "./formulario.ts";
 import { formatearPatente } from "./patente.ts";
 import { SUSTANTIVO_NUMERO_DOCUMENTO, TEXTO_CARGAR, TEXTO_RENOVAR } from "./textos.ts";
 import type { Documento, ErrorDeNegocio, Estado, FechaCivil, TipoDocumento, Titular } from "./tipos.ts";
@@ -24,15 +25,8 @@ export interface ValoresDocumento {
   emitido: string;
 }
 
-/** Lo que le toca mostrar al diálogo cuando algo salió mal. El texto escrito no se toca: se conserva (5.11). */
-export interface ErroresDeFormulario {
-  /** Para `aria-invalid` y el mensaje sobre cada campo. */
-  porCampo: Partial<Record<CampoDocumento, string>>;
-  /** El mismo contenido, en el orden del formulario, para el resumen de arriba (5.15) con un enlace a cada campo. */
-  lista: { campo: CampoDocumento; mensaje: string }[];
-  /** Un error que no es de un campo (guardado, documento ya reemplazado, perfil): se muestra arriba del formulario. */
-  general: string | null;
-}
+/** Errores de los diálogos de documento: por campo (`aria-invalid`), en lista para el resumen (5.15) y uno general. El texto escrito se conserva. */
+export type ErroresDeFormulario = ErroresDeFormularioDe<CampoDocumento>;
 
 export interface ContextoRenovar {
   documentoId: string;
@@ -129,12 +123,6 @@ export function comandoDeCargar(titular: Titular, tipoDocumento: TipoDocumento, 
   return { tipo: "cargarDocumento", titular: { tipo: titular.tipo, id: titular.id }, tipoDocumento, ...datosDelComando(v) };
 }
 
-function armar(lista: { campo: CampoDocumento; mensaje: string }[], general: string | null): ErroresDeFormulario {
-  const porCampo: Partial<Record<CampoDocumento, string>> = {};
-  for (const { campo, mensaje } of lista) porCampo[campo] = mensaje;
-  return { porCampo, lista, general };
-}
-
 /**
  * Revisa todos los campos a la vez con los mismos validadores del dominio, para decir cuántas cosas hay que corregir en una
  * sola pasada (5.15). No mira lo que depende de dos campos (V10, emisión posterior al vencimiento) ni del estado: eso lo dice
@@ -150,7 +138,7 @@ export function validarValores(v: ValoresDocumento, hoy: FechaCivil): ErroresDeF
   revisar("emisor", validarTexto(datos.emisor, REGLAS.emisor));
   revisar("vence", validarVencimiento(datos.vence, hoy));
   if (datos.emitido !== null) revisar("emitido", validarFecha(datos.emitido, "emitido"));
-  return lista.length === 0 ? null : armar(lista, null);
+  return lista.length === 0 ? null : armarErrores(lista, null);
 }
 
 function esCampoDocumento(campo: string | undefined): campo is CampoDocumento {
@@ -159,11 +147,11 @@ function esCampoDocumento(campo: string | undefined): campo is CampoDocumento {
 
 /** Un error de negocio del comando, repartido para el formulario: al campo si es uno del diálogo; si no, general. */
 export function erroresDeNegocio(error: ErrorDeNegocio): ErroresDeFormulario {
-  if (esCampoDocumento(error.campo)) return armar([{ campo: error.campo, mensaje: error.mensaje }], null);
-  return armar([], error.mensaje);
+  if (esCampoDocumento(error.campo)) return armarErrores([{ campo: error.campo, mensaje: error.mensaje }], null);
+  return armarErrores([], error.mensaje);
 }
 
 /** Solo un error general (para lo que falla antes o después de los campos: sin datos, sin permiso, guardado). */
 export function errorGeneral(mensaje: string): ErroresDeFormulario {
-  return armar([], mensaje);
+  return armarErrores([], mensaje);
 }

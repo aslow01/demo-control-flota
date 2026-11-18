@@ -22,13 +22,29 @@ import {
   type ErroresDeFormulario,
   type ValoresDocumento,
 } from "../dominio/formulario-documento.ts";
-import { ERRORES, TEXTO_ERROR_ARRANQUE, textoDocumentoCargado, textoDocumentoRenovado, textoQuedanVencimientos } from "../dominio/textos.ts";
+import {
+  comandoDeAgregarUnidad,
+  erroresDeNegocioUnidad,
+  errorGeneralUnidad,
+  validarValoresUnidad,
+  type ErroresDeFormularioUnidad,
+  type ValoresUnidad,
+} from "../dominio/formulario-unidad.ts";
+import {
+  ERRORES,
+  TEXTO_ERROR_ARRANQUE,
+  textoDocumentoCargado,
+  textoDocumentoRenovado,
+  textoQuedanVencimientos,
+  textoUnidadAgregada,
+} from "../dominio/textos.ts";
 import { fallo, ok, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
 import { arrancar, cambiarPerfil as guardarPerfil, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
 import type { Repositorio } from "../persistencia/repositorio.ts";
 import { centroDeAlertas, contarVencimientos, type CentroDeAlertas } from "./centro-alertas.ts";
 import { aHash, nombreDePantalla, resolverRuta, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
+import { panelDeFlota, type PanelFlota } from "./flota.ts";
 import { generarId } from "./ids.ts";
 import type { Reloj } from "./reloj.ts";
 import type { Ubicacion } from "./ubicacion.ts";
@@ -58,6 +74,15 @@ export type FaseApp = "arrancando" | "lista" | "error";
 export type ResultadoGuardadoDocumento =
   | { ok: true; mensaje: string; foco: "titulo-del-panel" }
   | { ok: false; errores: ErroresDeFormulario };
+
+/**
+ * Resultado de guardar «Agregar unidad». Con `ok: false` el diálogo no se cierra y muestra `errores`; el texto escrito se conserva.
+ * Con `ok: true` la unidad ya existe: hay que ir a su ficha (`ruta` para `app.irA`, `href` para un enlace), mostrar allí `mensaje` y dejar
+ * el foco en el título de la ficha (que es lo que ya hace el cambio de pantalla).
+ */
+export type ResultadoAgregarUnidad =
+  | { ok: true; mensaje: string; foco: "titulo-de-la-ficha"; href: string; ruta: Ruta }
+  | { ok: false; errores: ErroresDeFormularioUnidad };
 
 /** El perfil Conductor solo usa los comandos del parte (docs/diseno.md, sección 8). No es seguridad: es la perspectiva. */
 const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarParte", "descartarBorrador"]);
@@ -95,6 +120,10 @@ export class EstadoApp {
   /** Todo lo que dibuja el centro de alertas (6.1), recalculado con cada cambio; `null` hasta que termina el arranque. */
   centroDeAlertas = $derived<CentroDeAlertas | null>(
     this.estado === null || this.alertas === null ? null : centroDeAlertas(this.estado, this.alertas, this.hoy, EMPRESA.nombre),
+  );
+  /** Todas las filas de la flota (6.2), recalculadas con cada cambio; la búsqueda, los filtros y el orden son de `vistaDeFlota`. `null` hasta que termina el arranque. */
+  panelDeFlota = $derived<PanelFlota | null>(
+    this.estado === null || this.alertas === null ? null : panelDeFlota(this.estado, this.alertas, this.hoy),
   );
   /** Nombre con el que firman los eventos: el conductor elegido o la encargada. */
   autor = $derived.by(() => {
@@ -294,6 +323,26 @@ export class EstadoApp {
     const quedan = this.alertas === null ? null : textoQuedanVencimientos(contarVencimientos(this.alertas));
     const hecho = texto(r.valor.estado);
     return { ok: true, mensaje: [hecho, quedan].filter((t) => t !== null).join(" "), foco: "titulo-del-panel" };
+  }
+
+  // --- Diálogo «Agregar unidad» (paso 4.3) ----------------------------------------------------------
+
+  /**
+   * «Agregar unidad»: revisa todos los campos, ejecuta `altaUnidad` (la unidad y su evento en una escritura) y actualiza el estado sin
+   * recargar. La unidad nace en servicio y sin documentos (U5): aparece al instante en el centro de alertas y en la flota con sus
+   * faltantes. Nunca rechaza: los errores vuelven repartidos por campo (o como error general) para el formulario.
+   */
+  async agregarUnidad(valores: ValoresUnidad): Promise<ResultadoAgregarUnidad> {
+    if (this.estado === null) return { ok: false, errores: errorGeneralUnidad(ERRORES.sinDatos) };
+    const previos = validarValoresUnidad(valores, this.estado, this.hoy);
+    if (previos !== null) return { ok: false, errores: previos };
+    const r = await this.ejecutar(comandoDeAgregarUnidad(valores));
+    if (!r.ok) return { ok: false, errores: erroresDeNegocioUnidad(r.error) };
+    const nueva = r.valor.cambios.unidades?.[0];
+    if (nueva === undefined) return { ok: false, errores: errorGeneralUnidad(ERRORES.noPudoGuardar) }; // no pasa: altaUnidad siempre crea una
+    const faltantes = this.alertas?.alertas.filter((a) => a.tipo === "documento-faltante" && a.unidadId === nueva.id).length ?? 0;
+    const ruta: Ruta = { tipo: "unidad", patente: nueva.patente };
+    return { ok: true, mensaje: textoUnidadAgregada(faltantes), foco: "titulo-de-la-ficha", href: aHash(ruta), ruta };
   }
 
   /** D6 y D11: elige el perfil, lo guarda sin marcar la demo como modificada y va al inicio de ese perfil. */

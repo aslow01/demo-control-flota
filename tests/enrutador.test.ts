@@ -159,3 +159,51 @@ describe("enrutador: título de la página", () => {
     expect(tituloDePagina({ tipo: "desconocida" })).toBe("Página no encontrada · Control de flota (demo)");
   });
 });
+
+describe("enrutador: filtro de la flota en la ruta (paso 4.3)", () => {
+  it.each([
+    ["#/flota?filtro=no-disponibles", { tipo: "flota", filtro: "no-disponibles" }],
+    ["#/flota?filtro=pueden-salir", { tipo: "flota", filtro: "pueden-salir" }],
+    ["#/flota?filtro=no-pueden-salir", { tipo: "flota", filtro: "no-pueden-salir" }],
+    ["#/flota?filtro=fuera-de-servicio", { tipo: "flota", filtro: "fuera-de-servicio" }],
+    ["#/flota?filtro=de-baja", { tipo: "flota", filtro: "de-baja" }],
+    ["#/flota/?filtro=de-baja", { tipo: "flota", filtro: "de-baja" }],
+  ] satisfies [string, Ruta][])("%s", (hash, ruta) => {
+    expect(parsearHash(hash)).toEqual(ruta);
+  });
+
+  it("«activas» es el filtro por defecto: no viaja en la ruta", () => {
+    expect(parsearHash("#/flota?filtro=activas")).toEqual({ tipo: "flota" });
+  });
+
+  it("un filtro desconocido, vacío o roto se ignora: es la flota sin filtro, nunca una excepción ni un eco del texto", () => {
+    for (const h of ["#/flota?filtro=zz9", "#/flota?filtro=", "#/flota?", "#/flota?x=1", "#/flota?filtro=%E0%A4%A", "#/flota?filtro=__proto__", "#/flota?filtro=<script>"]) {
+      expect(parsearHash(h)).toEqual({ tipo: "flota" });
+    }
+    expect(parsearHash("#/flota?filtro=de-baja&filtro=pueden-salir")).toEqual({ tipo: "flota", filtro: "de-baja" });
+  });
+
+  it("solo la flota admite consulta: en las demás pantallas sigue siendo una ruta desconocida", () => {
+    for (const h of ["#/alertas?filtro=de-baja", "#/conductor?x=1", "#/parte/ZK214BD/2026-11-18?x=1"]) {
+      expect(parsearHash(h)).toEqual({ tipo: "desconocida" });
+    }
+  });
+
+  it("aHash: forma canónica con y sin filtro; ida y vuelta", () => {
+    expect(aHash({ tipo: "flota" })).toBe("#/flota");
+    expect(aHash({ tipo: "flota", filtro: "no-disponibles" })).toBe("#/flota?filtro=no-disponibles");
+    for (const filtro of ["pueden-salir", "no-pueden-salir", "fuera-de-servicio", "de-baja", "no-disponibles"] as const) {
+      expect(parsearHash(aHash({ tipo: "flota", filtro }))).toEqual({ tipo: "flota", filtro });
+    }
+  });
+
+  it("el encargado la ve con su filtro; el conductor, no (se lo lleva a su inicio)", () => {
+    expect(resolverRuta("#/flota?filtro=no-disponibles", ENCARGADO)).toEqual({ tipo: "flota", filtro: "no-disponibles" });
+    expect(resolverRuta("#/flota?filtro=no-disponibles", CONDUCTOR)).toEqual({ tipo: "conductor" });
+  });
+
+  it("el nombre y el título de la pantalla no cambian con el filtro", () => {
+    expect(nombreDePantalla({ tipo: "flota", filtro: "de-baja" })).toBe("Flota");
+    expect(tituloDePagina({ tipo: "flota", filtro: "de-baja" })).toBe("Flota · Control de flota (demo)");
+  });
+});

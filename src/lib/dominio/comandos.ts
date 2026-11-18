@@ -16,8 +16,8 @@ import {
   novedadesDelParte,
   validarFechaParte,
 } from "./parte.ts";
-import { formatearPatente, validarPatente } from "./patente.ts";
-import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, abreviar, errAnioFueraDeRango, errDocumentoExistente, errInternoRepetido, errKmCorreccionAnterior, errNovedadesCriticasAbiertas, errParteDuplicado, errPatenteRepetida, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
+import { formatearPatente } from "./patente.ts";
+import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errNovedadesCriticasAbiertas, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
 import {
   fallo,
   ok,
@@ -41,9 +41,11 @@ import {
 } from "./tipos.ts";
 import {
   REGLAS,
-  validarEntero,
+  validarAnioDeAlta,
   validarFecha,
+  validarInternoDeAlta,
   validarKmNumero,
+  validarPatenteDeAlta,
   validarTexto,
   validarTextoDeBorrador,
   validarVencimiento,
@@ -294,22 +296,11 @@ function etiquetaDeTitular(estado: Estado, titular: Titular): string {
 // ---------------------------------------------------------------------------------------------
 
 function altaUnidad(estado: Estado, c: Extract<Comando, { tipo: "altaUnidad" }>, ctx: Contexto): Resultado<Parcial> {
-  const patente = validarPatente(c.patente);
+  const patente = validarPatenteDeAlta(estado.unidades, c.patente);
   if (!patente.ok) return patente;
-  const repetida = estado.unidades.find((u) => u.patente === patente.valor);
-  if (repetida !== undefined) {
-    return fallo("patente-repetida", errPatenteRepetida(pat(repetida), repetida.interno), { campo: "patente" });
-  }
-
-  const interno = validarEntero(c.interno, 1, 999, "interno", "interno-rango", ERRORES.internoRango);
+  const interno = validarInternoDeAlta(estado.unidades, c.interno);
   if (!interno.ok) return interno;
-  const mismoInterno = estado.unidades.find((u) => u.interno === interno.valor && u.estado.tipo !== "baja");
-  if (mismoInterno !== undefined) {
-    return fallo("interno-repetido", errInternoRepetido(interno.valor, pat(mismoInterno)), { campo: "interno" });
-  }
-
-  const anioDeHoy = Number(ctx.hoy.slice(0, 4));
-  const anio = validarEntero(c.anio, 1980, anioDeHoy + 1, "anio", "anio-rango", errAnioFueraDeRango(1980, anioDeHoy + 1));
+  const anio = validarAnioDeAlta(c.anio, ctx.hoy);
   if (!anio.ok) return anio;
 
   const marca = validarTexto(c.marca, REGLAS.marca);
