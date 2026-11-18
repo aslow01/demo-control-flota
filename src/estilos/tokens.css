@@ -1,0 +1,184 @@
+/* Tokens de diseño (docs/diseno-ui.md, sección 3). Claro por defecto; el oscuro sigue al dispositivo (sin selector de tema).
+   Prefijos: --c- color · --t- tipografía · --e- espaciado · --r- radio · --s- sombra · --m- movimiento.
+   Los valores de color se miden con `npm run contraste` (scripts/contraste.mjs): si se cambia uno, se vuelve a correr. */
+
+:root {
+  color-scheme: light dark;
+
+  /* ---------- Color: base (heredado de la Demo 1) ---------- */
+  --c-escritorio: #e9eae3;
+  --c-fondo: #f5f5f1;
+  --c-superficie: #ffffff;
+  --c-superficie-2: #eeeee8;
+  --c-ventana-barra: #f6f6f2;
+  --c-ventana-borde: #cbccc3;
+  --c-ventana-control-hover: #e7e8e1;
+  --c-texto: #1c1f23;
+  --c-texto-2: #4d545b;
+  --c-texto-3: #62686f;
+  --c-borde: #dcddd5;
+  --c-borde-fuerte: #7d8288;
+  --c-acento: #0b6b70;
+  --c-acento-hover: #085459;
+  --c-acento-texto: #ffffff;
+  --c-acento-suave: #e2f0ef;
+  --c-foco: #0b6b70;
+  --c-edicion: #e8f3f3;
+  --c-peligro-texto: #ffffff;
+
+  /* ---------- Color: tonos de estado (t = texto, f = fondo, r = franja o marca) ---------- */
+  --c-ok-t: #1d6a39;
+  --c-ok-f: #e3f1e7;
+  --c-ok-r: #2f8a50;
+  --c-pendiente-t: #0a5f64;
+  --c-pendiente-f: #e2f0ef;
+  --c-pendiente-r: #0b6b70;
+  --c-revisar-t: #774700;
+  --c-revisar-f: #fbeed3;
+  --c-revisar-r: #b57a06;
+  --c-diferencia-t: #9e2620;
+  --c-diferencia-f: #fae5e2;
+  --c-diferencia-r: #c4372e;
+  --c-neutro-t: #4d545b;
+  --c-neutro-f: #ecede7;
+  --c-neutro-r: #8e949a;
+
+  /* ---------- Color: tonos con nombre de esta demo (3.2). Son alias: siguen solos al modo oscuro. ---------- */
+  --c-critico-t: var(--c-diferencia-t);
+  --c-critico-f: var(--c-diferencia-f);
+  --c-critico-r: var(--c-diferencia-r);
+  --c-semana-t: var(--c-revisar-t);
+  --c-semana-f: var(--c-revisar-f);
+  --c-semana-r: var(--c-revisar-r);
+  --c-quincena-t: var(--c-pendiente-t);
+  --c-quincena-f: var(--c-pendiente-f);
+  --c-quincena-r: var(--c-pendiente-r);
+  --c-mes-t: var(--c-neutro-t);
+  --c-mes-f: var(--c-neutro-f);
+  --c-mes-r: #737980; /* nuevo: el neutro-r (#8e949a) da 2,63:1 sobre la pista del horizonte */
+  --c-vigente-t: var(--c-ok-t);
+  --c-vigente-f: var(--c-ok-f);
+  --c-vigente-r: var(--c-ok-r);
+
+  /* ---------- Color: nuevos de esta demo (3.2) ---------- */
+  --c-patente-fondo: #ffffff;
+  --c-patente-banda: #4d545b;
+  --c-hoy: #1c1f23;
+  --c-velo: rgb(12 14 16 / 0.45);
+  /* Peligro con el cursor encima: 8 % más oscuro que el rojo base (en claro y en oscuro). */
+  --c-peligro-hover: color-mix(in srgb, var(--c-critico-r) 92%, black);
+
+  /* ---------- Tipografía (de sistema: la CSP no permite fuentes externas) ---------- */
+  --t-familia: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
+  --t-familia-titulo: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
+  --t-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --t-cifra: clamp(2.5rem, 1.9rem + 2.6vw, 3.5rem);
+  --t-h1: clamp(1.75rem, 1.35rem + 1.8vw, 2.5rem);
+  --t-h2: 1.375rem;
+  --t-h3: 1.125rem;
+  --t-cuerpo: 1rem;
+  --t-tabla: 0.875rem;
+  --t-chico: 0.8125rem;
+  --t-rotulo: 0.75rem;
+  --t-patente-chica: 0.8125rem;
+  --t-patente-grande: 1.25rem;
+  /* 650 con fuente variable; los navegadores sin ella redondean a 600. */
+  --t-peso-h2: 650;
+
+  /* ---------- Espaciado (base 4 px) ---------- */
+  --e-1: 0.25rem;
+  --e-2: 0.5rem;
+  --e-3: 0.75rem;
+  --e-4: 1rem;
+  --e-5: 1.5rem;
+  --e-6: 2rem;
+  --e-7: 3rem;
+  --e-8: 4rem;
+  --gutter: 1rem;
+  --ancho-max: 76rem;
+  --ancho-parte: 40rem;
+
+  /* ---------- Radios (sin píldoras) ---------- */
+  --r-1: 4px;
+  --r-2: 6px;
+  --r-3: 10px;
+  --r-4: 14px;
+
+  /* ---------- Sombras ---------- */
+  --s-ventana: 0 1px 2px rgb(16 24 32 / 0.06), 0 6px 16px -4px rgb(16 24 32 / 0.1);
+  --s-flotante: 0 8px 24px rgb(16 24 32 / 0.16), 0 2px 6px rgb(16 24 32 / 0.08);
+
+  /* ---------- Alturas fijas ---------- */
+  --alto-barra-envio: 4.5rem;
+  --alto-tactil: 2.75rem; /* 44 px: mínimo de todo lo que se pulsa */
+  --alto-segmento: 3rem; /* 48 px: botones del checklist y del combustible */
+
+  /* ---------- Movimiento ---------- */
+  --m-rapido: 120ms;
+  --m-medio: 200ms;
+  --m-lento: 320ms;
+  --m-curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 68.75rem) {
+  :root {
+    --gutter: 2rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-escritorio: #0c0e10;
+    --c-fondo: #111417;
+    --c-superficie: #181c20;
+    --c-superficie-2: #20252a;
+    --c-ventana-barra: #1d2226;
+    --c-ventana-borde: #343b42;
+    --c-ventana-control-hover: #2a3036;
+    --c-texto: #e8ebed;
+    --c-texto-2: #aeb6bd;
+    --c-texto-3: #8f98a0;
+    --c-borde: #2d3339;
+    --c-borde-fuerte: #6e777f;
+    --c-acento: #5bc6c0;
+    --c-acento-hover: #7dd5d0;
+    --c-acento-texto: #062221;
+    --c-acento-suave: #123231;
+    --c-foco: #5bc6c0;
+    --c-edicion: #14292a;
+    --c-peligro-texto: #1a0b0a;
+
+    --c-ok-t: #86d6a1;
+    --c-ok-f: #16301f;
+    --c-ok-r: #45b26e;
+    --c-pendiente-t: #7dd5d0;
+    --c-pendiente-f: #123231;
+    --c-pendiente-r: #5bc6c0;
+    --c-revisar-t: #f1c46e;
+    --c-revisar-f: #33280f;
+    --c-revisar-r: #d9a030;
+    --c-diferencia-t: #f59b91;
+    --c-diferencia-f: #3a1b18;
+    --c-diferencia-r: #e2665b;
+    --c-neutro-t: #aeb6bd;
+    --c-neutro-f: #23282d;
+    --c-neutro-r: #7a838b;
+
+    --c-mes-r: #7a838b;
+
+    --c-patente-fondo: #22282d;
+    --c-patente-banda: #aeb6bd;
+    --c-hoy: #e8ebed;
+    --c-velo: rgb(0 0 0 / 0.6);
+
+    --s-ventana: inset 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 20px -6px rgb(0 0 0 / 0.6);
+    --s-flotante: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px #2d3339;
+  }
+}

@@ -13,6 +13,7 @@
     "test:tz": "node scripts/test-tz.mjs",
     "typecheck": "tsc --noEmit",
     "buscar": "node scripts/buscar-prohibidos.mjs",
+    "contraste": "node scripts/contraste.mjs",
     "servir": "node scripts/servir-dist.mjs"
   },
   "dependencies": {

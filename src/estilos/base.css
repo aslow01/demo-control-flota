@@ -1,0 +1,239 @@
+/* Reinicio, página, tonos, foco, utilidades y movimiento reducido (docs/diseno-ui.md, secciones 3, 5 y 9).
+   Lo de cada pieza (patente, etiqueta, panel, botón, campo) vive en su componente, en src/componentes. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Sin desplazamiento suave (5.2/6: al cambiar de ruta la página sube de golpe). */
+  scroll-behavior: auto;
+  scroll-padding-block: var(--e-4);
+}
+
+body {
+  margin: 0;
+  background: var(--c-escritorio);
+  color: var(--c-texto);
+  font-family: var(--t-familia);
+  font-size: var(--t-cuerpo);
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+fieldset,
+figure,
+dl,
+dd {
+  margin: 0;
+}
+
+fieldset {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--t-familia-titulo);
+  color: var(--c-texto);
+}
+h1 {
+  font-size: var(--t-h1);
+  line-height: 1.15;
+  font-weight: 700;
+}
+h2 {
+  font-size: var(--t-h2);
+  line-height: 1.25;
+  font-weight: var(--t-peso-h2);
+}
+h3 {
+  font-size: var(--t-h3);
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--c-acento);
+  text-underline-offset: 3px;
+}
+@media (hover: hover) {
+  a:hover {
+    text-decoration-thickness: 2px;
+  }
+}
+
+/* Foco visible en todo: un solo anillo, el del acento. Nunca `outline: none` sin reemplazo. */
+:focus-visible {
+  outline: 2px solid var(--c-foco);
+  outline-offset: 2px;
+}
+/* Lo que recibe el foco por programa (h1, h2 del panel, resumen de errores) no lleva anillo si no se llegó con teclado. */
+[tabindex="-1"]:focus:not(:focus-visible) {
+  outline: none;
+}
+
+progress {
+  accent-color: var(--c-acento);
+}
+
+/* ---------- Tonos de estado: una sola definición; la usan etiquetas, franjas, avisos y mensajes ---------- */
+[data-tono="critico"] {
+  --tono-t: var(--c-critico-t);
+  --tono-f: var(--c-critico-f);
+  --tono-r: var(--c-critico-r);
+}
+[data-tono="semana"] {
+  --tono-t: var(--c-semana-t);
+  --tono-f: var(--c-semana-f);
+  --tono-r: var(--c-semana-r);
+}
+[data-tono="quincena"] {
+  --tono-t: var(--c-quincena-t);
+  --tono-f: var(--c-quincena-f);
+  --tono-r: var(--c-quincena-r);
+}
+[data-tono="mes"] {
+  --tono-t: var(--c-mes-t);
+  --tono-f: var(--c-mes-f);
+  --tono-r: var(--c-mes-r);
+}
+[data-tono="vigente"] {
+  --tono-t: var(--c-vigente-t);
+  --tono-f: var(--c-vigente-f);
+  --tono-r: var(--c-vigente-r);
+}
+[data-tono="neutro"] {
+  --tono-t: var(--c-neutro-t);
+  --tono-f: var(--c-neutro-f);
+  --tono-r: var(--c-neutro-r);
+}
+
+/* ---------- Utilidades ---------- */
+
+/* Sprite de íconos (vive en index.html). Fuera de la vista pero presente: los <use> lo necesitan. */
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Texto solo para lectores de pantalla. */
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Enlace "Ir al contenido": visible solo al recibir el foco. */
+.saltar {
+  position: absolute;
+  left: var(--e-2);
+  top: var(--e-2);
+  z-index: 50;
+  padding: var(--e-3) var(--e-4);
+  border-radius: var(--r-2);
+  background: var(--c-acento);
+  color: var(--c-acento-texto);
+  font-weight: 600;
+  transform: translateY(-300%);
+}
+.saltar:focus-visible {
+  transform: none;
+}
+
+/* Rótulo: mayúsculas chicas, solo para rótulos y cabeceras de tabla. */
+.rotulo {
+  font-size: var(--t-rotulo);
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.nota {
+  font-size: var(--t-chico);
+  line-height: 1.4;
+  color: var(--c-texto-2);
+}
+
+/* Cifras (kilómetros, litros, días, conteos, fechas en tablas). */
+.num,
+.km {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Códigos (patente, número de póliza, legajo). */
+.codigo {
+  font-family: var(--t-mono);
+}
+
+/* Medida de lectura de los párrafos. */
+.parrafo {
+  max-width: 62ch;
+}
+
+/* Contenedor centrado con medianil lateral. */
+.contenedor {
+  width: 100%;
+  max-width: var(--ancho-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ---------- Colores forzados (contraste alto de Windows) ---------- */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+/* ---------- Movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

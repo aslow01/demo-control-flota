@@ -1,4 +1,6 @@
 import { mount } from "svelte";
+import "./estilos/tokens.css";
+import "./estilos/base.css";
 import App from "./App.svelte";
 import { app } from "./lib/estado/instancia.ts";
 
