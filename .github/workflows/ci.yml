@@ -1,0 +1,29 @@
+# Integración continua. Nota: hoy GitHub Actions no corre en la cuenta (facturación); el archivo queda listo.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      # Con TZ lejana de Argentina por defecto (vite.config.ts): protege la regla T2.
+      - run: npm test
+      # La matriz completa de zonas horarias: UTC, Asia/Tokyo y America/Los_Angeles.
+      - run: npm run test:tz
+      # Excepción conocida: 5 altas por `picomatch` (ReDoS en extglobs, GHSA-fc5q-39xc-vjpf) en herramientas de
+      # desarrollo, sin versión corregida publicada. Por eso el umbral es `critical`. Volver a `high` cuando salga el parche.
+      - run: npm audit --audit-level=critical
