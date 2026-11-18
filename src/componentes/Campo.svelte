@@ -1,0 +1,220 @@
+<script lang="ts">
+  // 5.11 Campo de formulario: etiqueta arriba, ayuda debajo de la etiqueta, mensaje de error entre la etiqueta y el campo
+  // (patrón GOV.UK) y el control. El texto escrito se conserva siempre. No hay campos deshabilitados: si no aplica, no se muestra
+  // (para mostrar un dato sin editar, usar el componente Dato).
+  //
+  // Tipos: texto · km (inputmode numérico, sufijo "km", al salir se reformatea con punto de miles; no es type="number") ·
+  // litros (inputmode decimal, sufijo "litros") · fecha (type="date" nativo) · area (textarea de 3 renglones que crece hasta 8,
+  // con contador desde 400 caracteres) · select (las <option> van como contenido).
+  //
+  // El valor es siempre texto (`bind:valor`): convertirlo y validarlo es del dominio, no del componente.
+  import type { Snippet } from "svelte";
+  import { formatearKm } from "../lib/dominio/textos.ts";
+  import Icono from "./Icono.svelte";
+
+  let {
+    etiqueta,
+    valor = $bindable(""),
+    tipo = "texto",
+    id,
+    ayuda = "",
+    error = "",
+    sufijo,
+    requerido = false,
+    grande = false,
+    autocomplete,
+    maximo = 500,
+    children,
+  }: {
+    etiqueta: string;
+    valor?: string;
+    tipo?: "texto" | "km" | "litros" | "fecha" | "area" | "select";
+    /** Id del control (para enlazarlo desde el resumen de errores). Si no se da, se genera uno. */
+    id?: string;
+    ayuda?: string;
+    error?: string;
+    /** Unidad fuera del campo. Por defecto "km" para `km` y "litros" para `litros`. */
+    sufijo?: string;
+    requerido?: boolean;
+    /** Alto de 3 rem (el parte diario); sin esto, 2.75 rem. */
+    grande?: boolean;
+    autocomplete?: "off" | "on";
+    /** Tope del contador del tipo `area` (la validación es del dominio). */
+    maximo?: number;
+    /** Las <option> del tipo `select`. */
+    children?: Snippet;
+  } = $props();
+
+  const uid = $props.id();
+  const idControl = $derived(id ?? `${uid}-campo`);
+  const idAyuda = $derived(`${idControl}-ayuda`);
+  const idError = $derived(`${idControl}-error`);
+  const idContador = $derived(`${idControl}-contador`);
+
+  const unidad = $derived(sufijo ?? (tipo === "km" ? "km" : tipo === "litros" ? "litros" : ""));
+  const mostrarContador = $derived(tipo === "area" && valor.length >= 400);
+  // El mensaje de error va primero en aria-describedby (se lee antes que la ayuda).
+  const descripcion = $derived(
+    [error !== "" ? idError : "", ayuda !== "" ? idAyuda : "", mostrarContador ? idContador : ""].filter((s) => s !== "").join(" ") ||
+      undefined,
+  );
+
+  /** Al salir del campo de kilómetros: 84320 -> 84.320. Si no es un número, se deja tal cual (lo valida el dominio). */
+  function reformatear(): void {
+    if (tipo !== "km") return;
+    const digitos = valor.replace(/[.\s]/g, "");
+    if (/^\d{1,15}$/.test(digitos)) valor = formatearKm(Number(digitos));
+  }
+</script>
+
+<div class="campo" data-grande={grande ? "" : undefined}>
+  <label for={idControl}>{etiqueta}{#if requerido}<span class="req" aria-hidden="true"> *</span>{/if}</label>
+  {#if ayuda !== ""}<p class="ayuda" id={idAyuda}>{ayuda}</p>{/if}
+  {#if error !== ""}
+    <p class="error" id={idError}><Icono nombre="vencido" /><span>{error}</span></p>
+  {/if}
+  <div class="fila">
+    {#if tipo === "select"}
+      <select
+        id={idControl}
+        bind:value={valor}
+        aria-invalid={error !== "" ? "true" : undefined}
+        aria-required={requerido ? "true" : undefined}
+        aria-describedby={descripcion}
+      >
+        {@render children?.()}
+      </select>
+    {:else if tipo === "area"}
+      <textarea
+        id={idControl}
+        bind:value={valor}
+        rows="3"
+        aria-invalid={error !== "" ? "true" : undefined}
+        aria-required={requerido ? "true" : undefined}
+        aria-describedby={descripcion}
+      ></textarea>
+    {:else}
+      <input
+        id={idControl}
+        class:corto={tipo === "km" || tipo === "litros"}
+        type={tipo === "fecha" ? "date" : "text"}
+        inputmode={tipo === "km" ? "numeric" : tipo === "litros" ? "decimal" : undefined}
+        autocomplete={autocomplete ?? (tipo === "texto" ? undefined : "off")}
+        bind:value={valor}
+        onblur={reformatear}
+        aria-invalid={error !== "" ? "true" : undefined}
+        aria-required={requerido ? "true" : undefined}
+        aria-describedby={descripcion}
+      />
+    {/if}
+    {#if unidad !== ""}<span class="sufijo">{unidad}</span>{/if}
+  </div>
+  {#if mostrarContador}
+    <p class="contador num" id={idContador}>{valor.length} de {maximo}</p>
+  {/if}
+</div>
+
+<style>
+  .campo {
+    --alto: var(--alto-tactil);
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-1);
+    min-width: 0;
+  }
+  .campo[data-grande] {
+    --alto: var(--alto-segmento);
+  }
+  label {
+    font-size: var(--t-chico);
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--c-texto);
+  }
+  .ayuda,
+  .contador {
+    font-size: var(--t-chico);
+    line-height: 1.4;
+    color: var(--c-texto-2);
+  }
+  .contador {
+    text-align: right;
+  }
+  .error {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--e-2);
+    font-size: var(--t-chico);
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--c-critico-t);
+  }
+  .error :global(.icono) {
+    --icono-tam: 1rem;
+    margin-top: 0.1rem;
+  }
+
+  .fila {
+    display: flex;
+    align-items: center;
+    gap: var(--e-2);
+    min-width: 0;
+  }
+  .sufijo {
+    flex: none;
+    font-size: var(--t-cuerpo);
+    color: var(--c-texto-2);
+  }
+
+  input,
+  select,
+  textarea {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    height: var(--alto);
+    padding: 0 var(--e-3);
+    border: 1px solid var(--c-borde-fuerte);
+    border-radius: var(--r-2);
+    background: var(--c-superficie);
+    color: var(--c-texto);
+    font-size: var(--t-cuerpo); /* 16 px: evita el zoom automático de iOS */
+    line-height: 1.5;
+  }
+  input.corto {
+    flex: 0 1 auto;
+    width: calc(10ch + 2 * var(--e-3) + 2px);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  textarea {
+    height: auto;
+    min-height: calc(3 * 1.5em + 2 * var(--e-2) + 2px);
+    max-height: calc(8 * 1.5em + 2 * var(--e-2) + 2px);
+    padding-block: var(--e-2);
+    resize: vertical;
+    /* Crece con el texto hasta 8 renglones donde el navegador lo permite; en los demás queda de 3 y se estira a mano. */
+    field-sizing: content;
+  }
+  input[type="date"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (hover: hover) {
+    input:hover,
+    select:hover,
+    textarea:hover {
+      border-color: var(--c-texto-2);
+    }
+  }
+
+  /* Inválido: borde de 2 px (el relleno baja 1 px para que el campo no se mueva) y el hover no lo apaga. */
+  input[aria-invalid="true"],
+  select[aria-invalid="true"],
+  textarea[aria-invalid="true"],
+  input[aria-invalid="true"]:hover,
+  select[aria-invalid="true"]:hover,
+  textarea[aria-invalid="true"]:hover {
+    padding-inline: calc(var(--e-3) - 1px);
+    border: 2px solid var(--c-critico-r);
+  }
+</style>
