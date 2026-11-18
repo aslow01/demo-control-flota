@@ -165,3 +165,9 @@ export function formatearInstante(instante: Instante): string {
   const p = partesEnArgentina(msDeInstante(instante));
   return `${p.dia}/${p.mes}/${p.anio} ${p.hora}:${p.minuto}`;
 }
+
+/** T6: `14:32`, la hora de un instante en hora de Argentina (para «Guardado a las 14:32» y «Enviado a las 18:42»). */
+export function formatearHora(instante: Instante): string {
+  const p = partesEnArgentina(msDeInstante(instante));
+  return `${p.hora}:${p.minuto}`;
+}

@@ -5,6 +5,7 @@ import {
   fechaEnArgentina,
   formatearFecha,
   formatearFechaConDia,
+  formatearHora,
   formatearInstante,
   hoyEnArgentina,
   parsearFechaCivil,
@@ -207,6 +208,13 @@ describe("T6: formatos para mostrar", () => {
     expect(formatearInstante("2026-11-18T17:32:00Z")).toBe("18/11/2026 14:32");
     expect(formatearInstante("2026-11-18T02:59:00Z")).toBe("17/11/2026 23:59");
     expect(formatearInstante("2026-11-18T03:00:00Z")).toBe("18/11/2026 00:00");
+  });
+
+  it("T6: la hora sola, en hora de Argentina", () => {
+    expect(formatearHora("2026-11-18T17:32:00Z")).toBe("14:32");
+    expect(formatearHora("2026-11-18T03:00:00Z")).toBe("00:00");
+    expect(formatearHora("2026-11-18T02:59:00Z")).toBe("23:59");
+    expect(() => formatearHora("2026-11-18T17:32:00")).toThrow(/Instante inválido/);
   });
 
   it("T6: fecha civil con y sin día de la semana", () => {
