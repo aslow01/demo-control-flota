@@ -302,3 +302,60 @@ vacío" para D11; `resolverNovedad` con `volverAServicio` reutilizando A4; guard
 - Docs: fila 3.4 de `plan.md` sin "pantalla de error" (se quitó en `8f38ed9`), 158 mediciones, README al día, ruta local quitada del informe de QA.
 - **Antes de publicar el repo:** `scripts/buscar-prohibidos.mjs` contiene literalmente los patrones prohibidos (nombra a la empresa): moverlos a un archivo no versionado o a una variable de entorno de CI. Historial nuevo (B11) por el correo de autor.
 - Pendiente: humo de interfaz con Playwright en CI (no hay tests de componentes; la vista se verificó a mano); probar Firefox, Safari real y un lector de pantalla; Esc no cierra si el foco quedó en `body` dentro del diálogo (caso forzado, sin impacto práctico); fechas inválidas en datos guardados pasan sin aviso D7 (las pantallas 4.x deben tolerarlas).
+
+## 18/11/2026 (noche, 8) — Paso 4.1 (lógica): Horizonte, tres variantes
+
+**Qué se hizo.** `src/lib/dominio/horizonte.ts` (módulo puro) y `tests/horizonte.test.ts` (29 tests, escritos primero y vistos fallar). Sin
+cambios en estilos ni en componentes. `dominio/textos.ts` suma `TEXTO_HORIZONTE` (rótulos de la caja y texto de pista vacía); el `aria-label`
+sigue saliendo de `textoHorizonte` (ya existía y coincide letra por letra con 5.6). Las decisiones que la especificación no cubría están en
+`diseno.md`, sección 16, última viñeta.
+
+**API para el maquetador** (todo desde `src/lib/dominio/horizonte.ts`):
+
+```ts
+horizonteCompleto(r: { alertas: Alerta[] }, op?: { maxApiladas?: number }): Horizonte          // centro de alertas
+horizonteDeUnidad(r, unidadId: string, op?): Horizonte                                         // ficha (variante "mediana")
+horizonteMinimo(r, unidadId: string, op?): Horizonte                                           // columna de la flota
+// `r` es el resultado de calcularAlertas: en un componente, `app.alertas` (es null hasta que termina el arranque).
+
+interface Horizonte {
+  variante: "completa" | "mediana" | "minima";
+  columnas: { dia: number; columna: number /* día+1, 1..31 */; marcas: MarcaHorizonte[] /* de abajo hacia arriba */;
+              total: number; ocultas: number }[];                       // solo los días con marcas, en orden
+  vacio: boolean;                                                        // sin marcas
+  vencidos: number; porGrupo: Record<"vencidos" | "7" | "15" | "30", number>;
+  cajaVencidos: { rotulo: string; cifra: number; conAlerta: boolean } | null;   // null en la mínima; conAlerta=false -> gris con "0"
+  escala: readonly { etiqueta; etiquetaCorta; dia; columna; linea: boolean }[];  // rótulos 5.6; [] en la mínima
+  textoVacio: string | null;      // "Nada vence en los próximos 30 días" (centrado sobre la pista vacía)
+  etiquetaAria: string | null;    // para role="img" aria-label; null en la mínima
+  ocultoAAyudas: boolean;         // true en la mínima: aria-hidden="true"
+}
+interface MarcaHorizonte { alertaId: string; dia: number; tramo: "semana" | "quincena" | "mes"; gravedad: "critica" | "media" | "baja"; hueca: boolean }
+// También: TRAMOS_PISTA (semana 1/9, quincena 9/17, mes 17/32: líneas de grilla con fin exclusivo, para el borde inferior), tramoDeDia(dia),
+// ESCALA_COMPLETA, ESCALA_MEDIANA, MAX_APILADAS.
+```
+
+```svelte
+<script lang="ts">
+  import { horizonteCompleto } from "../lib/dominio/horizonte.ts";
+  let { app } = $props();
+  const h = $derived(app.alertas === null ? null : horizonteCompleto(app.alertas));
+</script>
+{#if h}
+  <div class="pista" role="img" aria-label={h.etiquetaAria}>
+    {#each h.columnas as c (c.dia)}
+      <div class="columna" style:grid-column-start={c.columna}>
+        {#each c.marcas as m (m.alertaId)}
+          <span class="marca" data-tramo={m.tramo} class:hueca={m.hueca}></span>
+        {/each}
+      </div>
+    {/each}
+    {#if h.textoVacio}<span class="vacio">{h.textoVacio}</span>{/if}
+  </div>
+{/if}
+```
+
+El color de la marca sale de `data-tramo` (`--c-semana-r`, `--c-quincena-r`, `--c-mes-r`), no de la gravedad (la gravedad se expone por si
+la ficha o el filtro la quieren). Sin `style="…"` en el marcado: solo la directiva `style:grid-column-start`.
+
+**Verificación.** `npm test`: 724 tests (695 + 29), verdes también con `npm run test:tz` (UTC, Asia/Tokyo y America/Los_Angeles); `npm run check`: 0 errores; `npm audit`: 0 vulnerabilidades; `npm run build` y `npm run buscar` sin hallazgos. Pendiente para el maquetador: forced-colors y CSP en el navegador, y el horizonte mediano de «Cómo funciona» (se puede alimentar con `horizonteCompleto` sobre el estado del generador).

@@ -746,3 +746,11 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
 - **Perfil guardado inválido (QA B4).** Al arrancar con datos guardados, si `meta.perfil` no es el encargado ni un conductor que existe,
   el estado en memoria queda con el encargado (sin aviso). No se reescribe el almacenamiento en el arranque: la corrección viaja en
   la próxima escritura de `meta`.
+- **Horizonte, lógica (paso 4.1, 18/11/2026).** `dominio/horizonte.ts` arma lo que dibuja 5.6 a partir de `calcularAlertas` (no duplica reglas).
+  Lo que la especificación no fijaba: (1) *más de 4 el mismo día:* se dibujan 3 marcas llenas y la cuarta hueca («y más»); el máximo (4) cuenta la
+  hueca. `ocultas` = vencimientos del día sin marca llena (los que representa el aro). (2) *Mediana:* mismo máximo de 4 apiladas (la regla
+  general de 5.6); el maquetador puede bajarlo con `maxApiladas` si 2rem no alcanza. `aria-label` = el mismo de la completa, con los números de la
+  unidad. (3) *Mínima:* una sola marca, la del vencimiento más próximo de la unidad (es lo que dice el texto de la celda; con 4rem de ancho no
+  se distinguirían varias). Sin caja, sin escala, `aria-hidden`. Si la unidad no tiene nada en 30 días, pista sin marcas y sin texto de vacío.
+  (4) *Vacío:* una pista «vacía» es la que no tiene marcas, aunque haya vencidos (la caja y el `aria-label` los dicen). (5) *Qué cuenta:* solo
+  alertas de la categoría vencimientos; las de operación no. En la ficha, solo las de esa unidad (las del conductor tienen `unidadId` nulo).

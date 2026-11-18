@@ -298,6 +298,15 @@ export function textoDisponibles(disponibles: number, activas: number): string {
   return `Disponibles hoy: ${disponibles} de ${pluralizar(activas, "unidad activa", "unidades activas")}.`;
 }
 
+/** 5.6: textos fijos del horizonte (los números van en `textoHorizonte`). */
+export const TEXTO_HORIZONTE = {
+  /** Caja de vencidos de la variante completa y de la mediana (rótulo compacto). */
+  rotuloCajaCompleta: "Vencidos y faltantes",
+  rotuloCajaMediana: "Vencidos",
+  /** Centrado sobre la pista sin marcas. */
+  vacio: "Nada vence en los próximos 30 días",
+} as const;
+
 /** 5.6: resumen del horizonte para lectores de pantalla. */
 export function textoHorizonte(porGrupo: { vencidos: number; "7": number; "15": number; "30": number }): string {
   const vencidos =
