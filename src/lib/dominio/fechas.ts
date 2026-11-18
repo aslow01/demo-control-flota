@@ -64,7 +64,7 @@ function armar(anio: number, mes: number, dia: number): FechaCivil {
   return `${String(anio).padStart(4, "0")}-${dosDigitos(mes)}-${dosDigitos(dia)}`;
 }
 
-/** T4: valida a mano `AAAA-MM-DD` (año 2000 a 2100). Devuelve la misma fecha o `null`. Nunca usa `new Date(texto)`. */
+/** T4: valida a mano `AAAA-MM-DD` (año 2000 a 2100). Devuelve la misma fecha o `null`. Nunca interpreta el texto con el constructor de Date (corre un día). */
 export function parsearFechaCivil(texto: string): FechaCivil | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(texto);
   if (m === null) return null;

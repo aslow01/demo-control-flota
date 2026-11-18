@@ -139,8 +139,9 @@ describe("D3: todo es ficticio y se nota", () => {
   });
 
   it("ningún texto del ejemplo menciona empresas ni sistemas reales", () => {
+    // sin direcciones de correo ni enlaces: nada que pueda ser un dato real de contacto
     const todo = JSON.stringify(e).toLowerCase();
-    for (const prohibido of ["@gmail", "@hotmail", "http"]) expect(todo.includes(prohibido), prohibido).toBe(false);
+    for (const prohibido of ["@", "http", "www."]) expect(todo.includes(prohibido), prohibido).toBe(false);
   });
 });
 

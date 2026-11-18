@@ -534,3 +534,91 @@ si se aprueba, con pruebas de punta a punta en una etapa posterior.
 | D5 | Exportar el parte a PDF | P2 con la impresión del navegador (sin dependencias). |
 | D6 | Marcas y modelos | Modelos comunes reales (dan verosimilitud y no identifican a nadie). |
 | D7 | Licencia del repositorio | MIT, como la Demo 1. |
+
+---
+
+## 16. Decisiones de implementación (18/11/2026, Etapa 1 y pasos 2.1 a 2.3)
+
+Huecos y ambigüedades del diseño que se resolvieron al programar, siempre con el criterio más conservador. Si alguna no
+convence, se cambia acá y en el código a la vez.
+
+**Modelo y contexto**
+
+- `Contexto` es `{ hoy, ahora, autor, nuevoId }`: se agrega `nuevoId` (generador de ids inyectado) para que los comandos
+  sigan siendo puros. `hoy` es la fecha civil de Argentina y `ahora` el instante (texto ISO); el único `new Date()` de la
+  aplicación va a vivir en `estado/reloj.ts` (Etapa 3). `hoyEnArgentina` recibe un `Date`; `fechaEnArgentina`, un instante en texto.
+- `Estado` es todo el contenido en memoria (`meta`, `proyectos`, `conductores`, `unidades`, `documentos`, `partes`,
+  `novedades`, `correccionesKm`, `eventos`). `Cambios` (lo que escribe el repositorio) lleva altas o reemplazos por `id`,
+  `partesBorrados` y `meta`; **no lleva eventos**: viajan aparte y solo se agregan (H2, comprobado por `tsc`).
+- Los errores de negocio son `{ codigo, mensaje, campo?, detalle? }`: `codigo` estable para la interfaz y los tests,
+  `mensaje` ya en español neutro, `campo` para marcar el campo del formulario.
+- El perfil Conductor/Encargado (sección 8) **no se controla en el dominio**: es una perspectiva de la interfaz.
+- Gravedad de las alertas: `critica` (vencido, faltante, novedad crítica, circuló con documentación vencida), `media`
+  (vence en 7 días o menos, parte sin enviar, sin parte, novedad normal) y `baja` (grupos de 15 y 30 días).
+
+**Fechas y vencimientos**
+
+- `parsearFechaCivil` devuelve la misma fecha o `null`. Fechas anteriores a 2000 son "fecha inválida" (T4), no un error
+  aparte de rango; el límite superior de V11 (hoy + 10 años) sí tiene su mensaje.
+- Los documentos no obligatorios que están cargados alertan como los demás, también el de habilitación de ingreso en un
+  proyecto que no la pide (generalización de V17). Si falta, no alerta.
+- Un documento "vigente" empata por vencimiento: gana el cargado después y, si sigue el empate, el de mayor id.
+- El nombre en pantalla de la revisión técnica es "Revisión técnica"; las siglas "(VTV/RTO)" de 5.1 quedan para la interfaz.
+
+**Aptitud y alertas**
+
+- `aptitud` devuelve cuatro categorías: `puede-salir`, `no-puede-salir`, `fuera-de-servicio` y `baja`. Una unidad fuera de
+  servicio también "no puede salir", pero se cuenta aparte en A8 (protagonista = no pueden salir + fuera de servicio).
+- P6, "creada antes de ayer": la fecha de creación (en hora de Argentina) es anterior a `hoy − 1`.
+- P5: un borrador de una fecha anterior a hoy alerta **mientras exista**, aunque ya no se pueda enviar (más de 7 días,
+  P2): la salida es descartarlo.
+- P9: los documentos se evalúan **a la fecha del parte** con el documento vigente de hoy (V9). Una renovación cargada
+  después con vencimiento posterior cubre la fecha; el valor queda guardado al enviar (`documentacionVencida`).
+- Texto de "Circuló con documentación vencida": "Circuló con documentación vencida: Seguro, Revisión técnica (parte del 12/11/2026)".
+
+**Kilometraje (K3, K4, K5, K8)**
+
+- Los registros de una unidad (partes enviados y correcciones) forman una línea de tiempo ordenada por fecha, después por
+  instante, y a igual instante el parte antes que la corrección. Para un parte de la fecha F, el registro anterior es el
+  último con fecha menor que F si es un parte, o con fecha menor o igual que F si es una corrección (la corrección "desde
+  F" vale para el parte de F). El siguiente es el primero con fecha mayor que F; si es una corrección, K4 no compara.
+- `validarKilometraje` aplica K2, K3 y K4 (bloquean) y devuelve las advertencias K6 y K7 con el kilometraje anterior.
+
+**Comandos**
+
+- Orden de las validaciones: existencia y estado de la unidad, estado del parte (P7), fecha (P2), duplicado (P1), tipos
+  de los campos (P3). Al enviar: P8, P2, P4, K2 a K4, P9 y advertencias.
+- `guardarBorrador` guarda los textos tal como se escribieron (sin recortar, tope 500) para no pelear con quien escribe;
+  `enviarParte` los recorta (U7).
+- D11, "borrador vacío": sin respuestas, sin fin de kilometraje, sin combustible, sin litros, sin otra novedad y con el
+  kilometraje inicial igual al actual de la unidad (o vacío). Guardarlo o descartarlo no marca la demo como modificada.
+- A3: la unidad queda fuera de servicio con `desde = hoy` (la fecha en que se registra), motivo "Novedad crítica en el
+  parte del dd/mm/aaaa: Frenos, Dirección" (o "Novedad crítica cargada el dd/mm/aaaa: …" para una novedad a mano) y
+  tope de 200 caracteres. Una crítica nueva en una unidad ya fuera de servicio por otra crítica suma su id y no repite el
+  evento; en una unidad fuera de servicio a mano no cambia el estado (A4 pedirá resolverla).
+- N2: `resolverNovedad` lleva `volverAServicio`; reutiliza la lógica de `volverAServicio` (A4) sobre el estado ya con la
+  novedad resuelta. Si la unidad no está fuera de servicio, es un error (`ya-en-servicio`) y no se resuelve nada.
+- `corregirDocumento` no puede dar vuelta el orden entre un documento y su renovación (V9, V10): el vencimiento de una
+  renovación tiene que seguir siendo posterior al del documento que reemplaza, y el de un documento reemplazado, anterior
+  al de su renovación. La fecha de emisión no puede ser posterior al vencimiento. Cargar un documento exige número (1 a 40).
+- Topes de texto: marca y modelo 40; motivo de baja y de fuera de servicio 5 a 200; corrección de kilometraje 10 a 200;
+  descripción de novedad 3 a 500; resolución 5 a 500; número 1 a 40; emisor 0 a 80.
+- Una unidad de baja no recibe ningún comando salvo ninguno: `unidad-de-baja` (ni documentos, ni novedades, ni kilometraje).
+
+**Datos de ejemplo**
+
+- "24 unidades (14 camionetas, 4 utilitarios, 3 camiones livianos, 2 minibuses, 1 de baja)": suman 23 más la de baja,
+  que es una camioneta de 2012. Quedan 23 activas, como pide el protagonista "19 de 23".
+- Cada unidad cumple un papel fijo en la plantilla (`generador.ts`); los demás datos (conductores, modelos, kilometraje,
+  combustible, litros, novedades pasadas, renovaciones anteriores) salen del azar con semilla. La semilla por defecto es 20261118.
+- Los partes de un día se "envían" entre las 18:00 y las 19:29 de Argentina; los casos con hora propia usan horas que
+  caen en el mismo día civil. El evento de "hoy" (C10) es a las 01:00 de Argentina, para que nunca sea posterior a "ahora".
+- La corrección de kilometraje del caso C20 es "desde" H − 20 a las 09:30 de Argentina y el parte de ese día ya parte de 120.
+- Hay 16 conductores activos; las habilitaciones de manejo (opcionales) están cargadas para la mitad.
+
+**Persistencia**
+
+- `Repositorio`: `cargar`, `reemplazarTodo`, `escribir(cambios, eventos)` (una transacción) y `vaciar`. Escribir sobre una
+  base vacía es un error. Errores: `indice-unico` (patente, o `[unidadId, fecha]` de los partes), `evento-repetido` y
+  `escritura-fallida`. La suite de contrato (`tests/contrato-repositorio.ts`) está lista para correrla también contra
+  IndexedDB (paso 2.4, decisión S2).

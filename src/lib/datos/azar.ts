@@ -1,4 +1,4 @@
-// Azar con semilla (mulberry32). Nada de `Math.random()` en el generador ni en el dominio (docs/diseno.md, 9.3).
+// Azar con semilla (mulberry32). El generador y el dominio no usan el azar del sistema (docs/diseno.md, 9.3).
 // El orden de las llamadas es parte del contrato: si cambia, cambian los datos de ejemplo.
 
 export interface Azar {
