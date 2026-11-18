@@ -1,0 +1,17 @@
+{
+  "name": "demo-control-flota",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Control de flota (demo): documentos con vencimiento, parte diario y centro de alertas, en el navegador y con datos ficticios.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:tz": "node scripts/test-tz.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.1.0"
+  }
+}
