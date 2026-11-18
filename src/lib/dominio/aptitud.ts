@@ -1,0 +1,95 @@
+// Aptitud de una unidad para salir hoy (A1, A2, A8). Se calcula, no se guarda.
+
+import { formatearFecha } from "./fechas.ts";
+import { novedadesCriticasAbiertas, rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
+import type { Estado, FechaCivil, Unidad } from "./tipos.ts";
+import { NOMBRES_DOCUMENTO, documentoVigente, evaluarObligatorio, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
+
+export interface Motivo {
+  tipo: "baja" | "fuera-de-servicio" | "documento-vencido" | "documento-faltante" | "novedad-critica";
+  texto: string;
+}
+
+export interface Aptitud {
+  categoria: "puede-salir" | "no-puede-salir" | "fuera-de-servicio" | "baja";
+  puedeSalir: boolean;
+  motivos: Motivo[];
+}
+
+type DatosDeAptitud = Pick<Estado, "documentos" | "novedades" | "proyectos">;
+
+/** A1: puede salir = en servicio, sin obligatorios vencidos o faltantes y sin novedades críticas abiertas. */
+export function aptitud(unidad: Unidad, estado: DatosDeAptitud, hoy: FechaCivil): Aptitud {
+  const e = unidad.estado;
+  if (e.tipo === "baja") {
+    return {
+      categoria: "baja",
+      puedeSalir: false,
+      motivos: [{ tipo: "baja", texto: `Dada de baja el ${formatearFecha(e.desde)}: ${e.motivo}` }],
+    };
+  }
+  if (e.tipo === "fuera-de-servicio") {
+    return {
+      categoria: "fuera-de-servicio",
+      puedeSalir: false,
+      motivos: [{ tipo: "fuera-de-servicio", texto: `Fuera de servicio desde ${formatearFecha(e.desde)}: ${e.motivo}` }],
+    };
+  }
+
+  const motivos: Motivo[] = [];
+  const proyecto = estado.proyectos.find((p) => p.id === unidad.proyectoId);
+  if (proyecto !== undefined) {
+    for (const tipo of tiposObligatoriosDeUnidad(proyecto)) {
+      const vigente = documentoVigente(estado.documentos, { tipo: "unidad", id: unidad.id }, tipo);
+      const evaluacion = evaluarObligatorio(vigente, hoy);
+      if (evaluacion.estado === "faltante") {
+        motivos.push({ tipo: "documento-faltante", texto: `Falta cargar: ${NOMBRES_DOCUMENTO[tipo]}` });
+      } else if (evaluacion.estado === "vencido") {
+        // A2: un documento que vence hoy todavía vale, por eso no entra acá.
+        motivos.push({ tipo: "documento-vencido", texto: `${NOMBRES_DOCUMENTO[tipo]} ${minusculaInicial(evaluacion.texto)}` });
+      }
+    }
+  }
+  for (const n of novedadesCriticasAbiertas(estado.novedades, unidad.id)) {
+    motivos.push({
+      tipo: "novedad-critica",
+      texto: `Novedad crítica abierta: ${rotuloNovedad(n)} (${textoOrigenNovedad(n)})`,
+    });
+  }
+
+  const puedeSalir = motivos.length === 0;
+  return { categoria: puedeSalir ? "puede-salir" : "no-puede-salir", puedeSalir, motivos };
+}
+
+function minusculaInicial(texto: string): string {
+  return texto.charAt(0).toLowerCase() + texto.slice(1);
+}
+
+export interface ResumenAptitud {
+  /** Unidades que no están de baja. */
+  activas: number;
+  /** Activas que pueden salir. */
+  disponibles: number;
+  /** En servicio pero sin poder salir. */
+  noPuedenSalir: Unidad[];
+  fueraDeServicio: Unidad[];
+  /** A8: unidades que hoy no pueden salir o están fuera de servicio. */
+  protagonista: number;
+}
+
+/** A8: protagonista del centro de alertas y "Disponibles: P de T". */
+export function resumenDeAptitud(estado: Estado, hoy: FechaCivil): ResumenAptitud {
+  const noPuedenSalir: Unidad[] = [];
+  const fueraDeServicio: Unidad[] = [];
+  let activas = 0;
+  let disponibles = 0;
+  for (const u of estado.unidades) {
+    if (u.estado.tipo === "baja") continue;
+    activas += 1;
+    const a = aptitud(u, estado, hoy);
+    if (a.categoria === "puede-salir") disponibles += 1;
+    else if (a.categoria === "fuera-de-servicio") fueraDeServicio.push(u);
+    else noPuedenSalir.push(u);
+  }
+  return { activas, disponibles, noPuedenSalir, fueraDeServicio, protagonista: noPuedenSalir.length + fueraDeServicio.length };
+}
