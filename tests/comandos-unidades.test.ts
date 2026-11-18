@@ -321,7 +321,7 @@ describe("corregirKilometraje (K5)", () => {
       expect(err.codigo).toBe("km-correccion-anterior");
       expect(err.campo).toBe("desde");
       expect(err.mensaje).toBe(
-        "Ya hay un parte enviado el 17/11/2026, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha de ese parte o una posterior.",
+        "Ya hay un parte del 17/11/2026, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha de ese parte o una posterior.",
       );
       expect(e.correccionesKm).toHaveLength(0);
     });
@@ -341,7 +341,7 @@ describe("corregirKilometraje (K5)", () => {
       const e = ejecutarOk(flotaDePrueba(), { ...base, desde: "2026-11-18" }).estado;
       const err = ejecutarError(e, { ...base, desde: "2026-11-17", kmBase: 500 });
       expect(err.codigo).toBe("km-correccion-anterior");
-      expect(err.mensaje).toContain("corrección de kilometraje del 18/11/2026");
+      expect(err.mensaje).toContain("una corrección del 18/11/2026");
     });
 
     it("un borrador posterior no cuenta (K9) y una unidad sin partes acepta cualquier fecha pasada", () => {

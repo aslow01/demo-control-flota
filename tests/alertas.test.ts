@@ -307,7 +307,7 @@ describe("alertas de operación", () => {
     expect(sinEnviar).toHaveLength(1);
     expect(sinEnviar[0]).toMatchObject({
       gravedad: "media",
-      texto: "Parte del 17/11/2026 sin enviar (empezado por L. Ferreyra)",
+      texto: "Parte del 17/11/2026 sin enviar (iniciado por L. Ferreyra)",
     });
   });
 

@@ -120,7 +120,7 @@ export class EstadoApp {
       this.fase = "lista";
     } catch {
       this.fase = "error";
-      this.errorDeArranque = TEXTO_ERROR_ARRANQUE;
+      this.errorDeArranque = TEXTO_ERROR_ARRANQUE.mensaje;
     } finally {
       this.preparando = false;
     }

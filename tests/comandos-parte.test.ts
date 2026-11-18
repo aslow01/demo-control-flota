@@ -115,7 +115,7 @@ describe("guardarBorrador (P3)", () => {
     const fuera = ejecutarOk(flotaDePrueba(), { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "En taller: cambio de embrague" }, contexto({ hoy: "2026-11-13", ahora: "2026-11-13T15:00:00.000Z" })).estado;
     const err = ejecutarError(fuera, borrador());
     expect(err.mensaje).toBe(
-      "La unidad está fuera de servicio desde el 13/11/2026 (En taller: cambio de embrague). Pida al encargado que la vuelva a servicio.",
+      "La unidad está fuera de servicio desde el 13/11/2026 (En taller: cambio de embrague). Pida al encargado que la ponga de nuevo en servicio.",
     );
     expect(err.codigo).toBe("unidad-fuera-de-servicio");
   });
@@ -228,7 +228,7 @@ describe("enviarParte", () => {
   it("K2: kmFin menor que kmInicio bloquea el envío y el borrador queda", () => {
     const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ kmFin: 84319 }));
     const err = ejecutarError(estado, enviar(parteId));
-    expect(err.mensaje).toBe("El kilometraje al terminar (84.319) es menor que al iniciar (84.320).");
+    expect(err.mensaje).toBe("El kilometraje al terminar (84.319 km) es menor que al iniciar (84.320 km). Revise los dos números.");
     expect(estado.partes.find((p) => p.id === parteId)?.estado).toBe("borrador");
   });
 
@@ -251,7 +251,7 @@ describe("enviarParte", () => {
       ],
     };
     const { estado, parteId } = conBorrador(e, completo({ fecha: "2026-11-16", kmInicio: 80000, kmFin: 80600 }));
-    expect(ejecutarError(estado, enviar(parteId)).mensaje).toBe("Supera el kilometraje con que empezó el parte del 17/11/2026 (80.500).");
+    expect(ejecutarError(estado, enviar(parteId)).mensaje).toBe("El kilometraje supera el del inicio del parte del 17/11/2026 (80.500 km). Revise el número.");
   });
 
   it("K5: después de una corrección de kilometraje el parte siguiente se compara con la base nueva", () => {

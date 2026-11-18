@@ -57,7 +57,7 @@ describe("cargarDocumento", () => {
     const e = flotaDePrueba();
     const err = ejecutarError(e, { ...carga, titular: { tipo: "unidad", id: "u1" }, tipoDocumento: "seguro" });
     expect(err.codigo).toBe("documento-existente");
-    expect(err.mensaje).toBe("Ya hay un documento de Seguro cargado. Use «Renovar».");
+    expect(err.mensaje).toBe("Ya hay cargado un documento «Seguro». Para actualizarlo, use «Renovar».");
   });
 
   it("V11: el vencimiento va de 2000-01-01 a hoy + 10 años", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { generar } from "../src/lib/datos/generador.ts";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
-import { ERRORES, TEXTO_AVISO } from "../src/lib/dominio/textos.ts";
+import { ERRORES, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE } from "../src/lib/dominio/textos.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { EstadoApp, type DependenciasApp } from "../src/lib/estado/app.svelte.ts";
 import { crearReloj } from "../src/lib/estado/reloj.ts";
@@ -102,7 +102,7 @@ describe("arranque del estado de la aplicación", () => {
     const { app } = armar({ reloj: crearReloj(() => new Date(Number.NaN)) });
     await app.iniciar();
     expect(app.fase).toBe("error");
-    expect(app.errorDeArranque).toBe("No se pudo iniciar la demo. Recargue la página. Si el problema sigue, reinicie la demo.");
+    expect(app.errorDeArranque).toBe(TEXTO_ERROR_ARRANQUE.mensaje);
     expect(app.estado).toBeNull();
   });
 });

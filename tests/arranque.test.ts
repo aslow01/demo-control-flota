@@ -98,7 +98,7 @@ describe("D5: fechas del ejemplo al día", () => {
     expect(r.estado).toEqual(viejo);
     expect(r.avisos).toEqual([{ tipo: "datos-de-otra-fecha", fechaBase: "2026-11-10" }]);
     expect(textoDatosDeOtraFecha("2026-11-10")).toBe(
-      "Los datos de ejemplo son del 10/11/2026. Reinicie la demo para verlos con las fechas de hoy.",
+      "Los datos de ejemplo son del 10/11/2026. Al reiniciar la demo se actualizan a la fecha de hoy y se borran sus cambios.",
     );
     expect(await repo.cargar()).toEqual(viejo);
   });
@@ -125,7 +125,7 @@ describe("D7: versión de esquema distinta", () => {
     expect(r.estado.meta.versionEsquema).toBe(VERSION_ESQUEMA);
     expect(r.avisos).toEqual([{ tipo: "esquema-actualizado" }]);
     expect(await repo.cargar()).toEqual(r.estado);
-    expect(TEXTO_AVISO.esquemaActualizado).toBe("La demo se actualizó y se volvió a cargar la flota de ejemplo.");
+    expect(TEXTO_AVISO.esquemaActualizado).toBe("La demo se actualizó. Se cargó de nuevo la flota de ejemplo y no se conservaron los datos anteriores.");
   });
 
   it("un registro meta dañado (fecha inválida) también reinicia con ese aviso", async () => {
@@ -158,7 +158,7 @@ describe("D8: sin almacenamiento", () => {
     expect(r.estado).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
     expect(r.avisos).toEqual([{ tipo: "sin-almacenamiento" }]);
     expect(TEXTO_AVISO.sinAlmacenamiento).toBe(
-      "Este navegador no permite guardar datos: puede usar la demo, pero los cambios se pierden al cerrar la pestaña.",
+      "Este navegador no permite guardar datos. Puede usar la demo, pero los cambios se pierden al cerrar o recargar la página.",
     );
   });
 

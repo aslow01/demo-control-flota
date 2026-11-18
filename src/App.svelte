@@ -11,7 +11,7 @@
   import Pie from "./componentes/Pie.svelte";
   import { TEXTO_MARCO } from "./componentes/textos-marco.ts";
   import type { ItemMenu, SeccionActiva } from "./componentes/tipos.ts";
-  import { TEXTO_AVISO, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
+  import { TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
   import { app } from "./lib/estado/instancia.ts";
 
   const TITULO_BASE = `${TEXTO_MARCO.nombreApp} (demo)`;
@@ -180,7 +180,7 @@
     {:else if app.fase === "error"}
       <div class="encabezado">
         <div class="solo-angosto"><EtiquetaDemo /></div>
-        <h1 tabindex="-1">{TEXTO_MARCO.errorArranqueTitulo}</h1>
+        <h1 tabindex="-1">{TEXTO_ERROR_ARRANQUE.titulo}</h1>
       </div>
       <p class="parrafo">{app.errorDeArranque}</p>
       <div><Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton></div>

@@ -383,7 +383,7 @@ describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
     const a = alertas().alertas.filter((x) => x.tipo === "parte-sin-enviar");
     expect(a).toHaveLength(1);
     expect(a[0]?.unidadId).toBe(b.unidadId);
-    expect(a[0]?.texto).toMatch(/^Parte del \d{2}\/\d{2}\/\d{4} sin enviar \(empezado por [A-ZÁÉÍÓÚÑ]\. \S+\)$/);
+    expect(a[0]?.texto).toMatch(/^Parte del \d{2}\/\d{2}\/\d{4} sin enviar \(iniciado por [A-ZÁÉÍÓÚÑ]\. \S+\)$/);
   });
 
   it("C14: dos unidades en servicio sin parte de H - 1", () => {

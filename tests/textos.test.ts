@@ -4,6 +4,15 @@ import { formatearCuit } from "../src/lib/datos/cuit.ts";
 import {
   ERRORES,
   RESUMEN_EVENTO,
+  TEXTO_ALERTA,
+  TEXTO_AVISO,
+  TEXTO_ERROR_ARRANQUE,
+  errDocumentoExistente,
+  errKmCorreccionAnterior,
+  errKmExcedido,
+  errKmFinMenor,
+  errKmSuperaSiguiente,
+  errLitrosInvalidos,
   errNovedadesCriticasAbiertas,
   errParteDuplicado,
   errUnidadFueraDeServicio,
@@ -20,6 +29,7 @@ import {
   textoProtagonista,
   textoQuedanVencimientos,
   textoUltimoRegistro,
+  textoDatosDeOtraFecha,
   textoVencimiento,
 } from "../src/lib/dominio/textos.ts";
 
@@ -127,11 +137,11 @@ describe("otros textos de la interfaz", () => {
 
 describe("advertencias antes de enviar (K6, K7, P9)", () => {
   it("K6: salto de kilometraje", () => {
-    expect(textoAdvertencia({ tipo: "salto-km", km: 1250 })).toBe("1.250 km sin registrar");
+    expect(textoAdvertencia({ tipo: "salto-km", km: 1250 })).toBe("1.250 km sin registrar desde el último parte");
   });
 
   it("K7: recorrido largo", () => {
-    expect(textoAdvertencia({ tipo: "recorrido-largo", km: 1350 })).toBe("Recorrido del día de 1.350 km");
+    expect(textoAdvertencia({ tipo: "recorrido-largo", km: 1350 })).toBe("Recorrido del día inusualmente largo: 1.350 km");
   });
 
   it("P9: documentación vencida, con los nombres", () => {
@@ -146,12 +156,14 @@ describe("errores y resúmenes que arman otros textos", () => {
     expect(errNovedadesCriticasAbiertas(["Frenos (parte del 16/11/2026)"])).toBe("Antes de volver a servicio, resuelva: Frenos (parte del 16/11/2026).");
     expect(errParteDuplicado("ZK 214 BD", "2026-11-18", "borrador")).toBe("Ya hay un parte de ZK 214 BD para el 18/11/2026 (borrador). Ábralo para continuar.");
     expect(errUnidadFueraDeServicio("2026-11-13", "En taller: cambio de embrague")).toBe(
-      "La unidad está fuera de servicio desde el 13/11/2026 (En taller: cambio de embrague). Pida al encargado que la vuelva a servicio.",
+      "La unidad está fuera de servicio desde el 13/11/2026 (En taller: cambio de embrague). Pida al encargado que la ponga de nuevo en servicio.",
     );
   });
 
-  it("P12: el mensaje de guardado fallido promete que los datos siguen", () => {
-    expect(ERRORES.noPudoGuardarElParte).toBe("No se pudo guardar el parte. Sus datos siguen en este equipo; intente de nuevo.");
+  it("P12: el mensaje de guardado fallido del parte dice que lo escrito sigue en pantalla y pide no cerrar la pestaña", () => {
+    expect(ERRORES.noPudoGuardarElParte).toBe(
+      "No se pudo guardar el parte. Lo escrito sigue en pantalla; no cierre la pestaña e intente de nuevo.",
+    );
   });
 
   it("los resúmenes del historial están en español neutro y sin voseo", () => {
@@ -180,5 +192,80 @@ describe("D3: el CUIT de ejemplo siempre se muestra como ficticio", () => {
     expect(t).toBe(`Logística Andina Demo S.A. · CUIT ficticio ${formatearCuit(EMPRESA.cuit)}`);
     expect(t).toContain("ficticio");
     expect(t).toMatch(/^Logística Andina Demo S\.A\. · CUIT ficticio \d{2}-\d{8}-\d$/);
+  });
+});
+
+describe("revisión de textos del 18/11/2026 (redactor-ux)", () => {
+  it("el error de arranque tiene título (para el h1) y mensaje por separado, sin repetir la frase", () => {
+    expect(TEXTO_ERROR_ARRANQUE.titulo).toBe("No se pudo iniciar la demo");
+    expect(TEXTO_ERROR_ARRANQUE.mensaje).toBe("Recargue la página. Si el problema sigue, reinicie la demo.");
+    expect(TEXTO_ERROR_ARRANQUE.mensaje).not.toContain(TEXTO_ERROR_ARRANQUE.titulo);
+  });
+
+  it("avisos globales: dicen qué pasó y qué implica", () => {
+    expect(TEXTO_AVISO.cambiosEnOtraPestana).toBe(
+      "Se hicieron cambios en otra pestaña. Esta pantalla sigue mostrando los datos anteriores hasta que actualice.",
+    );
+    expect(textoDatosDeOtraFecha("2026-11-10")).toContain("se borran sus cambios");
+  });
+
+  it("errores de estado y de guardado: cada contexto dice lo que corresponde", () => {
+    expect(ERRORES.noPudoGuardar).toBe(
+      "No se pudo guardar en este equipo. No se aplicó ningún cambio y lo escrito sigue en pantalla. Intente de nuevo.",
+    );
+    expect(ERRORES.noPudoReiniciar).toBe("No se pudo reiniciar la demo. Se conservaron los datos que tenía. Intente de nuevo.");
+    expect(ERRORES.noPudoReiniciarDesdeError).toBe(
+      "No se pudo reiniciar la demo. Recargue la página. Si el problema sigue, borre los datos de este sitio en su navegador.",
+    );
+    expect(ERRORES.noPudoCambiarVista).toBe("No se pudo cambiar la vista. Intente de nuevo.");
+    expect(ERRORES.sinPermiso).toBe("Esta acción es solo del encargado. En «Ver como», elija «Encargado».");
+    expect(ERRORES.sinDatos).toBe("La demo todavía no terminó de cargar. Espere un momento e intente de nuevo.");
+    expect(ERRORES.noPudoActualizar).toBe(
+      "No se pudieron leer los cambios de la otra pestaña. Intente de nuevo; si sigue fallando, recargue la página.",
+    );
+  });
+
+  it("errores de reglas: con unidad y con salida", () => {
+    expect(errKmSuperaSiguiente("2026-11-17", 84500)).toBe(
+      "El kilometraje supera el del inicio del parte del 17/11/2026 (84.500 km). Revise el número.",
+    );
+    expect(errKmFinMenor(84100, 84200)).toBe("El kilometraje al terminar (84.100 km) es menor que al iniciar (84.200 km). Revise los dos números.");
+    expect(errKmExcedido(2_000_000)).toBe("El kilometraje no puede superar 2.000.000 km.");
+    expect(errLitrosInvalidos(120)).toBe("Escriba los litros con hasta un decimal, mayores que 0 y hasta 120.");
+    expect(errDocumentoExistente("Seguro")).toBe("Ya hay cargado un documento «Seguro». Para actualizarlo, use «Renovar».");
+    expect(ERRORES.documentoNoVigente).toBe("Solo se puede renovar el documento vigente. Si un dato está mal, use «Corregir».");
+    expect(ERRORES.advertenciasSinAceptar).toBe("Revise las advertencias y acéptelas para enviar el parte.");
+    expect(ERRORES.checklistInvalido).toBe("Hay respuestas del checklist que no se pueden guardar. Revise cada punto.");
+    expect(ERRORES.otraNovedadInvalida).toBe("Revise el texto de «Otra novedad».");
+  });
+
+  it("el parte o la corrección que se cita es el de la fecha del registro, no el día en que se envió", () => {
+    expect(errKmCorreccionAnterior("parte", "2026-11-17")).toBe(
+      "Ya hay un parte del 17/11/2026, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha de ese parte o una posterior.",
+    );
+    expect(errKmCorreccionAnterior("correccion", "2026-11-17")).toBe(
+      "Ya hay una corrección del 17/11/2026, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha de esa corrección o una posterior.",
+    );
+  });
+
+  it("los 'no se encontró' dicen cómo seguir", () => {
+    for (const clave of [
+      "unidadInexistente",
+      "conductorInexistente",
+      "proyectoInexistente",
+      "documentoInexistente",
+      "parteInexistente",
+      "novedadInexistente",
+    ] as const) {
+      expect(ERRORES[clave], clave).toMatch(/^No se encontró .+\. Vuelva a la lista e intente de nuevo\.$/);
+    }
+  });
+
+  it("alerta de parte sin enviar: 'iniciado por'", () => {
+    expect(TEXTO_ALERTA.parteSinEnviar("2026-11-17", "L. Ferreyra")).toBe("Parte del 17/11/2026 sin enviar (iniciado por L. Ferreyra)");
+  });
+
+  it("ningún error de ERRORES usa voseo", () => {
+    for (const [clave, texto] of Object.entries(ERRORES)) expect(texto, clave).not.toMatch(/vos|podés|sos|hacé|tenés|cambiá|elegí/i);
   });
 });

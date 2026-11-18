@@ -27,7 +27,6 @@ export const TEXTO_MARCO = {
   cambiarConductor: "Cambiar",
   cerrarAviso: "Cerrar aviso",
   actualizar: "Actualizar",
-  errorArranqueTitulo: "No se pudo iniciar la demo",
   recargar: "Recargar la página",
   pantallaEnPreparacion: "Esta pantalla todavía no está hecha.",
 } as const;

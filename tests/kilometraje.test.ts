@@ -48,7 +48,7 @@ describe("K1: parsear kilometraje", () => {
   it("K1: rechaza más de 2.000.000 y acepta justo 2.000.000", () => {
     const r = parsearKm("2.000.001");
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.mensaje).toBe("El kilometraje no puede superar 2.000.000.");
+    if (!r.ok) expect(r.error.mensaje).toBe("El kilometraje no puede superar 2.000.000 km.");
     expect(parsearKm("2000000")).toEqual({ ok: true, valor: 2_000_000 });
     expect(parsearKm("99999999999999999999").ok).toBe(false);
   });
@@ -80,7 +80,7 @@ describe("K2: kmFin >= kmInicio", () => {
     const r = validarRecorrido(84320, 84319);
     expect(r.ok).toBe(false);
     if (!r.ok) {
-      expect(r.error.mensaje).toBe("El kilometraje al terminar (84.319) es menor que al iniciar (84.320).");
+      expect(r.error.mensaje).toBe("El kilometraje al terminar (84.319 km) es menor que al iniciar (84.320 km). Revise los dos números.");
       expect(r.error.campo).toBe("kmFin");
     }
   });
@@ -193,7 +193,7 @@ describe("K4: partes fuera de orden", () => {
     const r = validarKilometraje({ unidad: U, fecha: "2026-11-16", kmInicio: 80000, kmFin: 80600, partes, correcciones: [] });
     expect(r.ok).toBe(false);
     if (!r.ok) {
-      expect(r.error.mensaje).toBe("Supera el kilometraje con que empezó el parte del 17/11/2026 (80.500).");
+      expect(r.error.mensaje).toBe("El kilometraje supera el del inicio del parte del 17/11/2026 (80.500 km). Revise el número.");
       expect(r.error.campo).toBe("kmFin");
       expect(r.error.codigo).toBe("km-supera-siguiente");
     }

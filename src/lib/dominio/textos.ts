@@ -43,26 +43,26 @@ export function textoFaltantes(n: number): string {
 // ---------------------------------------------------------------------------------------------
 
 export const ERRORES = {
-  unidadInexistente: "No se encontró la unidad.",
-  conductorInexistente: "No se encontró el conductor.",
+  unidadInexistente: "No se encontró la unidad. Vuelva a la lista e intente de nuevo.",
+  conductorInexistente: "No se encontró el conductor. Vuelva a la lista e intente de nuevo.",
   conductorInactivo: "El conductor no está activo.",
-  proyectoInexistente: "No se encontró el proyecto.",
-  documentoInexistente: "No se encontró el documento.",
-  parteInexistente: "No se encontró el parte.",
-  novedadInexistente: "No se encontró la novedad.",
+  proyectoInexistente: "No se encontró el proyecto. Vuelva a la lista e intente de nuevo.",
+  documentoInexistente: "No se encontró el documento. Vuelva a la lista e intente de nuevo.",
+  parteInexistente: "No se encontró el parte. Vuelva a la lista e intente de nuevo.",
+  novedadInexistente: "No se encontró la novedad. Vuelva a la lista e intente de nuevo.",
   parteEnviadoInmutable: "Un parte enviado no se puede modificar.",
   sinCambios: "No hay cambios para guardar.",
   unidadYaFueraDeServicio: "La unidad ya está fuera de servicio.",
   unidadYaEnServicio: "La unidad ya está en servicio.",
   novedadYaResuelta: "La novedad ya está resuelta.",
-  documentoNoVigente: "Solo se puede renovar el documento vigente.",
+  documentoNoVigente: "Solo se puede renovar el documento vigente. Si un dato está mal, use «Corregir».",
   emisionPosterior: "La fecha de emisión no puede ser posterior al vencimiento.",
   fechaFutura: "La fecha no puede ser posterior a hoy.",
-  advertenciasSinAceptar: "Hay advertencias que tiene que aceptar antes de enviar el parte.",
+  advertenciasSinAceptar: "Revise las advertencias y acéptelas para enviar el parte.",
   tipoDeUnidadInvalido: "Elija el tipo de unidad.",
   combustibleInvalido: "Elija el nivel de combustible.",
-  checklistInvalido: "El checklist del parte no es válido.",
-  otraNovedadInvalida: "La otra novedad no es válida.",
+  checklistInvalido: "Hay respuestas del checklist que no se pueden guardar. Revise cada punto.",
+  otraNovedadInvalida: "Revise el texto de «Otra novedad».",
   parteOtraUnidad: "No se puede cambiar la unidad de un parte.",
   fechaInvalida: "Escriba una fecha válida.",
   parteFechaAntigua: "Solo se pueden cargar partes de los últimos 7 días.",
@@ -75,19 +75,25 @@ export const ERRORES = {
   litrosDecimales: "Escriba los litros con un solo decimal, por ejemplo 45,5.",
   litrosCero: "Si no cargó combustible, deje el campo vacío.",
   internoRango: "El número interno tiene que ser un entero de 1 a 999.",
-  noPudoGuardar: "No se pudo guardar. No se aplicó ningún cambio y lo que escribió sigue en el formulario.",
-  sinPermiso: "Esta acción es solo del encargado. Cambie de perfil para hacerla.",
-  sinDatos: "La demo todavía no terminó de cargar.",
-  noPudoActualizar: "No se pudieron leer los cambios de la otra pestaña. Intente de nuevo.",
-  noPudoGuardarElParte: "No se pudo guardar el parte. Sus datos siguen en este equipo; intente de nuevo.",
+  noPudoGuardar: "No se pudo guardar en este equipo. No se aplicó ningún cambio y lo escrito sigue en pantalla. Intente de nuevo.",
+  /** `reiniciar()` con la demo ya cargada: no hay formulario, y lo que había se conserva. */
+  noPudoReiniciar: "No se pudo reiniciar la demo. Se conservaron los datos que tenía. Intente de nuevo.",
+  /** `reiniciar()` desde la pantalla de error de arranque: no hay datos que conservar, la salida es recargar. */
+  noPudoReiniciarDesdeError:
+    "No se pudo reiniciar la demo. Recargue la página. Si el problema sigue, borre los datos de este sitio en su navegador.",
+  noPudoCambiarVista: "No se pudo cambiar la vista. Intente de nuevo.",
+  sinPermiso: "Esta acción es solo del encargado. En «Ver como», elija «Encargado».",
+  sinDatos: "La demo todavía no terminó de cargar. Espere un momento e intente de nuevo.",
+  noPudoActualizar: "No se pudieron leer los cambios de la otra pestaña. Intente de nuevo; si sigue fallando, recargue la página.",
+  noPudoGuardarElParte: "No se pudo guardar el parte. Lo escrito sigue en pantalla; no cierre la pestaña e intente de nuevo.",
 } as const;
 
 export function errKmExcedido(maximo: number): string {
-  return `El kilometraje no puede superar ${formatearKm(maximo)}.`;
+  return `El kilometraje no puede superar ${formatearKm(maximo)} km.`;
 }
 
 export function errKmFinMenor(kmFin: number, kmInicio: number): string {
-  return `El kilometraje al terminar (${formatearKm(kmFin)}) es menor que al iniciar (${formatearKm(kmInicio)}).`;
+  return `El kilometraje al terminar (${formatearKm(kmFin)} km) es menor que al iniciar (${formatearKm(kmInicio)} km). Revise los dos números.`;
 }
 
 export function errKmRetrocede(patente: string, km: number, registro: string): string {
@@ -95,11 +101,11 @@ export function errKmRetrocede(patente: string, km: number, registro: string): s
 }
 
 export function errKmSuperaSiguiente(fecha: FechaCivil, kmInicio: number): string {
-  return `Supera el kilometraje con que empezó el parte del ${formatearFecha(fecha)} (${formatearKm(kmInicio)}).`;
+  return `El kilometraje supera el del inicio del parte del ${formatearFecha(fecha)} (${formatearKm(kmInicio)} km). Revise el número.`;
 }
 
 export function errLitrosInvalidos(maximo: number): string {
-  return `Escriba los litros con hasta un decimal, de más de 0 a ${maximo}.`;
+  return `Escriba los litros con hasta un decimal, mayores que 0 y hasta ${maximo}.`;
 }
 
 export function errLitrosExcedidos(maximo: number): string {
@@ -164,8 +170,8 @@ export const MOTIVO_APTITUD = {
 export const TEXTO_ALERTA = {
   usoConDocumentacionVencida: (nombres: string, fecha: FechaCivil) =>
     `Circuló con documentación vencida: ${nombres} (parte del ${formatearFecha(fecha)})`,
-  parteSinEnviar: (fecha: FechaCivil, empezadoPor: string | null) =>
-    `Parte del ${formatearFecha(fecha)} sin enviar${empezadoPor === null ? "" : ` (empezado por ${empezadoPor})`}`,
+  parteSinEnviar: (fecha: FechaCivil, iniciadoPor: string | null) =>
+    `Parte del ${formatearFecha(fecha)} sin enviar${iniciadoPor === null ? "" : ` (iniciado por ${iniciadoPor})`}`,
   sinParte: (ayer: FechaCivil) => `Sin parte de ayer (${formatearFecha(ayer)})`,
 } as const;
 
@@ -210,7 +216,7 @@ export function errVenceAntesQueSuRenovacion(venceRenovacion: FechaCivil): strin
 }
 
 export function errDocumentoExistente(nombre: string): string {
-  return `Ya hay un documento de ${nombre} cargado. Use «Renovar».`;
+  return `Ya hay cargado un documento «${nombre}». Para actualizarlo, use «Renovar».`;
 }
 
 export function errTipoDeDocumentoNoCorresponde(nombre: string, titular: "unidad" | "conductor"): string {
@@ -228,13 +234,14 @@ export function errParteDuplicado(patente: string, fecha: FechaCivil, estado: "b
 
 /** M3: la corrección de kilometraje no cambiaría nada porque hay un registro posterior. */
 export function errKmCorreccionAnterior(registro: "parte" | "correccion", fecha: FechaCivil): string {
-  const que = registro === "parte" ? `un parte enviado el ${formatearFecha(fecha)}` : `una corrección de kilometraje del ${formatearFecha(fecha)}`;
+  // `fecha` es la del registro (la fecha del parte, o desde cuándo vale la corrección), no el día en que se envió.
+  const que = registro === "parte" ? `un parte del ${formatearFecha(fecha)}` : `una corrección del ${formatearFecha(fecha)}`;
   const cual = registro === "parte" ? "de ese parte" : "de esa corrección";
   return `Ya hay ${que}, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha ${cual} o una posterior.`;
 }
 
 export function errUnidadFueraDeServicio(desde: FechaCivil, motivo: string): string {
-  return `La unidad está fuera de servicio desde el ${formatearFecha(desde)} (${motivo}). Pida al encargado que la vuelva a servicio.`;
+  return `La unidad está fuera de servicio desde el ${formatearFecha(desde)} (${motivo}). Pida al encargado que la ponga de nuevo en servicio.`;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -337,9 +344,9 @@ export function textoLeFaltan(n: number): string {
 export function textoAdvertencia(a: Advertencia): string {
   switch (a.tipo) {
     case "salto-km":
-      return `${formatearKm(a.km)} km sin registrar`;
+      return `${formatearKm(a.km)} km sin registrar desde el último parte`;
     case "recorrido-largo":
-      return `Recorrido del día de ${formatearKm(a.km)} km`;
+      return `Recorrido del día inusualmente largo: ${formatearKm(a.km)} km`;
     case "documentacion-vencida":
       return (
         `Documentación vencida o faltante: ${a.documentos.map((t) => NOMBRES_DOCUMENTO[t]).join(", ")}. ` +
@@ -351,15 +358,18 @@ export function textoAdvertencia(a: Advertencia): string {
 /** Avisos globales del arranque y de la sincronización entre pestañas (D4, D5, D7, D8, D9). */
 export const TEXTO_AVISO = {
   preparando: "Preparando la flota de ejemplo…",
-  esquemaActualizado: "La demo se actualizó y se volvió a cargar la flota de ejemplo.",
-  sinAlmacenamiento: "Este navegador no permite guardar datos: puede usar la demo, pero los cambios se pierden al cerrar la pestaña.",
-  cambiosEnOtraPestana: "Hubo cambios en otra pestaña.",
+  esquemaActualizado: "La demo se actualizó. Se cargó de nuevo la flota de ejemplo y no se conservaron los datos anteriores.",
+  sinAlmacenamiento: "Este navegador no permite guardar datos. Puede usar la demo, pero los cambios se pierden al cerrar o recargar la página.",
+  cambiosEnOtraPestana: "Se hicieron cambios en otra pestaña. Esta pantalla sigue mostrando los datos anteriores hasta que actualice.",
 } as const;
 
 /** D5: los datos con cambios del visitante se conservan aunque el ejemplo sea de otra fecha. */
 export function textoDatosDeOtraFecha(fechaBase: FechaCivil): string {
-  return `Los datos de ejemplo son del ${formatearFecha(fechaBase)}. Reinicie la demo para verlos con las fechas de hoy.`;
+  return `Los datos de ejemplo son del ${formatearFecha(fechaBase)}. Al reiniciar la demo se actualizan a la fecha de hoy y se borran sus cambios.`;
 }
 
-/** diseno-ui.md 5.19: falla grave al iniciar. */
-export const TEXTO_ERROR_ARRANQUE = "No se pudo iniciar la demo. Recargue la página. Si el problema sigue, reinicie la demo.";
+/** diseno-ui.md 5.19: falla grave al iniciar. El título va en el `h1` y el mensaje en el párrafo de abajo (no se repiten). */
+export const TEXTO_ERROR_ARRANQUE = {
+  titulo: "No se pudo iniciar la demo",
+  mensaje: "Recargue la página. Si el problema sigue, reinicie la demo.",
+} as const;

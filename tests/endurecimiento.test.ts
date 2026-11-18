@@ -75,7 +75,7 @@ describe("B2: litros del borrador (validarLitros)", () => {
     const r = validarLitros(200.5);
     if (!r.ok) {
       expect(r.error.codigo).toBe("litros-invalidos");
-      expect(r.error.mensaje).toBe("Escriba los litros con hasta un decimal, de más de 0 a 200.");
+      expect(r.error.mensaje).toBe("Escriba los litros con hasta un decimal, mayores que 0 y hasta 200.");
       expect(r.error.campo).toBe("litrosCargados");
     }
   });
