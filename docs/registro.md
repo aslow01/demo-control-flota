@@ -774,3 +774,127 @@ C11 (ZU 899 QE): A4 («Antes de volver a servicio, resuelva: Frenos (parte del 1
 baja de ZK 214 BD (sale de «No pueden salir» y de las unidades activas, conserva el historial y no ofrece acciones); «cárguelos desde aquí» es cierto (la ficha de una alta nueva lista los 4 faltantes con «Cargar»; cargar uno baja la cuenta). Con el perfil Conductor ninguno se ejecuta; si la escritura falla (D10) no cambia nada.
 `npm test`: 1060 tests (919 + 141), verdes también con `npm run test:tz` (UTC, Asia/Tokyo y America/Los_Angeles); `npm run check`: 0 errores; `npm run buscar` sin hallazgos.
 Pendiente: la pantalla de la ficha y los diálogos (maquetador); el centro de alertas pasa a abrir «Resolver»; `PantallaFlota` deja de quedarse en la flota tras el alta.
+
+## 18/11/2026 (noche, 15 · rama `logica-4-5`) — Paso 4.5 (lógica): inicio del conductor (6.4) y parte diario (6.5), con autoguardado y «Parte enviado»
+
+**Qué se hizo.** Cinco piezas nuevas, sin DOM y sin reglas nuevas (reusan `guardarBorrador`, `enviarParte`, `descartarBorrador`, `aptitud`, `kilometraje` y `calcularAlertas`): `src/lib/dominio/formulario-parte.ts` (el formulario: valores en texto, conversión a comando, faltantes P4, resumen de errores, recorrido, formato del km),
+`src/lib/estado/parte.ts` (`inicioDelConductor`, `vistaDeParte`, `panelDeParteEnviado`: todo lo que dibujan 6.4 y 6.5), `src/lib/estado/autoguardado.ts` (el autoguardado de 500 ms con indicador, sin DOM y con reloj inyectado) y, en `EstadoApp`, `parteDeLaRuta`, `inicioDelConductor`, `guardarBorradorDeParte`, `enviarParte`, `descartarBorradorDeParte` y `autoguardadoDeParte`.
+Retoques mínimos: `formatearHora` (fechas), `parteLegible` y un `?.` en `esBorradorVacio` (dominio/parte), `faltantesParaEnviar` acepta los datos de un formulario (`DatosParaEnviar`) y `EstadoApp.ejecutar` delega en `ejecutarAhora` (misma lógica, sin la cola). Textos nuevos al final de `textos.ts` (a revisar por `redactor-ux`).
+174 tests nuevos, escritos primero (`formulario-parte.test.ts` 37, `parte-vista.test.ts` 46, `autoguardado.test.ts` 25, `parte-app.test.ts` 47, `parte-corrupto.test.ts` 18, uno en `fechas.test.ts`); las mutaciones a mano que sobrevivieron al primer intento (último registro anterior a la fecha, anuncio que no se repite, reintento tras un error, volver al valor guardado mientras se guarda) quedaron con su test.
+Las decisiones que la especificación no cubría están en `diseno.md`, sección 16, última viñeta («Paso 4.5», once puntos). No se tocaron estilos ni componentes.
+
+**API para el maquetador.**
+
+```ts
+// estado/app.svelte.ts
+app.parteDeLaRuta: VistaDeParte | null              // en #/parte/…; null en otra ruta o antes de terminar el arranque. Se recalcula con cada cambio (cada autoguardado también)
+app.inicioDelConductor(unidadElegidaId: string | null = null): InicioDelConductor | null   // #/conductor; null con el perfil Encargado. Se llama dentro de un $derived: app.inicioDelConductor(elegida)
+app.autoguardadoDeParte(vista: ParteEnEdicion, alCambiar: (i: IndicadorDeGuardado) => void, opciones?): Autoguardado
+app.guardarBorradorDeParte(unidadId, fecha, valores: ValoresParte): Promise<ResultadoDeBorrador>   // lo llama el autoguardado; nunca rechaza
+app.enviarParte(unidadId, fecha, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio>   // nunca rechaza
+app.descartarBorradorDeParte(parteId): Promise<{ ok: boolean; mensaje: string }>   // «Borrador descartado.»
+
+// estado/parte.ts (puras, por si la vista necesita armar algo a mano)
+inicioDelConductor(estado, alertas, hoy, perfil, unidadElegidaId?): InicioDelConductor | null
+vistaDeParte(estado, hoy, perfil, patente, fecha): VistaDeParte
+panelDeParteEnviado(estado, parte, perfil): PanelParteEnviado
+
+// ---- Inicio del conductor (6.4)
+InicioDelConductor = {
+  titulo: "Parte diario" /* h1 */; conductor: { id; nombre }; hoy: { titulo: "Hoy, miércoles 18/11/2026" };
+  unidad: { unidadId; patente: "ZK214BD"; patenteTexto: "ZK 214 BD"; interno: "Int. 07"; descripcion: "Toyota Hilux 2022 · Camioneta"; ultimoRegistro: "Último registro: 84.320 km (parte del 17/11/2026)." | "Sin registros" } | null;
+  hoyEstado: { tipo: "sin-parte"; primario: { texto: "Empezar el parte"; href } }
+           | { tipo: "borrador"; texto: "Tiene un parte empezado: faltan 5 datos."; primario: { texto: "Continuar el parte"; href }; descartar: { texto: "Descartar borrador"; parteId } }
+           | { tipo: "enviado"; etiqueta: "Enviado a las 18:42"; enlace: { texto: "Ver el parte"; href } }
+           | { tipo: "fuera-de-servicio"; aviso: "ZK 214 BD está fuera de servicio desde el 13/11/2026 (En taller: cambio de embrague). No hace falta parte." }
+           | { tipo: "sin-unidad" };
+  avisoAptitud: string | null;                       // «ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.» (tono crítico, arriba del botón; el botón sigue disponible)
+  elegirUnidad: { modo: "otra" | "elegir"; etiqueta: "Usar otra unidad" | "Elija la unidad"; opciones: { valor: unidadId; etiqueta: "ZK 214 BD (Int. 07)"; href: "#/parte/ZK214BD/2026-11-18" }[] };   // solo unidades en servicio; el `select` es estado de la vista y se pasa a inicioDelConductor(elegida)
+  pendientes: { clave; tipo: "borrador" | "sin-parte"; texto; accion: { texto: "Continuarlo" | "Cargarlo"; href } }[];   // el panel solo si hay
+  licencia: { titulo: "Su licencia"; texto: "Vence en 12 días (30/11/2026)"; tono: "critico" | "semana" | "quincena" | "mes" } | null;   // el panel solo si hay
+  ultimosPartes: { titulo: "Mis últimos partes"; filas: { parteId; fecha: "17/11/2026"; fechaCorta: "17/11"; patenteTexto; recorrido: "132 km" | "Sin uso"; href; nombreAccesible }[]; vacio: "Todavía no envió partes." | null };
+}
+
+// ---- Parte (6.5): la vista según el caso
+VistaDeParte = ParteNoEncontrada | ParteNoDisponible | ParteEnLectura | ParteEnEdicion
+ParteNoEncontrada  = { tipo: "no-encontrada"; titulo /* h1 */; mensaje; enlace: { texto: "Ir a Parte diario"; href } }
+ParteNoDisponible  = { tipo: "no-disponible"; titulo: "No se puede cargar este parte"; mensaje /* la regla P2/P8/baja */; borrador: { parteId; descartar: "Descartar borrador" } | null; enlace }
+ParteEnLectura     = { tipo: "lectura"; titulo: "Parte del miércoles 18/11/2026"; unidadId; patente; patenteTexto; interno; descripcion; conductor: string | null; panel: PanelParteEnviado;
+                       puntosEnOrden: "9 puntos en orden: Dirección, …" | null; novedades: { rotulo; texto; critica }[]; vuelta: { texto; href } }
+ParteEnEdicion     = { tipo: "edicion"; titulo /* h1 */; unidadId; patente; patenteTexto; interno; descripcion; fecha; fechaTexto: "18/11/2026"; esHoy;
+                       avisoFueraDeTermino: string | null; avisoAptitud: string | null;
+                       parteId: string | null /* null hasta el primer guardado */; borrador: { guardadoEl: "18/11/2026 14:32" | null; hora: "14:32" | null; mensaje: "Borrador recuperado, guardado en este equipo el 18/11/2026 a las 14:32." } | null;
+                       conductor: { tipo: "fijo"; id; nombre } /* Conductor */ | { tipo: "elegir"; etiqueta: "Conductor"; opciones: { valor; etiqueta; asignadoA }[] } /* Encargado; la primera es «Elija quién conduce» con valor "" */;
+                       valoresIniciales: ValoresParte;           // para ARRANCAR el formulario; no se vuelve a leer
+                       ayudaKmInicio; ayudaKmFin: "Complételo al final del día."; ayudaLitros: "Deje vacío si no cargó.";
+                       puntos: { id; texto; critico; notaCritica: string | null }[]   // los 10, en orden; la nota solo en los críticos (5.12)
+                       etiquetaImpideUso: "Impide usar la unidad"; etiquetaOtraNovedad: "Otra novedad (opcional)";
+                       combustible: { valor: NivelCombustible; etiqueta: "Reserva" | "1/4" | "1/2" | "3/4" | "Lleno" }[];
+                       vuelta: { texto: "Parte diario" | "Ficha de ZK 214 BD"; href } }
+PanelParteEnviado  = { titulo: "Parte enviado"; linea: "ZK 214 BD, 18/11/2026, enviado a las 18:42."; filas: { rotulo; valor }[] /* Recorrido, Combustible, Combustible cargado, Novedades */;
+                       avisoCritica: string | null; advertencias: string[]; fueraDeTermino: "Enviado fuera de término." | null; volverAlInicio: { texto: "Volver al inicio"; href } }
+
+// ---- El formulario (dominio/formulario-parte.ts): TODO es texto
+ValoresParte = { conductorId: ""|id; kmInicio: "84.320"; kmFin; checklist: Record<ItemChecklist, { respuesta: "" | "en-orden" | "con-novedad"; descripcion; impideUso: boolean }>;
+                 combustible: "" | NivelCombustible; litros: "45,5"; otraNovedad: { descripcion; impideUso } }
+CAMPOS_PARTE                                   // el orden del formulario y del resumen: conductor, kmInicio, kmFin, los 10 puntos, combustible, litrosCargados, otraNovedad
+recorridoDe(kmInicio, kmFin): string           // para el <output>: «132 km», «Sin uso», «—»
+reformatearKm(texto): string                   // al salir del campo: «84320» → «84.320»
+respondidos(valores): number                   // «Respondidos: 3 de 10»
+textoBarraDeEnvio(valores): string             // «Faltan 5 datos» | «Falta 1 dato» | «Listo para enviar»
+validarParaEnviar(valores): ErroresDeParte | null
+ErroresDeParte = { titulo: "Faltan 3 datos para enviar el parte" | "Revise 1 dato para enviar el parte" | "No se pudo enviar el parte"; porCampo: Partial<Record<CampoParte, string>>; lista: { campo: CampoParte; mensaje }[] /* en el orden del formulario */; general: string | null }
+
+// ---- Autoguardado (estado/autoguardado.ts)
+Autoguardado = { indicador: IndicadorDeGuardado;
+                 cambio(valores): void                      // en cada `input`: guarda 500 ms después de la última tecla
+                 alSalirDelCampo(valores): Promise<ResultadoDeBorrador | null>   // en `blur`: guarda ya; null si no había nada
+                 vaciar(valores?): Promise<ResultadoDeBorrador | null>           // antes de irse de la pantalla
+                 reiniciar(valores): void                   // después de descartar el borrador: nueva base (los valoresIniciales de la vista nueva)
+                 cerrar(): void }                           // al desmontar la pantalla
+IndicadorDeGuardado = { estado: "inicial" | "guardando" | "guardado" | "campos" | "error"; visible: string /* «Guardado en este equipo a las 14:32», «Guardando…» */; anuncio: string /* el texto del role="status": cambia solo al cambiar de estado */; hora: string | null }
+ResultadoDeBorrador = { ok: true; parteId: string | null; hora: string | null; sinCambios: boolean } | { ok: false; tipo: "campos" | "escritura" | "regla"; errores: ErroresDeParte }   // con "campos": mostrar errores.porCampo al salir de cada campo
+
+// ---- Enviar
+ResultadoDeEnvio =
+  | { tipo: "enviado"; yaEnviado: boolean; panel: PanelParteEnviado; foco: "titulo-del-parte-enviado" }
+  | { tipo: "errores"; errores: ErroresDeParte; foco: "resumen-de-errores"; primerCampo: CampoParte | null }
+  | { tipo: "advertencias"; advertencias: { tipo; texto; tono: "critico" | "semana" }[]; aceptables: Advertencia["tipo"][]; foco: "dialogo-antes-de-enviar" }   // «Antes de enviar»; «Enviar igual» → app.enviarParte(…, aceptables)
+```
+
+```svelte
+<script lang="ts">
+  import { app } from "../lib/estado/instancia.ts";
+  import { recorridoDe, reformatearKm, textoBarraDeEnvio, type ValoresParte } from "../lib/dominio/formulario-parte.ts";
+  import type { ParteEnEdicion, PanelParteEnviado } from "../lib/estado/parte.ts";
+  import type { IndicadorDeGuardado } from "../lib/estado/autoguardado.ts";
+
+  const vista = $derived(app.parteDeLaRuta);                       // VistaDeParte | null
+  // La pantalla de edición vive dentro de {#key vista.unidadId + vista.fecha + app.perfil.tipo}: así se re-inicia al cambiar de parte o de perfil.
+  // Dentro: const e: ParteEnEdicion = …; let valores = $state<ValoresParte>(structuredClone(e.valoresIniciales));
+  let indicador = $state<IndicadorDeGuardado>({ estado: "inicial", visible: "", anuncio: "", hora: null });
+  const auto = app.autoguardadoDeParte(e, (i) => (indicador = i));  // onDestroy(auto.cerrar)
+  // <input oninput={() => auto.cambio($state.snapshot(valores))} onblur={() => { valores.kmFin = reformatearKm(valores.kmFin); void auto.alSalirDelCampo($state.snapshot(valores)); }}>
+  async function enviar(aceptadas = []) {
+    const r = await app.enviarParte(e.unidadId, e.fecha, $state.snapshot(valores), aceptadas);
+    if (r.tipo === "errores") { resumen = r.errores; /* foco al resumen */ }
+    else if (r.tipo === "advertencias") { /* abrir «Antes de enviar» con r.advertencias; «Enviar igual» → enviar(r.aceptables) */ }
+    else { panel = r.panel; /* foco al h1 «Parte enviado» */ }
+  }
+</script>
+```
+
+**Cosas para tener en cuenta al maquetar.**
+- `valoresIniciales` es para arrancar: cada autoguardado cambia el estado de la aplicación y `app.parteDeLaRuta` se recalcula (cambia `parteId` y `borrador`), pero la vista no tiene que volver a copiar los valores (pisaría lo que se está escribiendo). Hay que pasar a `autoguardadoDeParte` la vista con la que arrancó el formulario y pasarle a `cambio`/`alSalirDelCampo` una copia (`$state.snapshot`), no el proxy.
+- Después de enviar, `app.parteDeLaRuta` pasa a `lectura` por sí solo: la pantalla tiene que mostrar el `panel` del resultado (con el `h1` «Parte enviado» y el foco) y no cambiar de pantalla hasta que la persona elija «Volver al inicio». Al volver a abrir el parte, `lectura.panel` trae los mismos datos.
+- «Descartar borrador» (dos pasos, `BotonConfirmar`): `app.descartarBorradorDeParte(parteId)`; después `auto.reiniciar(nuevaVista.valoresIniciales)` y reiniciar los valores del formulario con los de la vista nueva. El mismo botón del inicio del conductor y de `no-disponible`.
+- El indicador visible muestra `indicador.visible`; el `role="status"` muestra SOLO `indicador.anuncio`. Con `estado: "inicial"` y un borrador recuperado, mostrar `vista.borrador.mensaje`. Con `estado: "campos"`, `errores.porCampo` del último `alSalirDelCampo` va sobre cada campo.
+- «Enviar parte» nunca se deshabilita (5.14): `enviarParte` devuelve el resumen. La barra dice `textoBarraDeEnvio(valores)`; «Respondidos: n de 10», `respondidos(valores)`; el `<output>`, `recorridoDe(valores.kmInicio, valores.kmFin)`.
+- Con el perfil Conductor el campo Conductor es texto fijo (`conductor.tipo === "fijo"`); con el Encargado, un `select` (la primera opción, vacía, es «Elija quién conduce»).
+- Sin `{@html}`: todo texto (descripciones de novedades, motivos) se muestra literal.
+- Rutas: `#/parte/ZK214BD/2026-11-18` (los dos perfiles); `#/conductor` (solo Conductor). «Cargar parte» de la ficha ya apunta al de hoy; «Abrir parte» y «Continuarlo» al de su fecha.
+
+**Verificación.** Aceptación del plan con el ejemplo del generador (fechaBase 2026-11-18) y la API del estado: borrador que sobrevive a una recarga (otra instancia de la aplicación sobre el mismo almacenamiento recupera lo escrito, el conductor y la hora); enviar vacío → resumen de errores de 12 datos en el orden del formulario con el foco en el resumen y nada escrito; K3 con 1 km menos (ZYN 469: 120.719 contra 120.720) → error en «Al iniciar», el borrador queda y no hay evento;
+frenos con novedad → eventos `parte-enviado`, `novedad-abierta`, `fuera-de-servicio`, la unidad pasa de 4 a 5 en el protagonista del encargado («fuera de servicio»), sube en uno la fila de novedades críticas de operación, el Horizonte queda igual y la ficha dice «fuera de servicio». Además: doble envío, parte ya enviado, parte de otra fecha (C13 «fuera de término» y adiós a la alerta P5), unidad inexistente, fuera de servicio y de baja, conductor sin unidad asignada, salto absurdo, P12 (falla del envío, el borrador no cambia), D10 (falla del guardado) y partes con la forma rota.
+`npm test`: 1234 tests (1060 + 174), verdes también con `npm run test:tz` (UTC, Asia/Tokyo y America/Los_Angeles); `npm run check`: 0 errores; `npm run buscar`: sin hallazgos.
+Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) con el diálogo «Antes de enviar», el panel «Parte enviado» y el parte en lectura; revisión de los textos nuevos por `redactor-ux`.
