@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
+import { IDBFactory } from "fake-indexeddb";
 import { generar } from "../src/lib/datos/generador.ts";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
+import { sumarDias } from "../src/lib/dominio/fechas.ts";
 import { ERRORES, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE } from "../src/lib/dominio/textos.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { EstadoApp, type DependenciasApp } from "../src/lib/estado/app.svelte.ts";
 import { crearReloj } from "../src/lib/estado/reloj.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 import { SEMILLA_POR_DEFECTO } from "../src/lib/persistencia/arranque.ts";
+import { abrirIndexedDB, borrarIndexedDB } from "../src/lib/persistencia/indexeddb.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
 import type { AvisoEntrePestanas } from "../src/lib/persistencia/pestanas.ts";
+import { checklistEnOrden } from "./ayuda.ts";
 
 const HOY = "2026-11-18";
 const MEDIODIA = "2026-11-18T15:00:00.000Z"; // 12:00 en Argentina
@@ -332,7 +336,10 @@ describe("reiniciar la demo (D6)", () => {
     };
     const r = await app.reiniciar();
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.mensaje).toBe(ERRORES.noPudoGuardar);
+    if (!r.ok) {
+      expect(r.error.codigo).toBe("escritura-fallida");
+      expect(r.error.mensaje).toBe(ERRORES.noPudoReiniciar);
+    }
     expect(app.estado).toBe(antes);
   });
 
@@ -414,5 +421,146 @@ describe("avisos", () => {
     expect(app.avisos).toEqual([{ tipo: "sin-almacenamiento" }]);
     app.descartarAviso("sin-almacenamiento");
     expect(app.avisos).toEqual([]);
+  });
+});
+
+describe("mensaje de cada escritura que falla", () => {
+  function borradorLibre(estado: Estado): Comando {
+    for (const unidad of estado.unidades.filter((u) => u.estado.tipo === "en-servicio")) {
+      for (let atras = 0; atras < 7; atras++) {
+        const fecha = sumarDias(HOY, -atras);
+        if (estado.partes.some((p) => p.unidadId === unidad.id && p.fecha === fecha)) continue;
+        return {
+          tipo: "guardarBorrador", parteId: null, unidadId: unidad.id, fecha, conductorId: null, kmInicio: null, kmFin: null,
+          combustible: null, litrosCargados: null, checklist: checklistEnOrden(), otraNovedad: null,
+        };
+      }
+    }
+    throw new Error("no hay una unidad libre para el borrador de prueba");
+  }
+
+  it("guardar un borrador que no se pudo escribir dice 'No se pudo guardar el parte' (P12)", async () => {
+    const { app, repo } = await iniciada();
+    const antes = estadoDe(app);
+    const comando = borradorLibre(antes);
+    repo.falla = "eventos";
+    const r = await app.ejecutar(comando);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.codigo).toBe("escritura-fallida");
+      expect(r.error.mensaje).toBe(ERRORES.noPudoGuardarElParte);
+    }
+    expect(app.estado).toBe(antes);
+  });
+
+  it("cambiar de perfil que no se pudo escribir dice 'No se pudo cambiar la vista'", async () => {
+    const { app, repo } = await iniciada();
+    const antes = estadoDe(app);
+    repo.escribir = async () => {
+      throw new Error("sin cuota");
+    };
+    const r = await app.cambiarPerfil({ tipo: "conductor", conductorId: antes.conductores[0]!.id });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.codigo).toBe("escritura-fallida");
+      expect(r.error.mensaje).toBe(ERRORES.noPudoCambiarVista);
+    }
+    expect(app.estado).toBe(antes);
+    expect(app.perfil).toEqual({ tipo: "encargado" });
+  });
+});
+
+describe("reiniciar desde la pantalla de error de arranque (decisión A)", () => {
+  /** Una app cuyo reloj arranca roto (fase 'error') y se puede arreglar después. */
+  function conRelojRoto(extra: Partial<DependenciasApp> = {}) {
+    const estado = { roto: true };
+    const t = armar({ reloj: crearReloj(() => new Date(estado.roto ? Number.NaN : Date.parse(MEDIODIA))), ...extra });
+    return { ...t, estado };
+  }
+
+  it("sin estado previo y fuera del error, reiniciar sigue diciendo que la demo no cargó", async () => {
+    const { app } = armar();
+    const r = await app.reiniciar(); // todavía no se inició
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.codigo).toBe("sin-datos");
+  });
+
+  it("borra el almacenamiento, vuelve a arrancar y deja la demo lista con el ejemplo de hoy", async () => {
+    let borrados = 0;
+    const { app, estado } = conRelojRoto({ borrarAlmacenamiento: async () => void borrados++ });
+    await app.iniciar();
+    expect(app.fase).toBe("error");
+    estado.roto = false;
+    const r = await app.reiniciar();
+    expect(r.ok).toBe(true);
+    expect(borrados).toBe(1);
+    expect(app.fase).toBe("lista");
+    expect(app.errorDeArranque).toBeNull();
+    expect(estadoDe(app)).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
+    expect(app.ruta).toEqual({ tipo: "alertas" });
+  });
+
+  it("con IndexedDB de verdad: lo guardado se borra y queda el ejemplo sin modificar", async () => {
+    const fabrica = new IDBFactory();
+    const viejo = generar(SEMILLA_POR_DEFECTO, "2026-11-10");
+    viejo.meta.modificada = true;
+    const previo = await abrirIndexedDB(fabrica);
+    await previo.reemplazarTodo(viejo);
+    previo.cerrar();
+    const { app, estado } = conRelojRoto({
+      abrirAlmacenamiento: () => abrirIndexedDB(fabrica),
+      borrarAlmacenamiento: () => borrarIndexedDB(fabrica),
+    });
+    await app.iniciar();
+    expect(app.fase).toBe("error");
+    estado.roto = false;
+    expect((await app.reiniciar()).ok).toBe(true);
+    expect(estadoDe(app).meta.modificada).toBe(false);
+    expect(app.avisos).toEqual([]); // no hay aviso de datos de otra fecha: se descartó lo viejo
+    const otra = await abrirIndexedDB(fabrica);
+    expect(await otra.cargar()).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
+    otra.cerrar();
+  });
+
+  it("si no se puede borrar el almacenamiento: error claro, y la pantalla de error sigue como estaba", async () => {
+    const { app, estado } = conRelojRoto({
+      borrarAlmacenamiento: async () => {
+        throw new Error("bloqueado");
+      },
+    });
+    await app.iniciar();
+    estado.roto = false;
+    const r = await app.reiniciar();
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.codigo).toBe("almacenamiento-no-disponible");
+      expect(r.error.mensaje).toBe(ERRORES.noPudoReiniciarDesdeError);
+    }
+    expect(app.fase).toBe("error");
+    expect(app.errorDeArranque).toBe(TEXTO_ERROR_ARRANQUE.mensaje);
+    expect(app.estado).toBeNull();
+  });
+
+  it("si la aplicación no sabe borrar el almacenamiento (no hay dependencia), es el mismo error", async () => {
+    const { app, estado } = conRelojRoto();
+    await app.iniciar();
+    estado.roto = false;
+    const r = await app.reiniciar();
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.codigo).toBe("almacenamiento-no-disponible");
+    expect(app.fase).toBe("error");
+  });
+
+  it("si después de borrar el arranque vuelve a fallar: error claro y la fase sigue siendo 'error'", async () => {
+    const { app } = conRelojRoto({ borrarAlmacenamiento: async () => {} }); // el reloj sigue roto
+    await app.iniciar();
+    const r = await app.reiniciar();
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.codigo).toBe("reinicio-fallido");
+      expect(r.error.mensaje).toBe(ERRORES.noPudoReiniciarDesdeError);
+    }
+    expect(app.fase).toBe("error");
+    expect(app.errorDeArranque).toBe(TEXTO_ERROR_ARRANQUE.mensaje);
   });
 });

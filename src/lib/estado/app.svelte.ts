@@ -26,6 +26,11 @@ export interface DependenciasApp {
   reloj: Reloj;
   /** Abre el almacenamiento (en el navegador, IndexedDB). Si rechaza, la demo sigue en memoria (D8). */
   abrirAlmacenamiento: () => Promise<Repositorio>;
+  /**
+   * Borra el almacenamiento (en el navegador, la base de IndexedDB). Solo lo usa `reiniciar()` desde la fase "error", cuando no
+   * hay estado que reemplazar. Si falta o rechaza, ese reinicio devuelve `almacenamiento-no-disponible`.
+   */
+  borrarAlmacenamiento?: () => Promise<void>;
   ubicacion: Ubicacion;
   /** Por defecto, el BroadcastChannel del navegador. */
   crearAvisoPestanas?: (alRecibir: () => void) => AvisoEntrePestanas;
@@ -39,6 +44,9 @@ export type FaseApp = "arrancando" | "lista" | "error";
 
 /** El perfil Conductor solo usa los comandos del parte (docs/diseno.md, sección 8). No es seguridad: es la perspectiva. */
 const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarParte", "descartarBorrador"]);
+
+/** Si no se pueden escribir, el mensaje habla del parte ("lo escrito sigue en pantalla; no cierre la pestaña"). */
+const COMANDOS_DEL_PARTE_A_GUARDAR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarParte"]);
 
 export class EstadoApp {
   fase = $state<FaseApp>("arrancando");
@@ -210,7 +218,7 @@ export class EstadoApp {
       try {
         await repositorio.escribir(resultado.valor.cambios, resultado.valor.eventos);
       } catch {
-        return fallo("escritura-fallida", ERRORES.noPudoGuardar);
+        return fallo("escritura-fallida", COMANDOS_DEL_PARTE_A_GUARDAR.has(comando.tipo) ? ERRORES.noPudoGuardarElParte : ERRORES.noPudoGuardar);
       }
       this.estado = resultado.valor.estado;
       this.hoy = momento.hoy;
@@ -231,7 +239,7 @@ export class EstadoApp {
       try {
         this.estado = await guardarPerfil(repositorio, estado, perfil);
       } catch {
-        return fallo("escritura-fallida", ERRORES.noPudoGuardar);
+        return fallo("escritura-fallida", ERRORES.noPudoCambiarVista);
       }
       this.pestanas?.avisarCambio();
       this.irA(rutaPorDefecto(perfil));
@@ -239,9 +247,17 @@ export class EstadoApp {
     });
   }
 
-  /** D6: "Reiniciar demo". Una sola escritura; si falla queda lo de antes y se informa. */
+  /**
+   * D6: "Reiniciar demo". Una sola escritura; si falla queda lo de antes y se informa (`noPudoReiniciar`).
+   *
+   * También sirve desde la pantalla de error de arranque (fase "error", sin estado previo): borra el almacenamiento
+   * (`borrarAlmacenamiento`) y vuelve a arrancar desde cero. Si no se puede borrar devuelve `almacenamiento-no-disponible`; si
+   * borró pero el arranque vuelve a fallar, `reinicio-fallido`. En los dos casos el mensaje es `noPudoReiniciarDesdeError` (la
+   * salida que ofrece la vista es recargar) y la fase sigue siendo "error". Mientras reinicia, la fase pasa por "arrancando".
+   */
   reiniciar(): Promise<Resultado<null>> {
     return this.encolar(async () => {
+      if (this.fase === "error") return this.reiniciarDesdeError();
       const estado = this.estado;
       const repositorio = this.repositorio;
       if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
@@ -250,7 +266,7 @@ export class EstadoApp {
         this.estado = await reiniciarDemo(repositorio, estado, momento.hoy);
         this.hoy = momento.hoy;
       } catch {
-        return fallo("escritura-fallida", ERRORES.noPudoGuardar);
+        return fallo("escritura-fallida", ERRORES.noPudoReiniciar);
       }
       this.avisos = this.avisos.filter((a) => a.tipo === "sin-almacenamiento");
       this.hayCambiosEnOtraPestana = false;
@@ -258,6 +274,19 @@ export class EstadoApp {
       this.irA(rutaPorDefecto(this.perfil));
       return ok(null);
     });
+  }
+
+  private async reiniciarDesdeError(): Promise<Resultado<null>> {
+    try {
+      if (this.deps.borrarAlmacenamiento === undefined) throw new Error("no hay cómo borrar el almacenamiento");
+      await this.deps.borrarAlmacenamiento();
+    } catch {
+      return fallo("almacenamiento-no-disponible", ERRORES.noPudoReiniciarDesdeError);
+    }
+    await this.iniciar();
+    if (this.fase !== "lista") return fallo("reinicio-fallido", ERRORES.noPudoReiniciarDesdeError);
+    this.irA(rutaPorDefecto(this.perfil));
+    return ok(null);
   }
 
   /** D9: "Actualizar": lee del almacenamiento lo que escribió la otra pestaña. */
