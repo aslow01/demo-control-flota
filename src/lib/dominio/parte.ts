@@ -222,6 +222,23 @@ export function nuevoBorrador(entrada: EntradaBorrador): Parte {
   };
 }
 
+/**
+ * D11: un borrador "vacío" es el que se abrió y no se escribió nada (el kilometraje inicial y el conductor vienen
+ * completados por P13): guardarlo o descartarlo no cuenta como un cambio del visitante.
+ */
+export function esBorradorVacio(parte: Parte, kmActualDeLaUnidad: number | null): boolean {
+  const sinRespuestas = ITEMS_CHECKLIST.every((i) => parte.checklist[i.id].estado === "sin-responder");
+  const kmInicioPropio = parte.kmInicio !== null && parte.kmInicio !== kmActualDeLaUnidad;
+  return (
+    sinRespuestas &&
+    !kmInicioPropio &&
+    parte.kmFin === null &&
+    parte.combustible === null &&
+    parte.litrosCargados === null &&
+    parte.otraNovedad === null
+  );
+}
+
 /** P5: el parte se envió después de su fecha (en hora de Argentina). */
 export function enviadoFueraDeTermino(parte: Parte): boolean {
   if (parte.estado !== "enviado" || parte.enviado === null) return false;

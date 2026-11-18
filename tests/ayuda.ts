@@ -1,4 +1,5 @@
 // Fábricas de datos ficticios para los tests (nada de esto se parece a datos reales).
+import { ejecutar, type Comando, type Contexto } from "../src/lib/dominio/comandos.ts";
 import type {
   Conductor,
   Documento,
@@ -7,6 +8,7 @@ import type {
   Parte,
   Proyecto,
   RespuestaItem,
+  TipoDocumento,
   Unidad,
 } from "../src/lib/dominio/tipos.ts";
 
@@ -141,4 +143,67 @@ export function estadoVacio(parcial: Partial<Estado> = {}): Estado {
     eventos: [],
     ...parcial,
   };
+}
+
+// ---- Para los tests de comandos ----------------------------------------------------------------
+
+// Un solo contador para todos los contextos de un archivo de tests: dos llamadas a contexto() no repiten ids.
+let contadorDeIds = 0;
+
+export function contexto(parcial: Partial<Contexto> = {}): Contexto {
+  return {
+    hoy: "2026-11-18",
+    ahora: "2026-11-18T15:00:00.000Z",
+    autor: "Rocío Medina",
+    nuevoId: () => `id${++contadorDeIds}`,
+    ...parcial,
+  };
+}
+
+/**
+ * Flota chica y sana para probar comandos: dos conductores, la unidad u1 (ZK 214 BD, Piedra Lunar, conductor c1)
+ * y la u2 (ZKB 482, Base de mantenimiento), todas con sus documentos al día y un parte enviado ayer cada una.
+ */
+export function flotaDePrueba(): Estado {
+  const docsDe = (id: string, conHabilitacion: boolean): Documento[] => {
+    const tipos: TipoDocumento[] = ["seguro", "revision-tecnica", "matafuego"];
+    if (conHabilitacion) tipos.push("habilitacion-proyecto");
+    return tipos.map((tipo) =>
+      documento({
+        id: `${id}-${tipo}`,
+        titular: { tipo: "unidad", id },
+        tipo,
+        numero: `DEMO-${id}-${tipo}`,
+        vence: "2027-06-30",
+      }),
+    );
+  };
+  const licencia = (c: string): Documento =>
+    documento({ id: `${c}-licencia`, titular: { tipo: "conductor", id: c }, tipo: "licencia", vence: "2027-06-30" });
+  return estadoVacio({
+    conductores: [conductor({ id: "c1", nombre: "Luis Ferreyra" }), conductor({ id: "c2", nombre: "Rosa Quiroga", legajo: "L-0102" })],
+    unidades: [
+      unidad({ id: "u1", patente: "ZK214BD", interno: 7, conductorId: "c1" }),
+      unidad({ id: "u2", patente: "ZKB482", interno: 8, proyectoId: PROYECTO_BASE.id, conductorId: "c2" }),
+    ],
+    documentos: [...docsDe("u1", true), ...docsDe("u2", false), licencia("c1"), licencia("c2")],
+    partes: [
+      parte({ id: "p-u1-ayer", unidadId: "u1", fecha: "2026-11-17", kmInicio: 84000, kmFin: 84320, enviado: "2026-11-17T18:00:00.000Z" }),
+      parte({ id: "p-u2-ayer", unidadId: "u2", fecha: "2026-11-17", kmInicio: 5000, kmFin: 5100, enviado: "2026-11-17T18:00:00.000Z", conductorId: "c2" }),
+    ],
+  });
+}
+
+/** Ejecuta un comando que tiene que salir bien (o hace fallar el test con el mensaje de negocio). */
+export function ejecutarOk(estado: Estado, comando: Comando, ctx: Contexto = contexto()) {
+  const r = ejecutar(estado, comando, ctx);
+  if (!r.ok) throw new Error(`El comando ${comando.tipo} falló: ${r.error.codigo} — ${r.error.mensaje}`);
+  return r.valor;
+}
+
+/** Ejecuta un comando que tiene que ser rechazado y devuelve el error. */
+export function ejecutarError(estado: Estado, comando: Comando, ctx: Contexto = contexto()) {
+  const r = ejecutar(estado, comando, ctx);
+  if (r.ok) throw new Error(`El comando ${comando.tipo} se aceptó y tenía que fallar`);
+  return r.error;
 }

@@ -172,8 +172,10 @@ export interface EntradaValidacionKm {
   correcciones: readonly CorreccionKm[];
 }
 
-/** K2, K3 y K4 (errores que bloquean el envío) y, si pasan, las advertencias K6 y K7. */
-export function validarKilometraje(entrada: EntradaValidacionKm): Resultado<{ advertencias: Advertencia[] }> {
+/** K2, K3 y K4 (errores que bloquean el envío) y, si pasan, las advertencias K6 y K7 y el kilometraje anterior. */
+export function validarKilometraje(
+  entrada: EntradaValidacionKm,
+): Resultado<{ advertencias: Advertencia[]; kmAnterior: number | null }> {
   const { unidad, fecha, kmInicio, kmFin, partes, correcciones } = entrada;
 
   const recorrido = validarRecorrido(kmInicio, kmFin);
@@ -199,5 +201,5 @@ export function validarKilometraje(entrada: EntradaValidacionKm): Resultado<{ ad
   }
 
   const kmAnterior = anterior === null ? null : kmDeRegistro(anterior);
-  return ok({ advertencias: advertenciasDeKm({ kmAnterior, kmInicio, kmFin }) });
+  return ok({ advertencias: advertenciasDeKm({ kmAnterior, kmInicio, kmFin }), kmAnterior });
 }
