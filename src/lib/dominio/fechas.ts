@@ -16,6 +16,29 @@ const formatoFechaAR = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
 });
 
+const FORMATO_INSTANTE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
+
+/**
+ * T2 (M2): lee un instante `AAAA-MM-DDTHH:MM:SS[.mmm]Z` y devuelve los milisegundos desde la época, o `null`.
+ * La `Z` es obligatoria: sin zona, `Date.parse` usaría la hora local del equipo. Rechaza también los instantes que
+ * el motor "corrige" en silencio (30 de febrero, hora 24) y todo formato que dependa del motor.
+ */
+export function parsearInstante(texto: string): number | null {
+  const m = FORMATO_INSTANTE.exec(texto);
+  if (m === null) return null;
+  const ms = Date.parse(texto);
+  if (!Number.isFinite(ms)) return null;
+  // Ida y vuelta: si el motor corrigió algún campo, la fecha de vuelta no coincide con el texto.
+  if (new Date(ms).toISOString().slice(0, 19) !== texto.slice(0, 19)) return null;
+  return ms;
+}
+
+function msDeInstante(instante: Instante): number {
+  const ms = parsearInstante(instante);
+  if (ms === null) throw new Error(`Instante inválido: ${JSON.stringify(instante)}`);
+  return ms;
+}
+
 function partesEnArgentina(ms: number): { anio: string; mes: string; dia: string; hora: string; minuto: string } {
   if (!Number.isFinite(ms)) throw new Error("Instante inválido");
   const partes: Record<string, string> = {};
@@ -37,7 +60,7 @@ export function hoyEnArgentina(ahora: Date): FechaCivil {
 
 /** T1: igual que `hoyEnArgentina`, para un instante guardado como texto ISO. */
 export function fechaEnArgentina(instante: Instante): FechaCivil {
-  const p = partesEnArgentina(Date.parse(instante));
+  const p = partesEnArgentina(msDeInstante(instante));
   return `${p.anio}-${p.mes}-${p.dia}`;
 }
 
@@ -109,6 +132,7 @@ export function diasEntre(a: FechaCivil, b: FechaCivil): number {
 }
 
 export function sumarDias(fecha: FechaCivil, dias: number): FechaCivil {
+  if (!Number.isInteger(dias)) throw new Error(`sumarDias necesita un entero de días: ${dias}`);
   return fechaDesdeDias(diasDesdeEpoca(fecha) + dias);
 }
 
@@ -138,6 +162,6 @@ export function formatearFechaConDia(fecha: FechaCivil): string {
 
 /** T6: `18/11/2026 14:32`, en hora de Argentina. */
 export function formatearInstante(instante: Instante): string {
-  const p = partesEnArgentina(Date.parse(instante));
+  const p = partesEnArgentina(msDeInstante(instante));
   return `${p.dia}/${p.mes}/${p.anio} ${p.hora}:${p.minuto}`;
 }

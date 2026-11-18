@@ -113,7 +113,7 @@ describe("guardarBorrador (P3)", () => {
   });
 
   it("P8: no se aceptan partes de una unidad fuera de servicio", () => {
-    const fuera = ejecutarOk(flotaDePrueba(), { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "En taller: cambio de embrague" }, contexto({ hoy: "2026-11-13" })).estado;
+    const fuera = ejecutarOk(flotaDePrueba(), { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "En taller: cambio de embrague" }, contexto({ hoy: "2026-11-13", ahora: "2026-11-13T15:00:00.000Z" })).estado;
     const err = ejecutarError(fuera, borrador());
     expect(err.mensaje).toBe(
       "La unidad está fuera de servicio desde el 13/11/2026 (En taller: cambio de embrague). Pida al encargado que la vuelva a servicio.",

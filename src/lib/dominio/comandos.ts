@@ -3,7 +3,7 @@
 // Reglas de este archivo: A3 a A7, K5, N1 a N3, P1 a P3, P7, P8, V10, V11, U1 a U7, H1, D11.
 
 import { aplicarCambios, sinCambios, type Cambios } from "./estado.ts";
-import { diasEntre, formatearFecha } from "./fechas.ts";
+import { diasEntre, fechaEnArgentina, formatearFecha, parsearFechaCivil, parsearInstante } from "./fechas.ts";
 import { kmActual, validarKilometraje } from "./kilometraje.ts";
 import { novedadesCriticasAbiertas, rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
 import {
@@ -145,8 +145,33 @@ const LARGO_MAXIMO_MOTIVO = 200;
 // Entrada pública
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * M2: el contexto lo arma el código de la aplicación (el reloj), no el usuario; si está mal es un error de programación y
+ * se lanza, para que un `ahora` inválido no llegue a guardarse y deje el centro de alertas sin poder calcularse.
+ */
+function validarContexto(ctx: Contexto): void {
+  if (typeof ctx.hoy !== "string" || parsearFechaCivil(ctx.hoy) === null) {
+    throw new Error(`Contexto inválido: 'hoy' tiene que ser una fecha AAAA-MM-DD válida (llegó ${JSON.stringify(ctx.hoy)}).`);
+  }
+  // `ahora` tiene que ser exactamente lo que devuelve toISOString (con milisegundos y Z): los instantes se comparan como texto.
+  const ms = typeof ctx.ahora === "string" ? parsearInstante(ctx.ahora) : null;
+  if (ms === null || new Date(ms).toISOString() !== ctx.ahora) {
+    throw new Error(
+      `Contexto inválido: 'ahora' tiene que ser un instante UTC con milisegundos y Z, como 2026-11-18T15:00:00.000Z (llegó ${JSON.stringify(ctx.ahora)}).`,
+    );
+  }
+  if (fechaEnArgentina(ctx.ahora) !== ctx.hoy) {
+    throw new Error(
+      `Contexto inválido: 'hoy' (${ctx.hoy}) no coincide con la fecha de Argentina de 'ahora' (${fechaEnArgentina(ctx.ahora)}).`,
+    );
+  }
+  if (typeof ctx.autor !== "string" || ctx.autor.trim() === "") throw new Error("Contexto inválido: 'autor' no puede estar vacío.");
+  if (typeof ctx.nuevoId !== "function") throw new Error("Contexto inválido: 'nuevoId' tiene que ser una función.");
+}
+
 /** Aplica un comando sin modificar el estado: devuelve los cambios y los eventos que hay que escribir, o el error. */
 export function aplicar(estado: Estado, comando: Comando, ctx: Contexto): Resultado<Aplicacion> {
+  validarContexto(ctx);
   const r = manejar(estado, comando, ctx);
   if (!r.ok) return r;
   const { cambios: parcial, eventos: nuevos, modifica } = r.valor;

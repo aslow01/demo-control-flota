@@ -8,6 +8,7 @@ import {
   formatearInstante,
   hoyEnArgentina,
   parsearFechaCivil,
+  parsearInstante,
   sumarAnios,
   sumarDias,
 } from "../src/lib/dominio/fechas.ts";
@@ -36,6 +37,49 @@ describe("T1: hoy en Argentina con reloj inyectado", () => {
   it("T1: un instante inválido es un error, no una fecha a medias", () => {
     expect(() => fechaEnArgentina("ayer")).toThrow();
     expect(() => hoyEnArgentina(new Date(Number.NaN))).toThrow();
+  });
+});
+
+describe("T2: los instantes se leen de forma estricta (M2)", () => {
+  it("parsearInstante acepta solo ISO 8601 con Z, con o sin milisegundos", () => {
+    expect(parsearInstante("2026-11-18T03:00:00.000Z")).toBe(Date.UTC(2026, 10, 18, 3, 0, 0));
+    expect(parsearInstante("2026-11-18T03:00:00Z")).toBe(Date.UTC(2026, 10, 18, 3, 0, 0));
+    expect(parsearInstante("2026-11-18T03:00:00.123Z")).toBe(Date.UTC(2026, 10, 18, 3, 0, 0, 123));
+  });
+
+  it("rechaza instantes sin zona, con offset, sin hora o en otros formatos del motor", () => {
+    const malos = [
+      "2026-11-18T01:00:00", // sin zona: se leería en hora local del equipo
+      "2026-11-18T01:00:00.000",
+      "2026-11-18T01:00:00-03:00",
+      "2026-11-18T01:00:00+00:00",
+      "2026-11-18T01:00Z",
+      "2026-11-18",
+      "18 Nov 2026 01:00 UTC",
+      "2026-11-18 01:00:00Z",
+      "2026-11-18T01:00:00z",
+      "ayer",
+      "",
+      " 2026-11-18T01:00:00.000Z",
+      "2026-11-18T01:00:00.000Z\n",
+    ];
+    for (const m of malos) expect(parsearInstante(m), m).toBeNull();
+  });
+
+  it("rechaza instantes que no existen (día 30 de febrero, hora 24, minuto 60)", () => {
+    expect(parsearInstante("2026-02-30T10:00:00.000Z")).toBeNull();
+    expect(parsearInstante("2026-11-31T10:00:00.000Z")).toBeNull();
+    expect(parsearInstante("2026-11-18T24:00:00.000Z")).toBeNull();
+    expect(parsearInstante("2026-11-18T10:60:00.000Z")).toBeNull();
+    expect(parsearInstante("2026-11-18T10:00:60.000Z")).toBeNull();
+    expect(parsearInstante("2026-13-01T10:00:00.000Z")).toBeNull();
+  });
+
+  it("fechaEnArgentina y formatearInstante lanzan con un instante sin zona (no lo interpretan en hora local)", () => {
+    expect(() => fechaEnArgentina("2026-11-18T01:00:00")).toThrow(/Instante inválido/);
+    expect(() => formatearInstante("2026-11-18T01:00:00")).toThrow(/Instante inválido/);
+    expect(() => fechaEnArgentina("18 Nov 2026 01:00 UTC")).toThrow();
+    expect(() => fechaEnArgentina("2026-11-18")).toThrow();
   });
 });
 
@@ -129,6 +173,25 @@ describe("T5: días de calendario entre fechas", () => {
       expect(parsearFechaCivil(f)).toBe(f);
       expect(diasEntre("2026-11-18", f)).toBe(n);
     }
+  });
+
+  it("T5/B1: sumarDias coincide con Date.UTC en cada día de 2000-01-01 a 2100-12-31 (incluye 2100, que no es bisiesto)", () => {
+    const inicio = Date.UTC(2000, 0, 1) / 86_400_000;
+    const fin = Date.UTC(2100, 11, 31) / 86_400_000;
+    for (let dias = inicio; dias <= fin; dias++) {
+      const d = new Date(dias * 86_400_000);
+      const esperado = `${String(d.getUTCFullYear()).padStart(4, "0")}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+      if (sumarDias("2000-01-01", dias - inicio) !== esperado) throw new Error(`sumarDias falla en ${esperado}`);
+    }
+    expect(sumarDias("2100-02-28", 1)).toBe("2100-03-01");
+    expect(sumarDias("2100-03-01", -1)).toBe("2100-02-28");
+    expect(sumarDias("2100-12-31", 0)).toBe("2100-12-31");
+  });
+
+  it("B4: sumarDias exige un número entero de días", () => {
+    expect(() => sumarDias("2026-11-18", Number.NaN)).toThrow(/entero/);
+    expect(() => sumarDias("2026-11-18", 1.5)).toThrow(/entero/);
+    expect(() => sumarDias("2026-11-18", Infinity)).toThrow(/entero/);
   });
 
   it("T5: sumarDias cruza meses y años", () => {
