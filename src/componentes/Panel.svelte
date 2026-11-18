@@ -6,6 +6,8 @@
   //   vuelva ahí si el botón que lo abrió desapareció (5.17; el diálogo solo conoce el h1 de la página). Su id se puede fijar con `id`.
   // - `estado` es el texto de la barra de estado (role="status"). La región existe siempre, vacía mide 0 y el mensaje
   //   no desaparece solo: lo reemplaza la acción siguiente.
+  // - `contenidoEstado` (opcional) pone en su lugar un contenido fijo con un control adentro ("Así lo carga el conductor: Abrir el parte diario"):
+  //   al no ser un mensaje que cambia, esa barra no es `role="status"`.
   // - El interior es un contenedor de consultas (`interior`) para que las tablas cambien de disposición por su ancho.
   import type { Snippet } from "svelte";
   import Icono from "./Icono.svelte";
@@ -17,6 +19,7 @@
     icono,
     meta = "",
     estado = "",
+    contenidoEstado,
     herramientas,
     controles,
     children,
@@ -27,6 +30,7 @@
     /** Dato breve, a la derecha del título: "11 vencimientos". */
     meta?: string;
     estado?: string;
+    contenidoEstado?: Snippet;
     herramientas?: Snippet;
     controles?: Snippet;
     children: Snippet;
@@ -53,7 +57,11 @@
     <div class="herramientas">{@render herramientas()}</div>
   {/if}
   <div class="interior">{@render children()}</div>
-  <div class="estado" class:vacio={estado === ""} role="status">{estado}</div>
+  {#if contenidoEstado !== undefined}
+    <div class="estado">{@render contenidoEstado()}</div>
+  {:else}
+    <div class="estado" class:vacio={estado === ""} role="status">{estado}</div>
+  {/if}
 </section>
 
 <style>

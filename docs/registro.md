@@ -487,3 +487,27 @@ interface ErroresDeFormulario {
 3 unidades en «No pueden salir», 10 vencimientos y 3 críticas, sin recargar, con el cambio guardado (documento nuevo y evento `documento-renovado` en una escritura). `npm test`: 794 tests
 (724 + 70), verdes también con `npm run test:tz` (UTC, Asia/Tokyo y America/Los_Angeles); `npm run check`: 0 errores; `npm audit`: 0 vulnerabilidades; `npm run build` y `npm run buscar` sin hallazgos.
 Pendiente: la pantalla (maquetador), «Resolver» y el filtro de la flota (4.3 y 4.4).
+
+## 18/11/2026 (noche, 11) — Paso 4.2 (pantalla): centro de alertas y diálogos Renovar y Cargar (maquetador)
+
+**Qué se hizo.** `src/componentes/PantallaAlertas.svelte` (las cuatro zonas de 6.1 con el Horizonte completo) y `DialogoDocumento.svelte` (Renovar y Cargar sobre el `Dialogo` base). Piezas nuevas reutilizables:
+`ListaTabla.svelte` (5.9: una `table`, tres disposiciones por consulta de contenedor propia, roles explícitos en `lista-roles.ts`), `FiltrosConteo.svelte` (5.8), `ResumenErrores.svelte` (5.15), `EnlaceAccion.svelte`
+(enlace con aspecto de botón secundario) y `alertas-aspecto.ts` (tono e ícono por alerta, 5.7). `Panel.svelte` suma `contenidoEstado` (barra de estado con un control adentro, sin `role="status"`). `App.svelte` monta la pantalla en `#/alertas`
+y le pasa `pedirConductor` (el diálogo «¿Quién completa el parte?» ya existente). Los textos de presentación están en `textos-marco.ts` (`TEXTO_ALERTAS`, `TEXTO_DIALOGO_DOCUMENTO`) para que los revise `redactor-ux`. Sin cambios en la lógica ni en los tokens.
+
+**Decisiones donde la especificación no dice (diferencias a revisar).**
+- No se muestra `encabezado.bajada` (el rótulo «Demo con datos ficticios» y el pie ya lo dicen; 6.1 no la dibuja).
+- Cada unidad del protagonista es un solo enlace de fila completa (patente, interno, motivo y `›`) en vez de solo la patente: el `›` sugiere que la fila se toca. Su nombre empieza con «Ficha de ZK 214 BD».
+- El título de cada grupo de la lista es un `span` con `role="heading"` `aria-level="3"` y `tabindex="-1"` dentro de la celda de encabezado (un `h3` no puede ir dentro de `th`); es el destino de «Ver».
+- «Ver» usa un chevron girado 90° (no hay flecha hacia abajo en el sprite de 5.20). Los íconos de los paneles son `vencido`, `parte`, `calendario` y `novedad`.
+- «Resolver» es un enlace a la ficha de la unidad (el diálogo es del 4.4); «Abrir el parte diario» abre el diálogo de conductor y, si se cancela, el foco vuelve a ese botón.
+- Emisor no lleva asterisco: el dominio lo acepta vacío (`REGLAS.emisor.min = 0`). El resumen de errores aparece con 2 o más errores (con 1, el foco va al campo); título «Hay N datos para corregir»; sus enlaces no cambian el hash.
+- Filtros: cajas sueltas con `--r-2` (no segmentos pegados), con la leyenda «Mostrar» al costado desde 40 rem y arriba por debajo. El anuncio del filtro va en una región `role="status"` aparte y solo cambia al elegir un filtro; los mensajes de guardado van a la barra de estado del panel.
+- Si la fila que se abre ya no está pendiente (`contextoDeRenovar`/`contextoDeCargar` devuelven `null`) la barra de estado dice «Ese documento ya no está pendiente. La lista está al día.».
+- Colores forzados: franjas en `CanvasText`, filtro elegido en `Highlight`, líneas y marcas como en el Horizonte.
+
+**Verificación.** `npm run build` servido con las cabeceras de `public/_headers` y `npm run dev` (la app real), Chromium con Playwright, 73 comprobaciones en cada uno, 0 fallas: protagonista «4 unidades» (texto de lectores «4 unidades no pueden salir hoy.»), grupos 2 + 4 + 3 + 2 = 11, «6 pendientes» (5 filas y 6 en el detalle), `aria-label` del horizonte;
+filtros por clic y con flechas con anuncio «Mostrando 4 de 11 vencimientos.»; «Ver» deja el foco en el título del grupo; Renovar C01 (ZK 214 BD): foco en el primer campo, Esc con el foco de vuelta en el botón, vacío → resumen con 2 errores y foco ahí, 1 error → foco al campo y texto conservado, Esc con cambios pide confirmar,
+guardar con Enter → foco en el `h2` «Vencimientos», barra «Seguro de ZK 214 BD renovado. Quedan 10 vencimientos.», 10 filas, protagonista «3 unidades», pestaña «3 críticas»; Cargar la habilitación de ZZD 563 con su mensaje y foco; recorrido completo con Tab (orden lógico, Tab no sale del diálogo); claro y oscuro a 360, 768 y 1280 px sin desborde
+horizontal (también el diálogo con errores, con el pie a la vista); consola sin errores ni avisos; sin `securitypolicyviolation`. `npm run check`: 0; `npm test`: 794 verdes; `npm run contraste`: 158 mediciones, 0 fallan; `npm run buscar` y `npm audit`: sin hallazgos. Capturas `alertas-*` en el directorio de trabajo temporal.
+No probado: Firefox y Safari, lector de pantalla real, contraste alto de Windows real (solo `forced-colors` emulado), pantalla táctil real.

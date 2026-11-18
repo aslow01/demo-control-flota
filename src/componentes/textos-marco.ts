@@ -102,3 +102,33 @@ export const TEXTO_PIE = {
   autoria: "Diseño, reglas y verificación: Matías Ariel Ormeño. El código lo escribió una IA bajo su dirección.",
   volverAlPortafolio: "Volver al portafolio",
 } as const;
+
+/** Centro de alertas (6.1): lo que dice la pantalla y no sale del dominio. Los textos de las alertas y de los diálogos vienen de `textos.ts`. */
+export const TEXTO_ALERTAS = {
+  /** Dato breve del panel del protagonista: «al 18/11/2026». */
+  alFecha: (fecha: string) => `al ${fecha}`,
+  /** Botón de cada fila de «Operación diaria»; el resto del nombre accesible es el texto de la fila. */
+  ver: "Ver",
+  verDetalleDe: (texto: string) => ` el detalle: ${texto}`,
+  mostrar: "Mostrar",
+  columnasVencimientos: { estado: "Estado", documento: "Documento", titular: "Titular", proyecto: "Proyecto", vence: "Vence", accion: "Acción" },
+  columnasOperacion: { estado: "Estado", que: "Qué pasó", unidad: "Unidad", fecha: "Fecha", accion: "Acción" },
+  /** Etiquetas de las celdas cuando la fila pasa a tarjeta. */
+  proyectoDe: "Proyecto",
+  venceEl: "Vence",
+  /** Lo que se dice cuando la fila que se quiso abrir ya no está pendiente (se renovó o se cargó mientras tanto). */
+  yaNoPendiente: "Ese documento ya no está pendiente. La lista está al día.",
+} as const;
+
+/** Diálogos «Renovar» y «Cargar documento» (5.11, 5.15 y 5.17). Los títulos y los botones primarios salen de `textos.ts`. */
+export const TEXTO_DIALOGO_DOCUMENTO = {
+  numero: "Número",
+  emisor: "Emisor",
+  vence: "Vence",
+  emitido: "Emitido",
+  ayudaEmisorHeredado: "Viene del documento anterior. Cámbielo si es otro.",
+  ayudaOpcional: "Opcional.",
+  /** Título del resumen de errores (5.15): «Hay 3 datos para corregir». */
+  resumen: (n: number) => (n === 1 ? "Hay 1 dato para corregir" : `Hay ${n} datos para corregir`),
+  guardando: "Guardando…",
+} as const;

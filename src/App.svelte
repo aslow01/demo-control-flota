@@ -1,7 +1,7 @@
 <script lang="ts">
   // El marco de la aplicación (docs/diseno-ui.md, secciones 2, 4, 5.2, 5.3, 5.18 y 5.19): enlace "Ir al contenido", barra superior,
   // barra de la aplicación con el selector de perfil, avisos globales, `main` (estado de arranque, error o la pantalla) y pie.
-  // Lee todo del estado (`app`); no tiene reglas de negocio. Las pantallas internas son un marcador hasta los pasos 4.x.
+  // Lee todo del estado (`app`); no tiene reglas de negocio. El centro de alertas (4.2) es una pantalla; las demás son un marcador hasta los pasos 4.3 a 4.5.
   import { tick } from "svelte";
   import Aviso from "./componentes/Aviso.svelte";
   import BarraApp from "./componentes/BarraApp.svelte";
@@ -11,6 +11,7 @@
   import DialogoConductor from "./componentes/DialogoConductor.svelte";
   import DialogoReiniciar from "./componentes/DialogoReiniciar.svelte";
   import EtiquetaDemo from "./componentes/EtiquetaDemo.svelte";
+  import PantallaAlertas from "./componentes/PantallaAlertas.svelte";
   import Pie from "./componentes/Pie.svelte";
   import { TEXTO_MARCO, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { ItemMenu, OpcionConductor, SeccionActiva } from "./componentes/tipos.ts";
@@ -304,8 +305,10 @@
       <div class="acciones-error">
         <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
       </div>
+    {:else if app.ruta.tipo === "alertas"}
+      <PantallaAlertas alAbrirParte={pedirConductor} />
     {:else}
-      <!-- Marcador: las pantallas llegan en los pasos 4.x. Cada una trae su propio h1 con tabindex="-1". -->
+      <!-- Marcador: las demás pantallas llegan en los pasos 4.3 a 4.5. Cada una trae su propio h1 con tabindex="-1". -->
       <div class="encabezado">
         <div class="solo-angosto"><EtiquetaDemo /></div>
         <h1 tabindex="-1">{nombreDeLaPantalla}</h1>
