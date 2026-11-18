@@ -14,6 +14,9 @@ export const SEMILLA_POR_DEFECTO = 20261118;
 /** D4: "Preparando la flota de ejemplo…" solo si el arranque tarda más que esto. */
 export const UMBRAL_PREPARANDO_MS = 300;
 
+/** Si abrir el almacenamiento no responde en este plazo, se lo da por no disponible y se sigue en memoria (D8). */
+export const PLAZO_ABRIR_MS = 8000;
+
 /** Avisos globales que el arranque deja para la interfaz (los textos están en `textos.ts`). */
 export type Aviso =
   /** D7: cambió la versión del formato y se volvió a cargar el ejemplo. */
@@ -29,6 +32,8 @@ export interface OpcionesArranque {
   /** Abre el almacenamiento real (en el navegador, `abrirIndexedDB`). Puede rechazar: entonces se usa la memoria (D8). */
   abrirAlmacenamiento: () => Promise<Repositorio>;
   semilla?: number;
+  /** Cuánto se espera a que abra el almacenamiento antes de seguir en memoria (D8). Por defecto, `PLAZO_ABRIR_MS`. */
+  plazoAbrirMs?: number;
   /** Se llama una vez si el arranque tarda más de `umbralPreparandoMs` (D4). */
   alTardar?: () => void;
   umbralPreparandoMs?: number;
@@ -75,9 +80,44 @@ function perfilDe(meta: unknown): Perfil | null {
   return p?.tipo === "encargado" ? { tipo: "encargado" } : null;
 }
 
+/**
+ * Abre el almacenamiento, pero no espera para siempre: algunos navegadores dejan el pedido de `indexedDB.open` sin respuesta
+ * (ni éxito ni error). Pasado el plazo rechaza, y si la conexión llega más tarde se la cierra para no dejarla colgada.
+ */
+function abrirConPlazo(opciones: OpcionesArranque): Promise<Repositorio> {
+  const plazo = opciones.plazoAbrirMs ?? PLAZO_ABRIR_MS;
+  return new Promise<Repositorio>((resolver, rechazar) => {
+    let vencido = false;
+    const temporizador = setTimeout(() => {
+      vencido = true;
+      rechazar(new Error("El almacenamiento no respondió a tiempo."));
+    }, plazo);
+    opciones.abrirAlmacenamiento().then(
+      (repositorio) => {
+        clearTimeout(temporizador);
+        if (vencido) repositorio.cerrar?.();
+        else resolver(repositorio);
+      },
+      (error: unknown) => {
+        clearTimeout(temporizador);
+        if (!vencido) rechazar(error);
+      },
+    );
+  });
+}
+
+/** El perfil guardado solo vale si es el encargado o un conductor que existe; si no, se vuelve al encargado (nunca se rompe). */
+function conPerfilValido(guardado: Estado): Estado {
+  const perfil = perfilDe(guardado.meta);
+  const valido: Perfil =
+    perfil?.tipo === "conductor" && guardado.conductores.some((c) => c.id === perfil.conductorId) ? perfil : { tipo: "encargado" };
+  const igual = JSON.stringify(guardado.meta.perfil) === JSON.stringify(valido);
+  return igual ? guardado : { ...guardado, meta: { ...guardado.meta, perfil: valido } };
+}
+
 /** Todo el camino feliz sobre un almacenamiento que anda. Cualquier falla sube y `arrancar` pasa a la memoria. */
 async function arrancarConAlmacenamiento(opciones: OpcionesArranque, semilla: number): Promise<ResultadoArranque> {
-  const repositorio = await opciones.abrirAlmacenamiento();
+  const repositorio = await abrirConPlazo(opciones);
   const guardado = await repositorio.cargar();
   const { hoy } = opciones;
 
@@ -103,10 +143,11 @@ async function arrancarConAlmacenamiento(opciones: OpcionesArranque, semilla: nu
       return { repositorio, estado, avisos: [], enMemoria: false };
     }
     // D5, segundo camino: hay cambios del visitante, se conservan y se avisa.
-    return { repositorio, estado: guardado, avisos: [{ tipo: "datos-de-otra-fecha", fechaBase: guardado.meta.fechaBase }], enMemoria: false };
+    const estado = conPerfilValido(guardado);
+    return { repositorio, estado, avisos: [{ tipo: "datos-de-otra-fecha", fechaBase: guardado.meta.fechaBase }], enMemoria: false };
   }
 
-  return { repositorio, estado: guardado, avisos: [], enMemoria: false };
+  return { repositorio, estado: conPerfilValido(guardado), avisos: [], enMemoria: false };
 }
 
 /** D8: sin almacenamiento la demo igual funciona, con un repositorio en memoria y un aviso fijo. */

@@ -100,6 +100,14 @@ describe("arranque del estado de la aplicación", () => {
     expect(TEXTO_AVISO.preparando).toBe("Preparando la flota de ejemplo…");
   });
 
+  it("D8: si abrir el almacenamiento no responde en el plazo, arranca en memoria con el aviso fijo", async () => {
+    const { app } = await iniciada({ abrirAlmacenamiento: () => new Promise(() => {}), plazoAbrirMs: 20 });
+    expect(app.fase).toBe("lista");
+    expect(app.enMemoria).toBe(true);
+    expect(app.avisos).toEqual([{ tipo: "sin-almacenamiento" }]);
+    expect(app.preparando).toBe(false);
+  });
+
   it("un reloj roto es una falla grave: fase 'error' con mensaje y nada a medias", async () => {
     const { app } = armar({ reloj: crearReloj(() => new Date(Number.NaN)) });
     await app.iniciar();

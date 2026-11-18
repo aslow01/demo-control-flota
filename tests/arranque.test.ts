@@ -4,7 +4,7 @@ import { generar, VERSION_ESQUEMA } from "../src/lib/datos/generador.ts";
 import { sinCambios } from "../src/lib/dominio/estado.ts";
 import { TEXTO_AVISO, textoDatosDeOtraFecha } from "../src/lib/dominio/textos.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
-import { arrancar, cambiarPerfil, reiniciarDemo, SEMILLA_POR_DEFECTO } from "../src/lib/persistencia/arranque.ts";
+import { arrancar, cambiarPerfil, PLAZO_ABRIR_MS, reiniciarDemo, SEMILLA_POR_DEFECTO } from "../src/lib/persistencia/arranque.ts";
 import { abrirIndexedDB } from "../src/lib/persistencia/indexeddb.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
 import type { Repositorio } from "../src/lib/persistencia/repositorio.ts";
@@ -207,6 +207,85 @@ describe("D8: sin almacenamiento", () => {
     const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(repo) });
     expect(r.enMemoria).toBe(true);
     expect(r.avisos).toEqual([{ tipo: "sin-almacenamiento" }]);
+  });
+});
+
+describe("D8: un almacenamiento que no responde", () => {
+  const nunca = (): Promise<Repositorio> => new Promise<Repositorio>(() => {});
+
+  it("el plazo por defecto es de unos 8 segundos", () => {
+    expect(PLAZO_ABRIR_MS).toBe(8000);
+  });
+
+  it("si abrir no responde en el plazo, arranca en memoria con el aviso fijo", async () => {
+    const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: nunca, plazoAbrirMs: 20 });
+    expect(r.enMemoria).toBe(true);
+    expect(r.repositorio).toBeInstanceOf(RepositorioMemoria);
+    expect(r.estado).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
+    expect(r.avisos).toEqual([{ tipo: "sin-almacenamiento" }]);
+  });
+
+  it("si la conexión llega tarde (después del plazo) se cierra: no queda una conexión colgada", async () => {
+    let cerrada = 0;
+    const tardio = async (): Promise<Repositorio> => {
+      await new Promise((resolver) => setTimeout(resolver, 60));
+      const repo: Repositorio = await repoCon(null);
+      repo.cerrar = () => void cerrada++;
+      return repo;
+    };
+    const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: tardio, plazoAbrirMs: 10 });
+    expect(r.enMemoria).toBe(true);
+    await new Promise((resolver) => setTimeout(resolver, 120));
+    expect(cerrada).toBe(1);
+  });
+
+  it("si abre a tiempo no pasa nada y el plazo no queda corriendo", async () => {
+    const repo: Repositorio = await repoCon(null);
+    let cerrada = 0;
+    repo.cerrar = () => void cerrada++;
+    const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(repo), plazoAbrirMs: 20 });
+    await new Promise((resolver) => setTimeout(resolver, 60));
+    expect(r.enMemoria).toBe(false);
+    expect(r.repositorio).toBe(repo);
+    expect(cerrada).toBe(0);
+  });
+});
+
+describe("B4: el perfil guardado se valida al arrancar", () => {
+  const arrancarCon = async (perfil: unknown, cambios: Partial<Estado["meta"]> = {}) => {
+    const estado = generar(SEMILLA_POR_DEFECTO, HOY);
+    Object.assign(estado.meta, cambios);
+    (estado.meta as { perfil: unknown }).perfil = perfil;
+    return arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(await repoCon(estado)) });
+  };
+
+  it("un conductor que no existe vuelve al encargado, sin aviso", async () => {
+    const r = await arrancarCon({ tipo: "conductor", conductorId: "c-no-existe" });
+    expect(r.estado.meta.perfil).toEqual({ tipo: "encargado" });
+    expect(r.avisos).toEqual([]);
+  });
+
+  it("un tipo inválido, o un perfil que no es un objeto, vuelve al encargado", async () => {
+    for (const roto of [{ tipo: "<img src=x onerror=alert(1)>" }, { tipo: "conductor" }, { tipo: 5 }, "x", 7, null, undefined, []]) {
+      const r = await arrancarCon(roto);
+      expect(r.estado.meta.perfil).toEqual({ tipo: "encargado" });
+    }
+  });
+
+  it("también cuando hay cambios del visitante en un ejemplo de otra fecha (D5, segundo camino)", async () => {
+    const r = await arrancarCon({ tipo: "conductor", conductorId: "c-no-existe" }, { fechaBase: "2026-11-10", modificada: true });
+    expect(r.estado.meta.perfil).toEqual({ tipo: "encargado" });
+    expect(r.estado.meta.modificada).toBe(true);
+    expect(r.avisos).toEqual([{ tipo: "datos-de-otra-fecha", fechaBase: "2026-11-10" }]);
+  });
+
+  it("un perfil válido no se toca (conductor existente y encargado)", async () => {
+    const estado = generar(SEMILLA_POR_DEFECTO, HOY);
+    const conductorId = estado.conductores[0]!.id;
+    const a = await arrancarCon({ tipo: "conductor", conductorId });
+    expect(a.estado.meta.perfil).toEqual({ tipo: "conductor", conductorId });
+    const b = await arrancarCon({ tipo: "encargado" });
+    expect(b.estado.meta.perfil).toEqual({ tipo: "encargado" });
   });
 });
 

@@ -33,6 +33,8 @@ export interface DependenciasApp {
   nuevoId?: () => string;
   semilla?: number;
   umbralPreparandoMs?: number;
+  /** Cuánto se espera a que abra el almacenamiento antes de seguir en memoria (D8). Por defecto, 8 s. */
+  plazoAbrirMs?: number;
 }
 
 export type FaseApp = "arrancando" | "lista" | "error";
@@ -104,6 +106,7 @@ export class EstadoApp {
         },
         ...(this.deps.semilla === undefined ? {} : { semilla: this.deps.semilla }),
         ...(this.deps.umbralPreparandoMs === undefined ? {} : { umbralPreparandoMs: this.deps.umbralPreparandoMs }),
+        ...(this.deps.plazoAbrirMs === undefined ? {} : { plazoAbrirMs: this.deps.plazoAbrirMs }),
       };
       const r = await arrancar(opciones);
       this.repositorio = r.repositorio;

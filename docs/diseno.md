@@ -721,3 +721,10 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   queda bloqueado, puede ejecutarse más tarde por su cuenta. Se quitó: `reiniciar()` sin estado cargado (arranque o fase `error`)
   devuelve `sin-datos`, no hay `borrarAlmacenamiento` ni `borrarIndexedDB`, y la vista ofrece solo «Recargar la página». El texto
   `TEXTO_ERROR_ARRANQUE.mensaje` dice «Recargue la página. Si el problema sigue, pruebe con otro navegador.».
+- **Plazo para abrir el almacenamiento (18/11/2026, QA M1).** Algunos navegadores dejan `indexedDB.open` sin responder. `arrancar`
+  espera `PLAZO_ABRIR_MS` (8 s; inyectable con `plazoAbrirMs` en `OpcionesArranque` y en `DependenciasApp`) y, si vence, lo trata como
+  almacenamiento no disponible: modo memoria con el aviso D8. Si la conexión llega después, se cierra. El plazo cubre solo la
+  apertura, no la lectura ni la primera escritura (un primer arranque lento pero vivo no cae a memoria).
+- **Perfil guardado inválido (QA B4).** Al arrancar con datos guardados, si `meta.perfil` no es el encargado ni un conductor que existe,
+  el estado en memoria queda con el encargado (sin aviso). No se reescribe el almacenamiento en el arranque: la corrección viaja en
+  la próxima escritura de `meta`.
