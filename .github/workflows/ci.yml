@@ -1,9 +1,9 @@
-# Integración continua. Nota: hoy GitHub Actions no corre en la cuenta (facturación); el archivo queda listo.
+# Integración continua (paso 0.4). Nota: hoy GitHub Actions no corre en la cuenta (facturación) y el repositorio
+# todavía no tiene remoto: el archivo queda listo y SIN PROBAR hasta que haya un remoto donde correrlo.
 name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
 
 permissions:
@@ -18,12 +18,18 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - run: npx tsc --noEmit
+      # Instalación exacta desde el lockfile y sin scripts de instalación de las dependencias.
+      - run: npm ci --ignore-scripts
+      # svelte-check (componentes) + tsc (todo lo demás). TypeScript 6.0.3: svelte-check 4.7 no corre con TypeScript 7 (S3).
+      - run: npm run check
       # Con TZ lejana de Argentina por defecto (vite.config.ts): protege la regla T2.
       - run: npm test
       # La matriz completa de zonas horarias: UTC, Asia/Tokyo y America/Los_Angeles.
       - run: npm run test:tz
-      # Excepción conocida: 5 altas por `picomatch` (ReDoS en extglobs, GHSA-fc5q-39xc-vjpf) en herramientas de
-      # desarrollo, sin versión corregida publicada. Por eso el umbral es `critical`. Volver a `high` cuando salga el parche.
+      - run: npm run build
+      # Sin {@html}, sin Math.random en src/lib, sin reloj fuera de estado/reloj.ts, sin nombres de terceros.
+      - run: npm run buscar
+      # Excepción conocida: 7 altas por `picomatch` (ReDoS en extglobs, GHSA-fc5q-39xc-vjpf) en herramientas de
+      # desarrollo (vite, vitest, svelte-check), sin versión corregida publicada. Por eso el umbral es `critical`.
+      # Volver a `high` cuando salga el parche.
       - run: npm audit --audit-level=critical
