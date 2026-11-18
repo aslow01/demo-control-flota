@@ -537,7 +537,7 @@ si se aprueba, con pruebas de punta a punta en una etapa posterior.
 
 ---
 
-## 16. Decisiones de implementación (18/11/2026, Etapa 1 y pasos 2.1 a 2.3)
+## 16. Decisiones de implementación (18/11/2026, Etapa 1, pasos 2.1 a 2.3 y correcciones de la revisión)
 
 Huecos y ambigüedades del diseño que se resolvieron al programar, siempre con el criterio más conservador. Si alguna no
 convence, se cambia acá y en el código a la vez.
@@ -545,7 +545,7 @@ convence, se cambia acá y en el código a la vez.
 **Modelo y contexto**
 
 - `Contexto` es `{ hoy, ahora, autor, nuevoId }`: se agrega `nuevoId` (generador de ids inyectado) para que los comandos
-  sigan siendo puros. `hoy` es la fecha civil de Argentina y `ahora` el instante (texto ISO); el único `new Date()` de la
+  sigan siendo puros. `hoy` es la fecha civil de Argentina y `ahora` el instante (texto ISO, **M2**: tal como lo devuelve `toISOString`, con milisegundos y `Z`); el único `new Date()` de la
   aplicación va a vivir en `estado/reloj.ts` (Etapa 3). `hoyEnArgentina` recibe un `Date`; `fechaEnArgentina`, un instante en texto.
 - `Estado` es todo el contenido en memoria (`meta`, `proyectos`, `conductores`, `unidades`, `documentos`, `partes`,
   `novedades`, `correccionesKm`, `eventos`). `Cambios` (lo que escribe el repositorio) lleva altas o reemplazos por `id`,
@@ -554,14 +554,16 @@ convence, se cambia acá y en el código a la vez.
   `mensaje` ya en español neutro, `campo` para marcar el campo del formulario.
 - El perfil Conductor/Encargado (sección 8) **no se controla en el dominio**: es una perspectiva de la interfaz.
 - Gravedad de las alertas: `critica` (vencido, faltante, novedad crítica, circuló con documentación vencida), `media`
-  (vence en 7 días o menos, parte sin enviar, sin parte, novedad normal) y `baja` (grupos de 15 y 30 días).
+  (vence en 7 días o menos, parte sin enviar, sin parte, novedad normal) y `baja` (grupos de 15 y 30 días, y lo que el
+  proyecto no exige: ver **M4** más abajo).
 
 **Fechas y vencimientos**
 
 - `parsearFechaCivil` devuelve la misma fecha o `null`. Fechas anteriores a 2000 son "fecha inválida" (T4), no un error
   aparte de rango; el límite superior de V11 (hoy + 10 años) sí tiene su mensaje.
-- Los documentos no obligatorios que están cargados alertan como los demás, también el de habilitación de ingreso en un
-  proyecto que no la pide (generalización de V17). Si falta, no alerta.
+- Los documentos no obligatorios que están cargados alertan, también el de habilitación de ingreso en un proyecto que no la
+  pide (generalización de V17). Si falta, no alerta. La habilitación de manejo del conductor (V17) alerta como los demás
+  documentos; la de ingreso en un proyecto que no la exige alerta con gravedad `baja` (**M4**, a confirmar por Matías).
 - Un documento "vigente" empata por vencimiento: gana el cargado después y, si sigue el empate, el de mayor id.
 - El nombre en pantalla de la revisión técnica es "Revisión técnica"; las siglas "(VTV/RTO)" de 5.1 quedan para la interfaz.
 
@@ -572,8 +574,13 @@ convence, se cambia acá y en el código a la vez.
 - P6, "creada antes de ayer": la fecha de creación (en hora de Argentina) es anterior a `hoy − 1`.
 - P5: un borrador de una fecha anterior a hoy alerta **mientras exista**, aunque ya no se pueda enviar (más de 7 días,
   P2): la salida es descartarlo.
-- P9: los documentos se evalúan **a la fecha del parte** con el documento vigente de hoy (V9). Una renovación cargada
-  después con vencimiento posterior cubre la fecha; el valor queda guardado al enviar (`documentacionVencida`).
+- P9 (**M1, a confirmar por Matías**): los documentos se evalúan **como estaban en la fecha del parte**, no con el vigente
+  de hoy. Un documento ampara la fecha F si vence en F o después **y** ya existía: su emisión es F o antes y, si no tiene
+  emisión cargada, su carga (día civil de Argentina) es F o antes. Se miran todos los documentos del titular y el tipo, no
+  solo el de vencimiento más tardío. Consecuencia buscada: una renovación cargada con retraso, sin emisión o con emisión
+  posterior, **no borra** el hecho de que el parte se hizo con el documento vencido. El valor queda guardado al enviar
+  (`documentacionVencida`). Límite conocido: si el encargado carga con retraso una renovación y **sí** escribe la fecha de
+  emisión real (anterior al parte), el parte no advierte, porque el vehículo ya tenía el documento.
 - Texto de "Circuló con documentación vencida": "Circuló con documentación vencida: Seguro, Revisión técnica (parte del 12/11/2026)".
 
 **Kilometraje (K3, K4, K5, K8)**
@@ -583,9 +590,25 @@ convence, se cambia acá y en el código a la vez.
   último con fecha menor que F si es un parte, o con fecha menor o igual que F si es una corrección (la corrección "desde
   F" vale para el parte de F). El siguiente es el primero con fecha mayor que F; si es una corrección, K4 no compara.
 - `validarKilometraje` aplica K2, K3 y K4 (bloquean) y devuelve las advertencias K6 y K7 con el kilometraje anterior.
+- **M3 (a confirmar por Matías):** una corrección de kilometraje con `desde` anterior a cualquier registro ya cargado (parte
+  enviado u otra corrección) se **rechaza** con `km-correccion-anterior` y el mensaje «Ya hay un parte enviado el dd/mm/aaaa,
+  posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha de ese parte o una
+  posterior.». Motivo: `kmActual` es el último registro por fecha, así que una corrección anterior no cambiaba el
+  kilometraje actual ni K3 y K4, pero el historial decía que sí. Se eligió rechazar (lo más simple y honesto) en vez de
+  recalcular. Una corrección de la misma fecha que el último parte sí se acepta (cuenta después del parte). La corrección
+  generada para C20 (H − 20) es historia ya escrita, no pasa por el comando.
 
 **Comandos**
 
+- **M2:** `aplicar` valida el contexto antes de hacer nada y **lanza** un `Error` (es un error de programación, no de la
+  persona): `hoy` tiene que ser una fecha civil válida, `ahora` un instante UTC en el formato exacto de `toISOString`, `hoy`
+  tiene que coincidir con la fecha de Argentina de `ahora`, `autor` no puede estar vacío y `nuevoId` tiene que ser una
+  función. `parsearInstante` (fechas.ts) es estricto: `Z` obligatoria (sin zona, `Date.parse` usaría la hora local del
+  equipo, contra T2), sin desfases, y rechaza lo que el motor «corrige» (30 de febrero, hora 24). `fechaEnArgentina` y
+  `formatearInstante` lanzan con un instante que no cumple. `sumarDias` exige un entero.
+- **M6:** los comandos copian lo que reciben (`checklist` campo por campo, `otraNovedad`, `titular`) y guardan solo los
+  campos conocidos; el `datos` de cada evento es una copia profunda (`structuredClone`) y no comparte arreglos ni objetos
+  con el estado. Así un formulario reutilizado (o un proxy de Svelte 5) no cambia el estado por la espalda.
 - Orden de las validaciones: existencia y estado de la unidad, estado del parte (P7), fecha (P2), duplicado (P1), tipos
   de los campos (P3). Al enviar: P8, P2, P4, K2 a K4, P9 y advertencias.
 - `guardarBorrador` guarda los textos tal como se escribieron (sin recortar, tope 500) para no pelear con quien escribe;
@@ -613,7 +636,11 @@ convence, se cambia acá y en el código a la vez.
 - Cada unidad cumple un papel fijo en la plantilla (`generador.ts`); los demás datos (conductores, modelos, kilometraje,
   combustible, litros, novedades pasadas, renovaciones anteriores) salen del azar con semilla. La semilla por defecto es 20261118.
 - Los partes de un día se "envían" entre las 18:00 y las 19:29 de Argentina; los casos con hora propia usan horas que
-  caen en el mismo día civil. El evento de "hoy" (C10) es a las 01:00 de Argentina, para que nunca sea posterior a "ahora".
+  caen en el mismo día civil. El evento de "hoy" (C10) es a las 00:00 de Argentina (03:00Z), para que nunca sea posterior a
+  "ahora" (en la primera versión era a las 01:00 y entre las 00:00 y la 01:00 quedaba en el futuro).
+- **M1:** los documentos del generador se cargan (y, si tienen emisión, se emiten) antes del primer parte de la ventana
+  (H − 45): así a cada parte generado lo ampara un documento que ya existía, y volver a calcular P9 a la fecha de cada
+  parte da lo guardado. Cambió el contenido del ejemplo (hash de D1).
 - La corrección de kilometraje del caso C20 es "desde" H − 20 a las 09:30 de Argentina y el parte de ese día ya parte de 120.
 - Hay 16 conductores activos; las habilitaciones de manejo (opcionales) están cargadas para la mitad.
 
@@ -623,3 +650,32 @@ convence, se cambia acá y en el código a la vez.
   base vacía es un error. Errores: `indice-unico` (patente, o `[unidadId, fecha]` de los partes), `evento-repetido` y
   `escritura-fallida`. La suite de contrato (`tests/contrato-repositorio.ts`) está lista para correrla también contra
   IndexedDB (paso 2.4, decisión S2).
+
+**Correcciones de la revisión del dominio (18/11/2026, `docs/revision-dominio.md`)**
+
+Estas decisiones las tomó el programador trabajando solo, con el criterio más conservador. **A confirmar por Matías: M1, M3 y M4.**
+
+| Hallazgo | Qué se hizo |
+| --- | --- |
+| M1 (a confirmar) | P9 a la fecha del parte con los documentos como estaban (ver «Fechas y vencimientos»). |
+| M2 | Contexto validado y instantes estrictos (ver «Comandos»). |
+| M3 (a confirmar) | Corrección de kilometraje anterior a registros ya cargados: se rechaza (ver «Kilometraje»). |
+| M4 (a confirmar) | La habilitación de ingreso cargada y vencida (o por vencer) en un proyecto que no la exige alerta con gravedad `baja`, no cuenta en la insignia (`criticas`) y es coherente con `aptitud` (la unidad puede salir). Se mantiene en el grupo «vencidos» (o 7/15/30) para que el encargado la vea. No se agregó un mecanismo de descarte (no existe en el diseño y habría que guardarlo); «descartable» se resolvió con gravedad baja. La habilitación de manejo del conductor (V17) conserva su gravedad. |
+| M5 | `vite.config.ts` fija `TZ=Asia/Tokyo` cuando nadie la definió, antes de cargar los módulos: `npm test` ya detecta un uso de la hora local (verificado con una mutación: fallan 3 tests sin `TZ`). `tests/zona-horaria.test.ts` exige que `TZ` esté definida y que, salvo pedido explícito, no sea la de Argentina. `.github/workflows/ci.yml` (Node 24, `npm ci`, `tsc`, `npm test`, `test:tz`, `npm audit --audit-level=critical`, permisos de solo lectura); hoy Actions no corre en la cuenta por facturación. La excepción de `picomatch` (5 altas en herramientas de desarrollo, sin parche) está comentada en el archivo. |
+| M6 | Copias de entrada (ver «Comandos»). |
+| B1 | Test que recorre cada día de 2000-01-01 a 2100-12-31 contra `Date.UTC` (mata las mutaciones de los años de siglo). |
+| B2 | `tests/endurecimiento.test.ts`: descripción de 500 caracteres, `emitido === vence`, litros 200 y 200,5, tope de 200 del motivo de A3 (con `abreviar` en `textos.ts`), desempates de `documentoVigente` y de `registrosDeKm`; la licencia que vence el día del parte (P9). Cada uno se comprobó con su mutación. |
+| B3 | Se quitó `enviadoFueraDeTermino` (una sola definición, la de `enviarParte`, probada en el borde de las 00:00 de Argentina); `validarLitros` único; `licencia` ya no usa `faltantesDeConductor` en P9; se quitó el `?? "El documento"` imposible. |
+| B4 | `sumarDias` exige un entero. |
+| B7 | C10 a las 00:00 de Argentina; `datos.motivo` del evento de A3 guarda el motivo abreviado, igual que el estado. |
+| B8 | Los textos de validación, de kilometraje, del checklist, de aptitud y de las alertas pasaron a `textos.ts`. Quedan afuera solo los mensajes del contexto mal armado (error de programación). |
+| B10 | `textoEmpresa` rotula siempre el CUIT como «ficticio»; el README ya no afirma que la serie de patentes «no se emitió». |
+| B11 | `CLAUDE.md` habla de «material de terceros». No se reescribió el historial. |
+
+**Pendiente o de diseño (no se tocó):** B4 (tipos con marca para `FechaCivil`/`Instante`, uniones discriminadas de eventos y
+errores, aserciones `as`); B5 (`cambiarAsignacion` rechaza un cambio solo de proyecto si el conductor ya asignado quedó
+inactivo); B6 (una unidad con `proyectoId` inexistente sale como «Puede salir»: pensar si lanzar o sumar un motivo); B9
+(índice único de `secuencia` en el repositorio, junto con el aviso entre pestañas D9); B3 restante (duplicación de
+`checklistVacio`/`reemplazarOAgregar`, rutas «desconocido» inalcanzables, test de forma de `datos` entre el generador y los
+comandos); B10 (verificar la serie de patentes y que los nombres de proyectos no coincidan con reales); B11 (el correo del
+autor en los 17 primeros commits: decide Matías si reescribir el historial antes de publicar).

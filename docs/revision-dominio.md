@@ -183,7 +183,7 @@ El registro dice que el paso 1.10 dejó los textos "en un solo lugar", pero hay 
 
 ### B11. Publicabilidad (para cuando se haga público)
 
-- Los 17 commits tienen como autor `[correo personal]`. Antes de publicar, decidir si va un correo `noreply` de GitHub y reescribir el historial ahora, que es corto y barato.
+- Los 17 commits tienen como autor un correo personal (de Gmail). Antes de publicar, decidir si va un correo `noreply` de GitHub y reescribir el historial ahora, que es corto y barato.
 - `CLAUDE.md` y `docs/registro.md` van a quedar públicos: mencionan "una empresa de terceros" y la carpeta `material-de-terceros/`. No hay nombres de la empresa ni de sus clientes (búsqueda hecha en todo el repositorio), pero conviene que Matías decida si quiere esa frase a la vista.
 - Licencia todavía pendiente (README). `npm audit` tiene 5 altas por `picomatch` documentadas como excepción en el registro: coherente, pero el criterio de "sin altas" del `CLAUDE.md` del portafolio dice otra cosa; dejar la excepción en el README de publicación.
 

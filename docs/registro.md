@@ -1,5 +1,45 @@
 # Registro
 
+## 18/11/2026 (noche) — Correcciones de la revisión del dominio (trabajo autónomo)
+
+**Qué se hizo.** Se corrigieron los 6 hallazgos medios y los bajos triviales de `docs/revision-dominio.md` (revisor-codigo),
+con TDD: cada test se vio fallar antes del código. Decisiones completas en `docs/diseno.md`, sección 16. **A confirmar por
+Matías: M1, M3 y M4** (están marcadas así en el diseño).
+
+| Hallazgo | Commit | Resultado |
+| --- | --- | --- |
+| M5 | `47760e1` | `npm test` corre por defecto con `TZ=Asia/Tokyo` (fijada en `vite.config.ts`); test que lo verifica; `.github/workflows/ci.yml` (Actions no corre hoy en la cuenta: no se forzó). Se incluyó el informe `docs/revision-dominio.md`. |
+| M2, B1, B4 | `8924617` | Contexto validado (lanza error), `parsearInstante` estricto con `Z` obligatoria, `sumarDias` solo con enteros, recorrido de 2000 a 2100. La validación encontró un test con `hoy` y `ahora` incoherentes (se corrigió). |
+| M6 | `ca35b1a` | Copias de `checklist`, `otraNovedad` y `titular`; `datos` de los eventos con copia profunda. |
+| M1 (a confirmar) | `eff6eff` | P9 con los documentos como estaban en la fecha del parte; test con C18 en orden inverso. El generador carga y emite documentos antes del primer parte. |
+| M3 (a confirmar) | `38800a9` | Corrección de kilometraje anterior a registros cargados: se rechaza (`km-correccion-anterior`). |
+| M4 (a confirmar) | `7775928` | Habilitación de ingreso que el proyecto no exige: alerta `baja`, fuera de la insignia, coherente con `aptitud`. |
+| Bajos | `ef349af` | Tests de B2 (cada uno con su mutación), textos a `textos.ts` (B8), `validarLitros` y `abreviar` únicos, `enviadoFueraDeTermino` eliminada, motivo abreviado en el evento de A3, C10 a las 00:00 de Argentina. |
+| Publicabilidad | `3934460` | `CLAUDE.md` sin la referencia al empleador ni a la carpeta de terceros; `textoEmpresa` rotula el CUIT como ficticio; README sin afirmar la serie de patentes. El historial no se reescribió. |
+
+**Verificación.**
+
+- `npm test`: 490 tests en 22 archivos, verdes (antes: 438 en 19).
+- `npm run test:tz`: los 490 en `UTC`, `Asia/Tokyo` y `America/Los_Angeles`.
+- `npx tsc --noEmit`: sin errores.
+- `npm audit --audit-level=critical`: sin críticas (las 5 altas por `picomatch` siguen siendo la excepción documentada).
+- Mutaciones repetidas: el uso de la hora local en `hoyEnArgentina` ahora lo detecta `npm test` a secas (3 fallos sin `TZ`);
+  las 8 mutaciones nuevas de bordes (500 caracteres, `emitido === vence`, litros 200, `abreviar`, desempate por id, parte antes
+  que corrección, `vence >= fecha`, `desde <= fecha`) mueren con al menos un test.
+- Contenido del ejemplo: cambió (documentos cargados antes del primer parte, C10 a las 00:00), hash de D1 actualizado en el test.
+
+**Decisiones para Matías.**
+
+1. **M1:** un documento ampara la fecha del parte si vence ese día o después y ya existía (emisión, o carga si no hay emisión,
+   ese día o antes). Una renovación tardía sin emisión no borra la advertencia. Costo: si el encargado carga una renovación
+   atrasada pero escribe la emisión real, el parte de esos días no advierte.
+2. **M3:** se rechaza una corrección de kilometraje con fecha anterior a partes u otras correcciones ya cargadas, en vez de
+   aceptarla sin efecto o recalcular todo.
+3. **M4:** la alerta de un documento que el proyecto no exige es `baja` (no crítica) y no cuenta en la insignia; no se agregó un
+   mecanismo de descarte porque el diseño no lo tiene.
+4. Pendientes que no se tocaron por ser de diseño: tipos con marca, uniones discriminadas de eventos y errores (B4), B5, B6, B9, el
+   correo del autor en el historial (B11) y la serie de patentes (B10). Están listados al final de la sección 16 del diseño.
+
 ## 18/11/2026 — Etapa 1 completa y pasos 2.1 a 2.3 (trabajo autónomo)
 
 **Qué se hizo.** Lógica de dominio en TypeScript puro y sin DOM, con TDD (cada archivo de pruebas se escribió y se vio
@@ -66,6 +106,6 @@ vacío" para D11; `resolverNovedad` con `volverAServicio` reutilizando A4; guard
 - Pasos 2.5 y 2.6 (arranque D4 a D8 y D11, aviso entre pestañas D9): dependen de 2.4 para las pruebas con la fábrica real, pero
   se pueden empezar contra `RepositorioMemoria`.
 - Etapa 0 (Svelte, CSP, CI) y Etapas 3 a 6: esperan las decisiones S1 a S4.
-- Revisión de `revisor-codigo` sobre `dominio/` (el plan la pide después del paso 1.2) y de `redactor-ux` sobre `textos.ts`.
+- Revisión de `redactor-ux` sobre `textos.ts` (la de `revisor-codigo` sobre `dominio/` se hizo el 18/11: ver la entrada de arriba).
 - Verificar antes de publicar el dato de la serie de patentes (todas empiezan con Z) y que los nombres de proyectos no
   coincidan con proyectos mineros reales.
