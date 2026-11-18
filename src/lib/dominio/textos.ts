@@ -16,3 +16,8 @@ export function textoVencimiento(d: number, vence: FechaCivil): string {
   if (d <= 30) return `Vence en ${d} días`;
   return `Vigente hasta ${formatearFecha(vence)}`;
 }
+
+/** Separa los miles con punto: 84320 -> `84.320`. */
+export function formatearKm(km: number): string {
+  return String(km).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
