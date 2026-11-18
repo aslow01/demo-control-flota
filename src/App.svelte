@@ -148,7 +148,7 @@
   }
   const seccion = $derived(seccionDe(app.ruta.tipo, app.perfil.tipo === "conductor"));
   const seccionContieneLaPantalla = $derived(app.ruta.tipo === "unidad" || app.ruta.tipo === "parte");
-  const nombreDeLaPantalla = $derived(app.titulo.replace(/ · .*$/, ""));
+  const nombreDeLaPantalla = $derived(app.nombrePantalla);
 
   function elegirPerfil(tipo: "encargado" | "conductor"): void {
     if (tipo === "encargado") void elegirEncargado();

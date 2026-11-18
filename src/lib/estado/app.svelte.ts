@@ -17,7 +17,7 @@ import { fallo, ok, type Estado, type FechaCivil, type Perfil, type Resultado } 
 import { arrancar, cambiarPerfil as guardarPerfil, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
 import type { Repositorio } from "../persistencia/repositorio.ts";
-import { aHash, resolverRuta, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
+import { aHash, nombreDePantalla, resolverRuta, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
 import { generarId } from "./ids.ts";
 import type { Reloj } from "./reloj.ts";
 import type { Ubicacion } from "./ubicacion.ts";
@@ -67,6 +67,8 @@ export class EstadoApp {
   perfil = $derived<Perfil>(this.estado?.meta.perfil ?? { tipo: "encargado" });
   /** La pantalla que corresponde al hash y al perfil (rutas del conductor y del encargado, redirecciones). */
   ruta = $derived<Ruta>(resolverRuta(this.hash, this.perfil));
+  /** El nombre de la pantalla sin el sufijo (para el `h1` y los anuncios); `titulo` es el de `document.title`. */
+  nombrePantalla = $derived(nombreDePantalla(this.ruta));
   titulo = $derived(tituloDePagina(this.ruta));
   /** El centro de alertas, recalculado solo cuando cambian los datos o el día. */
   alertas = $derived<ResultadoAlertas | null>(this.estado === null ? null : calcularAlertas(this.estado, this.hoy));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aHash, parsearHash, resolverRuta, rutaPorDefecto, tituloDePagina, type Ruta } from "../src/lib/estado/enrutador.ts";
+import { aHash, nombreDePantalla, parsearHash, resolverRuta, rutaPorDefecto, tituloDePagina, type Ruta } from "../src/lib/estado/enrutador.ts";
 import type { Perfil } from "../src/lib/dominio/tipos.ts";
 
 const ENCARGADO: Perfil = { tipo: "encargado" };
@@ -132,6 +132,22 @@ describe("enrutador: ruta por defecto y perfil", () => {
 });
 
 describe("enrutador: título de la página", () => {
+  it("el nombre de la pantalla va sin el sufijo, y el título lo lleva", () => {
+    const rutas: Ruta[] = [
+      { tipo: "alertas" },
+      { tipo: "flota" },
+      { tipo: "unidad", patente: "ZK214BD" },
+      { tipo: "conductor" },
+      { tipo: "parte", patente: "ZK214BD", fecha: "2026-11-18" },
+      { tipo: "desconocida" },
+    ];
+    for (const ruta of rutas) {
+      expect(nombreDePantalla(ruta)).not.toContain("Control de flota");
+      expect(tituloDePagina(ruta)).toBe(`${nombreDePantalla(ruta)} · Control de flota (demo)`);
+    }
+    expect(nombreDePantalla({ tipo: "unidad", patente: "ZK214BD" })).toBe("Unidad ZK 214 BD");
+  });
+
   it("'{Pantalla} · Control de flota (demo)'", () => {
     expect(tituloDePagina({ tipo: "alertas" })).toBe("Centro de alertas · Control de flota (demo)");
     expect(tituloDePagina({ tipo: "flota" })).toBe("Flota · Control de flota (demo)");

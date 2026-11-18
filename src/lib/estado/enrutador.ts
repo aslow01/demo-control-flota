@@ -118,8 +118,8 @@ export function resolverRuta(hash: string, perfil: Perfil): Ruta {
 
 const SUFIJO_TITULO = "Control de flota (demo)";
 
-/** `document.title` de cada pantalla (sección 2): "{Pantalla} · Control de flota (demo)". */
-export function tituloDePagina(ruta: Ruta): string {
+/** El nombre de la pantalla, sin el sufijo del título: lo que dice el `h1` de la barra y el aviso de cambio de pantalla. */
+export function nombreDePantalla(ruta: Ruta): string {
   let pantalla: string;
   switch (ruta.tipo) {
     case "alertas":
@@ -141,5 +141,10 @@ export function tituloDePagina(ruta: Ruta): string {
       pantalla = "Página no encontrada";
       break;
   }
-  return `${pantalla} · ${SUFIJO_TITULO}`;
+  return pantalla;
+}
+
+/** `document.title` de cada pantalla (sección 2): "{Pantalla} · Control de flota (demo)". */
+export function tituloDePagina(ruta: Ruta): string {
+  return `${nombreDePantalla(ruta)} · ${SUFIJO_TITULO}`;
 }

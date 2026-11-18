@@ -139,6 +139,7 @@ describe("rutas", () => {
     ubicacion.irA("#/flota");
     expect(app.ruta).toEqual({ tipo: "flota" });
     expect(app.titulo).toBe("Flota · Control de flota (demo)");
+    expect(app.nombrePantalla).toBe("Flota");
     expect(app.versionDePantalla).toBe(v0 + 1);
     ubicacion.irA("#/unidad/zk214bd");
     expect(app.versionDePantalla).toBe(v0 + 2);
