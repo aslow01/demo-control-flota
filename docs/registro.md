@@ -1,5 +1,28 @@
 # Registro
 
+## 18/11/2026 (noche, 3) — Pasos 3.2 a 3.4: sistema visual, marco de la aplicación y diálogos (maquetador)
+
+**Qué se hizo.** Rama `interfaz-etapa-0`, sin tocar el dominio ni el estado.
+
+| Paso | Qué quedó |
+| --- | --- |
+| 3.2 | `src/estilos/tokens.css` y `base.css` (claro y oscuro), sprite de 30 íconos en `index.html`, componentes `Icono`, `Patente`, `Etiqueta`, `Panel`, `Boton`, `Campo`, `Dato`; página de muestras `muestras.html` (solo `npm run dev`, no entra a `dist/`); `scripts/contraste.mjs` (`npm run contraste`). |
+| 3.3 | `App.svelte` con barra superior, barra de la aplicación, selector de perfil, menú «Más», avisos D5/D7/D8/D9 (`Aviso`), pie, arranque y error; `document.title`, foco al `h1` al cambiar de pantalla y reloj cada minuto y al volver a la pestaña. Textos del marco en `src/componentes/textos-marco.ts`. |
+| 3.4 | `Dialogo` base (`<dialog>` modal: foco inicial, vuelta del foco, Esc, trampa de Tab, fondo sin desplazamiento, hoja a pantalla completa a menos de 40 rem), `DialogoReiniciar`, `DialogoComoFunciona`, `DialogoConductor`, `BotonConfirmar` (dos pasos y doble clic < 500 ms ignorado, para el parte). «Reiniciar demo» funciona en la barra, el menú, el aviso D5 y la pantalla de error (con «Recargar la página»). |
+
+**Verificación.** `npm test` 675, `npm run check` 0 errores, `npm run buscar` sin hallazgos, `npm run contraste` 0 fallas (3 pares justos
+ya conocidos: texto-3/escritorio 4,65 en claro, semana-r/pista 3,14 en claro, borde-fuerte/patente 3,27 en oscuro), build servido con la CSP
+real sin violaciones. Navegador (Chromium con Playwright) en claro y oscuro a 360 y 1280 px; teclado, reinicio con datos modificados y
+desde el error de arranque (con y sin IndexedDB roto) comprobados.
+
+**Decisiones y pendientes.**
+
+1. Las pantallas siguen siendo un marcador («Esta pantalla todavía no está hecha.»): llegan en la Etapa 4. Cada una trae su `h1` con `tabindex="-1"`.
+2. «Cómo funciona» explica las reglas con etiquetas en vez del horizonte mediano de la especificación: el horizonte llega en 4.1.
+3. En menos de 40 rem el selector de perfil queda visualmente arriba de la navegación pero después en el DOM (orden de tabulación); a evaluar por `auditor-accesibilidad`.
+4. No se probó con lector de pantalla, Firefox ni Safari. Los avisos llevan su `role` (`status` o `alert`); el anuncio real falta verificarlo.
+5. Si «Elegir Encargado» falla al guardar, el mensaje (`noPudoCambiarVista`) sale en un aviso cerrable.
+
 ## 18/11/2026 (noche, 2) — Revisión de textos aplicada y «Reiniciar demo» desde el error de arranque (trabajo autónomo)
 
 **Qué se hizo.** Se aplicó `docs/revision-textos-2026-11-18.md` (redactor UX) y se resolvió la decisión A con la opción 1.

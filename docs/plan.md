@@ -56,9 +56,9 @@ Orden pensado para que cada paso use solo lo anterior.
 | Paso | Qué | Hecho cuando |
 | --- | --- | --- |
 | 3.1 | Programador: `estado/reloj.ts` (único `new Date()`), `estado/enrutador.ts` (con tests: rutas válidas, inválidas, patente normalizada en la ruta), `estado/app.svelte.ts` (estado reactivo, perfil). | Tests verdes; cambiar el hash cambia la pantalla y mueve el foco al `h1`. |
-| 3.2 | Maquetador: `tokens.css`, `base.css`, sprite de íconos, componentes `Patente`, `Etiqueta`, `Panel`, botones, campos (5.1, 5.4, 5.5, 5.7, 5.11), con una página de muestras **solo en desarrollo**. | Claro y oscuro a 360 y 1280 px; contraste medido con `scripts/contraste.mjs`. |
-| 3.3 | `App.svelte`: barra superior, barra de la aplicación, selector de perfil, menú "Más", avisos globales, pie, estados de arranque y de error (4.x, 5.2, 5.3, 5.18, 5.19). | Recorrido con teclado por el marco; avisos D5/D7/D8/D9 forzados a mano se ven y se anuncian. |
-| 3.4 | Diálogo base (5.17) y "Reiniciar demo". | Reiniciar vuelve al ejemplo; foco y Esc según la especificación. |
+| 3.2 | **Hecho (18/11/2026).** Maquetador: `tokens.css`, `base.css`, sprite de íconos, componentes `Patente`, `Etiqueta`, `Panel`, botones, campos (5.1, 5.4, 5.5, 5.7, 5.11), con una página de muestras **solo en desarrollo** (`/muestras.html`). | Claro y oscuro a 360 y 1280 px; contraste medido con `scripts/contraste.mjs` (`npm run contraste`: 148 mediciones, 0 fallan). |
+| 3.3 | **Hecho (18/11/2026).** `App.svelte`: barra superior, barra de la aplicación, selector de perfil, menú "Más", avisos globales, pie, estados de arranque y de error (4.x, 5.2, 5.3, 5.18, 5.19). | Recorrido con teclado por el marco; avisos D5/D7/D8/D9 forzados a mano se ven y se anuncian. |
+| 3.4 | **Hecho (18/11/2026).** Diálogo base (5.17), "Reiniciar demo" (barra, menú, aviso D5 y pantalla de error), "Cómo funciona" y "¿Quién completa el parte?"; `BotonConfirmar` (dos pasos) para el parte. | Reiniciar vuelve al ejemplo; foco y Esc según la especificación. |
 
 ## Etapa 4 — Pantallas (una por paso, cada una cerrada antes de la siguiente)
 
