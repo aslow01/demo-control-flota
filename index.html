@@ -3,9 +3,57 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>Control de flota (demo)</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230B6B70' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 17h18'/%3E%3Cpath d='M4 14.5v5'/%3E%3Cpath d='M12 14.5v5'/%3E%3Cpath d='M20 14.5v5'/%3E%3Ccircle cx='4' cy='8' r='2.5' fill='%230B6B70' stroke='none'/%3E%3C/svg%3E"
+    />
   </head>
   <body>
+    <!-- Sprite de íconos (docs/diseno-ui.md 5.20): dibujados a mano, 24 × 24, trazo 1.75, currentColor.
+         Se usan con el componente Icono: <svg aria-hidden="true" focusable="false"><use href="#i-…" /></svg>. -->
+    <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+      <!-- Marca: una regla con tres marcas y un punto sobre la primera (el horizonte). -->
+      <symbol id="i-marca" viewBox="0 0 24 24"><path d="M3 17h18" /><path d="M4 14.5v5" /><path d="M12 14.5v5" /><path d="M20 14.5v5" /><circle cx="4" cy="8" r="2.5" fill="currentColor" stroke="none" /></symbol>
+
+      <!-- Estados de documentos y de unidades (cada uno con una forma distinta: el color nunca va solo). -->
+      <symbol id="i-vencido" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9 9l6 6" /><path d="M15 9l-6 6" /></symbol>
+      <symbol id="i-faltante" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z" stroke-dasharray="3 2.4" /><path d="M14 3v4h4" /></symbol>
+      <symbol id="i-reloj" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></symbol>
+      <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 4L21.5 20h-19z" /><path d="M12 10v4" /><path d="M12 17.2h.01" /></symbol>
+      <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16" /><path d="M8 3v4" /><path d="M16 3v4" /></symbol>
+      <symbol id="i-anillo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-guion" viewBox="0 0 24 24"><path d="M6 12h12" /></symbol>
+      <symbol id="i-llave" viewBox="0 0 24 24"><path d="M5 19.5l7.2-7.2" /><path d="M14.4 3.8a4.6 4.6 0 0 0-3.6 6.2l-.8.8 3.2 3.2.8-.8a4.6 4.6 0 0 0 6.2-3.6l-2.6 2.1-2.2-.6-.6-2.2z" /></symbol>
+      <symbol id="i-caja" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1" /><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9" /><path d="M10 13h4" /></symbol>
+      <symbol id="i-octogono" viewBox="0 0 24 24"><path d="M8.5 3h7L21 8.5v7L15.5 21h-7L3 15.5v-7z" /><path d="M12 8v5" /><path d="M12 16.2h.01" /></symbol>
+      <symbol id="i-lapiz" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z" /><path d="M14 7l3 3" /></symbol>
+
+      <!-- Tipos de evento del historial. -->
+      <symbol id="i-parte" viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="16.5" rx="2" /><path d="M9 4.5V3h6v1.5" /><path d="M9 13l2.2 2.2L15.2 11" /></symbol>
+      <symbol id="i-documento" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9 12h6" /><path d="M9 16h6" /></symbol>
+      <symbol id="i-novedad" viewBox="0 0 24 24"><path d="M5 19.5l7.2-7.2" /><path d="M14.4 3.8a4.6 4.6 0 0 0-3.6 6.2l-.8.8 3.2 3.2.8-.8a4.6 4.6 0 0 0 6.2-3.6l-2.6 2.1-2.2-.6-.6-2.2z" /></symbol>
+      <symbol id="i-estado" viewBox="0 0 24 24"><rect x="3" y="7.5" width="18" height="9" rx="4.5" /><circle cx="8" cy="12" r="2" /></symbol>
+      <symbol id="i-km" viewBox="0 0 24 24"><path d="M4 17a8 8 0 1 1 16 0" /><path d="M12 17l3.5-4.5" /><path d="M3.5 17h2" /><path d="M18.5 17h2" /></symbol>
+      <symbol id="i-combustible" viewBox="0 0 24 24"><path d="M5 20V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v15" /><path d="M4 20h11" /><path d="M8 8h3" /><path d="M14 10h2a2 2 0 0 1 2 2v4.5a1.5 1.5 0 0 0 3 0V9l-3-3" /></symbol>
+      <symbol id="i-unidad" viewBox="0 0 24 24"><path d="M3 16.5V7h10v9.5" /><path d="M13 10h4l4 4v2.5" /><path d="M3 16.5h1.5" /><path d="M9.5 16.5h5" /><path d="M19.5 16.5H21" /><circle cx="7" cy="17.5" r="2" /><circle cx="17" cy="17.5" r="2" /></symbol>
+      <symbol id="i-persona" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></symbol>
+      <symbol id="i-guardado" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z" /><path d="M8 4v5h7V4" /><rect x="8" y="14" width="8" height="6" /></symbol>
+
+      <!-- Controles. -->
+      <symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></symbol>
+      <symbol id="i-mas" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.6" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" /><circle cx="18.5" cy="12" r="1.6" fill="currentColor" stroke="none" /></symbol>
+      <symbol id="i-cerrar" viewBox="0 0 24 24"><path d="M6 6l12 12" /><path d="M18 6L6 18" /></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-flecha-izq" viewBox="0 0 24 24"><path d="M19 12H5" /><path d="M11 6l-6 6 6 6" /></symbol>
+      <symbol id="i-flecha-der" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></symbol>
+      <symbol id="i-ayuda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7" /><path d="M12 17h.01" /></symbol>
+      <symbol id="i-reiniciar" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5" /><path d="M4.5 4.5V8H8" /></symbol>
+    </svg>
+
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
