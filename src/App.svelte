@@ -278,7 +278,6 @@
       {/if}
       <div class="acciones-error">
         <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
-        <Boton variante="secundario" onclick={pedirReinicio}>{TEXTO_MARCO.reiniciarDemo}</Boton>
       </div>
     {:else}
       <!-- Marcador: las pantallas llegan en los pasos 4.x. Cada una trae su propio h1 con tabindex="-1". -->

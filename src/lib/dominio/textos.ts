@@ -78,9 +78,6 @@ export const ERRORES = {
   noPudoGuardar: "No se pudo guardar en este equipo. No se aplicó ningún cambio y lo escrito sigue en pantalla. Intente de nuevo.",
   /** `reiniciar()` con la demo ya cargada: no hay formulario, y lo que había se conserva. */
   noPudoReiniciar: "No se pudo reiniciar la demo. Se conservaron los datos que tenía. Intente de nuevo.",
-  /** `reiniciar()` desde la pantalla de error de arranque: no hay datos que conservar, la salida es recargar. */
-  noPudoReiniciarDesdeError:
-    "No se pudo reiniciar la demo. Recargue la página. Si el problema sigue, borre los datos de este sitio en su navegador.",
   noPudoCambiarVista: "No se pudo cambiar la vista. Intente de nuevo.",
   sinPermiso: "Esta acción es solo del encargado. En «Ver como», elija «Encargado».",
   sinDatos: "La demo todavía no terminó de cargar. Espere un momento e intente de nuevo.",
@@ -371,5 +368,5 @@ export function textoDatosDeOtraFecha(fechaBase: FechaCivil): string {
 /** diseno-ui.md 5.19: falla grave al iniciar. El título va en el `h1` y el mensaje en el párrafo de abajo (no se repiten). */
 export const TEXTO_ERROR_ARRANQUE = {
   titulo: "No se pudo iniciar la demo",
-  mensaje: "Recargue la página. Si el problema sigue, reinicie la demo.",
+  mensaje: "Recargue la página. Si el problema sigue, pruebe con otro navegador.",
 } as const;

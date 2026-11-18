@@ -2,7 +2,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { describe, expect, it } from "vitest";
 import { sinCambios } from "../src/lib/dominio/estado.ts";
 import { ErrorDeRepositorio } from "../src/lib/persistencia/repositorio.ts";
-import { abrirIndexedDB, borrarIndexedDB, NOMBRE_BASE, RepositorioIndexedDB } from "../src/lib/persistencia/indexeddb.ts";
+import { abrirIndexedDB, NOMBRE_BASE, RepositorioIndexedDB } from "../src/lib/persistencia/indexeddb.ts";
 import { flotaDePrueba, novedad } from "./ayuda.ts";
 import { describirContrato } from "./contrato-repositorio.ts";
 
@@ -124,37 +124,5 @@ describe("RepositorioIndexedDB: clase exportada", () => {
     const repo = await abrirIndexedDB(new IDBFactory());
     expect(repo).toBeInstanceOf(RepositorioIndexedDB);
     repo.cerrar();
-  });
-});
-
-describe("borrarIndexedDB (reiniciar sin estado previo)", () => {
-  it("borra la base: al reabrir, está vacía", async () => {
-    const fabrica = new IDBFactory();
-    const uno = await abrirIndexedDB(fabrica);
-    await uno.reemplazarTodo(flotaDePrueba());
-    uno.cerrar();
-    await borrarIndexedDB(fabrica);
-    const dos = await abrirIndexedDB(fabrica);
-    expect(await dos.cargar()).toBeNull();
-    dos.cerrar();
-  });
-
-  it("con otra conexión abierta (otra pestaña), esa se cierra sola y el borrado sigue", async () => {
-    const fabrica = new IDBFactory();
-    const abierta = await abrirIndexedDB(fabrica);
-    await abierta.reemplazarTodo(flotaDePrueba());
-    await borrarIndexedDB(fabrica);
-    await expect(abierta.cargar()).rejects.toBeInstanceOf(ErrorDeRepositorio); // su conexión se cerró
-    const nueva = await abrirIndexedDB(fabrica);
-    expect(await nueva.cargar()).toBeNull();
-    nueva.cerrar();
-  });
-
-  it("borrar una base que no existe no es un error", async () => {
-    await expect(borrarIndexedDB(new IDBFactory())).resolves.toBeUndefined();
-  });
-
-  it("sin IndexedDB rechaza con un ErrorDeRepositorio claro", async () => {
-    await expect(borrarIndexedDB(undefined)).rejects.toBeInstanceOf(ErrorDeRepositorio);
   });
 });

@@ -305,28 +305,3 @@ export function abrirIndexedDB(fabrica: IDBFactory | undefined = globalThis.inde
     pedido.onblocked = () => fallar("El almacenamiento está bloqueado por otra pestaña. Cierre las demás pestañas de la demo y recargue.");
   });
 }
-
-/**
- * Borra la base de la demo (para "Reiniciar demo" cuando ni siquiera se pudo arrancar y no hay estado que reemplazar).
- * Las conexiones abiertas en otras pestañas se cierran solas (`onversionchange` de `RepositorioIndexedDB`). Borrar una base
- * que no existe no es un error. Rechaza con `ErrorDeRepositorio` si IndexedDB no existe, falla o queda bloqueado.
- */
-export function borrarIndexedDB(fabrica: IDBFactory | undefined = globalThis.indexedDB, nombre: string = NOMBRE_BASE): Promise<void> {
-  return new Promise<void>((resolver, rechazar) => {
-    if (fabrica === undefined) {
-      rechazar(new ErrorDeRepositorio("escritura-fallida", "Este navegador no ofrece IndexedDB."));
-      return;
-    }
-    let pedido: IDBOpenDBRequest;
-    try {
-      pedido = fabrica.deleteDatabase(nombre);
-    } catch {
-      rechazar(new ErrorDeRepositorio("escritura-fallida", "No se pudo borrar el almacenamiento del navegador."));
-      return;
-    }
-    pedido.onsuccess = () => resolver();
-    pedido.onerror = () => rechazar(new ErrorDeRepositorio("escritura-fallida", "No se pudo borrar el almacenamiento del navegador."));
-    pedido.onblocked = () =>
-      rechazar(new ErrorDeRepositorio("escritura-fallida", "El almacenamiento está bloqueado por otra pestaña. Cierre las demás pestañas de la demo y recargue."));
-  });
-}

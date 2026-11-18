@@ -344,7 +344,7 @@ identificador en su nombre (`it('V4: d = 8 cae en el grupo de 15 días')`), así
 | D3 | Todo es ficticio y se nota: empresa con "Demo" en el nombre, patentes de una serie no emitida (9.1), nombres de una lista inventada, CUIT ficticio con dígito verificador válido. | Todas las patentes empiezan con `Z`; el CUIT pasa `cuitValido`. |
 | D4 | Primera visita (base vacía): se genera con `fechaBase = hoy`. Se muestra "Preparando la flota de ejemplo…" solo si tarda más de 300 ms. | Repositorio vacío → datos del generador y `meta.modificada = false`. |
 | D5 | **Fechas del ejemplo al día:** si `fechaBase < hoy` y `modificada = false`, se regenera en silencio con `fechaBase = hoy` (los casos plantados siguen a la misma distancia de hoy). Si `modificada = true`, se conservan los datos y se muestra el aviso "Los datos de ejemplo son del 10/11/2026. Al reiniciar la demo se actualizan a la fecha de hoy y se borran sus cambios." con botón "Reiniciar demo". | Ambos caminos. |
-| D6 | **Reiniciar demo**: borra todo, regenera con `fechaBase = hoy`, `modificada = false`. Se conserva el perfil elegido (es de la persona, no de los datos). Confirmación previa. También funciona desde la pantalla de error de arranque (sin estado previo): borra la base y vuelve a arrancar. | Después de reiniciar, el ejemplo es igual al de una primera visita del mismo día y el perfil no cambió. |
+| D6 | **Reiniciar demo**: borra todo, regenera con `fechaBase = hoy`, `modificada = false`. Se conserva el perfil elegido (es de la persona, no de los datos). Confirmación previa. No existe desde la pantalla de error de arranque (ver «La pantalla de error de arranque no reinicia»). | Después de reiniciar, el ejemplo es igual al de una primera visita del mismo día y el perfil no cambió. |
 | D7 | Versión de esquema guardada ≠ actual → reinicio automático con aviso "La demo se actualizó. Se cargó de nuevo la flota de ejemplo y no se conservaron los datos anteriores." | Meta con `versionEsquema: 0` → reinicio y aviso. |
 | D8 | IndexedDB no disponible o falla al abrir → **modo en memoria**: la demo funciona y un aviso fijo dice "Este navegador no permite guardar datos. Puede usar la demo, pero los cambios se pierden al cerrar o recargar la página." | Fábrica de IndexedDB que lanza → arranca con el repositorio en memoria y el aviso. |
 | D9 | Otra pestaña cambió los datos (`BroadcastChannel('control-flota')`) → aviso "Se hicieron cambios en otra pestaña. Esta pantalla sigue mostrando los datos anteriores hasta que actualice." con botón "Actualizar"; no se recarga sola (se perdería lo que se está escribiendo). | Canal de prueba que emite → aviso visible; los datos de esta pestaña no cambian hasta "Actualizar". |
@@ -713,8 +713,11 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   falla dice lo suyo: `noPudoGuardar` (formulario), `noPudoGuardarElParte` (`guardarBorrador` y `enviarParte`),
   `noPudoReiniciar` (reiniciar con la demo cargada) y `noPudoCambiarVista` (`cambiarPerfil`). El botón del aviso D9 sigue
   siendo «Actualizar» (lo fija diseno-ui.md 5.18).
-- **Reiniciar desde el error de arranque (decisión A, opción 1).** `EstadoApp.reiniciar()` en fase `error` (sin estado ni
-  repositorio): llama a `deps.borrarAlmacenamiento` (en el navegador, `borrarIndexedDB`: `deleteDatabase` de `control-flota-demo`;
-  las conexiones de otras pestañas se cierran solas) y vuelve a correr `iniciar()`. Si no hay cómo borrar o el borrado falla:
-  `almacenamiento-no-disponible`; si borra pero el arranque vuelve a fallar: `reinicio-fallido`. Ambos con el mensaje
-  `noPudoReiniciarDesdeError` («Recargue la página…»), y la fase sigue en `error`. Mientras trabaja, la fase pasa por `arrancando`.
+- **La pantalla de error de arranque no reinicia (18/11/2026, reemplaza a la «decisión A»).** A la fase `error` solo se llega si falla
+  `reloj.momento()`, `generar` o la barra de direcciones, es decir, por un error de programación o del entorno. Los datos guardados
+  no llevan a ella: se probó con perfil corrupto, listas ausentes o nulas, elementos basura y `meta` dañado, y en todos los casos
+  `arrancar` termina en `lista` (o cae al ejemplo con el aviso D7, o a la memoria con el aviso D8). Por eso borrar la base desde ahí no
+  arregla nada y descarta datos buenos; además `deleteDatabase` cierra las conexiones de las otras pestañas sin avisar (D9) y, si
+  queda bloqueado, puede ejecutarse más tarde por su cuenta. Se quitó: `reiniciar()` sin estado cargado (arranque o fase `error`)
+  devuelve `sin-datos`, no hay `borrarAlmacenamiento` ni `borrarIndexedDB`, y la vista ofrece solo «Recargar la página». El texto
+  `TEXTO_ERROR_ARRANQUE.mensaje` dice «Recargue la página. Si el problema sigue, pruebe con otro navegador.».

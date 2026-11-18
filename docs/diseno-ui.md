@@ -1004,7 +1004,7 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 
 | Pantalla | Cargando | Vacío | Sin datos | Error |
 | --- | --- | --- | --- | --- |
-| Toda la app | Arranque (5.19) | — | — | IndexedDB falla → modo en memoria (aviso D8). Falla grave al iniciar → `h1` "No se pudo iniciar la demo", "Recargue la página. Si el problema sigue, reinicie la demo." + "Reiniciar demo". |
+| Toda la app | Arranque (5.19) | — | — | IndexedDB falla → modo en memoria (aviso D8). Falla grave al iniciar → `h1` "No se pudo iniciar la demo", "Recargue la página. Si el problema sigue, pruebe con otro navegador." + botón "Recargar la página" (sin "Reiniciar demo": no arregla nada desde ahí). |
 | Centro de alertas | — (los datos ya están en memoria) | Protagonista en 0 (vigente); Operación "Sin pendientes de operación."; Horizonte "Nada vence en los próximos 30 días"; lista "No hay vencimientos en los próximos 30 días." | — | Error al guardar desde un diálogo: en el diálogo (no se cierra). |
 | Flota | — | Por filtro: "Ninguna unidad coincide…" + "Quitar filtros". Sin unidades (no debería pasar): "Todavía no hay unidades." + "Agregar unidad". | — | — |
 | Ficha | — | Novedades: "Sin novedades abiertas." Kilometraje: "Todavía no hay partes de esta unidad." Documentos: solo faltantes (filas "Falta cargar"). | Historial con solo "Alta de la unidad". | Patente inexistente (6.3). Unidad de baja: aviso neutro, sin acciones. |

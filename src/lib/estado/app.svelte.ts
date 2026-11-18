@@ -26,11 +26,6 @@ export interface DependenciasApp {
   reloj: Reloj;
   /** Abre el almacenamiento (en el navegador, IndexedDB). Si rechaza, la demo sigue en memoria (D8). */
   abrirAlmacenamiento: () => Promise<Repositorio>;
-  /**
-   * Borra el almacenamiento (en el navegador, la base de IndexedDB). Solo lo usa `reiniciar()` desde la fase "error", cuando no
-   * hay estado que reemplazar. Si falta o rechaza, ese reinicio devuelve `almacenamiento-no-disponible`.
-   */
-  borrarAlmacenamiento?: () => Promise<void>;
   ubicacion: Ubicacion;
   /** Por defecto, el BroadcastChannel del navegador. */
   crearAvisoPestanas?: (alRecibir: () => void) => AvisoEntrePestanas;
@@ -248,16 +243,12 @@ export class EstadoApp {
   }
 
   /**
-   * D6: "Reiniciar demo". Una sola escritura; si falla queda lo de antes y se informa (`noPudoReiniciar`).
-   *
-   * También sirve desde la pantalla de error de arranque (fase "error", sin estado previo): borra el almacenamiento
-   * (`borrarAlmacenamiento`) y vuelve a arrancar desde cero. Si no se puede borrar devuelve `almacenamiento-no-disponible`; si
-   * borró pero el arranque vuelve a fallar, `reinicio-fallido`. En los dos casos el mensaje es `noPudoReiniciarDesdeError` (la
-   * salida que ofrece la vista es recargar) y la fase sigue siendo "error". Mientras reinicia, la fase pasa por "arrancando".
+   * D6: "Reiniciar demo". Una sola escritura; si falla queda lo de antes y se informa (`noPudoReiniciar`). Sin estado cargado
+   * (arranque en curso o fase "error") devuelve `sin-datos`: la fase "error" no se arregla borrando datos guardados (ver
+   * docs/diseno.md), la salida es recargar la página.
    */
   reiniciar(): Promise<Resultado<null>> {
     return this.encolar(async () => {
-      if (this.fase === "error") return this.reiniciarDesdeError();
       const estado = this.estado;
       const repositorio = this.repositorio;
       if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
@@ -274,19 +265,6 @@ export class EstadoApp {
       this.irA(rutaPorDefecto(this.perfil));
       return ok(null);
     });
-  }
-
-  private async reiniciarDesdeError(): Promise<Resultado<null>> {
-    try {
-      if (this.deps.borrarAlmacenamiento === undefined) throw new Error("no hay cómo borrar el almacenamiento");
-      await this.deps.borrarAlmacenamiento();
-    } catch {
-      return fallo("almacenamiento-no-disponible", ERRORES.noPudoReiniciarDesdeError);
-    }
-    await this.iniciar();
-    if (this.fase !== "lista") return fallo("reinicio-fallido", ERRORES.noPudoReiniciarDesdeError);
-    this.irA(rutaPorDefecto(this.perfil));
-    return ok(null);
   }
 
   /** D9: "Actualizar": lee del almacenamiento lo que escribió la otra pestaña. */

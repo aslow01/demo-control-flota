@@ -198,7 +198,8 @@ describe("D3: el CUIT de ejemplo siempre se muestra como ficticio", () => {
 describe("revisión de textos del 18/11/2026 (redactor-ux)", () => {
   it("el error de arranque tiene título (para el h1) y mensaje por separado, sin repetir la frase", () => {
     expect(TEXTO_ERROR_ARRANQUE.titulo).toBe("No se pudo iniciar la demo");
-    expect(TEXTO_ERROR_ARRANQUE.mensaje).toBe("Recargue la página. Si el problema sigue, reinicie la demo.");
+    expect(TEXTO_ERROR_ARRANQUE.mensaje).toBe("Recargue la página. Si el problema sigue, pruebe con otro navegador.");
+    expect(TEXTO_ERROR_ARRANQUE.mensaje).not.toMatch(/reinici/i); // la fase de error no tiene "Reiniciar demo"
     expect(TEXTO_ERROR_ARRANQUE.mensaje).not.toContain(TEXTO_ERROR_ARRANQUE.titulo);
   });
 
@@ -214,9 +215,6 @@ describe("revisión de textos del 18/11/2026 (redactor-ux)", () => {
       "No se pudo guardar en este equipo. No se aplicó ningún cambio y lo escrito sigue en pantalla. Intente de nuevo.",
     );
     expect(ERRORES.noPudoReiniciar).toBe("No se pudo reiniciar la demo. Se conservaron los datos que tenía. Intente de nuevo.");
-    expect(ERRORES.noPudoReiniciarDesdeError).toBe(
-      "No se pudo reiniciar la demo. Recargue la página. Si el problema sigue, borre los datos de este sitio en su navegador.",
-    );
     expect(ERRORES.noPudoCambiarVista).toBe("No se pudo cambiar la vista. Intente de nuevo.");
     expect(ERRORES.sinPermiso).toBe("Esta acción es solo del encargado. En «Ver como», elija «Encargado».");
     expect(ERRORES.sinDatos).toBe("La demo todavía no terminó de cargar. Espere un momento e intente de nuevo.");
