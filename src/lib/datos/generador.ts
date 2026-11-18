@@ -181,6 +181,9 @@ function crearPatente(azar: Azar, anio: number, usadas: Set<string>): string {
   }
 }
 
+/** Versión del formato de los datos guardados (D7): si cambia, la demo se reinicia sola con un aviso. */
+export const VERSION_ESQUEMA = 1;
+
 /** Genera el estado completo de la demo. Las fechas son relativas a `fechaBase` (el "hoy" del ejemplo). */
 export function generar(semilla: number, fechaBase: FechaCivil): Estado {
   const azar = crearAzar(semilla);
@@ -715,7 +718,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     .map(({ e }, i): Evento => ({ ...e, id: `e-${String(i + 1).padStart(5, "0")}`, secuencia: i + 1 }));
 
   return {
-    meta: { versionEsquema: 1, semilla, fechaBase, modificada: false, perfil: { tipo: "encargado" } },
+    meta: { versionEsquema: VERSION_ESQUEMA, semilla, fechaBase, modificada: false, perfil: { tipo: "encargado" } },
     proyectos,
     conductores,
     unidades,

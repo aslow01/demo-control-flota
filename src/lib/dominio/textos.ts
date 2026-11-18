@@ -343,3 +343,16 @@ export function textoAdvertencia(a: Advertencia): string {
       );
   }
 }
+
+/** Avisos globales del arranque y de la sincronización entre pestañas (D4, D5, D7, D8, D9). */
+export const TEXTO_AVISO = {
+  preparando: "Preparando la flota de ejemplo…",
+  esquemaActualizado: "La demo se actualizó y se volvió a cargar la flota de ejemplo.",
+  sinAlmacenamiento: "Este navegador no permite guardar datos: puede usar la demo, pero los cambios se pierden al cerrar la pestaña.",
+  cambiosEnOtraPestana: "Hubo cambios en otra pestaña.",
+} as const;
+
+/** D5: los datos con cambios del visitante se conservan aunque el ejemplo sea de otra fecha. */
+export function textoDatosDeOtraFecha(fechaBase: FechaCivil): string {
+  return `Los datos de ejemplo son del ${formatearFecha(fechaBase)}. Reinicie la demo para verlos con las fechas de hoy.`;
+}
