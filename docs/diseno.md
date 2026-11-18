@@ -343,11 +343,11 @@ identificador en su nombre (`it('V4: d = 8 cae en el grupo de 15 días')`), así
 | D2 | **Casos garantizados**: el generador planta los casos de la sección 9.2; los vencimientos aleatorios caen siempre a más de 30 días, así el centro de alertas muestra solo lo plantado. | Un test por caso plantado (C01–C20) y uno que cuenta las alertas del ejemplo. |
 | D3 | Todo es ficticio y se nota: empresa con "Demo" en el nombre, patentes de una serie no emitida (9.1), nombres de una lista inventada, CUIT ficticio con dígito verificador válido. | Todas las patentes empiezan con `Z`; el CUIT pasa `cuitValido`. |
 | D4 | Primera visita (base vacía): se genera con `fechaBase = hoy`. Se muestra "Preparando la flota de ejemplo…" solo si tarda más de 300 ms. | Repositorio vacío → datos del generador y `meta.modificada = false`. |
-| D5 | **Fechas del ejemplo al día:** si `fechaBase < hoy` y `modificada = false`, se regenera en silencio con `fechaBase = hoy` (los casos plantados siguen a la misma distancia de hoy). Si `modificada = true`, se conservan los datos y se muestra el aviso "Los datos de ejemplo son del 10/11/2026. Reinicie la demo para verlos con las fechas de hoy." con botón "Reiniciar demo". | Ambos caminos. |
-| D6 | **Reiniciar demo**: borra todo, regenera con `fechaBase = hoy`, `modificada = false`. Se conserva el perfil elegido (es de la persona, no de los datos). Confirmación previa. | Después de reiniciar, el ejemplo es igual al de una primera visita del mismo día y el perfil no cambió. |
-| D7 | Versión de esquema guardada ≠ actual → reinicio automático con aviso "La demo se actualizó y se volvió a cargar la flota de ejemplo." | Meta con `versionEsquema: 0` → reinicio y aviso. |
-| D8 | IndexedDB no disponible o falla al abrir → **modo en memoria**: la demo funciona y un aviso fijo dice "Este navegador no permite guardar datos: puede usar la demo, pero los cambios se pierden al cerrar la pestaña." | Fábrica de IndexedDB que lanza → arranca con el repositorio en memoria y el aviso. |
-| D9 | Otra pestaña cambió los datos (`BroadcastChannel('control-flota')`) → aviso "Hubo cambios en otra pestaña." con botón "Actualizar"; no se recarga sola (se perdería lo que se está escribiendo). | Canal de prueba que emite → aviso visible; los datos de esta pestaña no cambian hasta "Actualizar". |
+| D5 | **Fechas del ejemplo al día:** si `fechaBase < hoy` y `modificada = false`, se regenera en silencio con `fechaBase = hoy` (los casos plantados siguen a la misma distancia de hoy). Si `modificada = true`, se conservan los datos y se muestra el aviso "Los datos de ejemplo son del 10/11/2026. Al reiniciar la demo se actualizan a la fecha de hoy y se borran sus cambios." con botón "Reiniciar demo". | Ambos caminos. |
+| D6 | **Reiniciar demo**: borra todo, regenera con `fechaBase = hoy`, `modificada = false`. Se conserva el perfil elegido (es de la persona, no de los datos). Confirmación previa. También funciona desde la pantalla de error de arranque (sin estado previo): borra la base y vuelve a arrancar. | Después de reiniciar, el ejemplo es igual al de una primera visita del mismo día y el perfil no cambió. |
+| D7 | Versión de esquema guardada ≠ actual → reinicio automático con aviso "La demo se actualizó. Se cargó de nuevo la flota de ejemplo y no se conservaron los datos anteriores." | Meta con `versionEsquema: 0` → reinicio y aviso. |
+| D8 | IndexedDB no disponible o falla al abrir → **modo en memoria**: la demo funciona y un aviso fijo dice "Este navegador no permite guardar datos. Puede usar la demo, pero los cambios se pierden al cerrar o recargar la página." | Fábrica de IndexedDB que lanza → arranca con el repositorio en memoria y el aviso. |
+| D9 | Otra pestaña cambió los datos (`BroadcastChannel('control-flota')`) → aviso "Se hicieron cambios en otra pestaña. Esta pantalla sigue mostrando los datos anteriores hasta que actualice." con botón "Actualizar"; no se recarga sola (se perdería lo que se está escribiendo). | Canal de prueba que emite → aviso visible; los datos de esta pestaña no cambian hasta "Actualizar". |
 | D10 | Error al escribir (cuota, transacción abortada) → no se aplica nada, el formulario conserva lo escrito y el mensaje lo dice. Nunca un error que desaparece solo. | Repositorio que falla → estado igual al anterior y mensaje. |
 | D11 | `meta.modificada` pasa a `true` con el primer comando del visitante (no con el autoguardado de un borrador vacío ni con cambiar de perfil). | Abrir y cerrar el parte sin escribir → sigue `false`. |
 
@@ -591,7 +591,7 @@ convence, se cambia acá y en el código a la vez.
   F" vale para el parte de F). El siguiente es el primero con fecha mayor que F; si es una corrección, K4 no compara.
 - `validarKilometraje` aplica K2, K3 y K4 (bloquean) y devuelve las advertencias K6 y K7 con el kilometraje anterior.
 - **M3 (a confirmar por Matías):** una corrección de kilometraje con `desde` anterior a cualquier registro ya cargado (parte
-  enviado u otra corrección) se **rechaza** con `km-correccion-anterior` y el mensaje «Ya hay un parte enviado el dd/mm/aaaa,
+  enviado u otra corrección) se **rechaza** con `km-correccion-anterior` y el mensaje «Ya hay un parte del dd/mm/aaaa,
   posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha de ese parte o una
   posterior.». Motivo: `kmActual` es el último registro por fecha, así que una corrección anterior no cambiaba el
   kilometraje actual ni K3 y K4, pero el historial decía que sí. Se eligió rechazar (lo más simple y honesto) en vez de
@@ -707,4 +707,14 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   (`sin-permiso`) como defensa extra; no es seguridad.
 - **Ids nuevos.** 24 caracteres hexadecimales de `crypto.getRandomValues` (no `randomUUID`, que no existe fuera de contextos seguros).
 - **Textos nuevos** (`textos.ts`): `TEXTO_AVISO` (D4, D7, D8, D9), `textoDatosDeOtraFecha` (D5), `TEXTO_ERROR_ARRANQUE` (5.19) y errores
-  `noPudoGuardar`, `sinPermiso`, `sinDatos`, `noPudoActualizar`. `redactor-ux` todavía no los revisó.
+  `noPudoGuardar`, `sinPermiso`, `sinDatos`, `noPudoActualizar`. `redactor-ux` los revisó el 18/11/2026
+  (`docs/revision-textos-2026-11-18.md`, con el estado de cada ítem) y la revisión está aplicada.
+- **Revisión de textos (18/11/2026).** `TEXTO_ERROR_ARRANQUE` es `{ titulo, mensaje }` (el título va en el `h1`). Cada escritura que
+  falla dice lo suyo: `noPudoGuardar` (formulario), `noPudoGuardarElParte` (`guardarBorrador` y `enviarParte`),
+  `noPudoReiniciar` (reiniciar con la demo cargada) y `noPudoCambiarVista` (`cambiarPerfil`). El botón del aviso D9 sigue
+  siendo «Actualizar» (lo fija diseno-ui.md 5.18).
+- **Reiniciar desde el error de arranque (decisión A, opción 1).** `EstadoApp.reiniciar()` en fase `error` (sin estado ni
+  repositorio): llama a `deps.borrarAlmacenamiento` (en el navegador, `borrarIndexedDB`: `deleteDatabase` de `control-flota-demo`;
+  las conexiones de otras pestañas se cierran solas) y vuelve a correr `iniciar()`. Si no hay cómo borrar o el borrado falla:
+  `almacenamiento-no-disponible`; si borra pero el arranque vuelve a fallar: `reinicio-fallido`. Ambos con el mensaje
+  `noPudoReiniciarDesdeError` («Recargue la página…»), y la fase sigue en `error`. Mientras trabaja, la fase pasa por `arrancando`.

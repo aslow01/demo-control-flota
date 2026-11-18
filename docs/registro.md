@@ -1,5 +1,25 @@
 # Registro
 
+## 18/11/2026 (noche, 2) — Revisión de textos aplicada y «Reiniciar demo» desde el error de arranque (trabajo autónomo)
+
+**Qué se hizo.** Se aplicó `docs/revision-textos-2026-11-18.md` (redactor UX) y se resolvió la decisión A con la opción 1.
+Con TDD: cada test nuevo o cambiado se vio fallar antes del código.
+
+| Commit | Qué quedó |
+| --- | --- |
+| `007d673` | Los 26 ítems con cambio de la revisión (N y O) en `textos.ts`; `TEXTO_ERROR_ARRANQUE` pasa a `{ titulo, mensaje }` y `App.svelte` usa `.titulo` en el `h1` (único cambio de la vista; sale `errorArranqueTitulo` de `textos-marco.ts`). Tests viejos actualizados y un bloque «revisión de textos» en `tests/textos.test.ts`. |
+| `2e1bd2f` | `app.svelte.ts`: `noPudoReiniciar`, `noPudoCambiarVista`, `noPudoGuardarElParte` (para `guardarBorrador` y `enviarParte`); `reiniciar()` funciona en fase `error` (`borrarAlmacenamiento` inyectable, `borrarIndexedDB` en `indexeddb.ts`, conectado en `instancia.ts`). |
+
+**No aplicado:** el ítem 3 (botón «Actualizar datos»), porque `diseno-ui.md` 5.18 fija «Actualizar». El ítem 1 se aplicó con una variante:
+el cuerpo conserva «reinicie la demo» (ahora se puede cumplir). El ítem 15 se verificó contra el código: la fecha es la del parte
+(`Parte.fecha`), no la de envío; en la corrección es `desde`.
+
+**API para la vista (botón del paso 3.4).** En fase `error`: `const r = await app.reiniciar()`. Devuelve `ok(null)` y la fase
+queda `lista` (la vista se redibuja sola), o `fallo` con `r.error.mensaje` (`noPudoReiniciarDesdeError`) y la fase sigue en `error`:
+mostrar ese mensaje junto al botón «Recargar la página». Mientras reinicia la fase pasa por `arrancando`.
+
+**Verificación.** `npm test` 675 tests (antes 655), `npm run check` 0 errores, `npm run buscar` sin hallazgos, `npm run build` verde.
+
 ## 18/11/2026 (tarde) — Rama `interfaz-etapa-0`: Etapa 0, pasos 2.4 a 2.6 y 3.1 (trabajo autónomo)
 
 **Qué se hizo.** Etapa 0 (proyecto Svelte 5 con Vite, CSP, CI, medición), persistencia sobre IndexedDB con la misma suite de

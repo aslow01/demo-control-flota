@@ -1,5 +1,5 @@
 // Aviso entre pestañas (docs/diseno.md, D9): cuando otra pestaña escribe, esta se entera y la interfaz muestra
-// "Hubo cambios en otra pestaña" con un botón "Actualizar". Acá solo se mandan y se reciben los avisos: nunca se
+// "Se hicieron cambios en otra pestaña…" con un botón "Actualizar". Acá solo se mandan y se reciben los avisos: nunca se
 // recargan datos solos (se perdería lo que la persona está escribiendo) y el mensaje no lleva datos.
 
 export const NOMBRE_CANAL = "control-flota";
