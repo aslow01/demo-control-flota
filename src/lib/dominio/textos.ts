@@ -1,4 +1,5 @@
-// Textos de estados y errores, en español neutro, en un solo lugar (se completa en el paso 1.10).
+// Textos de la interfaz que produce el dominio (errores, estados, resúmenes, motivos y alertas), en español neutro y en un solo lugar.
+// Lo único que queda afuera: los mensajes de un contexto mal armado (error de programación, no de la persona) en comandos.ts.
 
 import { diaDeLaSemana, formatearFecha } from "./fechas.ts";
 import type { Advertencia, FechaCivil, TipoDocumento } from "./tipos.ts";
@@ -63,8 +64,117 @@ export const ERRORES = {
   checklistInvalido: "El checklist del parte no es válido.",
   otraNovedadInvalida: "La otra novedad no es válida.",
   parteOtraUnidad: "No se puede cambiar la unidad de un parte.",
+  fechaInvalida: "Escriba una fecha válida.",
+  parteFechaAntigua: "Solo se pueden cargar partes de los últimos 7 días.",
+  kmVacio: "Escriba el kilometraje.",
+  kmNegativo: "El kilometraje no puede ser negativo.",
+  kmNoNumerico: "Escriba el kilometraje solo con números.",
+  kmDecimales: "Escriba el kilometraje sin decimales.",
+  kmRango: "Escriba un kilometraje entero de 0 a 2.000.000.",
+  litrosNoNumerico: "Escriba los litros con números, por ejemplo 45,5.",
+  litrosDecimales: "Escriba los litros con un solo decimal, por ejemplo 45,5.",
+  litrosCero: "Si no cargó combustible, deje el campo vacío.",
+  internoRango: "El número interno tiene que ser un entero de 1 a 999.",
   noPudoGuardarElParte: "No se pudo guardar el parte. Sus datos siguen en este equipo; intente de nuevo.",
 } as const;
+
+export function errKmExcedido(maximo: number): string {
+  return `El kilometraje no puede superar ${formatearKm(maximo)}.`;
+}
+
+export function errKmFinMenor(kmFin: number, kmInicio: number): string {
+  return `El kilometraje al terminar (${formatearKm(kmFin)}) es menor que al iniciar (${formatearKm(kmInicio)}).`;
+}
+
+export function errKmRetrocede(patente: string, km: number, registro: string): string {
+  return `El último registro de ${patente} es ${formatearKm(km)} km (${registro}). Revise el número. Si se cambió el tablero, avise al encargado.`;
+}
+
+export function errKmSuperaSiguiente(fecha: FechaCivil, kmInicio: number): string {
+  return `Supera el kilometraje con que empezó el parte del ${formatearFecha(fecha)} (${formatearKm(kmInicio)}).`;
+}
+
+export function errLitrosInvalidos(maximo: number): string {
+  return `Escriba los litros con hasta un decimal, de más de 0 a ${maximo}.`;
+}
+
+export function errLitrosExcedidos(maximo: number): string {
+  return `Los litros no pueden superar ${maximo}.`;
+}
+
+export function errTextoCorto(nombre: string, minimo: number): string {
+  return `${nombre} tiene que tener al menos ${minimo} caracteres.`;
+}
+
+export function errTextoLargo(nombre: string, maximo: number): string {
+  return `${nombre} no puede superar ${maximo} caracteres.`;
+}
+
+export function errVenceFueraDeRango(maxima: FechaCivil): string {
+  return `La fecha de vencimiento no puede ser posterior al ${formatearFecha(maxima)}.`;
+}
+
+/** Los textos de los campos de texto libre (nombre con artículo y mensajes de vacío o de corto); los límites están en validacion.ts. */
+export const TEXTOS_DE_CAMPO = {
+  motivoFueraDeServicio: { nombre: "El motivo", vacio: "Escriba el motivo (por ejemplo, «En taller: cambio de embrague»)." },
+  motivoBaja: { nombre: "El motivo", vacio: "Escriba el motivo de la baja." },
+  motivoKm: { nombre: "El motivo", vacio: "Escriba el motivo de la corrección." },
+  novedad: { nombre: "La descripción", vacio: "Escriba qué pasó." },
+  resolucion: {
+    nombre: "El texto",
+    vacio: "Cuente en pocas palabras qué se hizo (al menos 5 caracteres).",
+    corto: "Cuente en pocas palabras qué se hizo (al menos 5 caracteres).",
+  },
+  numeroDocumento: { nombre: "El número", vacio: "Escriba el número del documento." },
+  emisor: { nombre: "El emisor", vacio: "" },
+  marca: { nombre: "La marca", vacio: "Escriba la marca." },
+  modelo: { nombre: "El modelo", vacio: "Escriba el modelo." },
+} as const;
+
+/** 5.2: cómo se llama cada ítem del checklist en el formulario. */
+export const NOMBRES_ITEM_CHECKLIST = {
+  frenos: "Frenos",
+  direccion: "Dirección",
+  neumaticos: "Neumáticos y rueda de auxilio",
+  luces: "Luces y balizas",
+  cinturones: "Cinturones de seguridad",
+  niveles: "Niveles de aceite y agua",
+  matafuego: "Matafuego a bordo",
+  botiquin: "Botiquín y kit de emergencia",
+  documentacion: "Documentación a bordo",
+  cabina: "Orden y limpieza de la cabina",
+} as const;
+
+/** V12: un obligatorio sin documento. */
+export const TEXTO_FALTA_CARGAR = "Falta cargar";
+
+/** Motivos que muestra la aptitud de una unidad (A1). */
+export const MOTIVO_APTITUD = {
+  baja: (desde: FechaCivil, motivo: string) => `Dada de baja el ${formatearFecha(desde)}: ${motivo}`,
+  fueraDeServicio: (desde: FechaCivil, motivo: string) => `Fuera de servicio desde ${formatearFecha(desde)}: ${motivo}`,
+  documentoFaltante: (nombre: string) => `${TEXTO_FALTA_CARGAR}: ${nombre}`,
+  novedadCritica: (rotulo: string, origen: string) => `Novedad crítica abierta: ${rotulo} (${origen})`,
+} as const;
+
+/** Textos de las alertas de operación (sección 7). */
+export const TEXTO_ALERTA = {
+  usoConDocumentacionVencida: (nombres: string, fecha: FechaCivil) =>
+    `Circuló con documentación vencida: ${nombres} (parte del ${formatearFecha(fecha)})`,
+  parteSinEnviar: (fecha: FechaCivil, empezadoPor: string | null) =>
+    `Parte del ${formatearFecha(fecha)} sin enviar${empezadoPor === null ? "" : ` (empezado por ${empezadoPor})`}`,
+  sinParte: (ayer: FechaCivil) => `Sin parte de ayer (${formatearFecha(ayer)})`,
+} as const;
+
+/** Motivo con que una novedad crítica deja la unidad fuera de servicio (A3). */
+export const MOTIVO_NOVEDAD_CRITICA = {
+  delParte: (fecha: FechaCivil, items: string) => `Novedad crítica en el parte del ${formatearFecha(fecha)}: ${items}`,
+  cargada: (fecha: FechaCivil, descripcion: string) => `Novedad crítica cargada el ${formatearFecha(fecha)}: ${descripcion}`,
+} as const;
+
+/** Acorta un texto a `max` caracteres terminando en «…». */
+export function abreviar(texto: string, max: number): string {
+  return texto.length > max ? `${texto.slice(0, max - 1)}…` : texto;
+}
 
 /** `ZK 214 BD` con su número interno: `Int. 07`. */
 export function textoInterno(interno: number): string {

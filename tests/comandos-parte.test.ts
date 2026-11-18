@@ -2,9 +2,8 @@ import { describe, expect, it } from "vitest";
 import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
 import { kmActual } from "../src/lib/dominio/kilometraje.ts";
-import { enviadoFueraDeTermino } from "../src/lib/dominio/parte.ts";
 import { sumarDias } from "../src/lib/dominio/fechas.ts";
-import type { Estado, Parte } from "../src/lib/dominio/tipos.ts";
+import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { checklistEnOrden, checklistVacio, contexto, ejecutarError, ejecutarOk, flotaDePrueba, parte } from "./ayuda.ts";
 
 const H = "2026-11-18";
@@ -403,15 +402,25 @@ describe("enviarParte", () => {
     expect(r.estado.novedades[0]?.origen).toEqual({ tipo: "parte", parteId, item: "otra" });
   });
 
-  it("P5: se marca como fuera de término en el evento y se detecta desde el parte", () => {
+  it("P5: se marca como fuera de término en el evento", () => {
     const base = flotaDePrueba();
     const e: Estado = { ...base, partes: [] };
     const { estado, parteId } = conBorrador(e, completo({ fecha: "2026-11-17", kmInicio: 1000, kmFin: 1100 }));
     const r = ejecutarOk(estado, enviar(parteId));
     expect(r.eventos[0]?.datos).toMatchObject({ fueraDeTermino: true });
     expect(r.eventos[0]?.resumen).toBe("Parte del 17/11/2026 de ZK 214 BD enviado fuera de término: 1.000 a 1.100 km (100 km)");
-    const p = r.estado.partes.find((x) => x.id === parteId) as Parte;
-    expect(enviadoFueraDeTermino(p)).toBe(true);
+  });
+
+  it("P5: el límite es la medianoche de Argentina: 02:59:59.999Z todavía es el mismo día y 03:00:00.000Z ya no", () => {
+    const base = { ...flotaDePrueba(), partes: [] };
+    const ayer = contexto({ hoy: "2026-11-17", ahora: "2026-11-17T15:00:00.000Z" });
+    const a = ejecutarOk(base, completo({ fecha: "2026-11-17", kmInicio: 1000, kmFin: 1100 }), ayer);
+    const id = a.cambios.partes[0]!.id;
+    const mismoDia = ejecutarOk(a.estado, enviar(id), contexto({ hoy: "2026-11-17", ahora: "2026-11-18T02:59:59.999Z" }));
+    expect(mismoDia.eventos[0]?.datos).toMatchObject({ fueraDeTermino: false });
+    expect(mismoDia.eventos[0]?.resumen).not.toContain("fuera de término");
+    const alDiaSiguiente = ejecutarOk(a.estado, enviar(id), contexto({ hoy: "2026-11-18", ahora: "2026-11-18T03:00:00.000Z" }));
+    expect(alDiaSiguiente.eventos[0]?.datos).toMatchObject({ fueraDeTermino: true });
   });
 
   it("P7: un parte ya enviado no se vuelve a enviar", () => {

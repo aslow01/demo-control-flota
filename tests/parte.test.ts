@@ -4,7 +4,6 @@ import {
   advertenciasDeEnvio,
   conductorParaParte,
   documentacionVencidaEn,
-  enviadoFueraDeTermino,
   esBorradorVacio,
   faltantesParaEnviar,
   novedadesDelParte,
@@ -363,20 +362,6 @@ describe("P13: borrador nuevo", () => {
     expect(conductorParaParte({ tipo: "conductor", conductorId: "c-otro" }, u)).toBe("c-otro");
     expect(conductorParaParte({ tipo: "encargado" }, u)).toBe("c-asignado");
     expect(conductorParaParte({ tipo: "encargado" }, unidad({ conductorId: null }))).toBeNull();
-  });
-});
-
-describe("P5: enviado fuera de término", () => {
-  it("P5: enviado el mismo día (hora de Argentina) no es fuera de término", () => {
-    expect(enviadoFueraDeTermino(parte({ fecha: "2026-11-17", enviado: "2026-11-18T02:59:00.000Z" }))).toBe(false);
-  });
-
-  it("P5: enviado al día siguiente sí lo es (a partir de las 00:00 de Argentina)", () => {
-    expect(enviadoFueraDeTermino(parte({ fecha: "2026-11-17", enviado: "2026-11-18T03:00:00.000Z" }))).toBe(true);
-  });
-
-  it("P5: un borrador no está fuera de término", () => {
-    expect(enviadoFueraDeTermino(parte({ estado: "borrador", enviado: null }))).toBe(false);
   });
 });
 

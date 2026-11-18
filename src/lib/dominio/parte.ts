@@ -1,7 +1,8 @@
 // Parte diario (P2, P4, P5, P9 a P11, P13) y advertencias de envío (K6, K7, P9).
 
-import { diasEntre, fechaEnArgentina, parsearFechaCivil } from "./fechas.ts";
+import { diasEntre, parsearFechaCivil } from "./fechas.ts";
 import { advertenciasDeKm, type EntradaKm } from "./kilometraje.ts";
+import { ERRORES, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos } from "./textos.ts";
 import { hayDocumentoQueAmpare, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 import {
   fallo,
@@ -29,16 +30,16 @@ export interface ItemInfo {
 
 /** 5.2: los diez ítems del checklist, en este orden. */
 export const ITEMS_CHECKLIST: readonly ItemInfo[] = [
-  { id: "frenos", texto: "Frenos", critico: true },
-  { id: "direccion", texto: "Dirección", critico: true },
-  { id: "neumaticos", texto: "Neumáticos y rueda de auxilio", critico: true },
-  { id: "luces", texto: "Luces y balizas", critico: true },
-  { id: "cinturones", texto: "Cinturones de seguridad", critico: true },
-  { id: "niveles", texto: "Niveles de aceite y agua", critico: false },
-  { id: "matafuego", texto: "Matafuego a bordo", critico: false },
-  { id: "botiquin", texto: "Botiquín y kit de emergencia", critico: false },
-  { id: "documentacion", texto: "Documentación a bordo", critico: false },
-  { id: "cabina", texto: "Orden y limpieza de la cabina", critico: false },
+  { id: "frenos", texto: NOMBRES_ITEM_CHECKLIST.frenos, critico: true },
+  { id: "direccion", texto: NOMBRES_ITEM_CHECKLIST.direccion, critico: true },
+  { id: "neumaticos", texto: NOMBRES_ITEM_CHECKLIST.neumaticos, critico: true },
+  { id: "luces", texto: NOMBRES_ITEM_CHECKLIST.luces, critico: true },
+  { id: "cinturones", texto: NOMBRES_ITEM_CHECKLIST.cinturones, critico: true },
+  { id: "niveles", texto: NOMBRES_ITEM_CHECKLIST.niveles, critico: false },
+  { id: "matafuego", texto: NOMBRES_ITEM_CHECKLIST.matafuego, critico: false },
+  { id: "botiquin", texto: NOMBRES_ITEM_CHECKLIST.botiquin, critico: false },
+  { id: "documentacion", texto: NOMBRES_ITEM_CHECKLIST.documentacion, critico: false },
+  { id: "cabina", texto: NOMBRES_ITEM_CHECKLIST.cabina, critico: false },
 ];
 
 export const DIAS_ATRAS_PARTE = 7;
@@ -49,11 +50,11 @@ export const DESCRIPCION_MAXIMO = 500;
 /** P2: la fecha del parte no puede ser futura ni anterior a hoy - 7. */
 export function validarFechaParte(texto: string, hoy: FechaCivil): Resultado<FechaCivil> {
   const fecha = parsearFechaCivil(texto);
-  if (fecha === null) return fallo("parte-fecha-invalida", "Escriba una fecha válida.", { campo: "fecha" });
+  if (fecha === null) return fallo("parte-fecha-invalida", ERRORES.fechaInvalida, { campo: "fecha" });
   const d = diasEntre(hoy, fecha);
-  if (d > 0) return fallo("parte-fecha-futura", "La fecha no puede ser posterior a hoy.", { campo: "fecha" });
+  if (d > 0) return fallo("parte-fecha-futura", ERRORES.fechaFutura, { campo: "fecha" });
   if (d < -DIAS_ATRAS_PARTE) {
-    return fallo("parte-fecha-antigua", "Solo se pueden cargar partes de los últimos 7 días.", { campo: "fecha" });
+    return fallo("parte-fecha-antigua", ERRORES.parteFechaAntigua, { campo: "fecha" });
   }
   return ok(fecha);
 }
@@ -64,20 +65,26 @@ export function parsearLitros(texto: string): Resultado<number | null> {
   if (t === "") return ok(null);
   const m = t.length <= 20 ? /^(\d+)(?:[.,](\d+))?$/.exec(t) : null;
   if (m === null) {
-    return fallo("litros-no-numerico", "Escriba los litros con números, por ejemplo 45,5.", { campo: "litrosCargados" });
+    return fallo("litros-no-numerico", ERRORES.litrosNoNumerico, { campo: "litrosCargados" });
   }
   const decimales = m[2] ?? "";
   if (decimales.length > 1) {
-    return fallo("litros-decimales", "Escriba los litros con un solo decimal, por ejemplo 45,5.", { campo: "litrosCargados" });
+    return fallo("litros-decimales", ERRORES.litrosDecimales, { campo: "litrosCargados" });
   }
   const valor = Number(`${m[1]}.${decimales === "" ? "0" : decimales}`);
   if (valor === 0) {
-    return fallo("litros-cero", "Si no cargó combustible, deje el campo vacío.", { campo: "litrosCargados" });
+    return fallo("litros-cero", ERRORES.litrosCero, { campo: "litrosCargados" });
   }
   if (valor > LITROS_MAXIMO) {
-    return fallo("litros-excedidos", `Los litros no pueden superar ${LITROS_MAXIMO}.`, { campo: "litrosCargados" });
+    return fallo("litros-excedidos", errLitrosExcedidos(LITROS_MAXIMO), { campo: "litrosCargados" });
   }
   return ok(valor);
+}
+
+/** P10, ya convertido a número (borrador): más de 0, hasta 200 y con hasta un decimal. */
+export function validarLitros(litros: number): Resultado<number> {
+  const valido = Number.isFinite(litros) && litros > 0 && litros <= LITROS_MAXIMO && Math.abs(litros * 10 - Math.round(litros * 10)) < 1e-9;
+  return valido ? ok(litros) : fallo("litros-invalidos", errLitrosInvalidos(LITROS_MAXIMO), { campo: "litrosCargados" });
 }
 
 /** Campos que pueden faltar para enviar, con el nombre que usa el formulario. */
@@ -235,10 +242,4 @@ export function esBorradorVacio(parte: Parte, kmActualDeLaUnidad: number | null)
     parte.litrosCargados === null &&
     parte.otraNovedad === null
   );
-}
-
-/** P5: el parte se envió después de su fecha (en hora de Argentina). */
-export function enviadoFueraDeTermino(parte: Parte): boolean {
-  if (parte.estado !== "enviado" || parte.enviado === null) return false;
-  return fechaEnArgentina(parte.enviado) > parte.fecha;
 }

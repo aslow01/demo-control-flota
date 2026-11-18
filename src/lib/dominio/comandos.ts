@@ -3,7 +3,7 @@
 // Reglas de este archivo: A3 a A7, K5, N1 a N3, P1 a P3, P7, P8, V10, V11, U1 a U7, H1, D11.
 
 import { aplicarCambios, sinCambios, type Cambios } from "./estado.ts";
-import { diasEntre, fechaEnArgentina, formatearFecha, parsearFechaCivil, parsearInstante } from "./fechas.ts";
+import { diasEntre, fechaEnArgentina, parsearFechaCivil, parsearInstante } from "./fechas.ts";
 import { kmActual, registrosDeKm, validarKilometraje } from "./kilometraje.ts";
 import { novedadesCriticasAbiertas, rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
 import {
@@ -12,11 +12,12 @@ import {
   documentacionVencidaEn,
   esBorradorVacio,
   faltantesParaEnviar,
+  validarLitros,
   novedadesDelParte,
   validarFechaParte,
 } from "./parte.ts";
 import { formatearPatente, validarPatente } from "./patente.ts";
-import { ERRORES, RESUMEN_EVENTO, errAnioFueraDeRango, errDocumentoExistente, errInternoRepetido, errKmCorreccionAnterior, errNovedadesCriticasAbiertas, errParteDuplicado, errPatenteRepetida, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
+import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, abreviar, errAnioFueraDeRango, errDocumentoExistente, errInternoRepetido, errKmCorreccionAnterior, errNovedadesCriticasAbiertas, errParteDuplicado, errPatenteRepetida, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
 import {
   fallo,
   ok,
@@ -288,10 +289,6 @@ function etiquetaDeTitular(estado: Estado, titular: Titular): string {
   return nombreDeConductor(estado, titular.id);
 }
 
-function abreviar(texto: string, max: number): string {
-  return texto.length > max ? `${texto.slice(0, max - 1)}…` : texto;
-}
-
 // ---------------------------------------------------------------------------------------------
 // Unidades
 // ---------------------------------------------------------------------------------------------
@@ -304,7 +301,7 @@ function altaUnidad(estado: Estado, c: Extract<Comando, { tipo: "altaUnidad" }>,
     return fallo("patente-repetida", errPatenteRepetida(pat(repetida), repetida.interno), { campo: "patente" });
   }
 
-  const interno = validarEntero(c.interno, 1, 999, "interno", "interno-rango", "El número interno tiene que ser un entero de 1 a 999.");
+  const interno = validarEntero(c.interno, 1, 999, "interno", "interno-rango", ERRORES.internoRango);
   if (!interno.ok) return interno;
   const mismoInterno = estado.unidades.find((u) => u.interno === interno.valor && u.estado.tipo !== "baja");
   if (mismoInterno !== undefined) {
@@ -584,7 +581,7 @@ function cargarDocumento(
   if (!titular.ok) return titular;
   const nombre = NOMBRES_DOCUMENTO[c.tipoDocumento];
   if (!tiposDelTitular(c.titular.tipo).includes(c.tipoDocumento)) {
-    return fallo("tipo-no-corresponde", errTipoDeDocumentoNoCorresponde(nombre ?? "El documento", c.titular.tipo), {
+    return fallo("tipo-no-corresponde", errTipoDeDocumentoNoCorresponde(nombre, c.titular.tipo), {
       campo: "tipoDocumento",
     });
   }
@@ -769,6 +766,7 @@ function efectoDeNovedadCritica(
 ): { unidad: Unidad | null; evento: EventoNuevo | null } {
   const e = unidad.estado;
   const ids = novedadesNuevas.map((n) => n.id);
+  const motivoAbreviado = abreviar(motivo, LARGO_MAXIMO_MOTIVO);
   if (e.tipo === "en-servicio") {
     return {
       unidad: {
@@ -776,7 +774,7 @@ function efectoDeNovedadCritica(
         estado: {
           tipo: "fuera-de-servicio",
           desde: ctx.hoy,
-          motivo: abreviar(motivo, LARGO_MAXIMO_MOTIVO),
+          motivo: motivoAbreviado,
           origen: "novedad-critica",
           novedadIds: ids,
         },
@@ -785,8 +783,8 @@ function efectoDeNovedadCritica(
         tipo: "fuera-de-servicio",
         unidadId: unidad.id,
         conductorId: null,
-        resumen: RESUMEN_EVENTO.fueraDeServicio(pat(unidad), abreviar(motivo, LARGO_MAXIMO_MOTIVO)),
-        datos: { origen: "novedad-critica", motivo, novedadIds: ids },
+        resumen: RESUMEN_EVENTO.fueraDeServicio(pat(unidad), motivoAbreviado),
+        datos: { origen: "novedad-critica", motivo: motivoAbreviado, novedadIds: ids },
       },
     };
   }
@@ -830,7 +828,7 @@ function cargarNovedad(estado: Estado, c: Extract<Comando, { tipo: "cargarNoveda
     const efecto = efectoDeNovedadCritica(
       u,
       [novedad],
-      `Novedad crítica cargada el ${formatearFecha(ctx.hoy)}: ${abreviar(novedad.descripcion, 120)}`,
+      MOTIVO_NOVEDAD_CRITICA.cargada(ctx.hoy, abreviar(novedad.descripcion, 120)),
       ctx,
     );
     if (efecto.unidad !== null) cambios.unidades = [efecto.unidad];
@@ -902,11 +900,8 @@ function validarCamposDelBorrador(c: Extract<Comando, { tipo: "guardarBorrador" 
     if (!r.ok) return r;
   }
   if (c.litrosCargados !== null) {
-    const l = c.litrosCargados;
-    const valido = Number.isFinite(l) && l > 0 && l <= 200 && Math.abs(l * 10 - Math.round(l * 10)) < 1e-9;
-    if (!valido) {
-      return fallo("litros-invalidos", "Escriba los litros con hasta un decimal, de más de 0 a 200.", { campo: "litrosCargados" });
-    }
+    const litros = validarLitros(c.litrosCargados);
+    if (!litros.ok) return litros;
   }
   if (c.combustible !== null && !NIVELES_COMBUSTIBLE.includes(c.combustible)) {
     return fallo("combustible-invalido", ERRORES.combustibleInvalido, { campo: "combustible" });
@@ -1125,7 +1120,7 @@ function enviarParte(estado: Estado, c: Extract<Comando, { tipo: "enviarParte" }
     const efecto = efectoDeNovedadCritica(
       u,
       criticas,
-      `Novedad crítica en el parte del ${formatearFecha(enviado.fecha)}: ${nombres}`,
+      MOTIVO_NOVEDAD_CRITICA.delParte(enviado.fecha, nombres),
       ctx,
     );
     if (efecto.unidad !== null) cambios.unidades = [efecto.unidad];

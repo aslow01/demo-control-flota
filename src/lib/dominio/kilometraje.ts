@@ -2,7 +2,7 @@
 
 import { formatearFecha } from "./fechas.ts";
 import { formatearPatente } from "./patente.ts";
-import { formatearKm } from "./textos.ts";
+import { ERRORES, errKmExcedido, errKmFinMenor, errKmRetrocede, errKmSuperaSiguiente, formatearKm } from "./textos.ts";
 import {
   fallo,
   ok,
@@ -24,23 +24,23 @@ const LARGO_MAXIMO_ENTRADA = 20;
 /** K1: entero de 0 a 2.000.000. Acepta `84320`, `84.320` y `84 320`. */
 export function parsearKm(texto: string): Resultado<number> {
   const t = texto.replace(/[  ]/g, " ").trim();
-  if (t === "") return fallo("km-vacio", "Escriba el kilometraje.", { campo: "km" });
-  if (/^-\s*\d/.test(t)) return fallo("km-negativo", "El kilometraje no puede ser negativo.", { campo: "km" });
+  if (t === "") return fallo("km-vacio", ERRORES.kmVacio, { campo: "km" });
+  if (/^-\s*\d/.test(t)) return fallo("km-negativo", ERRORES.kmNegativo, { campo: "km" });
   if (t.length > LARGO_MAXIMO_ENTRADA) {
-    return fallo("km-no-numerico", "Escriba el kilometraje solo con números.", { campo: "km" });
+    return fallo("km-no-numerico", ERRORES.kmNoNumerico, { campo: "km" });
   }
 
   let digitos: string | null = null;
   if (/^\d+$/.test(t)) digitos = t;
   else if (/^\d{1,3}(?:[. ]\d{3})+$/.test(t)) digitos = t.replace(/[. ]/g, "");
   else if (/^\d+(?:[.,]\d+)$/.test(t) || /^\d{1,3}(?:[. ]\d{3})+,\d+$/.test(t)) {
-    return fallo("km-decimales", "Escriba el kilometraje sin decimales.", { campo: "km" });
+    return fallo("km-decimales", ERRORES.kmDecimales, { campo: "km" });
   }
-  if (digitos === null) return fallo("km-no-numerico", "Escriba el kilometraje solo con números.", { campo: "km" });
+  if (digitos === null) return fallo("km-no-numerico", ERRORES.kmNoNumerico, { campo: "km" });
 
   const valor = Number(digitos);
   if (valor > KM_MAXIMO) {
-    return fallo("km-excedido", `El kilometraje no puede superar ${formatearKm(KM_MAXIMO)}.`, { campo: "km" });
+    return fallo("km-excedido", errKmExcedido(KM_MAXIMO), { campo: "km" });
   }
   return ok(valor);
 }
@@ -48,11 +48,7 @@ export function parsearKm(texto: string): Resultado<number> {
 /** K2: el fin no puede ser menor que el inicio. Devuelve el recorrido. */
 export function validarRecorrido(kmInicio: number, kmFin: number): Resultado<number> {
   if (kmFin < kmInicio) {
-    return fallo(
-      "km-fin-menor",
-      `El kilometraje al terminar (${formatearKm(kmFin)}) es menor que al iniciar (${formatearKm(kmInicio)}).`,
-      { campo: "kmFin" },
-    );
+    return fallo("km-fin-menor", errKmFinMenor(kmFin, kmInicio), { campo: "kmFin" });
   }
   return ok(kmFin - kmInicio);
 }
@@ -183,21 +179,14 @@ export function validarKilometraje(
 
   const anterior = registroAnterior(unidad.id, fecha, partes, correcciones);
   if (anterior !== null && kmInicio < kmDeRegistro(anterior)) {
-    return fallo(
-      "km-retrocede",
-      `El último registro de ${formatearPatente(unidad.patente)} es ${formatearKm(kmDeRegistro(anterior))} km ` +
-        `(${describirRegistro(anterior)}). Revise el número. Si se cambió el tablero, avise al encargado.`,
-      { campo: "kmInicio" },
-    );
+    return fallo("km-retrocede", errKmRetrocede(formatearPatente(unidad.patente), kmDeRegistro(anterior), describirRegistro(anterior)), {
+      campo: "kmInicio",
+    });
   }
 
   const siguiente = registroSiguiente(unidad.id, fecha, partes, correcciones);
   if (siguiente !== null && siguiente.tipo === "parte" && kmFin > siguiente.kmInicio) {
-    return fallo(
-      "km-supera-siguiente",
-      `Supera el kilometraje con que empezó el parte del ${formatearFecha(siguiente.fecha)} (${formatearKm(siguiente.kmInicio)}).`,
-      { campo: "kmFin" },
-    );
+    return fallo("km-supera-siguiente", errKmSuperaSiguiente(siguiente.fecha, siguiente.kmInicio), { campo: "kmFin" });
   }
 
   const kmAnterior = anterior === null ? null : kmDeRegistro(anterior);

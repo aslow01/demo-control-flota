@@ -341,6 +341,8 @@ describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
     expect(e.proyectos.find((p) => p.id === u.proyectoId)?.nombre).toBe("Proyecto Piedra Lunar");
     const cambio = e.eventos.find((x) => x.unidadId === u.id && x.tipo === "asignacion-cambiada")!;
     expect(fechaEnArgentina(cambio.instante)).toBe(H);
+    // B7: a las 00:00 de Argentina del día base, así nunca es posterior a "ahora" (03:00Z)
+    expect(cambio.instante).toBe(`${H}T03:00:00.000Z`);
     expect((cambio.datos["antes"] as { proyectoId: string }).proyectoId).toBe(e.proyectos.find((p) => p.nombre === "Base de mantenimiento")!.id);
     expect(documentoVigente(e.documentos, { tipo: "unidad", id: u.id }, "habilitacion-proyecto")).toBeUndefined();
     expect(aptitud(u, e, H).motivos.map((m) => m.texto)).toEqual(["Falta cargar: Habilitación de ingreso al proyecto"]);
@@ -649,4 +651,4 @@ describe("el ejemplo reacciona a los comandos (criterio de la pantalla 4.2)", ()
   });
 });
 
-const HASH_DEL_EJEMPLO = "11301975";
+const HASH_DEL_EJEMPLO = "95c343ac";

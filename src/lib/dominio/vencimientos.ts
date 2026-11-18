@@ -1,7 +1,7 @@
 // Clasificación de vencimientos (V1 a V8) y, más abajo, documento vigente y requisitos (V9 a V17).
 
 import { diasEntre, fechaEnArgentina } from "./fechas.ts";
-import { NOMBRES_DOCUMENTO, textoVencimiento } from "./textos.ts";
+import { NOMBRES_DOCUMENTO, TEXTO_FALTA_CARGAR, textoVencimiento } from "./textos.ts";
 import type { Conductor, Documento, FechaCivil, Proyecto, TipoDocumento, Titular, Unidad } from "./tipos.ts";
 
 export type Grupo = "vencidos" | "7" | "15" | "30";
@@ -130,7 +130,7 @@ export type Evaluacion = Clasificacion | Faltante;
 
 /** V12: un obligatorio sin documento se trata como vencido ("Falta cargar"); si hay documento, V1 a V6. */
 export function evaluarObligatorio(vigente: Documento | undefined, hoy: FechaCivil): Evaluacion {
-  if (vigente === undefined) return { estado: "faltante", grupo: "vencidos", texto: "Falta cargar" };
+  if (vigente === undefined) return { estado: "faltante", grupo: "vencidos", texto: TEXTO_FALTA_CARGAR };
   return clasificar(vigente.vence, hoy);
 }
 

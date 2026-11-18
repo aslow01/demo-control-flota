@@ -668,7 +668,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
   const proyectoBase = proyectos.find((p) => p.id === idProyecto.base) as Proyecto;
   const proyectoPiedra = proyectos.find((p) => p.id === idProyecto.piedra) as Proyecto;
   evento({
-    instante: en(H, 4, 0),
+    instante: en(H, 3, 0),
     unidadId: unidadC10.id,
     conductorId: unidadC10.conductorId,
     tipo: "asignacion-cambiada",

@@ -1,7 +1,7 @@
 // Aptitud de una unidad para salir hoy (A1, A2, A8). Se calcula, no se guarda.
 
-import { formatearFecha } from "./fechas.ts";
 import { novedadesCriticasAbiertas, rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
+import { MOTIVO_APTITUD } from "./textos.ts";
 import type { Estado, FechaCivil, Unidad } from "./tipos.ts";
 import { NOMBRES_DOCUMENTO, documentoVigente, evaluarObligatorio, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 
@@ -25,14 +25,14 @@ export function aptitud(unidad: Unidad, estado: DatosDeAptitud, hoy: FechaCivil)
     return {
       categoria: "baja",
       puedeSalir: false,
-      motivos: [{ tipo: "baja", texto: `Dada de baja el ${formatearFecha(e.desde)}: ${e.motivo}` }],
+      motivos: [{ tipo: "baja", texto: MOTIVO_APTITUD.baja(e.desde, e.motivo) }],
     };
   }
   if (e.tipo === "fuera-de-servicio") {
     return {
       categoria: "fuera-de-servicio",
       puedeSalir: false,
-      motivos: [{ tipo: "fuera-de-servicio", texto: `Fuera de servicio desde ${formatearFecha(e.desde)}: ${e.motivo}` }],
+      motivos: [{ tipo: "fuera-de-servicio", texto: MOTIVO_APTITUD.fueraDeServicio(e.desde, e.motivo) }],
     };
   }
 
@@ -43,7 +43,7 @@ export function aptitud(unidad: Unidad, estado: DatosDeAptitud, hoy: FechaCivil)
       const vigente = documentoVigente(estado.documentos, { tipo: "unidad", id: unidad.id }, tipo);
       const evaluacion = evaluarObligatorio(vigente, hoy);
       if (evaluacion.estado === "faltante") {
-        motivos.push({ tipo: "documento-faltante", texto: `Falta cargar: ${NOMBRES_DOCUMENTO[tipo]}` });
+        motivos.push({ tipo: "documento-faltante", texto: MOTIVO_APTITUD.documentoFaltante(NOMBRES_DOCUMENTO[tipo]) });
       } else if (evaluacion.estado === "vencido") {
         // A2: un documento que vence hoy todavía vale, por eso no entra acá.
         motivos.push({ tipo: "documento-vencido", texto: `${NOMBRES_DOCUMENTO[tipo]} ${minusculaInicial(evaluacion.texto)}` });
@@ -53,7 +53,7 @@ export function aptitud(unidad: Unidad, estado: DatosDeAptitud, hoy: FechaCivil)
   for (const n of novedadesCriticasAbiertas(estado.novedades, unidad.id)) {
     motivos.push({
       tipo: "novedad-critica",
-      texto: `Novedad crítica abierta: ${rotuloNovedad(n)} (${textoOrigenNovedad(n)})`,
+      texto: MOTIVO_APTITUD.novedadCritica(rotuloNovedad(n), textoOrigenNovedad(n)),
     });
   }
 

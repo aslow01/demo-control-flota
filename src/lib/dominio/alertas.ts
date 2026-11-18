@@ -1,9 +1,9 @@
 // Alertas (docs/diseno.md, sección 7): `calcularAlertas` es una función pura; una alerta no se guarda, se recalcula.
 
 import { resumenDeAptitud, type ResumenAptitud } from "./aptitud.ts";
-import { diasEntre, fechaEnArgentina, formatearFecha, sumarDias } from "./fechas.ts";
+import { diasEntre, fechaEnArgentina, sumarDias } from "./fechas.ts";
 import { rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
-import { pluralizar } from "./textos.ts";
+import { TEXTO_ALERTA, pluralizar } from "./textos.ts";
 import type { Conductor, Documento, Estado, FechaCivil, Novedad, Parte, Titular, TipoDocumento, Unidad } from "./tipos.ts";
 import {
   NOMBRES_DOCUMENTO,
@@ -264,7 +264,7 @@ function alertaUsoConDocumentacionVencida(p: Parte): Alerta {
     id: `uso-doc:${p.id}`,
     tipo: "uso-con-documentacion-vencida",
     gravedad: "critica",
-    texto: `Circuló con documentación vencida: ${nombres} (parte del ${formatearFecha(p.fecha)})`,
+    texto: TEXTO_ALERTA.usoConDocumentacionVencida(nombres, p.fecha),
     fecha: p.fecha,
     unidadId: p.unidadId,
     conductorId: p.conductorId,
@@ -273,12 +273,11 @@ function alertaUsoConDocumentacionVencida(p: Parte): Alerta {
 
 function alertaParteSinEnviar(p: Parte, conductores: readonly Conductor[]): Alerta {
   const quien = conductores.find((c) => c.id === p.conductorId);
-  const sufijo = quien === undefined ? "" : ` (empezado por ${nombreCorto(quien.nombre)})`;
   return operacion({
     id: `parte-sin-enviar:${p.id}`,
     tipo: "parte-sin-enviar",
     gravedad: "media",
-    texto: `Parte del ${formatearFecha(p.fecha)} sin enviar${sufijo}`,
+    texto: TEXTO_ALERTA.parteSinEnviar(p.fecha, quien === undefined ? null : nombreCorto(quien.nombre)),
     fecha: p.fecha,
     unidadId: p.unidadId,
     conductorId: p.conductorId,
@@ -290,7 +289,7 @@ function alertaSinParte(u: Unidad, ayer: FechaCivil): Alerta {
     id: `sin-parte:${u.id}:${ayer}`,
     tipo: "sin-parte",
     gravedad: "media",
-    texto: `Sin parte de ayer (${formatearFecha(ayer)})`,
+    texto: TEXTO_ALERTA.sinParte(ayer),
     fecha: ayer,
     unidadId: u.id,
   });
