@@ -108,6 +108,11 @@ progress {
   accent-color: var(--c-acento);
 }
 
+/* Con un diálogo modal abierto el fondo no se desplaza (lo pone y lo saca Dialogo.svelte). */
+html.dialogo-abierto {
+  overflow: hidden;
+}
+
 /* ---------- Tonos de estado: una sola definición; la usan etiquetas, franjas, avisos y mensajes ---------- */
 [data-tono="critico"] {
   --tono-t: var(--c-critico-t);

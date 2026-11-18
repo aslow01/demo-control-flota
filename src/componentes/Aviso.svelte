@@ -65,6 +65,9 @@
     min-width: 0;
     line-height: 1.5;
   }
+  .texto :global(p + p) {
+    margin-top: var(--e-1);
+  }
   .acciones {
     display: flex;
     flex: none;

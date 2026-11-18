@@ -41,6 +41,13 @@ export const ICONOS = [
 
 export type NombreIcono = (typeof ICONOS)[number];
 
+/** Una opción del diálogo "¿Quién completa el parte?". `unidad` es la patente con espacios (`ZK 214 BD`) o `null` si no tiene. */
+export interface OpcionConductor {
+  id: string;
+  nombre: string;
+  unidad: string | null;
+}
+
 /** La pestaña de la barra de la aplicación que corresponde a la pantalla actual. */
 export type SeccionActiva = "alertas" | "flota" | "conductor" | null;
 

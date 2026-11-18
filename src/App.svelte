@@ -7,24 +7,110 @@
   import BarraApp from "./componentes/BarraApp.svelte";
   import BarraSuperior from "./componentes/BarraSuperior.svelte";
   import Boton from "./componentes/Boton.svelte";
+  import DialogoComoFunciona from "./componentes/DialogoComoFunciona.svelte";
+  import DialogoConductor from "./componentes/DialogoConductor.svelte";
+  import DialogoReiniciar from "./componentes/DialogoReiniciar.svelte";
   import EtiquetaDemo from "./componentes/EtiquetaDemo.svelte";
+  import Icono from "./componentes/Icono.svelte";
   import Pie from "./componentes/Pie.svelte";
-  import { TEXTO_MARCO } from "./componentes/textos-marco.ts";
-  import type { ItemMenu, SeccionActiva } from "./componentes/tipos.ts";
+  import { TEXTO_MARCO, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
+  import type { ItemMenu, OpcionConductor, SeccionActiva } from "./componentes/tipos.ts";
+  import { formatearPatente } from "./lib/dominio/patente.ts";
   import { TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
   import { app } from "./lib/estado/instancia.ts";
 
   const TITULO_BASE = `${TEXTO_MARCO.nombreApp} (demo)`;
   const MINUTO_MS = 60_000;
 
-  // ---------- Acciones del marco (barra superior y menú "Más") ----------
-  // TODO(3.4): "Cómo funciona" y "Reiniciar demo" abren diálogos (5.17) que todavía no existen; hasta entonces no hacen nada.
-  function abrirComoFunciona(): void {}
-  function pedirReinicio(): void {}
-  // TODO(3.4): elegir "Conductor" o "Cambiar" abre el diálogo "¿Quién completa el parte?"; el estado ya tiene `cambiarPerfil`.
-  function pedirConductor(): void {}
+  // ---------- Diálogos (5.17): "Cómo funciona", "Reiniciar demo" y "¿Quién completa el parte?" ----------
+  let comoFunciona = $state(false);
+  let reiniciar = $state(false);
+  let elegirConductor = $state(false);
 
-  // Con el arranque en error no hay almacenamiento donde actuar: solo se ofrece recargar (en `main`).
+  // A dónde va el foco al cerrar un diálogo cuando el botón que lo abrió ya no sirve (o cuando hay una pantalla nueva): el h1.
+  let irAlTitulo = false;
+  function destinoDelFoco(): HTMLElement | null {
+    if (!irAlTitulo) return null;
+    irAlTitulo = false;
+    return document.querySelector<HTMLElement>("main h1");
+  }
+
+  function abrirComoFunciona(): void {
+    comoFunciona = true;
+  }
+
+  // Reiniciar demo. Con la demo cargada el error se muestra dentro del diálogo; desde la pantalla de error de arranque (fase "error")
+  // el diálogo se cierra y el mensaje queda junto a "Recargar la página". La fase pasa por "arrancando" mientras trabaja.
+  let reiniciando = $state(false);
+  let errorAlReiniciar = $state("");
+  let errorAlReiniciarDesdeError = $state("");
+  let anuncio = $state("");
+
+  function pedirReinicio(): void {
+    errorAlReiniciar = "";
+    reiniciar = true;
+  }
+  async function confirmarReinicio(): Promise<void> {
+    if (reiniciando) return;
+    const desdeError = app.fase === "error";
+    reiniciando = true;
+    errorAlReiniciar = "";
+    const r = await app.reiniciar();
+    reiniciando = false;
+    if (r.ok) {
+      errorAlReiniciarDesdeError = "";
+      anuncio = TEXTO_REINICIO.hecho;
+      irAlTitulo = desdeError;
+      reiniciar = false;
+    } else if (desdeError) {
+      errorAlReiniciarDesdeError = r.error.mensaje;
+      reiniciar = false;
+    } else {
+      errorAlReiniciar = r.error.mensaje;
+    }
+  }
+
+  // Elegir "Conductor" (o "Cambiar"): diálogo con la lista de conductores activos y su unidad.
+  let cambiandoPerfil = $state(false);
+  let errorAlElegirConductor = $state("");
+  const conductores = $derived<OpcionConductor[]>(
+    app.estado === null
+      ? []
+      : app.estado.conductores
+          .filter((c) => c.activo)
+          .map((c) => {
+            const unidad = app.estado?.unidades.find((u) => u.conductorId === c.id && u.estado.tipo !== "baja");
+            return { id: c.id, nombre: c.nombre, unidad: unidad === undefined ? null : formatearPatente(unidad.patente) };
+          }),
+  );
+  const conductorActual = $derived(app.perfil.tipo === "conductor" ? app.perfil.conductorId : null);
+
+  function pedirConductor(): void {
+    errorAlElegirConductor = "";
+    elegirConductor = true;
+  }
+  async function confirmarConductor(conductorId: string): Promise<void> {
+    if (cambiandoPerfil) return;
+    cambiandoPerfil = true;
+    errorAlElegirConductor = "";
+    const r = await app.cambiarPerfil({ tipo: "conductor", conductorId });
+    cambiandoPerfil = false;
+    if (r.ok) {
+      irAlTitulo = true; // cambió la pantalla: el foco va a su título, no al selector
+      elegirConductor = false;
+    } else {
+      errorAlElegirConductor = r.error.mensaje;
+    }
+  }
+
+  // Elegir "Encargado" no lleva diálogo; si falla, el mensaje queda en un aviso.
+  let errorAlCambiarVista = $state("");
+  async function elegirEncargado(): Promise<void> {
+    const r = await app.cambiarPerfil({ tipo: "encargado" });
+    errorAlCambiarVista = r.ok ? "" : r.error.mensaje;
+  }
+
+  // Con el arranque en error no hay almacenamiento donde actuar desde la barra: ahí se ofrece recargar o reiniciar (en `main`).
   const acciones = $derived<ItemMenu[]>(
     app.fase === "lista"
       ? [
@@ -55,7 +141,7 @@
   const nombreDeLaPantalla = $derived(app.titulo.replace(/ · .*$/, ""));
 
   function elegirPerfil(tipo: "encargado" | "conductor"): void {
-    if (tipo === "encargado") void app.cambiarPerfil({ tipo: "encargado" });
+    if (tipo === "encargado") void elegirEncargado();
     else pedirConductor();
   }
 
@@ -137,7 +223,7 @@
         alElegirPerfil={elegirPerfil}
         alCambiarConductor={pedirConductor}
       />
-      {#if app.avisos.length > 0 || app.hayCambiosEnOtraPestana}
+      {#if app.avisos.length > 0 || app.hayCambiosEnOtraPestana || errorAlCambiarVista !== ""}
         <div class="avisos contenedor">
           {#each app.avisos as aviso (aviso.tipo)}
             {#if aviso.tipo === "sin-almacenamiento"}
@@ -157,11 +243,15 @@
           {/each}
           {#if app.hayCambiosEnOtraPestana}
             <Aviso tono="quincena" icono="reiniciar">
-              {TEXTO_AVISO.cambiosEnOtraPestana}{#if errorAlActualizar !== ""}{" "}{errorAlActualizar}{/if}
+              <p>{TEXTO_AVISO.cambiosEnOtraPestana}</p>
+              {#if errorAlActualizar !== ""}<p class="error-aviso">{errorAlActualizar}</p>{/if}
               {#snippet accion()}
                 <Boton variante="secundario" onclick={actualizar}>{TEXTO_MARCO.actualizar}</Boton>
               {/snippet}
             </Aviso>
+          {/if}
+          {#if errorAlCambiarVista !== ""}
+            <Aviso tono="critico" icono="vencido" rol="alert" alCerrar={() => (errorAlCambiarVista = "")}>{errorAlCambiarVista}</Aviso>
           {/if}
         </div>
       {/if}
@@ -183,7 +273,13 @@
         <h1 tabindex="-1">{TEXTO_ERROR_ARRANQUE.titulo}</h1>
       </div>
       <p class="parrafo">{app.errorDeArranque}</p>
-      <div><Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton></div>
+      {#if errorAlReiniciarDesdeError !== ""}
+        <p class="error-vista parrafo" role="alert"><Icono nombre="vencido" /><span>{errorAlReiniciarDesdeError}</span></p>
+      {/if}
+      <div class="acciones-error">
+        <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
+        <Boton variante="secundario" onclick={pedirReinicio}>{TEXTO_MARCO.reiniciarDemo}</Boton>
+      </div>
     {:else}
       <!-- Marcador: las pantallas llegan en los pasos 4.x. Cada una trae su propio h1 con tabindex="-1". -->
       <div class="encabezado">
@@ -196,6 +292,28 @@
 
   <Pie />
 </div>
+
+<!-- Lo que pasó sin que se vea en pantalla (por ejemplo, "Demo reiniciada"), para lectores de pantalla. -->
+<div class="solo-lectores" role="status">{anuncio}</div>
+
+<!-- Diálogos al final del body (5.17). -->
+<DialogoComoFunciona bind:abierto={comoFunciona} />
+<DialogoReiniciar
+  bind:abierto={reiniciar}
+  cargando={reiniciando}
+  error={errorAlReiniciar}
+  focoDestino={destinoDelFoco}
+  alConfirmar={confirmarReinicio}
+/>
+<DialogoConductor
+  bind:abierto={elegirConductor}
+  {conductores}
+  elegidoInicial={conductorActual}
+  cargando={cambiandoPerfil}
+  error={errorAlElegirConductor}
+  focoDestino={destinoDelFoco}
+  alConfirmar={confirmarConductor}
+/>
 
 <style>
   .pagina {
@@ -229,6 +347,24 @@
     .solo-angosto {
       display: none;
     }
+  }
+  .acciones-error {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e-3);
+  }
+  .error-vista {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--e-2);
+    font-weight: 600;
+    color: var(--c-critico-t);
+  }
+  .error-vista :global(.icono) {
+    margin-top: 0.2rem;
+  }
+  .error-aviso {
+    font-weight: 600;
   }
   .preparando {
     display: flex;

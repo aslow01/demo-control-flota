@@ -2,7 +2,9 @@
   // Página de muestras de los componentes de 3.2 (solo en desarrollo, ver muestras.html). Datos ficticios.
   // Sirve para mirar cada pieza en claro y oscuro, a 360 y 1280 px, y para recorrerlas con teclado.
   import Boton from "../componentes/Boton.svelte";
+  import BotonConfirmar from "../componentes/BotonConfirmar.svelte";
   import Campo from "../componentes/Campo.svelte";
+  import Dialogo from "../componentes/Dialogo.svelte";
   import Dato from "../componentes/Dato.svelte";
   import Etiqueta from "../componentes/Etiqueta.svelte";
   import Icono from "../componentes/Icono.svelte";
@@ -87,6 +89,12 @@
   let corto = $state("");
   let proyecto = $state("a");
   let grande = $state("84320");
+
+  // Diálogo y confirmación
+  let dialogoDemo = $state(false);
+  let dialogoDemoKm = $state("84320");
+  let dialogoDemoTexto = $state("");
+  let descartes = $state(0);
 
   // Botones
   let guardando = $state(false);
@@ -217,6 +225,22 @@
       </Boton>
       <span class="nota">Variante peligro tras el primer clic (la confirmación en dos pasos la maneja la pantalla).</span>
     </div>
+  </Panel>
+
+  <Panel titulo="Diálogo y confirmación en dos pasos" meta="5.17 y 5.1">
+    <div class="fila-muestra">
+      <Boton variante="secundario" onclick={() => (dialogoDemo = true)}>Abrir un diálogo con campos</Boton>
+      <BotonConfirmar texto="Descartar borrador" textoConfirmar="Confirmar: descartar" alConfirmar={() => (descartes += 1)} />
+      <span class="nota">Descartes confirmados: <span class="num">{descartes}</span> (el segundo clic en menos de 500 ms se ignora).</span>
+    </div>
+    <Dialogo titulo="Corregir kilometraje" bind:abierto={dialogoDemo} hayCambios={dialogoDemoTexto !== ""}>
+      <Campo etiqueta="Nuevo kilometraje" tipo="km" requerido bind:valor={dialogoDemoKm} />
+      <Campo etiqueta="Motivo" tipo="area" bind:valor={dialogoDemoTexto} ayuda="Escriba algo y pruebe Esc: pide confirmar el descarte." />
+      <p class="parrafo nota">{"Texto de relleno para forzar el desplazamiento interno del diálogo. ".repeat(14)}</p>
+      {#snippet pie()}
+        <Boton onclick={() => (dialogoDemo = false)}>Guardar corrección</Boton>
+      {/snippet}
+    </Dialogo>
   </Panel>
 
   <Panel titulo="Campos de formulario" meta="5.11">

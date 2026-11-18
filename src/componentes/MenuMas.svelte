@@ -31,7 +31,8 @@
   }
 
   function activar(item: ItemMenu): void {
-    cerrar(false);
+    // El foco vuelve al botón "Más" antes de la acción: si abre un diálogo, ese es el disparador al que se regresa.
+    cerrar(true);
     item.alActivar();
   }
 </script>
