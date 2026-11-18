@@ -9,14 +9,25 @@
 // - Los comandos se hacen de a uno (cola de promesas): un doble clic no puede aplicar dos veces sobre el mismo estado viejo.
 // - Todo lo que toca el navegador entra por `DependenciasApp`, así esto se prueba en Node con dobles.
 
-import { ENCARGADA } from "../datos/generador.ts";
+import { EMPRESA, ENCARGADA } from "../datos/generador.ts";
 import { calcularAlertas, type ResultadoAlertas } from "../dominio/alertas.ts";
 import { ejecutar as ejecutarComando, type Comando, type Ejecucion } from "../dominio/comandos.ts";
-import { ERRORES, TEXTO_ERROR_ARRANQUE } from "../dominio/textos.ts";
-import { fallo, ok, type Estado, type FechaCivil, type Perfil, type Resultado } from "../dominio/tipos.ts";
+import {
+  comandoDeCargar,
+  comandoDeRenovar,
+  errorGeneral,
+  erroresDeNegocio,
+  etiquetaDeTitular,
+  validarValores,
+  type ErroresDeFormulario,
+  type ValoresDocumento,
+} from "../dominio/formulario-documento.ts";
+import { ERRORES, TEXTO_ERROR_ARRANQUE, textoDocumentoCargado, textoDocumentoRenovado, textoQuedanVencimientos } from "../dominio/textos.ts";
+import { fallo, ok, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
 import { arrancar, cambiarPerfil as guardarPerfil, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
 import type { Repositorio } from "../persistencia/repositorio.ts";
+import { centroDeAlertas, contarVencimientos, type CentroDeAlertas } from "./centro-alertas.ts";
 import { aHash, nombreDePantalla, resolverRuta, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
 import { generarId } from "./ids.ts";
 import type { Reloj } from "./reloj.ts";
@@ -38,6 +49,15 @@ export interface DependenciasApp {
 }
 
 export type FaseApp = "arrancando" | "lista" | "error";
+
+/**
+ * Resultado de guardar desde un diálogo de documento. Con `ok: false` el diálogo no se cierra y muestra `errores`; el texto
+ * escrito se conserva. Con `ok: true`, `mensaje` va a la barra de estado del panel y `foco` dice dónde cae el foco al cerrar:
+ * la fila que abrió el diálogo ya no existe (la alerta se resolvió o cambió de documento), así que va al título del panel (5.17).
+ */
+export type ResultadoGuardadoDocumento =
+  | { ok: true; mensaje: string; foco: "titulo-del-panel" }
+  | { ok: false; errores: ErroresDeFormulario };
 
 /** El perfil Conductor solo usa los comandos del parte (docs/diseno.md, sección 8). No es seguridad: es la perspectiva. */
 const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarParte", "descartarBorrador"]);
@@ -72,6 +92,10 @@ export class EstadoApp {
   titulo = $derived(tituloDePagina(this.ruta));
   /** El centro de alertas, recalculado solo cuando cambian los datos o el día. */
   alertas = $derived<ResultadoAlertas | null>(this.estado === null ? null : calcularAlertas(this.estado, this.hoy));
+  /** Todo lo que dibuja el centro de alertas (6.1), recalculado con cada cambio; `null` hasta que termina el arranque. */
+  centroDeAlertas = $derived<CentroDeAlertas | null>(
+    this.estado === null || this.alertas === null ? null : centroDeAlertas(this.estado, this.alertas, this.hoy, EMPRESA.nombre),
+  );
   /** Nombre con el que firman los eventos: el conductor elegido o la encargada. */
   autor = $derived.by(() => {
     const perfil = this.perfil;
@@ -235,6 +259,41 @@ export class EstadoApp {
       this.pestanas?.avisarCambio();
       return resultado;
     });
+  }
+
+  // --- Diálogos de documentos (paso 4.2) -----------------------------------------------------------
+
+  /**
+   * «Renovar documento»: revisa todos los campos, ejecuta `renovarDocumento` (cambios y evento en una escritura) y actualiza el
+   * estado sin recargar. Nunca rechaza: los errores vuelven repartidos por campo (o como error general) para el formulario.
+   */
+  renovarDocumento(documentoId: string, valores: ValoresDocumento): Promise<ResultadoGuardadoDocumento> {
+    return this.guardarDocumento(valores, comandoDeRenovar(documentoId, valores), (despues) => {
+      const nuevo = despues.documentos.find((d) => d.reemplazaA === documentoId);
+      return nuevo === undefined ? null : textoDocumentoRenovado(nuevo.tipo, etiquetaDeTitular(despues, nuevo.titular));
+    });
+  }
+
+  /** «Cargar documento» (un obligatorio que falta, o uno nuevo): igual que `renovarDocumento`. */
+  cargarDocumento(titular: Titular, tipoDocumento: TipoDocumento, valores: ValoresDocumento): Promise<ResultadoGuardadoDocumento> {
+    return this.guardarDocumento(valores, comandoDeCargar(titular, tipoDocumento, valores), (despues) =>
+      textoDocumentoCargado(tipoDocumento, etiquetaDeTitular(despues, titular)),
+    );
+  }
+
+  private async guardarDocumento(
+    valores: ValoresDocumento,
+    comando: Comando,
+    texto: (despues: Estado) => string | null,
+  ): Promise<ResultadoGuardadoDocumento> {
+    if (this.estado === null) return { ok: false, errores: errorGeneral(ERRORES.sinDatos) };
+    const previos = validarValores(valores, this.hoy);
+    if (previos !== null) return { ok: false, errores: previos };
+    const r = await this.ejecutar(comando);
+    if (!r.ok) return { ok: false, errores: erroresDeNegocio(r.error) };
+    const quedan = this.alertas === null ? null : textoQuedanVencimientos(contarVencimientos(this.alertas));
+    const hecho = texto(r.valor.estado);
+    return { ok: true, mensaje: [hecho, quedan].filter((t) => t !== null).join(" "), foco: "titulo-del-panel" };
   }
 
   /** D6 y D11: elige el perfil, lo guarda sin marcar la demo como modificada y va al inicio de ese perfil. */

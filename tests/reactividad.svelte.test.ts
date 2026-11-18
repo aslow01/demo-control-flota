@@ -62,4 +62,22 @@ describe("reactividad del estado de la aplicación", () => {
     const { app } = await iniciada();
     expect(() => structuredClone(app.estado)).not.toThrow();
   });
+  it("renovar un documento vuelve a correr los efectos que leen el centro de alertas (el protagonista baja de 4 a 3 sin recargar)", async () => {
+    const { app } = await iniciada();
+    const seguro = app.estado?.documentos.find((d) => d.tipo === "seguro" && d.vence === "2026-11-17");
+    if (seguro === undefined) throw new Error("falta el caso C01");
+    const vistas: string[] = [];
+    const limpiar = $effect.root(() => {
+      $effect(() => {
+        const c = app.centroDeAlertas;
+        if (c !== null) vistas.push(`${c.protagonista.cifra}|${c.vencimientos.total}`);
+      });
+    });
+    await tick();
+    const r = await app.renovarDocumento(seguro.id, { numero: "DEMO-NUEVO-1", emisor: "", vence: "2027-11-18", emitido: "" });
+    await tick();
+    limpiar();
+    expect(r.ok).toBe(true);
+    expect(vistas).toEqual(["4|11", "3|10"]);
+  });
 });

@@ -754,3 +754,27 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   se distinguirían varias). Sin caja, sin escala, `aria-hidden`. Si la unidad no tiene nada en 30 días, pista sin marcas y sin texto de vacío.
   (4) *Vacío:* una pista «vacía» es la que no tiene marcas, aunque haya vencidos (la caja y el `aria-label` los dicen). (5) *Qué cuenta:* solo
   alertas de la categoría vencimientos; las de operación no. En la ficha, solo las de esa unidad (las del conductor tienen `unidadId` nulo).
+- **Centro de alertas y diálogos Renovar y Cargar, lógica (paso 4.2, 18/11/2026).** `estado/centro-alertas.ts` (vista armada), `dominio/formulario-documento.ts`
+  (diálogos) y `EstadoApp` (`centroDeAlertas`, `renovarDocumento`, `cargarDocumento`) no agregan reglas: reusan `calcularAlertas`, `aptitud` y los comandos.
+  Lo que la especificación no fijaba, con el criterio más conservador:
+  (1) *Orden del protagonista* («por prioridad», 6.1): primero las unidades en servicio que no pueden salir y después las fuera de servicio; cada grupo por patente.
+  Tope de 6; «Ver las N en la flota» dice el total (N = todas las del protagonista, no las que faltan) y enlaza a `#/flota` **sin filtro**: la flota (4.3) todavía
+  no tiene el filtro «No pueden salir» + «Fuera de servicio»; cuando lo tenga, el enlace lo lleva.
+  (2) *«Vencimientos · 11»* cuenta también los vencidos y faltantes (2 + 4 + 3 + 2 del ejemplo), igual que «Todos» y que «Quedan 10 vencimientos».
+  (3) *Fila de «novedad abierta» en Operación diaria:* dice la antigüedad de la más antigua («1 novedad abierta hace 9 días»; con varias: «3 novedades abiertas, la más
+  antigua hace 9 días»). El resto de las filas solo lleva la cantidad.
+  (4) *Titular de un conductor* en la lista: su nombre, «Conductor» en la segunda línea (la especificación dice «Licencia», que no vale para la habilitación de manejo) y,
+  si tiene unidad asignada, el enlace a su ficha; el proyecto es el de esa unidad (si no tiene, «—»).
+  (5) *Detalle de operación:* «Qué pasó» es el texto de la alerta tal como lo arma el dominio (ya incluye «parte del 16/11/2026»); «Fecha» repite esa fecha sola. «Estado»
+  usa las etiquetas de 5.7 (Crítica, Abierta, Sin enviar, Sin parte, Con documentación vencida). Acciones: «Resolver» (la novedad; el diálogo es del paso 4.4, hasta
+  entonces la fila ofrece su `href` de ficha), «Abrir parte» (al parte de esa fecha) y «Ver ficha».
+  (6) *Diálogos.* El primario y el título siguen 5.17 («Renovar: Seguro de ZK 214 BD», «Guardar renovación», «Guardar documento»); «Cargar» lleva el mismo título con «Cargar:».
+  La línea de contexto dice «póliza» para el seguro y «número» para el resto («Vigente: número DEMO-RT-1234, vence el 25/11/2026 (en 7 días).»). `contextoDeRenovar`
+  devuelve `null` si el documento ya no es el vigente (se renovó en otra pestaña o ya) y `contextoDeCargar` si ya hay uno vigente: en ese caso no hay diálogo que abrir.
+  El `select` «Tipo» de «Cargar otro documento» (ficha) es del paso 4.4.
+  (7) *Errores por campo.* El dominio devuelve solo el primer error; para decir todo junto (resumen de 5.15) `validarValores` corre **los mismos validadores** del dominio
+  sobre cada campo (número, emisor, vencimiento, emisión) antes de ejecutar; lo que depende de dos campos (V10, emisión posterior al vencimiento) lo dice el comando. Un error
+  sin campo del diálogo (guardado, documento ya reemplazado, tipo ya cargado, sin permiso, sin datos) va como error general. El texto escrito no se toca.
+  (8) *Foco al guardar bien:* siempre al título (`h2`) del panel de vencimientos. La fila que abrió el diálogo no puede seguir existiendo: su alerta se resuelve, o pasa a
+  ser la del documento nuevo (otro id), aunque la renovación siga alertando dentro de los 30 días. Al cancelar, el foco vuelve al botón (lo resuelve la vista).
+  (9) *Mensaje de la barra de estado:* «Seguro de ZK 214 BD renovado. Quedan 10 vencimientos.» (género según el documento); se arma con el estado ya actualizado.

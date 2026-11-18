@@ -392,3 +392,154 @@ export const TEXTO_PARTE = {
   /** Aviso del panel «Parte enviado» cuando hubo una novedad crítica. */
   enviadoConCritica: "La unidad quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
 } as const;
+
+// ---------------------------------------------------------------------------------------------
+// Centro de alertas (docs/diseno-ui.md, 6.1 y 7) y diálogos Renovar y Cargar documento (5.17). `redactor-ux` los revisa.
+// ---------------------------------------------------------------------------------------------
+
+/** Rótulos fijos del centro de alertas (los que llevan números se arman con las funciones de abajo). */
+export const TEXTO_CENTRO = {
+  titulo: "Centro de alertas",
+  bajada: "Datos ficticios de una empresa inventada. Todo se guarda en este navegador.",
+  protagonista: "No pueden salir hoy",
+  operacion: "Operación diaria",
+  operacionVacia: "Sin pendientes de operación.",
+  /** Barra de estado de «Operación diaria»: el botón-texto cambia la vista a Conductor, y el texto lo dice. */
+  conductor: { intro: "Así lo carga el conductor:", accion: "Abrir el parte diario", aclaracion: "(cambia la vista a Conductor)" },
+  vencimientos: "Vencimientos",
+  vencimientosVacio: "No hay vencimientos en los próximos 30 días.",
+  grupoVacio: "No hay documentos en este grupo.",
+  detalle: "Operación diaria: detalle",
+  /** Etiqueta de las columnas de las listas sin valor (documento faltante). */
+  sinFecha: "—",
+} as const;
+
+/** Títulos de los grupos de la lista de vencimientos (sin la cantidad) y rótulos cortos de los filtros (sección 7). */
+export const TEXTO_GRUPO_VENCIMIENTOS = {
+  vencidos: { titulo: "Vencidos y faltantes", filtro: "Vencidos y faltantes" },
+  "7": { titulo: "Vencen en 7 días o menos", filtro: "7 días o menos" },
+  "15": { titulo: "Vencen entre 8 y 15 días", filtro: "8 a 15 días" },
+  "30": { titulo: "Vencen entre 16 y 30 días", filtro: "16 a 30 días" },
+} as const;
+
+/** Etiqueta de estado de cada tipo de alerta de operación (5.7). */
+export const TEXTO_ESTADO_OPERACION = {
+  "novedad-critica": "Crítica",
+  "uso-con-documentacion-vencida": "Con documentación vencida",
+  "parte-sin-enviar": "Sin enviar",
+  "sin-parte": "Sin parte",
+  "novedad-abierta": "Abierta",
+} as const;
+
+/** Título de cada grupo del detalle de operación, sin la cantidad. */
+export const TEXTO_GRUPO_OPERACION = {
+  "novedad-critica": "Novedades críticas",
+  "uso-con-documentacion-vencida": "Circuló con documentación vencida",
+  "parte-sin-enviar": "Partes sin enviar",
+  "sin-parte": "Sin parte de ayer",
+  "novedad-abierta": "Novedades abiertas",
+} as const;
+
+/** «Unidades» junto a la cifra del protagonista: «1 unidad», «4 unidades» (con 0, «unidades»). */
+export function palabraUnidades(n: number): "unidad" | "unidades" {
+  return n === 1 ? "unidad" : "unidades";
+}
+
+/** Para lectores de pantalla: la frase completa en un solo texto, con punto final. */
+export function textoProtagonistaLector(n: number): string {
+  return `${textoProtagonista(n)}.`;
+}
+
+/** «Ver las 9 en la flota». */
+export function textoVerTodasEnLaFlota(n: number): string {
+  return `Ver las ${n} en la flota`;
+}
+
+/** Cabecera del panel de operación: «6 pendientes». */
+export function textoPendientes(n: number): string {
+  return pluralizar(n, "pendiente", "pendientes");
+}
+
+/** Cabecera del panel de vencimientos: «próximos 30 días · 11». */
+export function textoRotuloVencimientos(n: number): string {
+  return `próximos 30 días · ${n}`;
+}
+
+/** Región `role="status"` del filtro (5.8): «Mostrando 4 de 11 vencimientos.». */
+export function textoMostrando(mostrados: number, total: number): string {
+  return `Mostrando ${mostrados} de ${pluralizar(total, "vencimiento", "vencimientos")}.`;
+}
+
+/** Título de un grupo con su cantidad: «Vencidos y faltantes (2)». */
+export function textoGrupoConCantidad(titulo: string, n: number): string {
+  return `${titulo} (${n})`;
+}
+
+/** Fila del panel de operación diaria: «1 novedad crítica abierta», «2 unidades sin parte de ayer». */
+export function textoFilaOperacion(tipo: keyof typeof TEXTO_ESTADO_OPERACION, n: number, diasLaMasAntigua: number | null): string {
+  const uno = n === 1;
+  switch (tipo) {
+    case "novedad-critica":
+      return `${n} ${uno ? "novedad crítica abierta" : "novedades críticas abiertas"}`;
+    case "uso-con-documentacion-vencida":
+      return `${n} ${uno ? "circuló" : "circularon"} con documentación vencida`;
+    case "parte-sin-enviar":
+      return `${n} ${uno ? "parte" : "partes"} sin enviar`;
+    case "sin-parte":
+      return `${n} ${uno ? "unidad" : "unidades"} sin parte de ayer`;
+    case "novedad-abierta": {
+      const antiguedad = diasLaMasAntigua === null ? "" : ` hace ${pluralizar(diasLaMasAntigua, "día", "días")}`;
+      if (uno) return `1 novedad abierta${antiguedad}`;
+      return `${n} novedades abiertas${antiguedad === "" ? "" : `, la más antigua${antiguedad}`}`;
+    }
+  }
+}
+
+/** Nombre accesible de los botones de la lista de vencimientos: «Renovar seguro de ZK 214 BD». */
+export function textoAccionDocumento(accion: "Renovar" | "Cargar", tipo: TipoDocumento, titular: string): string {
+  const nombre = NOMBRES_DOCUMENTO[tipo];
+  return `${accion} ${nombre.charAt(0).toLowerCase()}${nombre.slice(1)} de ${titular}`;
+}
+
+/** Documentos de nombre femenino (el resto es masculino): para «renovado» y «renovada». */
+const DOCUMENTO_FEMENINO: ReadonlySet<TipoDocumento> = new Set([
+  "revision-tecnica",
+  "matafuego",
+  "habilitacion-proyecto",
+  "licencia",
+  "habilitacion-manejo",
+]);
+
+function concordar(tipo: TipoDocumento, masculino: string, femenino: string): string {
+  return DOCUMENTO_FEMENINO.has(tipo) ? femenino : masculino;
+}
+
+/** Barra de estado después de renovar: «Seguro de ZK 214 BD renovado.» */
+export function textoDocumentoRenovado(tipo: TipoDocumento, titular: string): string {
+  return `${NOMBRES_DOCUMENTO[tipo]} de ${titular} ${concordar(tipo, "renovado", "renovada")}.`;
+}
+
+/** Barra de estado después de cargar: «Habilitación de ingreso al proyecto de ZP 088 KC cargada.» */
+export function textoDocumentoCargado(tipo: TipoDocumento, titular: string): string {
+  return `${NOMBRES_DOCUMENTO[tipo]} de ${titular} ${concordar(tipo, "cargado", "cargada")}.`;
+}
+
+/** Diálogo «Renovar documento» (5.17). */
+export const TEXTO_RENOVAR = {
+  titulo: (nombre: string, titular: string) => `Renovar: ${nombre} de ${titular}`,
+  primario: "Guardar renovación",
+  /** «Vigente: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día).» */
+  vigente: (numero: string, estado: string, sustantivo: string) => `Vigente: ${sustantivo} ${numero}, ${estado}.`,
+  vencio: (vence: FechaCivil, dias: number) => `venció el ${formatearFecha(vence)} (hace ${pluralizar(dias, "día", "días")})`,
+  venceHoy: (vence: FechaCivil) => `vence hoy (${formatearFecha(vence)})`,
+  vence: (vence: FechaCivil, dias: number) => `vence el ${formatearFecha(vence)} (en ${pluralizar(dias, "día", "días")})`,
+} as const;
+
+/** Cómo se llama el documento junto a su número en la línea de contexto: la póliza de un seguro; el resto, «número». */
+export const SUSTANTIVO_NUMERO_DOCUMENTO: Partial<Record<TipoDocumento, string>> = { seguro: "póliza" };
+
+/** Diálogo «Cargar documento» (5.17). */
+export const TEXTO_CARGAR = {
+  titulo: (nombre: string, titular: string) => `Cargar: ${nombre} de ${titular}`,
+  primario: "Guardar documento",
+} as const;

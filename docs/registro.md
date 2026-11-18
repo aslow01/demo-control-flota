@@ -374,3 +374,116 @@ la ficha o el filtro la quieren). Sin `style="…"` en el marcado: solo la direc
 **Pendiente.** No se enchufó en ninguna pantalla: la completa va en el centro de alertas (4.2), la mediana en la ficha (4.4) y la mínima en la flota (4.3). El horizonte mediano de «Cómo funciona» (5.17) falta: necesita un texto de epígrafe (`redactor-ux`) y decidir de dónde salen los datos del ejemplo (no hay una unidad con varios vencimientos en el generador: haría falta lógica o un ejemplo fijo).
 
 **Verificación.** Compilación con `muestras.html` como entrada extra (config temporal, borrada) servida con las cabeceras de `public/_headers`; Playwright (Chromium) en claro y oscuro a 360 y 1280 px: 72 comprobaciones, 0 fallas. Marcas = días de la lista (0, 1, 5, 7, 8, 12, 15, 16, 30) y tramo correcto; `aria-label` idéntico a 5.6; mínima `aria-hidden`, 64 x 12 px; caja arriba/izquierda según el ancho; «30 días» pasa a «30» a menos de 24 rem; sin desplazamiento horizontal; consola sin errores ni avisos; `securitypolicyviolation` sin eventos; forced-colors emulado legible. `npm test`: 724 verdes; `npm run check`: 0; `npm run build`: sin `muestras.html`; `npm run buscar`: sin hallazgos. No probado: Firefox, Safari, lector de pantalla real, contraste alto de Windows real.
+
+## 18/11/2026 (noche, 10) — Paso 4.2 (lógica): centro de alertas y diálogos Renovar y Cargar documento
+
+**Qué se hizo.** Tres piezas, todas sin DOM y sin reglas nuevas (reusan `calcularAlertas`, `aptitud`, los comandos y `textos.ts`): `src/lib/estado/centro-alertas.ts`
+(lo que dibuja 6.1: protagonista, operación diaria, vencimientos con filtros, detalle), `src/lib/dominio/formulario-documento.ts` (contexto, comando y errores por campo de los
+dos diálogos) y dos métodos nuevos más un derivado en `EstadoApp`. `textos.ts` suma los textos (`TEXTO_CENTRO`, `TEXTO_RENOVAR`, `TEXTO_CARGAR` y funciones). 70 tests nuevos, escritos
+primero (`tests/centro-alertas.test.ts` 35, `formulario-documento.test.ts` 21, `centro-alertas-app.test.ts` 13, uno en `reactividad.svelte.test.ts`); tres mutaciones comprobaron que los tests detectan el error.
+Las decisiones que la especificación no cubría están en `diseno.md`, sección 16, última viñeta (nueve puntos). No se tocaron estilos ni componentes.
+
+**API para el maquetador.**
+
+```ts
+// En un componente: `app` es el EstadoApp (estado/instancia.ts). Todo es solo lectura salvo los dos métodos de guardado.
+app.centroDeAlertas: CentroDeAlertas | null            // se recalcula con cada comando y al cambiar el día; null hasta que termina el arranque
+
+interface CentroDeAlertas {
+  titulo: string;                                       // "Centro de alertas"
+  encabezado: { linea: string; bajada: string };        // "Hoy es miércoles 18/11/2026 (hora de Argentina) · Logística Andina Demo S.A. · 23 unidades"
+  protagonista: { titulo; cifra: number; palabra: "unidad" | "unidades"; tono: "critico" | "vigente"; textoLector: string;
+                  items: { unidadId; patente; patenteTexto; interno: "Int. 07"; categoria: "no-puede-salir" | "fuera-de-servicio";
+                           motivo: string; motivos: string[]; href: string }[];          // hasta 6, ya en orden
+                  masEnLaFlota: { texto: "Ver las 9 en la flota"; href } | null; disponibles: string };
+  operacion: { titulo; total; rotuloTotal: "6 pendientes";
+               filas: { tipo; cifra; texto; gravedad; idGrupo: string }[];               // solo tipos con pendientes; idGrupo = id del h3 del detalle
+               vacio: string | null;                                                     // "Sin pendientes de operación."
+               barraEstado: { intro; accion; aclaracion } };
+  vencimientos: { titulo; total; rotuloCantidad: "próximos 30 días · 11"; horizonte: Horizonte;   // el de horizonteCompleto, ya armado
+                  filtros: { id: "todos" | "vencidos" | "7" | "15" | "30"; etiqueta; cantidad }[];
+                  grupos: { id; tono; titulo; tituloConCantidad; cantidad; filas: FilaVencimiento[] }[];   // los 4, también vacíos
+                  textoVacio: string };
+  detalle: { titulo; grupos: { tipo; idGrupo; titulo; tituloConCantidad; cantidad; filas: FilaOperacion[] }[] };   // solo con pendientes
+}
+// FilaVencimiento: { alertaId, tipo, grupo, gravedad, estado, documento, numero | null, titular: TitularDeFila, proyecto | null, vence: "17/11/2026" | "—",
+//                    accion: { tipo: "renovar" | "cargar", etiqueta, nombreAccesible, documentoId | null, titular, tipoDocumento } }
+// TitularDeFila:  { tipo: "unidad", patente, patenteTexto, interno, descripcion, href } | { tipo: "conductor", nombre, detalle: "Conductor", unidad: { patenteTexto, href } | null }
+// FilaOperacion:  { alertaId, gravedad, estado, texto, unidad: { unidadId, patente, patenteTexto, interno, href }, fecha,
+//                   accion: { tipo: "resolver", etiqueta, nombreAccesible, novedadId } | { tipo: "abrir-parte" | "ver-ficha", etiqueta, nombreAccesible, href } }
+
+// estado/centro-alertas.ts
+vencimientosVisibles(panel: PanelVencimientos, filtro: IdFiltro): { grupos: GrupoVencimientos[]; textoVacio: string | null; anuncio: string }
+//   el filtro es estado de la vista ($state "todos"); `anuncio` va al role="status" ("Mostrando 4 de 11 vencimientos.")
+
+// dominio/formulario-documento.ts (para abrir un diálogo con los datos de la fila)
+contextoDeRenovar(estado, documentoId, hoy): { documentoId, titulo, contexto, nombreDocumento, titularEtiqueta, valoresIniciales, primario } | null
+contextoDeCargar(estado, titular, tipoDocumento): { titular, tipoDocumento, titulo, nombreDocumento, titularEtiqueta, valoresIniciales, primario } | null
+//   null = no hay diálogo que abrir (el documento ya no es el vigente / ya existe). valoresIniciales: { numero, emisor, vence, emitido }, todos texto.
+CAMPOS_DOCUMENTO = ["numero", "emisor", "vence", "emitido"]     // orden del formulario y del resumen de errores
+
+// Guardar (EstadoApp). Nunca rechazan: devuelven el resultado.
+app.renovarDocumento(documentoId: string, valores: ValoresDocumento): Promise<ResultadoGuardadoDocumento>
+app.cargarDocumento(titular: Titular, tipoDocumento: TipoDocumento, valores: ValoresDocumento): Promise<ResultadoGuardadoDocumento>
+type ResultadoGuardadoDocumento =
+  | { ok: true; mensaje: string; foco: "titulo-del-panel" }      // mensaje -> barra de estado del panel: "Seguro de ZK 214 BD renovado. Quedan 10 vencimientos."
+  | { ok: false; errores: ErroresDeFormulario };
+interface ErroresDeFormulario {
+  porCampo: Partial<Record<"numero" | "emisor" | "vence" | "emitido", string>>;   // aria-invalid + mensaje sobre cada campo
+  lista: { campo; mensaje }[];                                                    // el mismo contenido en orden de formulario, para el resumen (5.15)
+  general: string | null;                                                         // error sin campo (guardado, documento ya reemplazado, sin permiso): arriba del formulario
+}
+```
+
+```svelte
+<script lang="ts">
+  import { app } from "../lib/estado/instancia.ts";
+  import { vencimientosVisibles, type IdFiltro } from "../lib/estado/centro-alertas.ts";
+  import { contextoDeRenovar } from "../lib/dominio/formulario-documento.ts";
+
+  const c = $derived(app.centroDeAlertas);
+  let filtro = $state<IdFiltro>("todos");
+  const v = $derived(c === null ? null : vencimientosVisibles(c.vencimientos, filtro));
+  let estadoBarra = $state("");                       // barra de estado del panel
+  let abierto = $state.raw<ReturnType<typeof contextoDeRenovar>>(null);
+  let valores = $state({ numero: "", emisor: "", vence: "", emitido: "" });
+  let errores = $state.raw<{ porCampo: Record<string, string>; lista: { campo: string; mensaje: string }[]; general: string | null } | null>(null);
+  let titulo: HTMLElement;                            // h2 del panel, tabindex="-1"
+
+  function abrirRenovar(documentoId: string) {
+    if (app.estado === null) return;
+    abierto = contextoDeRenovar(app.estado, documentoId, app.hoy);
+    if (abierto) { valores = { ...abierto.valoresIniciales }; errores = null; }
+  }
+  async function guardar() {
+    if (abierto === null) return;
+    const r = await app.renovarDocumento(abierto.documentoId, valores);
+    if (!r.ok) { errores = r.errores; return; }      // el diálogo no se cierra y el texto escrito se conserva
+    abierto = null;                                    // cerrar el <dialog>
+    estadoBarra = r.mensaje;
+    titulo.focus();                                    // r.foco === "titulo-del-panel"
+  }
+</script>
+{#if c}
+  <p>{c.protagonista.textoLector}</p>
+  {#each c.protagonista.items as u (u.unidadId)}<a href={u.href}>{u.patenteTexto}</a> {u.interno} {u.motivo}{/each}
+  {#if v}{#each v.grupos as g (g.id)}{#each g.filas as f (f.alertaId)}
+    <button onclick={() => f.accion.documentoId && abrirRenovar(f.accion.documentoId)}>{f.accion.etiqueta}</button>
+  {/each}{/each}{/if}
+{/if}
+```
+
+**Cosas para tener en cuenta al maquetar.**
+- La clave de `each` de las filas es `alertaId`. Al renovar, la fila vieja desaparece (aunque el documento nuevo siga alertando, tiene otro `alertaId`): por eso el foco va al `h2` del panel. Al **cancelar**, el foco vuelve al botón que abrió el diálogo (eso lo resuelve la vista).
+- `Cargar` (faltantes) no trae `documentoId`: se abre con `contextoDeCargar(app.estado, f.accion.titular, f.accion.tipoDocumento)` y se guarda con `app.cargarDocumento(f.accion.titular, f.accion.tipoDocumento, valores)`.
+- El texto oculto del botón es `accion.nombreAccesible` («Renovar seguro de ZK 214 BD»).
+- «Resolver» (novedades) es del paso 4.4: hasta entonces la fila puede enlazar a `unidad.href`. «Abrir el parte diario» (barra de estado de operación) cambia el perfil a Conductor: usar el diálogo «¿Quién completa el parte?» que ya existe (3.4).
+- «Ver las N en la flota» enlaza a `#/flota` sin filtro (el filtro es del paso 4.3).
+- Con el perfil Conductor las alertas no se muestran (no ve esa pantalla); si se llegara a guardar igual, el error general dice «Esta acción es solo del encargado…».
+- El guardado puede tardar o fallar (D10): mientras espera conviene deshabilitar el botón primario («Guardando…»); con error general el diálogo sigue abierto y el texto escrito sigue en los campos.
+- Todo el texto sale de `textos.ts`; no hay `{@html}` ni nada que interprete lo que se escribió.
+
+**Verificación.** Aceptación del plan con el ejemplo del generador (fechaBase 2026-11-18): protagonista «4 unidades», vencimientos 2 + 4 + 3 + 2 = 11, 6 pendientes de operación; renovar C01 deja
+3 unidades en «No pueden salir», 10 vencimientos y 3 críticas, sin recargar, con el cambio guardado (documento nuevo y evento `documento-renovado` en una escritura). `npm test`: 794 tests
+(724 + 70), verdes también con `npm run test:tz` (UTC, Asia/Tokyo y America/Los_Angeles); `npm run check`: 0 errores; `npm audit`: 0 vulnerabilidades; `npm run build` y `npm run buscar` sin hallazgos.
+Pendiente: la pantalla (maquetador), «Resolver» y el filtro de la flota (4.3 y 4.4).
