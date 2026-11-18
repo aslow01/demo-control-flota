@@ -359,3 +359,18 @@ El color de la marca sale de `data-tramo` (`--c-semana-r`, `--c-quincena-r`, `--
 la ficha o el filtro la quieren). Sin `style="…"` en el marcado: solo la directiva `style:grid-column-start`.
 
 **Verificación.** `npm test`: 724 tests (695 + 29), verdes también con `npm run test:tz` (UTC, Asia/Tokyo y America/Los_Angeles); `npm run check`: 0 errores; `npm audit`: 0 vulnerabilidades; `npm run build` y `npm run buscar` sin hallazgos. Pendiente para el maquetador: forced-colors y CSP en el navegador, y el horizonte mediano de «Cómo funciona» (se puede alimentar con `horizonteCompleto` sobre el estado del generador).
+
+## 18/11/2026 (noche, 9) — Paso 4.1 (pantalla): Horizonte, tres variantes (maquetador)
+
+**Qué se hizo.** `src/componentes/Horizonte.svelte` (un solo componente, prop `horizonte`: lo que devuelven `horizonteCompleto`, `horizonteDeUnidad` y `horizonteMinimo`). Sin cambios en la lógica ni en los tokens. La página de muestras (`muestras.html`, solo desarrollo) suma el panel «Horizonte de vencimientos»: la completa con el ejemplo del generador (semilla 20261118, hoy 2026-11-18) y la lista de vencimientos al lado para comparar, la completa vacía, con solo vencidos y con seis el mismo día (aro hueco), la mediana (con y sin marcas), la mínima dentro de una tabla y la completa en un contenedor de 20 rem.
+
+**Decisiones donde la especificación no dice (diferencias a revisar).**
+- La mediana crece si hace falta: pista de 2 rem como mínimo, pero 4 marcas apiladas miden 38 px. La mínima no dibuja nada si no hay marca (la celda sigue sin horizonte, 5.9).
+- El rótulo «30 días» termina donde termina la pista (no empieza en la columna 30, no cabría); la línea punteada sí queda al comienzo de esa columna.
+- Con la caja arriba (menos de 30 rem) la caja es una fila: rótulo a la izquierda y cifra a la derecha. El texto de pista vacía lleva fondo de pista para tapar las líneas punteadas.
+- Colores forzados: marcas, línea de «Hoy», líneas punteadas y bordes en `CanvasText`; aro hueco con fondo `Canvas`; tramos sólido, discontinuo y punteado. Sin colores nuevos: `npm run contraste` queda en 158 mediciones, 0 fallan.
+- La posición sale de `style:grid-column-start`/`-end` (Svelte lo asigna por CSSOM: el atributo aparece en el DOM, pero la CSP no da violaciones). No hay `style="…"` en el marcado.
+
+**Pendiente.** No se enchufó en ninguna pantalla: la completa va en el centro de alertas (4.2), la mediana en la ficha (4.4) y la mínima en la flota (4.3). El horizonte mediano de «Cómo funciona» (5.17) falta: necesita un texto de epígrafe (`redactor-ux`) y decidir de dónde salen los datos del ejemplo (no hay una unidad con varios vencimientos en el generador: haría falta lógica o un ejemplo fijo).
+
+**Verificación.** Compilación con `muestras.html` como entrada extra (config temporal, borrada) servida con las cabeceras de `public/_headers`; Playwright (Chromium) en claro y oscuro a 360 y 1280 px: 72 comprobaciones, 0 fallas. Marcas = días de la lista (0, 1, 5, 7, 8, 12, 15, 16, 30) y tramo correcto; `aria-label` idéntico a 5.6; mínima `aria-hidden`, 64 x 12 px; caja arriba/izquierda según el ancho; «30 días» pasa a «30» a menos de 24 rem; sin desplazamiento horizontal; consola sin errores ni avisos; `securitypolicyviolation` sin eventos; forced-colors emulado legible. `npm test`: 724 verdes; `npm run check`: 0; `npm run build`: sin `muestras.html`; `npm run buscar`: sin hallazgos. No probado: Firefox, Safari, lector de pantalla real, contraste alto de Windows real.

@@ -7,10 +7,16 @@
   import Dialogo from "../componentes/Dialogo.svelte";
   import Dato from "../componentes/Dato.svelte";
   import Etiqueta from "../componentes/Etiqueta.svelte";
+  import Horizonte from "../componentes/Horizonte.svelte";
   import Icono from "../componentes/Icono.svelte";
   import Panel from "../componentes/Panel.svelte";
   import Patente from "../componentes/Patente.svelte";
   import { ICONOS, type NombreIcono, type Tono } from "../componentes/tipos.ts";
+  import { SEMILLA_POR_DEFECTO, generar } from "../lib/datos/generador.ts";
+  import { calcularAlertas, type Alerta } from "../lib/dominio/alertas.ts";
+  import { horizonteCompleto, horizonteDeUnidad, horizonteMinimo } from "../lib/dominio/horizonte.ts";
+  import { formatearPatente } from "../lib/dominio/patente.ts";
+  import type { Grupo } from "../lib/dominio/vencimientos.ts";
 
   const colores: { grupo: string; nombres: string[] }[] = [
     {
@@ -77,6 +83,55 @@
     { nombre: "tabla", variable: "--t-tabla", texto: "Seguro · DEMO-88-4471 · 17/11/2026" },
     { nombre: "chico", variable: "--t-chico", texto: "Ayudas, rótulos y segunda línea." },
   ];
+
+  // Horizonte (5.6): el ejemplo del generador (semilla fija y "hoy" fijo) y casos armados a mano para los bordes.
+  const HOY_MUESTRA = "2026-11-18";
+  const estadoMuestra = generar(SEMILLA_POR_DEFECTO, HOY_MUESTRA);
+  const alertasMuestra = calcularAlertas(estadoMuestra, HOY_MUESTRA);
+  const vencimientosMuestra = alertasMuestra.alertas.filter((a) => a.categoria === "vencimientos");
+  const patenteDe = (a: Alerta): string => {
+    const u = estadoMuestra.unidades.find((x) => x.id === a.unidadId);
+    if (u !== undefined) return formatearPatente(u.patente);
+    return estadoMuestra.conductores.find((c) => c.id === a.conductorId)?.nombre ?? "";
+  };
+
+  function alertaDeEjemplo(id: string, d: number, unidadId: string): Alerta {
+    const grupo: Grupo = d < 0 ? "vencidos" : d <= 7 ? "7" : d <= 15 ? "15" : "30";
+    return {
+      id,
+      categoria: "vencimientos",
+      tipo: d < 0 ? "documento-vencido" : "documento-por-vencer",
+      gravedad: d < 0 ? "critica" : d <= 7 ? "media" : "baja",
+      grupo,
+      texto: "",
+      unidadId,
+      conductorId: null,
+      documentoId: id,
+      tipoDocumento: "seguro",
+      d,
+      fecha: null,
+    };
+  }
+  const deEjemplo = (unidadId: string, dias: number[]): { alertas: Alerta[] } => ({
+    alertas: dias.map((d, i) => alertaDeEjemplo(`${unidadId}-${i}`, d, unidadId)),
+  });
+
+  const horizonteDelEjemplo = horizonteCompleto(alertasMuestra);
+  const horizonteVacio = horizonteCompleto({ alertas: [] });
+  const horizonteSoloVencidos = horizonteCompleto(deEjemplo("u-x", [-3, -1]));
+  // Seis el mismo día: cuatro apiladas (tres llenas y un aro) y el día 30 pegado al borde derecho.
+  const horizonteApilado = horizonteCompleto(deEjemplo("u-x", [0, 5, 5, 5, 5, 5, 5, 7, 8, 15, 16, 30, 30, -2]));
+  const diasUnidad = [-3, 0, 5, 5, 12, 22, 30];
+  const horizonteUnidad = horizonteDeUnidad(deEjemplo("u-demo", diasUnidad), "u-demo");
+  const horizonteUnidadVacio = horizonteDeUnidad(deEjemplo("u-demo", [-3]), "u-demo");
+  const filasMinima: { unidad: string; texto: string; dias: number[] }[] = [
+    { unidad: "ZK 214 BD", texto: "Revisión técnica · hoy", dias: [0, 6, 20] },
+    { unidad: "ZYN 469", texto: "Seguro · en 6 días", dias: [6] },
+    { unidad: "ZI 442 TU", texto: "Carga del matafuego · en 12 días", dias: [12, 12] },
+    { unidad: "ZM 904 EB", texto: "Habilitación · en 30 días", dias: [30] },
+    { unidad: "ZEP 235", texto: "Seguro vencido (sin horizonte)", dias: [-4] },
+  ];
+  const minimas = filasMinima.map((f, i) => ({ ...f, horizonte: horizonteMinimo(deEjemplo(`u-${i}`, f.dias), `u-${i}`) }));
 
   // Campos
   let texto = $state("DEMO-88-4471");
@@ -192,6 +247,60 @@
         <li><Etiqueta tono={e.tono} icono={e.icono}>{e.texto}</Etiqueta></li>
       {/each}
     </ul>
+  </Panel>
+
+  <Panel titulo="Horizonte de vencimientos" meta="5.6, paso 4.1" icono="calendario">
+    <h3>Completa: el ejemplo del generador ({HOY_MUESTRA})</h3>
+    <div class="muestra-horizonte" data-muestra="completa">
+      <Horizonte horizonte={horizonteDelEjemplo} />
+    </div>
+    <table class="tabla-muestra" data-muestra="lista">
+      <caption class="nota">Los vencimientos de la lista, para comparar con las marcas (día 0 = hoy).</caption>
+      <thead>
+        <tr><th scope="col" class="rotulo">Día</th><th scope="col" class="rotulo">Vencimiento</th><th scope="col" class="rotulo">Unidad o conductor</th></tr>
+      </thead>
+      <tbody>
+        {#each vencimientosMuestra as a (a.id)}
+          <tr>
+            <th scope="row" class="num">{a.d === null ? "—" : a.d}</th>
+            <td>{a.texto}</td>
+            <td>{patenteDe(a)}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+
+    <h3>Completa sin vencimientos próximos</h3>
+    <div class="muestra-horizonte" data-muestra="vacia"><Horizonte horizonte={horizonteVacio} /></div>
+
+    <h3>Completa con solo vencidos</h3>
+    <div class="muestra-horizonte" data-muestra="solo-vencidos"><Horizonte horizonte={horizonteSoloVencidos} /></div>
+
+    <h3>Completa con seis el mismo día (el aro hueco es «y más»)</h3>
+    <div class="muestra-horizonte" data-muestra="apilada"><Horizonte horizonte={horizonteApilado} /></div>
+
+    <h3>Mediana: ficha de una unidad (con un vencido)</h3>
+    <div class="muestra-horizonte" data-muestra="mediana"><Horizonte horizonte={horizonteUnidad} /></div>
+    <div class="muestra-horizonte" data-muestra="mediana-vacia"><Horizonte horizonte={horizonteUnidadVacio} /></div>
+
+    <h3>Mínima: columna «Próximo vencimiento» de la flota</h3>
+    <table class="tabla-muestra" data-muestra="minima">
+      <caption class="solo-lectores">Ejemplo del horizonte mínimo en una tabla</caption>
+      <thead>
+        <tr><th scope="col" class="rotulo">Unidad</th><th scope="col" class="rotulo">Próximo vencimiento</th></tr>
+      </thead>
+      <tbody>
+        {#each minimas as f (f.unidad)}
+          <tr>
+            <th scope="row"><span class="codigo">{f.unidad}</span></th>
+            <td class="celda-minima"><Horizonte horizonte={f.horizonte} /> <span>{f.texto}</span></td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+
+    <h3>Completa en un contenedor de 20 rem (la caja pasa arriba, «30 días» pasa a «30»)</h3>
+    <div class="angosto muestra-horizonte" data-muestra="angosta"><Horizonte horizonte={horizonteDelEjemplo} /></div>
   </Panel>
 
   <Panel titulo="Botones" meta="5.1">
@@ -458,5 +567,13 @@
 
   .angosto {
     max-width: 20rem;
+  }
+  .muestra-horizonte {
+    padding-block: var(--e-1);
+  }
+  .celda-minima {
+    display: flex;
+    align-items: center;
+    gap: var(--e-3);
   }
 </style>

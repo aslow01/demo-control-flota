@@ -64,7 +64,7 @@ Orden pensado para que cada paso use solo lo anterior.
 
 | Paso | Pantalla | Hecho cuando |
 | --- | --- | --- |
-| 4.1 | Horizonte (5.6) en sus tres variantes, con datos del generador. | Las marcas caen en el día correcto (comparado con la lista); `aria-label` correcto; colores forzados legibles; CSP limpia. |
+| 4.1 | **Lógica y componente hechos (18/11/2026); falta enchufarlo en 4.2 a 4.4.** Horizonte (5.6) en sus tres variantes, con datos del generador. | Las marcas caen en el día correcto (comparado con la lista); `aria-label` correcto; colores forzados legibles; CSP limpia. |
 | 4.2 | Centro de alertas (6.1) + diálogos Renovar y Cargar documento. | Con el ejemplo: protagonista "4 unidades", 11 vencimientos en los grupos esperados, 6 pendientes de operación. Renovar C01 lo saca de la lista y de "No pueden salir" sin recargar; el foco cae donde dice 5.17. |
 | 4.3 | Flota (6.2) + Agregar unidad. | Búsqueda "zk214" encuentra la unidad; filtros y orden; alta nueva aparece con sus faltantes (U5). |
 | 4.4 | Ficha (6.3) + diálogos restantes (resolver novedad, fuera de servicio, volver a servicio, corregir kilometraje, cambiar asignación, dar de baja, corregir documento, cargar novedad). | Cada comando de la sección 8 se ejecuta desde la interfaz y su evento aparece arriba del historial. A4 y N2 visibles con C11. |
