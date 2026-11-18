@@ -1,9 +1,11 @@
 <script lang="ts">
   // 5.18 Aviso global: franja a lo ancho del contenido, con borde izquierdo del tono, ícono, texto y, a la derecha
-  // (o debajo a menos de 40 rem), su acción. Es role="status" (se anuncia sin interrumpir); el de "modo en memoria" al
-  // arrancar usa rol="alert" para anunciarse una vez. El que se puede cerrar lleva "Cerrar aviso" (`alCerrar`).
+  // (o debajo a menos de 40 rem), su acción. No lleva rol propio: va dentro del contenedor `role="status"` de la cabecera
+  // (siempre presente, así lo que llega con la página abierta se anuncia). `rol="alert"` solo para el error de una acción
+  // de la persona, que se inserta suelto. El que se puede cerrar lleva "Cerrar aviso" (`alCerrar`); al cerrarlo el foco pasa
+  // al aviso siguiente (o al anterior) y, si no queda ninguno, al h1: nunca se pierde en el `body`.
   // El texto va como contenido; la acción, como el fragmento `accion`.
-  import type { Snippet } from "svelte";
+  import { tick, type Snippet } from "svelte";
   import Boton from "./Boton.svelte";
   import Icono from "./Icono.svelte";
   import { TEXTO_MARCO } from "./textos-marco.ts";
@@ -12,28 +14,45 @@
   let {
     tono,
     icono,
-    rol = "status",
+    rol,
     alCerrar,
     accion,
     children,
   }: {
     tono: Tono;
     icono: NombreIcono;
-    rol?: "status" | "alert";
+    rol?: "alert";
     alCerrar?: () => void;
     accion?: Snippet;
     children: Snippet;
   } = $props();
+
+  let raiz = $state<HTMLElement | null>(null);
+
+  function cerrar(): void {
+    const vecinos = [raiz?.nextElementSibling, raiz?.previousElementSibling];
+    alCerrar?.();
+    void tick().then(() => {
+      for (const vecino of vecinos) {
+        const control = vecino?.isConnected === true ? vecino.querySelector<HTMLElement>("button, a[href]") : null;
+        if (control) {
+          control.focus();
+          return;
+        }
+      }
+      document.querySelector<HTMLElement>("main h1")?.focus();
+    });
+  }
 </script>
 
-<div class="aviso" role={rol} data-tono={tono}>
+<div class="aviso" role={rol} data-tono={tono} bind:this={raiz}>
   <span class="icono-aviso"><Icono nombre={icono} /></span>
   <div class="texto">{@render children()}</div>
   {#if accion !== undefined || alCerrar !== undefined}
     <div class="acciones" class:con-accion={accion !== undefined}>
       {#if accion !== undefined}{@render accion()}{/if}
       {#if alCerrar !== undefined}
-        <Boton variante="icono" icono="cerrar" etiqueta={TEXTO_MARCO.cerrarAviso} onclick={alCerrar} />
+        <Boton variante="icono" icono="cerrar" etiqueta={TEXTO_MARCO.cerrarAviso} onclick={cerrar} />
       {/if}
     </div>
   {/if}

@@ -2,8 +2,8 @@
   // 5.4 Panel: barra de título (identifica) · herramientas (actúan, opcionales) · interior · barra de estado (informa).
   // Sin plegar y sin `overflow: hidden` (cortaría los anillos de foco). El marco nunca cambia de color por el estado de los datos.
   //
-  // - `titulo` es un h2 con tabindex="-1": el diálogo base (5.17) le devuelve el foco si el botón que lo abrió desapareció.
-  //   Su id se puede fijar con `id`; si no, se genera uno.
+  // - `titulo` es un h2 con tabindex="-1": la pantalla que abre un diálogo lo pasa como `focoDestino` del diálogo para que el foco
+  //   vuelva ahí si el botón que lo abrió desapareció (5.17; el diálogo solo conoce el h1 de la página). Su id se puede fijar con `id`.
   // - `estado` es el texto de la barra de estado (role="status"). La región existe siempre, vacía mide 0 y el mensaje
   //   no desaparece solo: lo reemplaza la acción siguiente.
   // - El interior es un contenedor de consultas (`interior`) para que las tablas cambien de disposición por su ancho.

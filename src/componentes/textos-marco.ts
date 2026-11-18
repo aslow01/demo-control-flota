@@ -24,11 +24,15 @@ export const TEXTO_MARCO = {
   perfilEncargado: "Encargado",
   perfilConductor: "Conductor",
   conductorElegido: (nombre: string) => `Conductor: ${nombre} (persona ficticia)`,
-  cambiarConductor: "Cambiar",
+  /** Aviso previo (descripción del grupo "Ver como"): elegir Conductor abre un diálogo (WCAG 3.2.2). */
+  ayudaPerfilConductor: "Al elegir «Conductor» se abre una lista para elegir quién completa el parte.",
+  cambiarConductor: "Cambiar conductor",
   cerrarAviso: "Cerrar aviso",
   actualizar: "Actualizar",
   recargar: "Recargar la página",
-  pantallaEnPreparacion: "Esta pantalla todavía no está hecha.",
+  pantallaEnPreparacion: "Esta pantalla todavía no está disponible.",
+  /** Se anuncia a los lectores de pantalla si el arranque llegó a mostrar "Preparando la flota de ejemplo…". */
+  listo: "Flota de ejemplo lista.",
 } as const;
 
 /** Diálogo base (5.17). */
@@ -57,7 +61,7 @@ export const TEXTO_ELEGIR_CONDUCTOR = {
   leyenda: "Conductores",
   unidad: (patente: string) => `Unidad ${patente}`,
   sinUnidad: "Sin unidad asignada",
-  continuar: "Continuar",
+  continuar: "Ver como este conductor",
   elegir: "Elija quién completa el parte.",
 } as const;
 
@@ -72,20 +76,23 @@ export const TEXTO_COMO_FUNCIONA = {
   reglas: [
     {
       etiqueta: "Vencido o faltante",
-      texto: "El documento ya venció o no está cargado. Si es obligatorio para la unidad, la unidad no puede salir.",
+      texto:
+        "El documento venció o, si es obligatorio, falta cargarlo. Si es de la unidad, la unidad figura como «No puede salir». Si es del conductor, no la bloquea: avisa al enviar el parte.",
     },
-    { etiqueta: "7 días o menos", texto: "Vence hoy o dentro de la semana." },
+    { etiqueta: "7 días o menos", texto: "Vence hoy o en los próximos 7 días. Hasta el día del vencimiento incluido, la unidad puede salir." },
     { etiqueta: "8 a 15 días", texto: "Hay que planificar la renovación." },
-    { etiqueta: "16 a 30 días", texto: "Está en el horizonte del mes." },
+    { etiqueta: "16 a 30 días", texto: "Vence dentro del mes." },
+    { etiqueta: "Más de 30 días", texto: "Sin alerta." },
   ],
   tituloParte: "El parte diario",
   parte:
-    "El conductor completa el parte desde el celular: kilometraje, combustible y 10 puntos de revisión. Si informa una novedad en un punto crítico, la unidad queda fuera de servicio hasta que el encargado la revise.",
+    "Está pensada para usarse desde el celular: el conductor carga el kilometraje, 10 puntos de revisión y, si cargó, el combustible. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
   tituloDatos: "Dónde se guardan los datos",
   datos:
-    "Solo en este navegador: nada se envía a ningún servidor. «Reiniciar demo» vuelve a la flota de ejemplo con las fechas de hoy.",
+    "Los datos que usted carga quedan solo en este navegador y no se envían a ningún servidor. «Reiniciar demo» borra esos cambios y vuelve a la flota de ejemplo con las fechas de hoy.",
   tituloVerComo: "«Ver como»",
-  verComo: "Es solo un punto de vista de la demo: no hay usuarios ni contraseñas.",
+  verComo:
+    "Cambia entre encargado y conductor para probar cada parte de la demo. El conductor solo completa el parte. No hay usuarios ni contraseñas: no protege nada.",
   entendido: "Entendido",
 } as const;
 

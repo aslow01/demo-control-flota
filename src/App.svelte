@@ -11,7 +11,6 @@
   import DialogoConductor from "./componentes/DialogoConductor.svelte";
   import DialogoReiniciar from "./componentes/DialogoReiniciar.svelte";
   import EtiquetaDemo from "./componentes/EtiquetaDemo.svelte";
-  import Icono from "./componentes/Icono.svelte";
   import Pie from "./componentes/Pie.svelte";
   import { TEXTO_MARCO, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { ItemMenu, OpcionConductor, SeccionActiva } from "./componentes/tipos.ts";
@@ -23,9 +22,9 @@
   const MINUTO_MS = 60_000;
 
   // ---------- Diálogos (5.17): "Cómo funciona", "Reiniciar demo" y "¿Quién completa el parte?" ----------
-  let comoFunciona = $state(false);
-  let reiniciar = $state(false);
-  let elegirConductor = $state(false);
+  let dialogoComoFuncionaAbierto = $state(false);
+  let dialogoReiniciarAbierto = $state(false);
+  let dialogoConductorAbierto = $state(false);
 
   // A dónde va el foco al cerrar un diálogo cuando el botón que lo abrió ya no sirve (o cuando hay una pantalla nueva): el h1.
   let irAlTitulo = false;
@@ -35,36 +34,46 @@
     return document.querySelector<HTMLElement>("main h1");
   }
 
-  function abrirComoFunciona(): void {
-    comoFunciona = true;
+  // Lo que pasó y no se ve en pantalla ("Demo reiniciada", "Flota de ejemplo lista"): una región `role="status"` que existe desde el
+  // principio. Se vacía, se escribe unos 250 ms después (cuando el diálogo ya cerró y el foco volvió a su lugar) y se vuelve a vaciar
+  // a los pocos segundos: así cada anuncio es una mutación nueva (también el 2.º y el 3.º) y no queda texto suelto.
+  let anuncio = $state("");
+  let plazoAnuncio: ReturnType<typeof setTimeout> | undefined;
+  let plazoLimpiar: ReturnType<typeof setTimeout> | undefined;
+  function anunciar(texto: string): void {
+    clearTimeout(plazoAnuncio);
+    clearTimeout(plazoLimpiar);
+    anuncio = "";
+    plazoAnuncio = setTimeout(() => {
+      anuncio = texto;
+      plazoLimpiar = setTimeout(() => (anuncio = ""), 6000);
+    }, 250);
   }
 
-  // Reiniciar demo. Con la demo cargada el error se muestra dentro del diálogo; desde la pantalla de error de arranque (fase "error")
-  // el diálogo se cierra y el mensaje queda junto a "Recargar la página". La fase pasa por "arrancando" mientras trabaja.
+  function abrirComoFunciona(): void {
+    dialogoComoFuncionaAbierto = true;
+  }
+
+  // Reiniciar demo (solo con la demo cargada: desde la pantalla de error de arranque la única salida es recargar). El error se
+  // muestra dentro del diálogo, que no se puede cerrar mientras trabaja.
   let reiniciando = $state(false);
   let errorAlReiniciar = $state("");
-  let errorAlReiniciarDesdeError = $state("");
-  let anuncio = $state("");
 
   function pedirReinicio(): void {
     errorAlReiniciar = "";
-    reiniciar = true;
+    dialogoReiniciarAbierto = true;
   }
   async function confirmarReinicio(): Promise<void> {
     if (reiniciando) return;
-    const desdeError = app.fase === "error";
+    const pantallaAntes = app.versionDePantalla;
     reiniciando = true;
     errorAlReiniciar = "";
     const r = await app.reiniciar();
     reiniciando = false;
     if (r.ok) {
-      errorAlReiniciarDesdeError = "";
-      anuncio = TEXTO_REINICIO.hecho;
-      irAlTitulo = desdeError;
-      reiniciar = false;
-    } else if (desdeError) {
-      errorAlReiniciarDesdeError = r.error.mensaje;
-      reiniciar = false;
+      irAlTitulo = app.versionDePantalla !== pantallaAntes; // si cambió la pantalla, el foco va a su título
+      dialogoReiniciarAbierto = false;
+      anunciar(TEXTO_REINICIO.hecho);
     } else {
       errorAlReiniciar = r.error.mensaje;
     }
@@ -87,7 +96,7 @@
 
   function pedirConductor(): void {
     errorAlElegirConductor = "";
-    elegirConductor = true;
+    dialogoConductorAbierto = true;
   }
   async function confirmarConductor(conductorId: string): Promise<void> {
     if (cambiandoPerfil) return;
@@ -97,7 +106,8 @@
     cambiandoPerfil = false;
     if (r.ok) {
       irAlTitulo = true; // cambió la pantalla: el foco va a su título, no al selector
-      elegirConductor = false;
+      errorAlCambiarVista = ""; // un error viejo de "Encargado" ya no corresponde
+      dialogoConductorAbierto = false;
     } else {
       errorAlElegirConductor = r.error.mensaje;
     }
@@ -110,7 +120,7 @@
     errorAlCambiarVista = r.ok ? "" : r.error.mensaje;
   }
 
-  // Con el arranque en error no hay almacenamiento donde actuar desde la barra: ahí se ofrece recargar o reiniciar (en `main`).
+  // Con el arranque en error no hay nada que reiniciar ni que explicar: solo se ofrece recargar (en `main`).
   const acciones = $derived<ItemMenu[]>(
     app.fase === "lista"
       ? [
@@ -150,6 +160,8 @@
   async function actualizar(): Promise<void> {
     const r = await app.actualizar();
     errorAlActualizar = r.ok ? "" : r.error.mensaje;
+    // Con éxito el aviso desaparece (y con él el botón que tenía el foco): si no cambió la pantalla, el foco va al título.
+    if (r.ok) void tick().then(enfocarTitulo);
   }
 
   // ---------- Título, foco y desplazamiento al cambiar de pantalla ----------
@@ -182,6 +194,16 @@
       window.scrollTo(0, 0);
       void tick().then(enfocarTitulo);
     }
+  });
+
+  // "Preparando la flota de ejemplo…" solo se mostró si el arranque tardó: cuando termina, se avisa que está lista.
+  let vioPreparando = false;
+  $effect(() => {
+    if (app.preparando) vioPreparando = true;
+    else if (app.fase === "lista" && vioPreparando) {
+      vioPreparando = false;
+      anunciar(TEXTO_MARCO.listo);
+    } else if (app.fase === "error") vioPreparando = false;
   });
 
   // ---------- Reloj: "hoy" se refresca cada minuto y al volver a la pestaña ----------
@@ -223,11 +245,14 @@
         alElegirPerfil={elegirPerfil}
         alCambiarConductor={pedirConductor}
       />
-      {#if app.avisos.length > 0 || app.hayCambiosEnOtraPestana || errorAlCambiarVista !== ""}
-        <div class="avisos contenedor">
+    {/if}
+    <!-- Región viva siempre presente (vacía, sin relleno): lo que llega con la página abierta (D9) se anuncia como un cambio dentro de ella. -->
+    <div class="avisos contenedor" class:hay={app.fase === "lista" && (app.avisos.length > 0 || app.hayCambiosEnOtraPestana)} role="status">
+      {#if app.fase === "lista"}
+        <div class="lista-avisos">
           {#each app.avisos as aviso (aviso.tipo)}
             {#if aviso.tipo === "sin-almacenamiento"}
-              <Aviso tono="semana" icono="alerta" rol="alert">{TEXTO_AVISO.sinAlmacenamiento}</Aviso>
+              <Aviso tono="semana" icono="alerta">{TEXTO_AVISO.sinAlmacenamiento}</Aviso>
             {:else if aviso.tipo === "datos-de-otra-fecha"}
               <Aviso tono="semana" icono="calendario" alCerrar={() => app.descartarAviso("datos-de-otra-fecha")}>
                 {textoDatosDeOtraFecha(aviso.fechaBase)}
@@ -250,15 +275,18 @@
               {/snippet}
             </Aviso>
           {/if}
-          {#if errorAlCambiarVista !== ""}
-            <Aviso tono="critico" icono="vencido" rol="alert" alCerrar={() => (errorAlCambiarVista = "")}>{errorAlCambiarVista}</Aviso>
-          {/if}
         </div>
       {/if}
+    </div>
+    <!-- El error de una acción de la persona (cambiar de vista) se inserta suelto y se anuncia como alerta. -->
+    {#if app.fase === "lista" && errorAlCambiarVista !== ""}
+      <div class="avisos contenedor hay">
+        <Aviso tono="critico" icono="vencido" rol="alert" alCerrar={() => (errorAlCambiarVista = "")}>{errorAlCambiarVista}</Aviso>
+      </div>
     {/if}
   </header>
 
-  <main id="principal" class="contenedor">
+  <main id="principal" class="contenedor" tabindex="-1">
     {#if app.fase === "arrancando"}
       <!-- 5.19: nada durante 300 ms; después, el texto y un <progress> indeterminado. La región existe desde el principio para que se anuncie. -->
       <div class="preparando" role="status">
@@ -273,9 +301,6 @@
         <h1 tabindex="-1">{TEXTO_ERROR_ARRANQUE.titulo}</h1>
       </div>
       <p class="parrafo">{app.errorDeArranque}</p>
-      {#if errorAlReiniciarDesdeError !== ""}
-        <p class="error-vista parrafo" role="alert"><Icono nombre="vencido" /><span>{errorAlReiniciarDesdeError}</span></p>
-      {/if}
       <div class="acciones-error">
         <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
       </div>
@@ -296,16 +321,16 @@
 <div class="solo-lectores" role="status">{anuncio}</div>
 
 <!-- Diálogos al final del body (5.17). -->
-<DialogoComoFunciona bind:abierto={comoFunciona} />
+<DialogoComoFunciona bind:abierto={dialogoComoFuncionaAbierto} />
 <DialogoReiniciar
-  bind:abierto={reiniciar}
+  bind:abierto={dialogoReiniciarAbierto}
   cargando={reiniciando}
   error={errorAlReiniciar}
   focoDestino={destinoDelFoco}
   alConfirmar={confirmarReinicio}
 />
 <DialogoConductor
-  bind:abierto={elegirConductor}
+  bind:abierto={dialogoConductorAbierto}
   {conductores}
   elegidoInicial={conductorActual}
   cargando={cambiandoPerfil}
@@ -321,11 +346,14 @@
     min-height: 100vh;
     min-height: 100dvh;
   }
-  .avisos {
+  /* La región viva existe siempre; sin avisos no ocupa lugar. */
+  .avisos.hay {
+    padding-block: var(--e-3) 0;
+  }
+  .lista-avisos {
     display: flex;
     flex-direction: column;
     gap: var(--e-2);
-    padding-block: var(--e-3) 0;
   }
   main {
     display: flex;
@@ -351,16 +379,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--e-3);
-  }
-  .error-vista {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--e-2);
-    font-weight: 600;
-    color: var(--c-critico-t);
-  }
-  .error-vista :global(.icono) {
-    margin-top: 0.2rem;
   }
   .error-aviso {
     font-weight: 600;

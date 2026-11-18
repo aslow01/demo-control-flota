@@ -1,9 +1,10 @@
 <script lang="ts">
-  // 5.2 Selector de perfil ("Ver como"): fieldset con legend visible y dos radios con aspecto de segmentos.
-  // Es solo un punto de vista de la demo (no hay usuarios ni contraseñas). Navegación con flechas (radios nativos).
-  // El componente no decide nada: avisa lo que se eligió y se mantiene alineado con el perfil que recibe. Si quien lo usa
-  // no cambia el perfil (por ejemplo, porque primero hay que elegir quién es el conductor), el segmento vuelve a como estaba.
-  // Con conductor elegido, debajo del selector va "Conductor: {nombre} (ficticia) · Cambiar".
+  // 5.2 Selector de perfil ("Ver como"): grupo con leyenda visible y dos botones con aspecto de segmentos (aria-pressed).
+  // Son botones y no radios nativos a propósito: elegir "Conductor" abre un diálogo, y con radios una flecha del teclado lo abriría de
+  // golpe (WCAG 3.2.2). Con botones se cambia activando (Enter, Espacio o toque), y la leyenda se describe con un aviso previo.
+  // Es solo un punto de vista de la demo (no hay usuarios ni contraseñas).
+  // El componente no decide nada: avisa lo que se eligió y refleja el perfil que recibe (sin parpadeos: no hay estado propio).
+  // Con conductor elegido, debajo del selector va "Conductor: {nombre} (persona ficticia) · Cambiar conductor".
   import Boton from "./Boton.svelte";
   import { TEXTO_MARCO } from "./textos-marco.ts";
 
@@ -26,42 +27,26 @@
     { valor: "conductor", texto: TEXTO_MARCO.perfilConductor },
   ];
 
-  let radios = $state<Record<TipoPerfil, HTMLInputElement | null>>({ encargado: null, conductor: null });
+  const uid = $props.id();
+  const idAyuda = $derived(`${uid}-ayuda`);
 
-  /** Deja los radios como dice el perfil: el navegador ya marcó el que se pulsó, aunque el perfil no haya cambiado. */
-  function sincronizar(): void {
-    for (const o of opciones) {
-      const radio = radios[o.valor];
-      if (radio !== null) radio.checked = o.valor === tipo;
-    }
-  }
-
-  function alCambiar(valor: TipoPerfil): void {
+  function elegir(valor: TipoPerfil): void {
     if (valor !== tipo) alElegir(valor);
-    sincronizar();
   }
 </script>
 
 <div class="selector">
-  <fieldset>
-    <legend>{TEXTO_MARCO.verComo}</legend>
+  <div class="grupo" role="group" aria-labelledby="{uid}-leyenda" aria-describedby={idAyuda}>
+    <span class="leyenda" id="{uid}-leyenda">{TEXTO_MARCO.verComo}</span>
+    <span class="solo-lectores" id={idAyuda}>{TEXTO_MARCO.ayudaPerfilConductor}</span>
     <div class="segmentos">
       {#each opciones as o (o.valor)}
-        <label class="segmento">
-          <input
-            type="radio"
-            name="perfil"
-            class="solo-lectores"
-            value={o.valor}
-            checked={o.valor === tipo}
-            bind:this={radios[o.valor]}
-            onchange={() => alCambiar(o.valor)}
-          />
-          <span>{o.texto}</span>
-        </label>
+        <button type="button" class="segmento" aria-pressed={o.valor === tipo} onclick={() => elegir(o.valor)}>
+          <span>{o.texto}</span>{#if o.valor === "conductor" && tipo !== "conductor"}<span aria-hidden="true">…</span>{/if}
+        </button>
       {/each}
     </div>
-  </fieldset>
+  </div>
   {#if tipo === "conductor" && nombreConductor !== undefined}
     <p class="conductor">
       <span>{TEXTO_MARCO.conductorElegido(nombreConductor)}</span>
@@ -80,17 +65,13 @@
     gap: var(--e-1);
     min-width: 0;
   }
-  fieldset {
+  .grupo {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--e-1) var(--e-3);
   }
-  /* El legend es visible, a la izquierda de los segmentos. Flotado para que quede en el flujo del fieldset. */
-  legend {
-    float: left;
-    padding: 0;
-    margin-right: var(--e-3);
+  .leyenda {
     font-size: var(--t-chico);
     line-height: var(--alto-tactil);
     color: var(--c-texto-2);
@@ -125,17 +106,15 @@
     }
   }
   /* Elegido: fondo suave, texto firme y una línea interior de 3 px del acento (una sola forma de decir "elegido"). */
-  .segmento:has(input:checked) {
+  .segmento[aria-pressed="true"] {
     z-index: 1;
     background: var(--c-acento-suave);
     box-shadow: inset 0 -3px 0 var(--c-acento);
     color: var(--c-texto);
     font-weight: 600;
   }
-  .segmento:has(input:focus-visible) {
+  .segmento:focus-visible {
     z-index: 2;
-    outline: 2px solid var(--c-foco);
-    outline-offset: 2px;
   }
 
   .conductor {
@@ -148,13 +127,11 @@
   }
 
   @media (forced-colors: active) {
-    .segmento:has(input:checked) {
+    .segmento[aria-pressed="true"] {
       background: Highlight;
       color: HighlightText;
+      box-shadow: none;
       forced-color-adjust: none;
-    }
-    .segmento:has(input:focus-visible) {
-      outline-color: Highlight;
     }
   }
 </style>

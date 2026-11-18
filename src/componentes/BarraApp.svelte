@@ -1,6 +1,6 @@
 <script lang="ts">
   // 4.2 Barra de la aplicación (fondo de superficie, borde inferior, 52 px): navegación por pestañas-enlace a la izquierda y
-  // selector de perfil a la derecha (a menos de 40 rem, en una fila propia arriba de la navegación).
+  // selector de perfil a la derecha (a menos de 40 rem, en una fila propia debajo de la navegación: así el orden visual es el del foco).
   //  - Encargado: "Alertas" (con insignia de alertas críticas) · "Flota".  Conductor: "Parte de hoy".
   //  - Pestaña activa: aria-current="page" (la sección que contiene la pantalla actual lleva aria-current="true").
   // Los enlaces son del enrutador por hash: no hay clics que interceptar.
@@ -132,12 +132,11 @@
     align-self: center;
     padding-block: var(--e-2);
   }
-  /* Menos de 40 rem: el selector va arriba, en una fila propia a todo el ancho, y la navegación abajo. */
+  /* Menos de 40 rem: el selector va en una fila propia a todo el ancho, debajo de las pestañas (el orden visual es el del foco). */
   @media (max-width: 39.99rem) {
     .perfil {
-      order: -1;
       flex: 1 0 100%;
-      border-bottom: 1px solid var(--c-borde);
+      border-top: 1px solid var(--c-borde);
     }
     nav {
       flex: 1 0 100%;
