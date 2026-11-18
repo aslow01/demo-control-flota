@@ -5,12 +5,24 @@
   "description": "Control de flota (demo): documentos con vencimiento, parte diario y centro de alertas, en el navegador y con datos ficticios.",
   "type": "module",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json && tsc --noEmit",
     "test": "vitest run",
     "test:tz": "node scripts/test-tz.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "buscar": "node scripts/buscar-prohibidos.mjs",
+    "servir": "node scripts/servir-dist.mjs"
+  },
+  "dependencies": {
+    "svelte": "5.57.3"
   },
   "devDependencies": {
-    "typescript": "7.0.2",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "fake-indexeddb": "6.2.7",
+    "svelte-check": "4.7.8",
+    "typescript": "6.0.3",
     "vite": "8.3.5",
     "vitest": "5.1.0"
   }

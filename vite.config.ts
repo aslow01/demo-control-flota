@@ -1,3 +1,4 @@
+import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vitest/config";
 
 // T2: `npm test` corre por defecto con una zona horaria que NO es la de Argentina, así quien trabaja en Argentina
@@ -8,6 +9,7 @@ const entorno = (globalThis as { process?: { env: Record<string, string | undefi
 if (entorno !== undefined && (entorno["TZ"] === undefined || entorno["TZ"] === "")) entorno["TZ"] = "Asia/Tokyo";
 
 export default defineConfig({
+  plugins: [svelte()],
   build: {
     target: "es2022",
     sourcemap: false,
