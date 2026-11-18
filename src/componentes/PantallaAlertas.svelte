@@ -4,11 +4,13 @@
   // (lib/estado/centro-alertas.ts) y los diálogos usan `contextoDeRenovar`/`contextoDeCargar` y `app.renovarDocumento`/`app.cargarDocumento`.
   //  - Al renovar o cargar bien, la fila desaparece (su alerta se resolvió o pasó a ser la del documento nuevo): el foco va al h2 del panel de
   //    vencimientos y la barra de estado dice qué pasó (5.17). Al cancelar, el foco vuelve al botón que abrió el diálogo (lo hace Dialogo).
-  //  - "Resolver" (novedades) es del paso 4.4: hasta entonces es un enlace a la ficha de la unidad. "Abrir el parte diario" cambia la vista a
-  //    Conductor con el diálogo ya existente (`alAbrirParte`, que lo abre el marco).
+  //  - "Resolver" (novedades) abre el diálogo «Resolver novedad» (el mismo de la ficha, con `contextoDeResolver` y `app.resolverNovedad`): al guardar bien la
+  //    fila desaparece, el mensaje («Novedad resuelta: Frenos (ZU 899 QE).») va a la barra de estado del detalle y el foco, a su título (o al de «Operación
+  //    diaria» si el detalle quedó vacío). "Abrir el parte diario" cambia la vista a Conductor con el diálogo ya existente (`alAbrirParte`, que lo abre el marco).
   //  - Cambiar el filtro anuncia "Mostrando 4 de 11 vencimientos." en una región `role="status"` aparte (la barra de estado del panel es para lo que pasó).
   import { formatearFecha } from "../lib/dominio/fechas.ts";
   import { contextoDeCargar, contextoDeRenovar, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
+  import { contextoDeResolver } from "../lib/dominio/formulario-novedad.ts";
   import type { TipoAlertaOperacion } from "../lib/dominio/alertas.ts";
   import type { ResultadoGuardadoDocumento } from "../lib/estado/app.svelte.ts";
   import {
@@ -22,6 +24,7 @@
   import { aspectoDeOperacion, aspectoDeVencimiento } from "./alertas-aspecto.ts";
   import Boton from "./Boton.svelte";
   import DialogoDocumento, { type ContextoDeDocumento } from "./DialogoDocumento.svelte";
+  import DialogoResolver from "./DialogoResolver.svelte";
   import EnlaceAccion from "./EnlaceAccion.svelte";
   import Etiqueta from "./Etiqueta.svelte";
   import EtiquetaDemo from "./EtiquetaDemo.svelte";
@@ -144,6 +147,33 @@
   function alGuardar(mensaje: string): void {
     estadoVencimientos = mensaje;
     irAlTitulo = true;
+  }
+
+  // ---------- Diálogo Resolver (novedades) ----------
+  let dialogoResolverAbierto = $state(false);
+  let contextoResolver = $state.raw<ReturnType<typeof contextoDeResolver>>(null);
+  let estadoDetalle = $state("");
+  let irAlDetalle = false;
+
+  function abrirResolver(novedadId: string): void {
+    const estado = app.estado;
+    if (estado === null) return;
+    contextoResolver = contextoDeResolver(estado, novedadId, app.hoy);
+    if (contextoResolver === null) {
+      estadoDetalle = T.novedadYaResuelta;
+      return;
+    }
+    dialogoResolverAbierto = true;
+  }
+  function alResolver(r: { mensaje: string }): void {
+    estadoDetalle = r.mensaje;
+    irAlDetalle = true;
+  }
+  /** La fila que abrió el diálogo ya no existe: el foco va al título del detalle o, si quedó vacío, al de «Operación diaria». Al cancelar, `null` (vuelve al botón). */
+  function focoDestinoResolver(): HTMLElement | null {
+    if (!irAlDetalle) return null;
+    irAlDetalle = false;
+    return document.getElementById("titulo-detalle") ?? document.getElementById("titulo-operacion");
   }
 
   /** Al cerrar tras guardar, el botón que abrió el diálogo ya no existe: el foco va al h2 del panel (5.17). Al cancelar, `null` (vuelve al botón). */
@@ -284,37 +314,55 @@
     </Panel>
 
     <!-- 4: detalle de la operación (solo los tipos con pendientes). -->
-    {#if gruposDetalle.length > 0}
-      <Panel id="titulo-detalle" titulo={c.detalle.titulo} icono="novedad">
-        <ListaTabla
-          variante="operacion"
-          titulo={c.detalle.titulo}
-          columnas={columnasOperacion}
-          grupos={gruposDetalle}
-          claveDeFila={(x) => x.fila.alertaId}
-          tonoDeFila={(x) => aspectoDeOperacion(x.tipo).tono}
-        >
-          {#snippet fila(x: FilaDelDetalle)}
-            {@const aspecto = aspectoDeOperacion(x.tipo)}
-            <td {...CELDA} data-col="estado"><Etiqueta tono={aspecto.tono} icono={aspecto.icono}>{x.fila.estado}</Etiqueta></td>
-            <td {...CELDA} data-col="que">{x.fila.texto}</td>
-            <td {...CELDA} data-col="unidad">
-              <span class="linea-titular">
-                <Patente patente={x.fila.unidad.patente} href={x.fila.unidad.href} /><span class="interno">{x.fila.unidad.interno}</span>
-              </span>
-            </td>
-            <td {...CELDA} data-col="fecha" data-etiqueta={T.columnasOperacion.fecha}>{x.fila.fecha}</td>
-            <td {...CELDA} data-col="accion">
-              <EnlaceAccion href={x.fila.accion.tipo === "resolver" ? x.fila.unidad.href : x.fila.accion.href}>
-                {x.fila.accion.etiqueta}<span class="solo-lectores">{sufijoAccesible(x.fila.accion.nombreAccesible, x.fila.accion.etiqueta)}</span>
-              </EnlaceAccion>
-            </td>
-          {/snippet}
-        </ListaTabla>
+    {#if gruposDetalle.length > 0 || estadoDetalle !== ""}
+      <Panel id="titulo-detalle" titulo={c.detalle.titulo} icono="novedad" estado={estadoDetalle}>
+        {#if gruposDetalle.length === 0}
+          <p class="vacio"><Icono nombre="check" />{c.operacion.vacio ?? ""}</p>
+        {:else}
+          <ListaTabla
+            variante="operacion"
+            titulo={c.detalle.titulo}
+            columnas={columnasOperacion}
+            grupos={gruposDetalle}
+            claveDeFila={(x) => x.fila.alertaId}
+            tonoDeFila={(x) => aspectoDeOperacion(x.tipo).tono}
+          >
+            {#snippet fila(x: FilaDelDetalle)}
+              {@const aspecto = aspectoDeOperacion(x.tipo)}
+              <td {...CELDA} data-col="estado"><Etiqueta tono={aspecto.tono} icono={aspecto.icono}>{x.fila.estado}</Etiqueta></td>
+              <td {...CELDA} data-col="que">{x.fila.texto}</td>
+              <td {...CELDA} data-col="unidad">
+                <span class="linea-titular">
+                  <Patente patente={x.fila.unidad.patente} href={x.fila.unidad.href} /><span class="interno">{x.fila.unidad.interno}</span>
+                </span>
+              </td>
+              <td {...CELDA} data-col="fecha" data-etiqueta={T.columnasOperacion.fecha}>{x.fila.fecha}</td>
+              <td {...CELDA} data-col="accion">
+                {#if x.fila.accion.tipo === "resolver"}
+                  {@const accion = x.fila.accion}
+                  <Boton variante="secundario" onclick={() => abrirResolver(accion.novedadId)}>
+                    {accion.etiqueta}<span class="solo-lectores">{sufijoAccesible(accion.nombreAccesible, accion.etiqueta)}</span>
+                  </Boton>
+                {:else}
+                  <EnlaceAccion href={x.fila.accion.href}>
+                    {x.fila.accion.etiqueta}<span class="solo-lectores">{sufijoAccesible(x.fila.accion.nombreAccesible, x.fila.accion.etiqueta)}</span>
+                  </EnlaceAccion>
+                {/if}
+              </td>
+            {/snippet}
+          </ListaTabla>
+        {/if}
       </Panel>
     {/if}
   </div>
 
+  <DialogoResolver
+    bind:abierto={dialogoResolverAbierto}
+    contexto={contextoResolver}
+    guardar={(valores) => app.resolverNovedad(contextoResolver?.novedadId ?? "", valores)}
+    alGuardar={alResolver}
+    focoDestino={focoDestinoResolver}
+  />
   <DialogoDocumento bind:abierto={dialogoAbierto} contexto={contextoDialogo} guardar={guardarDocumento} {alGuardar} {focoDestino} />
 {/if}
 
