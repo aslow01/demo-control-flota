@@ -80,4 +80,34 @@ describe("reactividad del estado de la aplicación", () => {
     expect(r.ok).toBe(true);
     expect(vistas).toEqual(["4|11", "3|10"]);
   });
+  it("la ficha se recalcula sola con cada comando y el mensaje de llegada se va al salir de ella (paso 4.4)", async () => {
+    const ubicacion = ubicacionEnMemoria("#/flota");
+    const app = new EstadoApp({
+      reloj: crearReloj(() => new Date("2026-11-18T15:00:00.000Z")),
+      abrirAlmacenamiento: async () => new RepositorioMemoria(),
+      ubicacion,
+      crearAvisoPestanas: () => ({ avisarCambio() {}, cerrar() {} }),
+    });
+    await app.iniciar();
+    const vistas: string[] = [];
+    const limpiar = $effect.root(() => {
+      $effect(() => {
+        const f = app.fichaDeUnidad;
+        if (f !== null && f.encontrada) vistas.push(`${f.patente}|${f.aptitud.categoria}|${f.historial.total}|${app.mensajeDeLlegada ?? "-"}`);
+      });
+    });
+    await tick();
+    expect(vistas).toEqual([]);
+    const r = await app.agregarUnidad({ patente: "zk 999 aa", interno: "30", tipo: "utilitario", marca: "Peugeot", modelo: "Partner", anio: "2025", proyectoId: "proy-base", conductorId: "" });
+    await tick();
+    expect(r.ok).toBe(true);
+    await app.ponerFueraDeServicio(app.estado!.unidades.find((u) => u.patente === "ZK999AA")!.id, { motivo: "En taller: cambio de embrague" });
+    await tick();
+    ubicacion.irA("#/flota");
+    await tick();
+    limpiar();
+    const mensaje = "Unidad agregada. Le faltan 3 documentos: cárguelos desde aquí.";
+    expect(vistas).toEqual([`ZK999AA|no-puede-salir|1|${mensaje}`, `ZK999AA|fuera-de-servicio|2|${mensaje}`]);
+    expect(app.mensajeDeLlegada).toBeNull();
+  });
 });

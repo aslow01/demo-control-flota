@@ -653,3 +653,124 @@ Pendiente: la pantalla (maquetador), la ficha y el diálogo de cargar documento 
 
 **Verificación.** Playwright (Chromium) contra `npm run build` servido con las cabeceras de `public/_headers` y contra `npm run dev`: 90 comprobaciones en cada uno, 0 fallas: 23 filas, resumen y filtros 23 / 19 / 2 / 2 / 1; «zk214» encuentra ZK 214 BD con el anuncio «Mostrando 1 de 23 unidades.» recién pasada la pausa; cada filtro con su conteo y su anuncio, flechas entre radios, orden por patente e interno, proyecto, vacío «Ninguna unidad coincide con «zz9» en Proyecto Piedra Lunar.» y «Quitar filtros» con el foco en la búsqueda; elegir un radio no cambia el hash; `#/flota?filtro=no-disponibles` muestra las 4 (ZZD 563, ZK 214 BD, ZR 536 MZ, ZU 899 QE) con la opción «No disponibles 4», y se relee estando ya en la flota; con 7 no disponibles, «Ver las 7 en la flota» del centro de alertas lleva a esas 7; vacío → resumen con 7 datos y foco ahí; un error (patente repetida) → foco al campo con el texto conservado y sin resumen; Esc pide confirmar y un segundo Esc sigue editando; alta de ZK 999 AA → diálogo cerrado, foco en su fila, barra «Unidad agregada. Le faltan 4 documentos: cárguelos desde aquí.», 24 filas, «No puede salir» con «Falta cargar: Seguro y 3 motivos más» y «Sin registros», filtros 24 / 19 / 3 / 2 / 1 y el protagonista del centro de alertas en 5; unidad nueva oculta por «De baja» → foco al título y mensaje; recorrido con Tab (Agregar unidad, búsqueda, Proyecto, Ordenar por, filtros, primera patente...); objetivos táctiles ≥ 44 px; claro y oscuro a 360, 768 y 1280 px sin desborde horizontal (tampoco con el diálogo de errores abierto, con el pie a la vista); consola sin errores ni avisos y sin `securitypolicyviolation`; colores forzados emulados legibles. `npm run check`: 0; `npm test`: 919 verdes; `npm run contraste`: 158 mediciones, 0 fallan; `npm run buscar`: sin hallazgos. Capturas `flota-*` en el directorio de trabajo temporal.
 No probado: Firefox y Safari, lector de pantalla real, contraste alto de Windows real, pantalla táctil real, `npm run test:tz` (no cambió lógica).
+
+## 18/11/2026 (noche, 14) — Paso 4.4 (lógica): ficha de unidad y diálogos (resolver novedad, fuera de servicio, volver, kilometraje, asignación, baja, corregir documento, cargar novedad, cargar otro documento)
+
+**Qué se hizo.** Cinco piezas, sin DOM y sin reglas nuevas (reusan `calcularAlertas`, `aptitud`, `kmActual`, `horizonteDeUnidad`, `historialDeUnidad` y los comandos): `src/lib/estado/ficha.ts` (lo que dibuja 6.3 y 5.16, más `vistaDeHistorial`),
+`src/lib/dominio/formulario-novedad.ts` (resolver y cargar novedad), `formulario-ficha.ts` (fuera de servicio, volver a servicio, dar de baja, corregir kilometraje, cambiar proyecto o conductor), `formulario-documento.ts` (suma «Corregir documento» y el `select` Tipo de «Cargar otro documento», pendiente del 4.2)
+y, en `EstadoApp`, `fichaDeUnidad`, `mensajeDeLlegada` y un método por comando. Retoques al dominio para no duplicar: `criticasAbiertasDeUnidad` (el error de A4 y el diálogo salen del mismo texto), `validarFechaNoFutura`, `Motivo.documento` y `ofreceVolverAServicio` (N2). `formulario.ts` ahora también arma las opciones de proyecto y conductor
+(`opcionesDeProyecto`, `opcionesDeConductor`) y reparte errores (`erroresDeNegocioEn`, `errorGeneralEn`); `textos.ts` suma `TEXTO_FICHA`, `TEXTO_DIALOGOS_FICHA` y las funciones de texto. **`agregarUnidad` ahora navega a la ficha** (`#/unidad/…`) y deja el mensaje en `app.mensajeDeLlegada`.
+141 tests nuevos, escritos primero (`ficha.test.ts` 45, `ficha-app.test.ts` 37, `formulario-novedad.test.ts` 13, `formulario-ficha.test.ts` 22, `formulario-documento-ficha.test.ts` 11, `textos-ficha.test.ts` 10, `novedades.test.ts` 1, uno en `aptitud.test.ts` y uno en `reactividad.svelte.test.ts`); siete mutaciones comprobaron que detectan el error
+(N2 sin «última crítica», orden N5, navegación tras el alta, aviso de A5, texto de «Ver más», mensaje de A5; la de `impideVolver` sobrevivía y por eso hay un test con una unidad de baja). Las decisiones que la especificación no cubría están en `diseno.md`, sección 16, última viñeta (trece puntos). No se tocaron estilos ni componentes.
+
+**API para el maquetador.**
+
+```ts
+// estado/ficha.ts — `app.fichaDeUnidad` se recalcula con cada comando y al cambiar el día. null fuera de #/unidad/… o antes de terminar el arranque.
+app.fichaDeUnidad: FichaDeUnidad | FichaNoEncontrada | null
+app.mensajeDeLlegada: string | null         // «Unidad agregada. Le faltan 4 documentos: cárguelos desde aquí.» solo al llegar desde «Agregar unidad»; se va al salir de esa ficha. La barra de estado de la ficha arranca con él.
+FichaNoEncontrada = { encontrada: false; titulo: "No se encontró la unidad" /* h1 */; mensaje: "No hay ninguna unidad con la patente ZZ 999 ZZ."; patenteTexto; enlace: { texto: "Ir a la flota"; href: "#/flota" } }
+FichaDeUnidad = {
+  encontrada: true; unidadId; patente: "ZK214BD"; patenteTexto: "ZK 214 BD"; interno: "Int. 07"; internoNumero: 7; descripcion: "Toyota Hilux 2022 · Camioneta";
+  migas: { texto: "Flota"; href: "#/flota" } | { texto: "ZK 214 BD"; href: null };
+  aptitud: { categoria: "puede-salir"|"no-puede-salir"|"fuera-de-servicio"|"baja"; etiqueta; motivos: string[]; linea: string | null /* «Seguro vencido hace 1 día» o «3 motivos»; null si puede salir o está de baja */; mostrarLista: boolean /* más de 2 motivos */ };
+  datos: { proyecto: string | null; conductor: string | null; km: { valor: number | null; texto: "84.320 km" | "Sin registros"; fecha: "17/11/2026" | null; textoConFecha: "84.320 km (al 17/11/2026)" } };
+  aviso: string | null;                      // solo de baja: «Dada de baja el 21/10/2026: Venta. Se conserva su historial.»
+  estadoOperativo: { tipo: "en-servicio"|"fuera-de-servicio"|"baja"; desde: "16/11/2026" | null; motivo | null; origen: "manual"|"novedad-critica" | null; novedadesQueImpiden: { novedadId; rotulo; origen; texto: "Frenos (parte del 16/11/2026)" }[] /* A4 */ };
+  puedeEditar: boolean;                      // false con el perfil Conductor: no hay ninguna acción
+  acciones: { encabezado: AccionDeFicha[]; masAcciones: AccionDeFicha[] };
+  // AccionDeFicha = { id: "cargar-parte"|"poner-fuera-de-servicio"|"volver-a-servicio"|"corregir-kilometraje"|"cambiar-asignacion"|"cargar-novedad"|"dar-de-baja"; etiqueta; href: string | null /* solo cargar-parte */; bloqueo: string | null /* solo volver-a-servicio con críticas abiertas (A4) */ }
+  documentos: { titulo; rotuloCantidad: "4 · 1 vencido · 1 faltante"; horizonte: Horizonte /* mediana */; cargarOtro: { etiqueta } | null;
+    filas: { clave: TipoDocumento; tipo; nombre; documentoId: string | null; numero | null; emisor | null; emitido | null; vence: "17/11/2026" | "—";
+             estado: { tipo: "faltante"|"vencido"|"por-vencer"|"vigente"; texto: "Vencido hace 1 día"|"Vigente hasta 02/09/2027"|"Falta cargar"; tono: "critico"|"semana"|"quincena"|"mes"|"vigente" };
+             anteriores: { documentoId; numero; emisor | null; vence; cargado }[]; rotuloAnteriores: "Anteriores (1)" | null;
+             acciones: { tipo: "renovar"|"corregir"|"cargar"; etiqueta; nombreAccesible: "Renovar seguro de ZK 214 BD"; documentoId: string | null; tipoDocumento }[] }[] };
+  novedades: { titulo; rotuloCantidad: "0 abiertas"; filtros: { id: "abiertas"|"resueltas"; etiqueta; cantidad }[]; abiertas: FilaNovedad[]; resueltas: FilaNovedad[]; vacioAbiertas; vacioResueltas; cargar: { etiqueta } | null };
+  // FilaNovedad = { novedadId; gravedad; estado: "Crítica"|"Abierta"|"Resuelta"; texto; origen: "Parte del 16/11/2026, punto Frenos"; fecha; impideVolver: boolean /* A4 */; ofreceVolverAServicio: boolean /* N2 */;
+  //                 resolucion: { texto; fecha: "24/10/2026 11:42"; autor } | null; accion: { tipo: "resolver"; etiqueta; nombreAccesible: "Resolver novedad de ZU 899 QE: Frenos"; novedadId } | null }
+  kilometraje: { titulo; rotuloKm: "84.320 km"; subtitulo; vacio: string | null; corregir: { etiqueta } | null;
+                 filas /* hasta 10, la más nueva primero */: { clave; tipo: "parte"|"correccion"; fecha; texto: "84.188 → 84.320"|"Corrección: 120 km"; recorrido: "132 km"|"Sin uso"|null; advertencias: string[] /* K6, K7 aceptadas */; motivo: string | null; href: string | null /* al parte */ }[] };
+  historial: { titulo; rotuloCantidad: "128 eventos"; total; filtros: { id: "todo"|"partes"|"documentos"|"novedades"|"estado-km"; etiqueta; cantidad }[]; eventos: FilaEvento[] };
+  // FilaEvento = { eventoId; secuencia; tipo; icono: "parte"|"documento"|"novedad"|"estado"|"km"|"unidad"|"caja"; categoria; instante: "17/11/2026 18:42"; hora: "18:42"; dia: "2026-11-17"; tituloDia: "Martes 17/11/2026"; resumen; autor;
+  //                detalle: DetalleDeParte | { tipo: "documento-corregido"; cambios: { campo: "Vencimiento"; antes; despues }[] } | null }
+  // DetalleDeParte = { tipo: "parte"; resumenCorto: "Parte enviado · 132 km (84.320 → 84.452) · combustible 3/4 · 1 novedad"; kmInicio; kmFin; recorrido; combustible | null; litros: "45,5 litros"|"Sin carga"; novedades: { rotulo; texto; critica }[]; puntosEnOrden: "8 puntos en orden" | null; advertencias: string[]; fueraDeTermino; href: "#/parte/ZK214BD/2026-11-17" }
+}
+vistaDeHistorial(ficha.historial, filtro: IdFiltroHistorial, limite: number): { grupos: { dia; titulo; eventos: FilaEvento[] }[]; mostrados; total; hayMas; botonVerMas: "Ver 30 más" | null; anuncio: "Mostrando 30 de 128 eventos."; ids: string[]; vacio: string | null }
+PASO_HISTORIAL = 30                         // filtro y límite son estado de la vista; «Ver 30 más»: límite += 30 y el foco al evento ids[límiteAnterior]
+
+// Contextos de los diálogos (todos reciben `app.estado` y devuelven null si no hay diálogo que abrir; `hoy` = app.hoy). Los valores del formulario son siempre texto.
+contextoDeResolver(estado, novedadId, hoy)           // dominio/formulario-novedad.ts · también desde el centro de alertas (accion.novedadId de la fila «Resolver»)
+  → { novedadId; unidadId; titulo: "Resolver novedad de ZK 214 BD"; novedad: { rotulo; texto; origen; fecha; gravedad; etiqueta }; ofreceVolverAServicio; etiquetaVolverAServicio: "Volver a servicio ahora"; notaVolverAServicio | null; avisoDocumentos | null /* A5 */; valoresIniciales: { texto: ""; volverAServicio: boolean /* marcada si se ofrece */ }; primario: "Marcar como resuelta" }
+contextoDeCargarNovedad(estado, unidadId)            // { unidadId; titulo; valoresIniciales: { descripcion: ""; impideUso: false }; etiquetaImpideUso; notaImpideUso; primario: "Guardar novedad" }
+contextoDeFueraDeServicio(estado, unidadId, hoy)     // dominio/formulario-ficha.ts · { unidadId; titulo; desde: "Desde hoy (18/11/2026)."; valoresIniciales: { motivo }; primario }
+contextoDeVolverAServicio(estado, unidadId, hoy)     // { unidadId; titulo; situacion; bloqueo: { texto /* A4 */; novedades; verNovedades: "Ver novedades" } | null; aviso /* A5 */ | null; primario: string | null /* null si hay bloqueo */ }
+contextoDeBaja(estado, unidadId)                     // { unidadId; titulo; aviso; valoresIniciales: { motivo }; primario: "Dar de baja ZK 214 BD"; peligro: true }
+contextoDeKilometraje(estado, unidadId, hoy)         // { unidadId; titulo; ultimoRegistro: "Último registro: 84.320 km (parte del 17/11/2026)."; nota; valoresIniciales: { desde: hoy; kmBase: ""; motivo: "" }; desdeMaxima: hoy; primario }
+contextoDeAsignacion(estado, unidadId)               // { unidadId; titulo; valoresIniciales: { proyectoId; conductorId }; proyectos: {valor; etiqueta}[]; conductores: { valor; etiqueta; asignadoA }[]; primario } + avisoDeAsignacion(estado, unidadId, valores): string | null (U6, al cambiar el select)
+contextoDeCorregir(estado, documentoId)              // dominio/formulario-documento.ts · { documentoId; titulo: "Corregir: Seguro de ZK 214 BD"; nota; nombreDocumento; titularEtiqueta; valoresIniciales: { numero; emisor; vence; emitido }; primario }
+contextoDeCargarOtro(estado, unidadId)               // { unidadId; titulo: "Cargar documento de ZK 214 BD"; titularEtiqueta; tipos: { valor: TipoDocumento; etiqueta }[]; valoresIniciales: { tipoDocumento: ""; numero; emisor; vence; emitido }; primario }
+CAMPOS_RESOLVER, CAMPOS_CARGAR_NOVEDAD, CAMPOS_FUERA_DE_SERVICIO, CAMPOS_BAJA, CAMPOS_KILOMETRAJE = ["desde","kmBase","motivo"], CAMPOS_ASIGNACION, CAMPOS_CARGAR_OTRO = ["tipoDocumento","numero","emisor","vence","emitido"]   // orden del formulario y del resumen
+
+// Guardar (EstadoApp). Nunca rechazan: devuelven el resultado. Revisan todos los campos juntos antes de ejecutar.
+type ResultadoGuardado<Campo> = { ok: true; mensaje: string; foco: FocoTrasGuardar } | { ok: false; errores: { porCampo; lista: { campo; mensaje }[]; general: string | null } }
+type FocoTrasGuardar = "titulo-del-panel" /* centro de alertas */ | "titulo-de-la-ficha" /* h1 */ | "titulo-de-documentos" | "titulo-de-novedades" | "titulo-de-kilometraje"
+app.resolverNovedad(novedadId, { texto, volverAServicio }, donde: "centro" | "ficha" = "centro")
+app.cargarNovedad(unidadId, { descripcion, impideUso })
+app.ponerFueraDeServicio(unidadId, { motivo })
+app.volverAServicio(unidadId)                         // sin campos: solo error general (A4)
+app.darDeBaja(unidadId, { motivo })
+app.corregirKilometraje(unidadId, { desde, kmBase, motivo })
+app.cambiarAsignacion(unidadId, { proyectoId, conductorId })   // conductorId "" = sin conductor
+app.corregirDocumento(documentoId, { numero, emisor, vence, emitido })          // ResultadoGuardadoDocumento, foco "titulo-de-documentos"
+app.cargarOtroDocumento(unidadId, { tipoDocumento, numero, emisor, vence, emitido })
+app.renovarDocumento(documentoId, valores, donde = "centro") / app.cargarDocumento(titular, tipo, valores, donde = "centro")   // desde la ficha pasar "ficha": mensaje sin «Quedan N vencimientos», foco "titulo-de-documentos"
+app.agregarUnidad(valores)                            // ahora navega solo a la ficha; `ruta` y `href` siguen en el resultado
+```
+
+```svelte
+<script lang="ts">
+  import { app } from "../lib/estado/instancia.ts";
+  import { vistaDeHistorial, PASO_HISTORIAL, type IdFiltroHistorial } from "../lib/estado/ficha.ts";
+  import { contextoDeResolver } from "../lib/dominio/formulario-novedad.ts";
+
+  const f = $derived(app.fichaDeUnidad);                       // FichaDeUnidad | FichaNoEncontrada | null
+  let estadoBarra = $state(app.mensajeDeLlegada ?? "");        // barra de estado de la ficha
+  let filtro = $state<IdFiltroHistorial>("todo");
+  let limite = $state(PASO_HISTORIAL);
+  const h = $derived(f?.encontrada ? vistaDeHistorial(f.historial, filtro, limite) : null);
+  let abierto = $state.raw<ReturnType<typeof contextoDeResolver>>(null);
+  let valores = $state({ texto: "", volverAServicio: false });
+  let errores = $state.raw<{ porCampo: Record<string, string>; lista: { campo: string; mensaje: string }[]; general: string | null } | null>(null);
+
+  function abrirResolver(novedadId: string) {
+    if (app.estado === null) return;
+    abierto = contextoDeResolver(app.estado, novedadId, app.hoy);
+    if (abierto) { valores = { ...abierto.valoresIniciales }; errores = null; }
+  }
+  async function guardar() {
+    const r = await app.resolverNovedad(abierto!.novedadId, valores, "ficha");
+    if (!r.ok) { errores = r.errores; return; }                // el diálogo no se cierra y el texto escrito se conserva
+    abierto = null; estadoBarra = r.mensaje;                   // r.foco === "titulo-de-novedades"
+  }
+</script>
+{#if f?.encontrada}
+  <h1 tabindex="-1">{f.patenteTexto}</h1> <p>{f.aptitud.etiqueta} {f.aptitud.linea}</p>
+  {#each f.novedades.abiertas as n (n.novedadId)}{n.texto} {#if n.accion}<button onclick={() => abrirResolver(n.accion!.novedadId)}>{n.accion.etiqueta}</button>{/if}{/each}
+{:else if f}<h1 tabindex="-1">{f.titulo}</h1> <p>{f.mensaje}</p> <a href={f.enlace.href}>{f.enlace.texto}</a>{/if}
+```
+
+**Cosas para tener en cuenta al maquetar.**
+- `agregarUnidad` ya navega: `PantallaFlota` hoy se queda con la barra de estado y el foco en la fila nueva; hay que quitarlo (el cambio de pantalla ya mueve el foco al `h1` de la ficha). Hasta que exista la pantalla de la ficha, el alta llega al marcador de `App.svelte`.
+- «Resolver» del centro de alertas: `fila.accion.novedadId` + `contextoDeResolver(app.estado, id, app.hoy)` + `app.resolverNovedad(id, valores)` (sin tercer parámetro). Foco `titulo-del-panel`; el mensaje nombra la unidad. Hoy la fila enlaza a la ficha: pasa a abrir el diálogo.
+- El `select` Tipo de «Cargar otro documento» es el primer campo de `contextoDeCargarOtro(...).tipos`; viene vacío y hay que elegir. Los errores del dominio sobre el tipo (ya cargado en otra pestaña) vuelven en ese campo.
+- «Volver a servicio»: con `contexto.bloqueo` no hay botón primario; «Ver novedades» cierra el diálogo y lleva el foco al título de Novedades (lo resuelve la vista). Con `aviso` (A5) se muestra como aviso en tono semana.
+- N2: la casilla «Volver a servicio ahora» solo existe si `ofreceVolverAServicio` y viene marcada (`valoresIniciales.volverAServicio`); con la nota `notaVolverAServicio` y, si hay, `avisoDocumentos`.
+- Los selects de proyecto y conductor del diálogo de asignación usan `asignadoA` como en «Agregar unidad»; `avisoDeAsignacion` se vuelve a llamar al cambiar el proyecto.
+- Barra de estado de la ficha: arranca con `app.mensajeDeLlegada`; cada guardado la reemplaza con `r.mensaje`. La del encabezado (fuera de servicio, volver, baja, asignación) y las de los paneles pueden ser una sola región viva de la ficha.
+- Sin `{@html}`: todo texto (novedades, motivos, números de documento) se muestra literal.
+
+**Verificación.** Aceptación del plan con el ejemplo del generador (fechaBase 2026-11-18) y la API del estado: cada comando (resolver, cargar novedad, fuera de servicio, volver, dar de baja, corregir kilometraje, cambiar asignación, corregir documento, cargar otro documento, renovar y cargar desde la ficha) deja su evento primero en el historial (`primeros(app)`);
+C11 (ZU 899 QE): A4 («Antes de volver a servicio, resuelva: Frenos (parte del 16/11/2026).», como bloqueo de la acción y como error del comando) y N2 (resolver con la casilla da `novedad-resuelta` + `vuelta-a-servicio`, sin ella solo la primera); A5 con el seguro vencido de ZK 214 BD; U6 (la unidad de la base pasa a Piedra Lunar y suben los faltantes de 2 a 3);
+baja de ZK 214 BD (sale de «No pueden salir» y de las unidades activas, conserva el historial y no ofrece acciones); «cárguelos desde aquí» es cierto (la ficha de una alta nueva lista los 4 faltantes con «Cargar»; cargar uno baja la cuenta). Con el perfil Conductor ninguno se ejecuta; si la escritura falla (D10) no cambia nada.
+`npm test`: 1060 tests (919 + 141), verdes también con `npm run test:tz` (UTC, Asia/Tokyo y America/Los_Angeles); `npm run check`: 0 errores; `npm run buscar` sin hallazgos.
+Pendiente: la pantalla de la ficha y los diálogos (maquetador); el centro de alertas pasa a abrir «Resolver»; `PantallaFlota` deja de quedarse en la flota tras el alta.

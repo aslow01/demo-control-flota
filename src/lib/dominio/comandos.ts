@@ -5,7 +5,7 @@
 import { aplicarCambios, sinCambios, type Cambios } from "./estado.ts";
 import { diasEntre, fechaEnArgentina, parsearFechaCivil, parsearInstante } from "./fechas.ts";
 import { kmActual, registrosDeKm, validarKilometraje } from "./kilometraje.ts";
-import { novedadesCriticasAbiertas, rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
+import { criticasAbiertasDeUnidad, rotuloNovedad } from "./novedades.ts";
 import {
   ITEMS_CHECKLIST,
   advertenciasDeEnvio,
@@ -43,6 +43,7 @@ import {
   REGLAS,
   validarAnioDeAlta,
   validarFecha,
+  validarFechaNoFutura,
   validarInternoDeAlta,
   validarKmNumero,
   validarPatenteDeAlta,
@@ -450,11 +451,10 @@ function prepararVuelta(
   const e = unidad.estado;
   if (e.tipo === "baja") return fallo("unidad-de-baja", errUnidadDeBaja(pat(unidad), e.desde));
   if (e.tipo === "en-servicio") return fallo("ya-en-servicio", ERRORES.unidadYaEnServicio);
-  const abiertas = novedadesCriticasAbiertas(novedades, unidad.id);
+  const abiertas = criticasAbiertasDeUnidad(novedades, unidad.id);
   if (abiertas.length > 0) {
-    const lista = abiertas.map((n) => `${rotuloNovedad(n)} (${textoOrigenNovedad(n)})`);
-    return fallo("novedades-criticas-abiertas", errNovedadesCriticasAbiertas(lista), {
-      detalle: { novedadIds: abiertas.map((n) => n.id) },
+    return fallo("novedades-criticas-abiertas", errNovedadesCriticasAbiertas(abiertas.map((n) => n.texto)), {
+      detalle: { novedadIds: abiertas.map((n) => n.novedadId) },
     });
   }
   return ok({
@@ -484,9 +484,8 @@ function corregirKilometraje(
 ): Resultado<Parcial> {
   const unidad = buscarUnidadActiva(estado, c.unidadId);
   if (!unidad.ok) return unidad;
-  const desde = validarFecha(c.desde, "desde");
+  const desde = validarFechaNoFutura(c.desde, ctx.hoy, "desde");
   if (!desde.ok) return desde;
-  if (diasEntre(ctx.hoy, desde.valor) > 0) return fallo("fecha-futura", ERRORES.fechaFutura, { campo: "desde" });
   const km = validarKmNumero(c.kmBase, "kmBase");
   if (!km.ok) return km;
   const motivo = validarTexto(c.motivo, REGLAS.motivoKm);

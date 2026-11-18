@@ -2,12 +2,14 @@
 
 import { novedadesCriticasAbiertas, rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
 import { MOTIVO_APTITUD } from "./textos.ts";
-import type { Estado, FechaCivil, Unidad } from "./tipos.ts";
+import type { Estado, FechaCivil, TipoDocumento, Unidad } from "./tipos.ts";
 import { NOMBRES_DOCUMENTO, documentoVigente, evaluarObligatorio, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 
 export interface Motivo {
   tipo: "baja" | "fuera-de-servicio" | "documento-vencido" | "documento-faltante" | "novedad-critica";
   texto: string;
+  /** Solo en los motivos de documento (vencido o faltante): de cuál. */
+  documento?: TipoDocumento;
 }
 
 export interface Aptitud {
@@ -43,10 +45,10 @@ export function aptitud(unidad: Unidad, estado: DatosDeAptitud, hoy: FechaCivil)
       const vigente = documentoVigente(estado.documentos, { tipo: "unidad", id: unidad.id }, tipo);
       const evaluacion = evaluarObligatorio(vigente, hoy);
       if (evaluacion.estado === "faltante") {
-        motivos.push({ tipo: "documento-faltante", texto: MOTIVO_APTITUD.documentoFaltante(NOMBRES_DOCUMENTO[tipo]) });
+        motivos.push({ tipo: "documento-faltante", texto: MOTIVO_APTITUD.documentoFaltante(NOMBRES_DOCUMENTO[tipo]), documento: tipo });
       } else if (evaluacion.estado === "vencido") {
         // A2: un documento que vence hoy todavía vale, por eso no entra acá.
-        motivos.push({ tipo: "documento-vencido", texto: `${NOMBRES_DOCUMENTO[tipo]} ${minusculaInicial(evaluacion.texto)}` });
+        motivos.push({ tipo: "documento-vencido", texto: `${NOMBRES_DOCUMENTO[tipo]} ${minusculaInicial(evaluacion.texto)}`, documento: tipo });
       }
     }
   }

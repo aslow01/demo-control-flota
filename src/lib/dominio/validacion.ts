@@ -86,6 +86,14 @@ export function validarFecha(texto: string, campo: string): Resultado<FechaCivil
   return ok(fecha);
 }
 
+/** Fecha civil válida que no es posterior a hoy (corrección de kilometraje, P2). */
+export function validarFechaNoFutura(texto: string, hoy: FechaCivil, campo: string): Resultado<FechaCivil> {
+  const fecha = validarFecha(texto, campo);
+  if (!fecha.ok) return fecha;
+  if (diasEntre(hoy, fecha.valor) > 0) return fallo("fecha-futura", ERRORES.fechaFutura, { campo });
+  return fecha;
+}
+
 /** V11: vencimiento desde 2000-01-01 hasta hoy + 10 años. */
 export function validarVencimiento(texto: string, hoy: FechaCivil, campo = "vence"): Resultado<FechaCivil> {
   const fecha = validarFecha(texto, campo);

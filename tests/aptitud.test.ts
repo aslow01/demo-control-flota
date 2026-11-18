@@ -77,6 +77,13 @@ describe("A1: puede salir", () => {
     expect(a.motivos.map((m) => m.tipo)).toEqual(["documento-vencido", "documento-faltante", "novedad-critica"]);
   });
 
+  it("A1: los motivos de documento dicen de qué documento son (para el diálogo de volver a servicio, A5)", () => {
+    const u = unidad();
+    const docs = documentosAlDia("u1", { seguro: "2026-11-15" }).filter((d) => d.tipo !== "matafuego");
+    const a = aptitud(u, estadoCon(u, docs), H);
+    expect(a.motivos.map((m) => m.documento)).toEqual(["seguro", "matafuego"]);
+  });
+
   it("A1: un documento renovado (V9) deja de ser motivo", () => {
     const u = unidad();
     const viejo = documento({ id: "viejo", titular: { tipo: "unidad", id: "u1" }, tipo: "seguro", vence: "2026-11-15" });

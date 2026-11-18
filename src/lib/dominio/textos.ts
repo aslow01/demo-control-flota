@@ -495,8 +495,8 @@ export function textoFilaOperacion(tipo: keyof typeof TEXTO_ESTADO_OPERACION, n:
   }
 }
 
-/** Nombre accesible de los botones de la lista de vencimientos: «Renovar seguro de ZK 214 BD». */
-export function textoAccionDocumento(accion: "Renovar" | "Cargar", tipo: TipoDocumento, titular: string): string {
+/** Nombre accesible de los botones de documentos (lista de vencimientos y ficha): «Renovar seguro de ZK 214 BD». */
+export function textoAccionDocumento(accion: "Renovar" | "Cargar" | "Corregir", tipo: TipoDocumento, titular: string): string {
   const nombre = NOMBRES_DOCUMENTO[tipo];
   return `${accion} ${nombre.charAt(0).toLowerCase()}${nombre.slice(1)} de ${titular}`;
 }
@@ -660,4 +660,257 @@ export const TEXTO_AGREGAR = {
 export function textoUnidadAgregada(faltantes: number): string {
   if (faltantes === 0) return "Unidad agregada.";
   return `Unidad agregada. ${textoLeFaltan(faltantes)}: ${faltantes === 1 ? "cárguelo" : "cárguelos"} desde aquí.`;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Ficha de unidad (docs/diseno-ui.md, 6.3 y 5.16) y sus diálogos (5.17). `redactor-ux` los revisa.
+// ---------------------------------------------------------------------------------------------
+
+/** Nivel de combustible del parte, como se lee en el historial («combustible 3/4»). */
+export const NOMBRES_COMBUSTIBLE = { reserva: "reserva", cuarto: "1/4", medio: "1/2", "tres-cuartos": "3/4", lleno: "lleno" } as const;
+
+/** Rótulos fijos de la ficha (los que llevan datos se arman con las funciones de abajo). */
+export const TEXTO_FICHA = {
+  migaFlota: "Flota",
+  noEncontrada: { titulo: "No se encontró la unidad", enlace: "Ir a la flota" },
+  acciones: {
+    cargarParte: "Cargar parte",
+    ponerFueraDeServicio: "Poner fuera de servicio",
+    volverAServicio: "Volver a servicio",
+    masAcciones: "Más acciones",
+    corregirKilometraje: "Corregir kilometraje",
+    cambiarAsignacion: "Cambiar proyecto o conductor",
+    cargarNovedad: "Cargar novedad",
+    darDeBaja: "Dar de baja",
+  },
+  documentos: { titulo: "Documentos", cargarOtro: "Cargar otro documento", renovar: "Renovar", corregir: "Corregir", cargar: "Cargar" },
+  novedades: {
+    titulo: "Novedades",
+    abiertas: "Abiertas",
+    resueltas: "Resueltas",
+    vacioAbiertas: "Sin novedades abiertas.",
+    vacioResueltas: "Sin novedades resueltas.",
+    resolver: "Resolver",
+    cargar: "Cargar novedad",
+    etiquetaCritica: "Crítica",
+    etiquetaAbierta: "Abierta",
+    etiquetaResuelta: "Resuelta",
+    manual: "Cargada por el encargado",
+  },
+  kilometraje: {
+    titulo: "Kilometraje",
+    ultimos: "Últimos 10 partes y correcciones",
+    vacio: "Todavía no hay partes enviados ni correcciones.",
+    sinRegistros: "Sin registros",
+  },
+  historial: {
+    titulo: "Historial",
+    filtros: { todo: "Todo", partes: "Partes", documentos: "Documentos", novedades: "Novedades", "estado-km": "Estado y kilometraje" },
+    vacio: "Todavía no hay eventos.",
+    sinCarga: "Sin carga",
+    verParte: "Ver el parte completo",
+    antes: "Antes",
+    despues: "Después",
+    sinValor: "—",
+  },
+} as const;
+
+/** Mensaje de la ficha cuando la unidad no existe: «No hay ninguna unidad con la patente ZZ 999 ZZ.» */
+export function textoUnidadNoEncontrada(patenteTexto: string): string {
+  return `No hay ninguna unidad con la patente ${patenteTexto}.`;
+}
+
+/** Línea junto a la etiqueta de aptitud: uno o dos motivos tal cual; con más, solo la cantidad (y la lista debajo). */
+export function textoLineaAptitud(motivos: readonly string[]): string | null {
+  if (motivos.length === 0) return null;
+  if (motivos.length <= 2) return motivos.join(" · ");
+  return pluralizar(motivos.length, "motivo", "motivos");
+}
+
+/** Aviso de la ficha de una unidad de baja. */
+export function textoDadaDeBaja(desde: FechaCivil, motivo: string): string {
+  return `Dada de baja el ${formatearFecha(desde)}: ${motivo}. Se conserva su historial.`;
+}
+
+/** «84.320 km (al 17/11/2026)»: el kilometraje actual con la fecha de su último registro. */
+export function textoKmConFecha(km: number, fecha: FechaCivil): string {
+  return `${formatearKm(km)} km (al ${formatearFecha(fecha)})`;
+}
+
+/** Cabecera del panel de documentos: «4 · 1 vencido · 1 faltante». */
+export function textoRotuloDocumentos(total: number, vencidos: number, faltantes: number): string {
+  const partes = [String(total)];
+  if (vencidos > 0) partes.push(pluralizar(vencidos, "vencido", "vencidos"));
+  if (faltantes > 0) partes.push(pluralizar(faltantes, "faltante", "faltantes"));
+  return partes.join(" · ");
+}
+
+/** «Anteriores (2)». */
+export function textoAnteriores(n: number): string {
+  return `Anteriores (${n})`;
+}
+
+/** Cabecera del panel de novedades: «0 abiertas», «1 abierta». */
+export function textoRotuloNovedades(abiertas: number): string {
+  return pluralizar(abiertas, "abierta", "abiertas");
+}
+
+/** De dónde salió la novedad: «Parte del 16/11/2026, punto Frenos» o «Cargada por el encargado». `item` es el rótulo del punto, o `null` para «Otra novedad». */
+export function textoOrigenEnFicha(origen: { tipo: "parte"; item: string | null } | { tipo: "manual" }, fecha: FechaCivil): string {
+  if (origen.tipo === "manual") return TEXTO_FICHA.novedades.manual;
+  return origen.item === null ? `Parte del ${formatearFecha(fecha)}, otra novedad` : `Parte del ${formatearFecha(fecha)}, punto ${origen.item}`;
+}
+
+/** Fila del historial de kilometraje: «84.188 → 84.320». */
+export function textoRangoKm(kmInicio: number, kmFin: number): string {
+  return `${formatearKm(kmInicio)} → ${formatearKm(kmFin)}`;
+}
+
+/** Fila de corrección del kilometraje: «Corrección: 120 km». */
+export function textoCorreccionKm(km: number): string {
+  return `Corrección: ${formatearKm(km)} km`;
+}
+
+/** Cantidad de eventos del historial: «128 eventos». */
+export function textoEventos(n: number): string {
+  return pluralizar(n, "evento", "eventos");
+}
+
+/** Región `role="status"` del historial: «Mostrando 30 de 128 eventos.» */
+export function textoMostrandoEventos(mostrados: number, total: number): string {
+  return `Mostrando ${mostrados} de ${textoEventos(total)}.`;
+}
+
+/** Botón del historial: «Ver 30 más». */
+export function textoVerMasEventos(n: number): string {
+  return `Ver ${n} más`;
+}
+
+/** Resumen de un parte enviado en el historial: «Parte enviado · 132 km (84.320 → 84.452) · combustible 3/4 · 1 novedad». */
+export function textoResumenParteEnviado(r: { kmInicio: number; kmFin: number; combustible: string | null; novedades: number }): string {
+  const recorrido = r.kmFin - r.kmInicio;
+  const uso = recorrido === 0 ? "sin uso" : `${formatearKm(recorrido)} km`;
+  const partes = ["Parte enviado", `${uso} (${textoRangoKm(r.kmInicio, r.kmFin)})`];
+  if (r.combustible !== null) partes.push(`combustible ${r.combustible}`);
+  partes.push(r.novedades === 0 ? "sin novedades" : pluralizar(r.novedades, "novedad", "novedades"));
+  return partes.join(" · ");
+}
+
+/** «8 puntos en orden» (parte enviado, al abrir el detalle). */
+export function textoPuntosEnOrden(n: number): string {
+  return `${pluralizar(n, "punto", "puntos")} en orden`;
+}
+
+/** Rótulo de cada campo de un documento corregido («Antes / Después»). */
+export const ROTULO_CAMPO_DOCUMENTO_CORREGIDO = { numero: "Número", emisor: "Emisor", vence: "Vencimiento", emitido: "Emisión" } as const;
+
+/** Diálogos de la ficha (5.17). Los rótulos de los campos y sus ayudas son de presentación (`textos-marco.ts`). */
+export const TEXTO_DIALOGOS_FICHA = {
+  resolver: {
+    titulo: (patente: string) => `Resolver novedad de ${patente}`,
+    primario: "Marcar como resuelta",
+    volverEtiqueta: "Volver a servicio ahora",
+    volverNota: (patente: string) => `${patente} está fuera de servicio por esta novedad. Con la casilla marcada, vuelve a servicio al resolverla.`,
+  },
+  cargarNovedad: {
+    titulo: (patente: string) => `Cargar novedad de ${patente}`,
+    primario: "Guardar novedad",
+    impideEtiqueta: "Impide usar la unidad",
+    impideNota: "Si impide el uso, la unidad queda fuera de servicio hasta que se resuelva la novedad.",
+  },
+  fueraDeServicio: {
+    titulo: (patente: string) => `Poner fuera de servicio: ${patente}`,
+    primario: "Poner fuera de servicio",
+    desde: (hoy: FechaCivil) => `Desde hoy (${formatearFecha(hoy)}).`,
+  },
+  volver: {
+    titulo: (patente: string) => `Volver a servicio: ${patente}`,
+    primario: "Volver a servicio",
+    verNovedades: "Ver novedades",
+    situacion: (desde: FechaCivil, motivo: string) => `Fuera de servicio desde ${formatearFecha(desde)}: ${motivo}`,
+    /** A5: vuelve, pero la aptitud sigue pendiente de documentos. */
+    sinPoderSalir: (aRenovar: readonly string[], aCargar: readonly string[]) => {
+      const accion = aRenovar.length > 0 && aCargar.length > 0 ? "renovar o cargar" : aCargar.length > 0 ? "cargar" : "renovar";
+      return `La unidad vuelve a servicio, pero no puede salir hasta ${accion}: ${[...aRenovar, ...aCargar].join(", ")}.`;
+    },
+  },
+  baja: {
+    titulo: (patente: string) => `Dar de baja: ${patente}`,
+    primario: (patente: string) => `Dar de baja ${patente}`,
+    aviso: "No se puede deshacer en esta demo. La unidad deja de contar en la flota y en las alertas; su historial se conserva.",
+  },
+  kilometraje: {
+    titulo: (patente: string) => `Corregir kilometraje de ${patente}`,
+    primario: "Guardar corrección",
+    nota: "Úselo si se cambió el tablero o si un parte enviado tiene un error de kilometraje.",
+  },
+  asignacion: {
+    titulo: (patente: string) => `Cambiar proyecto o conductor: ${patente}`,
+    primario: "Guardar cambios",
+    inactivo: (nombre: string) => `${nombre} (inactivo)`,
+    sinHabilitacion: (patente: string, proyecto: string) =>
+      `${patente} no tiene cargada la habilitación de ingreso a ${proyecto}: no podrá salir hasta cargarla.`,
+  },
+  corregirDocumento: {
+    titulo: (nombre: string, titular: string) => `Corregir: ${nombre} de ${titular}`,
+    primario: "Guardar corrección",
+    nota: "Use esto para corregir un error de carga. Si el documento se renovó, use Renovar.",
+  },
+  cargarOtro: {
+    titulo: (titular: string) => `Cargar documento de ${titular}`,
+    primario: "Guardar documento",
+    tipoVacio: "Elija el tipo de documento.",
+  },
+} as const;
+
+/** Barra de estado después de corregir un documento: «Seguro de ZK 214 BD corregido.» */
+export function textoDocumentoCorregido(tipo: TipoDocumento, titular: string): string {
+  return `${NOMBRES_DOCUMENTO[tipo]} de ${titular} ${concordar(tipo, "corregido", "corregida")}.`;
+}
+
+/** Barra de estado de la ficha después de renovar: «Seguro de ZK 214 BD renovado: vence el 15/11/2027.» */
+export function textoDocumentoRenovadoEnFicha(tipo: TipoDocumento, titular: string, vence: FechaCivil): string {
+  return `${NOMBRES_DOCUMENTO[tipo]} de ${titular} ${concordar(tipo, "renovado", "renovada")}: vence el ${formatearFecha(vence)}.`;
+}
+
+/**
+ * Después de resolver una novedad: «Novedad resuelta: Frenos.», y si la unidad volvió, lo dice. Desde el centro de alertas (donde hay
+ * muchas unidades) también nombra la unidad: «Novedad resuelta: Frenos (ZU 899 QE).»
+ */
+export function textoNovedadResuelta(rotulo: string, patente: string, volvio: boolean, nombraLaUnidad = false): string {
+  return `Novedad resuelta: ${rotulo}${nombraLaUnidad ? ` (${patente})` : ""}.${volvio ? ` ${patente} vuelve a servicio.` : ""}`;
+}
+
+/** Después de cargar una novedad a mano. */
+export function textoNovedadCargada(patente: string, critica: boolean): string {
+  return critica ? `Novedad cargada. ${patente} queda fuera de servicio hasta que se resuelva.` : "Novedad cargada.";
+}
+
+export function textoFueraDeServicio(patente: string): string {
+  return `${patente} está fuera de servicio.`;
+}
+
+/** Después de volver a servicio (A5): si todavía no puede salir, dice por qué. */
+export function textoVueltaAServicio(patente: string, motivosPendientes: readonly string[]): string {
+  const base = `${patente} vuelve a servicio.`;
+  return motivosPendientes.length === 0 ? base : `${base} Todavía no puede salir: ${motivosPendientes.join("; ")}.`;
+}
+
+export function textoKmCorregido(patente: string, km: number): string {
+  return `Kilometraje de ${patente} corregido: ${formatearKm(km)} km.`;
+}
+
+/** Después de cambiar proyecto o conductor; avisa si el proyecto nuevo exige una habilitación que falta (U6). */
+export function textoAsignacionCambiada(cambio: { proyecto: boolean; conductor: boolean }, faltaHabilitacion: boolean): string {
+  const que = cambio.proyecto && cambio.conductor ? "Proyecto y conductor actualizados." : cambio.proyecto ? "Proyecto actualizado." : "Conductor actualizado.";
+  return faltaHabilitacion ? `${que} Falta cargar la habilitación de ingreso al proyecto.` : que;
+}
+
+export function textoUnidadDadaDeBaja(patente: string): string {
+  return `${patente} dada de baja. Su historial se conserva.`;
+}
+
+/** Litros del parte en el historial: «45,5 litros»; sin carga, «Sin carga». */
+export function textoLitros(litros: number | null): string {
+  return litros === null ? TEXTO_FICHA.historial.sinCarga : `${String(litros).replace(".", ",")} ${litros === 1 ? "litro" : "litros"}`;
 }

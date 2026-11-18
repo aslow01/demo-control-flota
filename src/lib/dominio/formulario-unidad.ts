@@ -5,8 +5,7 @@
 // Los valores del formulario son siempre texto (lo que dan los `input` y los `select`). `conductorId` vacío = «Sin conductor asignado».
 
 import type { Comando } from "./comandos.ts";
-import { armarErrores, type ErroresDeFormularioDe } from "./formulario.ts";
-import { formatearPatente } from "./patente.ts";
+import { armarErrores, opcionesDeConductor, opcionesDeProyecto, type ErroresDeFormularioDe, type OpcionDeConductor, type OpcionDeLista } from "./formulario.ts";
 import { ERRORES, NOMBRES_TIPO_UNIDAD, TEXTO_AGREGAR } from "./textos.ts";
 import type { ErrorDeNegocio, Estado, FechaCivil, TipoUnidad } from "./tipos.ts";
 import { REGLAS, rangoDeAnios, validarAnioDeAlta, validarInternoDeAlta, validarPatenteDeAlta, validarTexto } from "./validacion.ts";
@@ -32,15 +31,7 @@ export interface ValoresUnidad {
 
 export type ErroresDeFormularioUnidad = ErroresDeFormularioDe<CampoUnidad>;
 
-export interface OpcionDeLista {
-  valor: string;
-  etiqueta: string;
-}
-
-export interface OpcionDeConductor extends OpcionDeLista {
-  /** `ZK 214 BD` si ya tiene una unidad asignada (puede asignarse igual; el dominio no lo impide): para avisarlo junto a la opción. */
-  asignadoA: string | null;
-}
+export type { OpcionDeConductor, OpcionDeLista };
 
 export interface ContextoAgregarUnidad {
   titulo: string;
@@ -60,20 +51,13 @@ const TIPOS: readonly TipoUnidad[] = ["camioneta", "utilitario", "camion-liviano
 
 /** Lo que muestra el diálogo al abrirse. */
 export function contextoDeAgregarUnidad(estado: Estado, hoy: FechaCivil): ContextoAgregarUnidad {
-  const asignada = (conductorId: string): string | null => {
-    const u = estado.unidades.find((x) => x.conductorId === conductorId && x.estado.tipo !== "baja");
-    return u === undefined ? null : formatearPatente(u.patente);
-  };
   return {
     titulo: TEXTO_AGREGAR.titulo,
     primario: TEXTO_AGREGAR.primario,
     valoresIniciales: { ...VALORES_VACIOS },
     tipos: TIPOS.map((t) => ({ valor: t, etiqueta: NOMBRES_TIPO_UNIDAD[t] })),
-    proyectos: estado.proyectos.map((p) => ({ valor: p.id, etiqueta: p.nombre })),
-    conductores: [
-      { valor: "", etiqueta: TEXTO_AGREGAR.sinConductor, asignadoA: null },
-      ...estado.conductores.filter((c) => c.activo).map((c) => ({ valor: c.id, etiqueta: c.nombre, asignadoA: asignada(c.id) })),
-    ],
+    proyectos: opcionesDeProyecto(estado),
+    conductores: opcionesDeConductor(estado),
     anios: rangoDeAnios(hoy),
   };
 }

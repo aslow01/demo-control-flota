@@ -11,17 +11,68 @@
 
 import { EMPRESA, ENCARGADA } from "../datos/generador.ts";
 import { calcularAlertas, type ResultadoAlertas } from "../dominio/alertas.ts";
+import { aptitud } from "../dominio/aptitud.ts";
 import { ejecutar as ejecutarComando, type Comando, type Ejecucion } from "../dominio/comandos.ts";
 import {
   comandoDeCargar,
+  comandoDeCargarOtro,
+  comandoDeCorregir,
   comandoDeRenovar,
   errorGeneral,
+  errorGeneralCargarOtro,
   erroresDeNegocio,
+  erroresDeNegocioCargarOtro,
   etiquetaDeTitular,
+  validarCargarOtro,
   validarValores,
+  type CampoCargarOtro,
   type ErroresDeFormulario,
+  type ValoresCargarOtro,
   type ValoresDocumento,
 } from "../dominio/formulario-documento.ts";
+import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
+import {
+  comandoDeAsignacion,
+  comandoDeBaja,
+  comandoDeFueraDeServicio,
+  comandoDeKilometraje,
+  comandoDeVolverAServicio,
+  erroresDeNegocioAsignacion,
+  erroresDeNegocioBaja,
+  erroresDeNegocioFueraDeServicio,
+  erroresDeNegocioKilometraje,
+  errorGeneralAsignacion,
+  errorGeneralBaja,
+  errorGeneralFueraDeServicio,
+  errorGeneralKilometraje,
+  validarAsignacion,
+  validarBaja,
+  validarFueraDeServicio,
+  validarKilometraje,
+  type CampoAsignacion,
+  type CampoBaja,
+  type CampoFueraDeServicio,
+  type CampoKilometraje,
+  type ValoresAsignacion,
+  type ValoresBaja,
+  type ValoresFueraDeServicio,
+  type ValoresKilometraje,
+} from "../dominio/formulario-ficha.ts";
+import {
+  comandoDeCargarNovedad,
+  comandoDeResolver,
+  erroresDeNegocioCargarNovedad,
+  erroresDeNegocioResolver,
+  errorGeneralCargarNovedad,
+  errorGeneralResolver,
+  validarCargarNovedad,
+  validarResolver,
+  type CampoCargarNovedad,
+  type CampoResolver,
+  type ValoresCargarNovedad,
+  type ValoresResolver,
+} from "../dominio/formulario-novedad.ts";
+import { rotuloNovedad } from "../dominio/novedades.ts";
 import {
   comandoDeAgregarUnidad,
   erroresDeNegocioUnidad,
@@ -33,17 +84,27 @@ import {
 import {
   ERRORES,
   TEXTO_ERROR_ARRANQUE,
+  textoAsignacionCambiada,
   textoDocumentoCargado,
+  textoDocumentoCorregido,
   textoDocumentoRenovado,
+  textoDocumentoRenovadoEnFicha,
+  textoFueraDeServicio,
+  textoKmCorregido,
+  textoNovedadCargada,
+  textoNovedadResuelta,
   textoQuedanVencimientos,
   textoUnidadAgregada,
+  textoUnidadDadaDeBaja,
+  textoVueltaAServicio,
 } from "../dominio/textos.ts";
-import { fallo, ok, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
+import { fallo, ok, type ErrorDeNegocio, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
 import { arrancar, cambiarPerfil as guardarPerfil, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
 import type { Repositorio } from "../persistencia/repositorio.ts";
 import { centroDeAlertas, contarVencimientos, type CentroDeAlertas } from "./centro-alertas.ts";
 import { aHash, nombreDePantalla, resolverRuta, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
+import { fichaDeUnidad as armarFicha, type FichaDeUnidad, type FichaNoEncontrada } from "./ficha.ts";
 import { panelDeFlota, type PanelFlota } from "./flota.ts";
 import { generarId } from "./ids.ts";
 import type { Reloj } from "./reloj.ts";
@@ -72,13 +133,35 @@ export type FaseApp = "arrancando" | "lista" | "error";
  * la fila que abrió el diálogo ya no existe (la alerta se resolvió o cambió de documento), así que va al título del panel (5.17).
  */
 export type ResultadoGuardadoDocumento =
-  | { ok: true; mensaje: string; foco: "titulo-del-panel" }
+  | { ok: true; mensaje: string; foco: "titulo-del-panel" | "titulo-de-documentos" }
   | { ok: false; errores: ErroresDeFormulario };
+
+/** Desde dónde se guarda: la alerta del centro de alertas (4.2) o la ficha de la unidad (4.4). Cambia el mensaje y adónde cae el foco. */
+export type DondeSeGuarda = "centro" | "ficha";
+
+/**
+ * Dónde cae el foco al cerrar un diálogo (5.17): la fila o el botón que lo abrió puede haber cambiado o desaparecido, así que va al título de
+ * lo que cambió. `titulo-del-panel` es el del centro de alertas (4.2); los demás son de la ficha (4.4).
+ */
+export type FocoTrasGuardar =
+  | "titulo-del-panel"
+  | "titulo-de-la-ficha"
+  | "titulo-de-documentos"
+  | "titulo-de-novedades"
+  | "titulo-de-kilometraje";
+
+/**
+ * Resultado de guardar desde un diálogo de la ficha (4.4). Con `ok: false` el diálogo no se cierra y muestra `errores` (por campo, en lista para
+ * el resumen y uno general); el texto escrito se conserva. Con `ok: true`, `mensaje` va a la barra de estado y `foco` dice adónde va el foco.
+ */
+export type ResultadoGuardado<Campo extends string> =
+  | { ok: true; mensaje: string; foco: FocoTrasGuardar }
+  | { ok: false; errores: ErroresDeFormularioDe<Campo> };
 
 /**
  * Resultado de guardar «Agregar unidad». Con `ok: false` el diálogo no se cierra y muestra `errores`; el texto escrito se conserva.
- * Con `ok: true` la unidad ya existe: hay que ir a su ficha (`ruta` para `app.irA`, `href` para un enlace), mostrar allí `mensaje` y dejar
- * el foco en el título de la ficha (que es lo que ya hace el cambio de pantalla).
+ * Con `ok: true` la unidad ya existe y **la aplicación ya navegó a su ficha** (`ruta` y `href` dicen adónde; el cambio de pantalla ya mueve el foco al
+ * título): el diálogo solo tiene que cerrarse. El `mensaje` viaja en `app.mensajeDeLlegada` para que la ficha lo muestre como mensaje inicial.
  */
 export type ResultadoAgregarUnidad =
   | { ok: true; mensaje: string; foco: "titulo-de-la-ficha"; href: string; ruta: Ruta }
@@ -124,6 +207,21 @@ export class EstadoApp {
   /** Todas las filas de la flota (6.2), recalculadas con cada cambio; la búsqueda, los filtros y el orden son de `vistaDeFlota`. `null` hasta que termina el arranque. */
   panelDeFlota = $derived<PanelFlota | null>(
     this.estado === null || this.alertas === null ? null : panelDeFlota(this.estado, this.alertas, this.hoy),
+  );
+  /**
+   * La ficha de la unidad de `#/unidad/…` (6.3), recalculada con cada cambio de datos y al cambiar el día. `null` fuera de esa ruta o antes de
+   * terminar el arranque; con una patente que no existe, `{ encontrada: false, … }` (el estado de error de la pantalla).
+   */
+  fichaDeUnidad = $derived.by<FichaDeUnidad | FichaNoEncontrada | null>(() => {
+    const ruta = this.ruta;
+    if (ruta.tipo !== "unidad" || this.estado === null || this.alertas === null) return null;
+    return armarFicha(this.estado, this.alertas, this.hoy, ruta.patente, this.perfil);
+  });
+  /** Se llegó a una ficha desde otra pantalla con algo que decir (hoy, «Unidad agregada…»): patente y mensaje. Se va al salir de esa ficha. */
+  private llegada = $state<{ patente: string; mensaje: string } | null>(null);
+  /** El mensaje de llegada a la ficha que se está mirando (la barra de estado arranca con él); `null` si no hay. La vista lo reemplaza con los suyos. */
+  mensajeDeLlegada = $derived<string | null>(
+    this.llegada !== null && this.ruta.tipo === "unidad" && this.ruta.patente === this.llegada.patente ? this.llegada.mensaje : null,
   );
   /** Nombre con el que firman los eventos: el conductor elegido o la encargada. */
   autor = $derived.by(() => {
@@ -218,6 +316,7 @@ export class EstadoApp {
     if (clave !== this.pantallaActual) {
       this.pantallaActual = clave;
       this.versionDePantalla += 1;
+      if (this.llegada !== null && !(ruta.tipo === "unidad" && ruta.patente === this.llegada.patente)) this.llegada = null;
     }
   }
 
@@ -296,17 +395,27 @@ export class EstadoApp {
    * «Renovar documento»: revisa todos los campos, ejecuta `renovarDocumento` (cambios y evento en una escritura) y actualiza el
    * estado sin recargar. Nunca rechaza: los errores vuelven repartidos por campo (o como error general) para el formulario.
    */
-  renovarDocumento(documentoId: string, valores: ValoresDocumento): Promise<ResultadoGuardadoDocumento> {
-    return this.guardarDocumento(valores, comandoDeRenovar(documentoId, valores), (despues) => {
-      const nuevo = despues.documentos.find((d) => d.reemplazaA === documentoId);
-      return nuevo === undefined ? null : textoDocumentoRenovado(nuevo.tipo, etiquetaDeTitular(despues, nuevo.titular));
-    });
+  renovarDocumento(documentoId: string, valores: ValoresDocumento, donde: DondeSeGuarda = "centro"): Promise<ResultadoGuardadoDocumento> {
+    return this.guardarDocumento(
+      valores,
+      comandoDeRenovar(documentoId, valores),
+      (despues) => {
+        const nuevo = despues.documentos.find((d) => d.reemplazaA === documentoId);
+        if (nuevo === undefined) return null;
+        const titular = etiquetaDeTitular(despues, nuevo.titular);
+        return donde === "ficha" ? textoDocumentoRenovadoEnFicha(nuevo.tipo, titular, nuevo.vence) : textoDocumentoRenovado(nuevo.tipo, titular);
+      },
+      donde,
+    );
   }
 
   /** «Cargar documento» (un obligatorio que falta, o uno nuevo): igual que `renovarDocumento`. */
-  cargarDocumento(titular: Titular, tipoDocumento: TipoDocumento, valores: ValoresDocumento): Promise<ResultadoGuardadoDocumento> {
-    return this.guardarDocumento(valores, comandoDeCargar(titular, tipoDocumento, valores), (despues) =>
-      textoDocumentoCargado(tipoDocumento, etiquetaDeTitular(despues, titular)),
+  cargarDocumento(titular: Titular, tipoDocumento: TipoDocumento, valores: ValoresDocumento, donde: DondeSeGuarda = "centro"): Promise<ResultadoGuardadoDocumento> {
+    return this.guardarDocumento(
+      valores,
+      comandoDeCargar(titular, tipoDocumento, valores),
+      (despues) => textoDocumentoCargado(tipoDocumento, etiquetaDeTitular(despues, titular)),
+      donde,
     );
   }
 
@@ -314,15 +423,178 @@ export class EstadoApp {
     valores: ValoresDocumento,
     comando: Comando,
     texto: (despues: Estado) => string | null,
+    donde: DondeSeGuarda,
   ): Promise<ResultadoGuardadoDocumento> {
     if (this.estado === null) return { ok: false, errores: errorGeneral(ERRORES.sinDatos) };
     const previos = validarValores(valores, this.hoy);
     if (previos !== null) return { ok: false, errores: previos };
     const r = await this.ejecutar(comando);
     if (!r.ok) return { ok: false, errores: erroresDeNegocio(r.error) };
-    const quedan = this.alertas === null ? null : textoQuedanVencimientos(contarVencimientos(this.alertas));
     const hecho = texto(r.valor.estado);
+    // En la ficha el mensaje es solo de lo que se hizo; «Quedan N vencimientos» es del centro de alertas (cuenta toda la flota).
+    if (donde === "ficha") return { ok: true, mensaje: hecho ?? "", foco: "titulo-de-documentos" };
+    const quedan = this.alertas === null ? null : textoQuedanVencimientos(contarVencimientos(this.alertas));
     return { ok: true, mensaje: [hecho, quedan].filter((t) => t !== null).join(" "), foco: "titulo-del-panel" };
+  }
+
+  // --- Ficha de unidad y sus diálogos (paso 4.4) ------------------------------------------------------
+  //
+  // Un método por comando de la sección 8 que se dispara desde la ficha. Todos hacen lo mismo: revisan todos los campos juntos (5.15) con los mismos
+  // validadores del dominio, ejecutan el comando (cambios y evento en una escritura, D10) y devuelven `ResultadoGuardado`: nunca rechazan. El
+  // perfil Conductor no puede ninguno (error general «sin permiso»).
+
+  /** Lo que tienen en común: sin datos, validación previa, ejecutar y repartir el error o armar el mensaje. */
+  private async guardarFormulario<Campo extends string>(a: {
+    previos: (estado: Estado) => ErroresDeFormularioDe<Campo> | null;
+    comando: Comando;
+    errores: (error: ErrorDeNegocio) => ErroresDeFormularioDe<Campo>;
+    general: (mensaje: string) => ErroresDeFormularioDe<Campo>;
+    exito: (ejecucion: Ejecucion) => { mensaje: string; foco: FocoTrasGuardar };
+  }): Promise<ResultadoGuardado<Campo>> {
+    if (this.estado === null) return { ok: false, errores: a.general(ERRORES.sinDatos) };
+    const previos = a.previos(this.estado);
+    if (previos !== null) return { ok: false, errores: previos };
+    const r = await this.ejecutar(a.comando);
+    if (!r.ok) return { ok: false, errores: a.errores(r.error) };
+    return { ok: true, ...a.exito(r.valor) };
+  }
+
+  /** `ZK 214 BD` de la unidad, en el estado que se pasa. */
+  private patenteDe(estado: Estado, unidadId: string): string {
+    return etiquetaDeTitular(estado, { tipo: "unidad", id: unidadId });
+  }
+
+  /** «Corregir documento»: el vigente de una unidad o de un conductor, con sus cuatro campos. Es de la ficha (foco al título de Documentos). */
+  corregirDocumento(documentoId: string, valores: ValoresDocumento): Promise<ResultadoGuardadoDocumento> {
+    return this.guardarDocumento(
+      valores,
+      comandoDeCorregir(documentoId, valores),
+      (despues) => {
+        const doc = despues.documentos.find((d) => d.id === documentoId);
+        return doc === undefined ? null : textoDocumentoCorregido(doc.tipo, etiquetaDeTitular(despues, doc.titular));
+      },
+      "ficha",
+    );
+  }
+
+  /** «Cargar otro documento»: el `select` Tipo elige cuál (uno de `contextoDeCargarOtro(...).tipos`) y el resto es igual que `cargarDocumento`. */
+  cargarOtroDocumento(unidadId: string, valores: ValoresCargarOtro): Promise<ResultadoGuardado<CampoCargarOtro>> {
+    return this.guardarFormulario({
+      previos: (estado) => validarCargarOtro(valores, estado, unidadId, this.hoy),
+      comando: comandoDeCargarOtro(unidadId, valores),
+      errores: erroresDeNegocioCargarOtro,
+      general: errorGeneralCargarOtro,
+      exito: (e) => ({ mensaje: textoDocumentoCargado(valores.tipoDocumento as TipoDocumento, this.patenteDe(e.estado, unidadId)), foco: "titulo-de-documentos" }),
+    });
+  }
+
+  /**
+   * «Resolver novedad» (N1, N2). Con `volverAServicio` marcado (solo si el diálogo lo ofreció) la unidad vuelve en la misma escritura. Desde el
+   * centro de alertas (`donde = "centro"`, el valor por defecto) el mensaje nombra la unidad y el foco va al título del panel; desde la ficha, al de Novedades.
+   */
+  resolverNovedad(novedadId: string, valores: ValoresResolver, donde: DondeSeGuarda = "centro"): Promise<ResultadoGuardado<CampoResolver>> {
+    return this.guardarFormulario({
+      previos: () => validarResolver(valores),
+      comando: comandoDeResolver(novedadId, valores),
+      errores: erroresDeNegocioResolver,
+      general: errorGeneralResolver,
+      exito: (e) => {
+        const n = e.estado.novedades.find((x) => x.id === novedadId);
+        const patente = n === undefined ? "" : this.patenteDe(e.estado, n.unidadId);
+        const volvio = e.eventos.some((ev) => ev.tipo === "vuelta-a-servicio");
+        return {
+          mensaje: textoNovedadResuelta(n === undefined ? "" : rotuloNovedad(n), patente, volvio, donde === "centro"),
+          foco: donde === "centro" ? "titulo-del-panel" : "titulo-de-novedades",
+        };
+      },
+    });
+  }
+
+  /** «Cargar novedad» a mano (N3): con «Impide usar la unidad» la unidad queda fuera de servicio (A3). */
+  cargarNovedad(unidadId: string, valores: ValoresCargarNovedad): Promise<ResultadoGuardado<CampoCargarNovedad>> {
+    return this.guardarFormulario({
+      previos: () => validarCargarNovedad(valores),
+      comando: comandoDeCargarNovedad(unidadId, valores),
+      errores: erroresDeNegocioCargarNovedad,
+      general: errorGeneralCargarNovedad,
+      exito: (e) => ({ mensaje: textoNovedadCargada(this.patenteDe(e.estado, unidadId), valores.impideUso), foco: "titulo-de-novedades" }),
+    });
+  }
+
+  /** «Poner fuera de servicio» (A6). */
+  ponerFueraDeServicio(unidadId: string, valores: ValoresFueraDeServicio): Promise<ResultadoGuardado<CampoFueraDeServicio>> {
+    return this.guardarFormulario({
+      previos: () => validarFueraDeServicio(valores),
+      comando: comandoDeFueraDeServicio(unidadId, valores),
+      errores: erroresDeNegocioFueraDeServicio,
+      general: errorGeneralFueraDeServicio,
+      exito: (e) => ({ mensaje: textoFueraDeServicio(this.patenteDe(e.estado, unidadId)), foco: "titulo-de-la-ficha" }),
+    });
+  }
+
+  /**
+   * «Volver a servicio» (A4, A5). Con críticas abiertas se rechaza con el error general que las nombra (el diálogo ya lo avisó y no ofrece el botón).
+   * Con documentos vencidos o faltantes vuelve igual y el mensaje dice que todavía no puede salir.
+   */
+  volverAServicio(unidadId: string): Promise<ResultadoGuardado<never>> {
+    return this.guardarFormulario<never>({
+      previos: () => null,
+      comando: comandoDeVolverAServicio(unidadId),
+      errores: (error) => errorGeneralEn(error.mensaje),
+      general: (mensaje) => errorGeneralEn(mensaje),
+      exito: (e) => {
+        const u = e.estado.unidades.find((x) => x.id === unidadId);
+        const a = u === undefined ? null : aptitud(u, e.estado, this.hoy);
+        const pendientes = a === null || a.puedeSalir ? [] : a.motivos.map((m) => m.texto);
+        return { mensaje: textoVueltaAServicio(this.patenteDe(e.estado, unidadId), pendientes), foco: "titulo-de-la-ficha" };
+      },
+    });
+  }
+
+  /** «Dar de baja» (A7): irreversible en la demo; conserva documentos, partes e historial. */
+  darDeBaja(unidadId: string, valores: ValoresBaja): Promise<ResultadoGuardado<CampoBaja>> {
+    return this.guardarFormulario({
+      previos: () => validarBaja(valores),
+      comando: comandoDeBaja(unidadId, valores),
+      errores: erroresDeNegocioBaja,
+      general: errorGeneralBaja,
+      exito: (e) => ({ mensaje: textoUnidadDadaDeBaja(this.patenteDe(e.estado, unidadId)), foco: "titulo-de-la-ficha" }),
+    });
+  }
+
+  /** «Corregir kilometraje» (K5, M3). */
+  corregirKilometraje(unidadId: string, valores: ValoresKilometraje): Promise<ResultadoGuardado<CampoKilometraje>> {
+    return this.guardarFormulario({
+      previos: () => validarKilometraje(valores, this.hoy),
+      comando: comandoDeKilometraje(unidadId, valores),
+      errores: erroresDeNegocioKilometraje,
+      general: errorGeneralKilometraje,
+      exito: (e) => ({
+        mensaje: textoKmCorregido(this.patenteDe(e.estado, unidadId), e.cambios.correccionesKm?.[0]?.kmBase ?? 0),
+        foco: "titulo-de-kilometraje",
+      }),
+    });
+  }
+
+  /** «Cambiar proyecto o conductor» (U6): si el proyecto nuevo exige la habilitación y no la tiene, el mensaje lo dice y la alerta ya existe. */
+  cambiarAsignacion(unidadId: string, valores: ValoresAsignacion): Promise<ResultadoGuardado<CampoAsignacion>> {
+    const antes = this.estado?.unidades.find((u) => u.id === unidadId);
+    return this.guardarFormulario({
+      previos: () => validarAsignacion(valores),
+      comando: comandoDeAsignacion(unidadId, valores),
+      errores: erroresDeNegocioAsignacion,
+      general: errorGeneralAsignacion,
+      exito: () => {
+        const cambio = {
+          proyecto: antes === undefined || antes.proyectoId !== valores.proyectoId,
+          conductor: antes === undefined || (antes.conductorId ?? "") !== valores.conductorId,
+        };
+        const falta =
+          cambio.proyecto &&
+          (this.alertas?.alertas.some((x) => x.tipo === "documento-faltante" && x.unidadId === unidadId && x.tipoDocumento === "habilitacion-proyecto") ?? false);
+        return { mensaje: textoAsignacionCambiada(cambio, falta), foco: "titulo-de-la-ficha" };
+      },
+    });
   }
 
   // --- Diálogo «Agregar unidad» (paso 4.3) ----------------------------------------------------------
@@ -342,7 +614,11 @@ export class EstadoApp {
     if (nueva === undefined) return { ok: false, errores: errorGeneralUnidad(ERRORES.noPudoGuardar) }; // no pasa: altaUnidad siempre crea una
     const faltantes = this.alertas?.alertas.filter((a) => a.tipo === "documento-faltante" && a.unidadId === nueva.id).length ?? 0;
     const ruta: Ruta = { tipo: "unidad", patente: nueva.patente };
-    return { ok: true, mensaje: textoUnidadAgregada(faltantes), foco: "titulo-de-la-ficha", href: aHash(ruta), ruta };
+    const mensaje = textoUnidadAgregada(faltantes);
+    // La unidad ya existe: se va a su ficha (donde están los faltantes, con su botón «Cargar») y el mensaje viaja en `mensajeDeLlegada`.
+    this.llegada = { patente: nueva.patente, mensaje };
+    this.irA(ruta);
+    return { ok: true, mensaje, foco: "titulo-de-la-ficha", href: aHash(ruta), ruta };
   }
 
   /** D6 y D11: elige el perfil, lo guarda sin marcar la demo como modificada y va al inicio de ese perfil. */

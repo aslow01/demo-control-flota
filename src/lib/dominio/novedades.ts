@@ -28,3 +28,22 @@ export function novedadesCriticasAbiertas(novedades: readonly Novedad[], unidadI
     .filter((n) => n.unidadId === unidadId && n.estado === "abierta" && n.gravedad === "critica")
     .sort((a, b) => (a.fecha === b.fecha ? (a.id < b.id ? -1 : 1) : a.fecha < b.fecha ? -1 : 1));
 }
+
+export interface CriticaAbierta {
+  novedadId: string;
+  /** «Frenos». */
+  rotulo: string;
+  /** «parte del 16/11/2026». */
+  origen: string;
+  /** «Frenos (parte del 16/11/2026)»: como se nombra en el error de A4 y en el diálogo de volver a servicio. */
+  texto: string;
+}
+
+/** A4: las novedades críticas abiertas de la unidad, con el texto con que se nombran. Es lo que dice el error y lo que lista el diálogo. */
+export function criticasAbiertasDeUnidad(novedades: readonly Novedad[], unidadId: string): CriticaAbierta[] {
+  return novedadesCriticasAbiertas(novedades, unidadId).map((n) => {
+    const rotulo = rotuloNovedad(n);
+    const origen = textoOrigenNovedad(n);
+    return { novedadId: n.id, rotulo, origen, texto: `${rotulo} (${origen})` };
+  });
+}
