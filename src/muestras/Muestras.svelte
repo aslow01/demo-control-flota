@@ -1,0 +1,438 @@
+<script lang="ts">
+  // Página de muestras de los componentes de 3.2 (solo en desarrollo, ver muestras.html). Datos ficticios.
+  // Sirve para mirar cada pieza en claro y oscuro, a 360 y 1280 px, y para recorrerlas con teclado.
+  import Boton from "../componentes/Boton.svelte";
+  import Campo from "../componentes/Campo.svelte";
+  import Dato from "../componentes/Dato.svelte";
+  import Etiqueta from "../componentes/Etiqueta.svelte";
+  import Icono from "../componentes/Icono.svelte";
+  import Panel from "../componentes/Panel.svelte";
+  import Patente from "../componentes/Patente.svelte";
+  import { ICONOS, type NombreIcono, type Tono } from "../componentes/tipos.ts";
+
+  const colores: { grupo: string; nombres: string[] }[] = [
+    {
+      grupo: "Base",
+      nombres: [
+        "escritorio",
+        "fondo",
+        "superficie",
+        "superficie-2",
+        "ventana-barra",
+        "ventana-borde",
+        "borde",
+        "borde-fuerte",
+        "texto",
+        "texto-2",
+        "texto-3",
+        "acento",
+        "acento-hover",
+        "acento-suave",
+        "edicion",
+        "patente-fondo",
+        "patente-banda",
+        "hoy",
+      ],
+    },
+    ...(["critico", "semana", "quincena", "mes", "vigente", "neutro"] as const).map((t) => ({
+      grupo: t,
+      nombres: [`${t}-t`, `${t}-f`, `${t}-r`],
+    })),
+  ];
+
+  const etiquetas: { tono: Tono; icono: NombreIcono; texto: string }[] = [
+    { tono: "critico", icono: "vencido", texto: "Vencido hace 3 días" },
+    { tono: "critico", icono: "vencido", texto: "Vencido hace 1 día" },
+    { tono: "critico", icono: "faltante", texto: "Falta cargar" },
+    { tono: "semana", icono: "reloj", texto: "Vence hoy" },
+    { tono: "semana", icono: "alerta", texto: "Vence mañana" },
+    { tono: "semana", icono: "alerta", texto: "Vence en 6 días" },
+    { tono: "quincena", icono: "calendario", texto: "Vence en 12 días" },
+    { tono: "mes", icono: "anillo", texto: "Vence en 24 días" },
+    { tono: "vigente", icono: "check", texto: "Vigente hasta 12/05/2027" },
+    { tono: "neutro", icono: "guion", texto: "Reemplazado el 17/11/2026" },
+    { tono: "vigente", icono: "check", texto: "Puede salir" },
+    { tono: "critico", icono: "vencido", texto: "No puede salir" },
+    { tono: "semana", icono: "llave", texto: "Fuera de servicio" },
+    { tono: "neutro", icono: "caja", texto: "De baja" },
+    { tono: "critico", icono: "octogono", texto: "Crítica" },
+    { tono: "semana", icono: "llave", texto: "Abierta" },
+    { tono: "neutro", icono: "check", texto: "Resuelta el 16/11/2026" },
+    { tono: "vigente", icono: "check", texto: "Enviado" },
+    { tono: "neutro", icono: "lapiz", texto: "Borrador" },
+    { tono: "semana", icono: "lapiz", texto: "Sin enviar" },
+    { tono: "semana", icono: "guion", texto: "Sin parte" },
+    { tono: "critico", icono: "vencido", texto: "Con documentación vencida" },
+    { tono: "neutro", icono: "octogono", texto: "Punto crítico" },
+  ];
+
+  const escala: { nombre: string; variable: string; texto: string }[] = [
+    { nombre: "cifra", variable: "--t-cifra", texto: "4 unidades" },
+    { nombre: "h1", variable: "--t-h1", texto: "Centro de alertas" },
+    { nombre: "h2", variable: "--t-h2", texto: "Vencen en 7 días o menos" },
+    { nombre: "h3", variable: "--t-h3", texto: "Vencidos y faltantes (2)" },
+    { nombre: "cuerpo", variable: "--t-cuerpo", texto: "Texto general de la aplicación, a 16 px." },
+    { nombre: "tabla", variable: "--t-tabla", texto: "Seguro · DEMO-88-4471 · 17/11/2026" },
+    { nombre: "chico", variable: "--t-chico", texto: "Ayudas, rótulos y segunda línea." },
+  ];
+
+  // Campos
+  let texto = $state("DEMO-88-4471");
+  let textoVacio = $state("");
+  let km = $state("84320");
+  let kmInvalido = $state("84.100");
+  let litros = $state("42,5");
+  let fecha = $state("2026-11-17");
+  let largo = $state("Pérdida de aceite debajo del motor. ".repeat(12).trim());
+  let corto = $state("");
+  let proyecto = $state("a");
+  let grande = $state("84320");
+
+  // Botones
+  let guardando = $state(false);
+  let confirmar = $state(false);
+  let estadoPanel = $state("Seguro renovado: vence 15/11/2027.");
+</script>
+
+<a class="saltar" href="#principal">Ir al contenido</a>
+
+<header class="encabezado contenedor">
+  <p class="rotulo">Solo desarrollo</p>
+  <h1>Muestras de componentes</h1>
+  <p class="parrafo nota">
+    Paso 3.2. Todo es ficticio. El modo claro u oscuro sigue al dispositivo. Esta página no está en la compilación de producción.
+  </p>
+</header>
+
+<main id="principal" class="contenedor pagina">
+  <Panel titulo="Colores" meta="tokens.css" icono="estado">
+    {#each colores as g (g.grupo)}
+      <div class="grupo">
+        <h3 class="nota">{g.grupo}</h3>
+        <ul class="muestras-color">
+          {#each g.nombres as n (n)}
+            <li>
+              <span class="cuadro" style:background-color={`var(--c-${n})`}></span>
+              <span class="nota codigo">--c-{n}</span>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/each}
+  </Panel>
+
+  <Panel titulo="Tipografía" meta="familia del sistema, sin fuentes externas">
+    {#each escala as e (e.nombre)}
+      <div class="renglon-escala">
+        <span class="nota codigo">{e.nombre}</span>
+        <span class="texto-escala" style:font-size={`var(${e.variable})`} data-nombre={e.nombre}>{e.texto}</span>
+      </div>
+    {/each}
+    <p class="nota">
+      Cifras tabulares: <span class="num">84.320 km · 1.234 km · 0.111 km</span> · Código: <span class="codigo">DEMO-88-4471</span> ·
+      Rótulo: <span class="rotulo">Próximo vencimiento</span>
+    </p>
+  </Panel>
+
+  <Panel titulo="Íconos" meta="{ICONOS.length} en el sprite" icono="marca">
+    <ul class="iconos">
+      {#each ICONOS as nombre (nombre)}
+        <li>
+          <span class="icono-grande"><Icono {nombre} /></span>
+          <span class="nota codigo">{nombre}</span>
+        </li>
+      {/each}
+    </ul>
+    <p class="nota">Tamaños: <span class="tam-14"><Icono nombre="check" /></span> 14 · <Icono nombre="check" /> 20 · <span class="tam-24"><Icono nombre="check" /></span> 24</p>
+  </Panel>
+
+  <Panel titulo="Patente" meta="5.5">
+    <div class="fila-muestra">
+      <Patente patente="ZK214BD" />
+      <Patente patente="ZKB482" />
+      <Patente patente="ZK214BD" tamano="grande" />
+      <Patente patente="ZKB482" tamano="grande" />
+    </div>
+    <h3 class="fila-muestra">Ficha de la unidad: <Patente patente="ZK214BD" tamano="grande" /></h3>
+    <p class="nota">Como enlace (el nombre accesible es «Ficha de ZK 214 BD»; el área de toque es de 44 px de alto):</p>
+    <div class="fila-muestra">
+      <Patente patente="ZK214BD" href="#/unidad/ZK214BD" />
+      <Patente patente="ZKB482" href="#/unidad/ZKB482" />
+      <Patente patente="ZK214BD" href="#/unidad/ZK214BD" tamano="grande" />
+    </div>
+    <table class="tabla-muestra">
+      <caption class="solo-lectores">Ejemplo de patentes dentro de una tabla</caption>
+      <thead>
+        <tr><th scope="col" class="rotulo">Unidad</th><th scope="col" class="rotulo">Estado hoy</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row"><Patente patente="ZK214BD" href="#/unidad/ZK214BD" /> <span class="nota">Int. 07</span></th>
+          <td><Etiqueta tono="critico" icono="vencido">No puede salir</Etiqueta></td>
+        </tr>
+        <tr>
+          <th scope="row"><Patente patente="ZKB482" href="#/unidad/ZKB482" /> <span class="nota">Int. 11</span></th>
+          <td><Etiqueta tono="vigente" icono="check">Puede salir</Etiqueta></td>
+        </tr>
+      </tbody>
+    </table>
+  </Panel>
+
+  <Panel titulo="Etiquetas de estado" meta="{etiquetas.length} de la tabla 5.7">
+    <ul class="etiquetas">
+      {#each etiquetas as e (e.texto)}
+        <li><Etiqueta tono={e.tono} icono={e.icono}>{e.texto}</Etiqueta></li>
+      {/each}
+    </ul>
+  </Panel>
+
+  <Panel titulo="Botones" meta="5.1">
+    <div class="fila-muestra">
+      <Boton>Guardar renovación</Boton>
+      <Boton variante="secundario">Cancelar</Boton>
+      <Boton variante="texto">Ver novedades</Boton>
+      <Boton variante="peligro">Dar de baja ZK 214 BD</Boton>
+      <Boton variante="icono" icono="mas" etiqueta="Más" />
+      <Boton variante="icono" icono="cerrar" etiqueta="Cerrar" />
+    </div>
+    <div class="fila-muestra">
+      <Boton tamano="grande">Enviar parte</Boton>
+      <Boton tamano="grande" variante="secundario" icono="parte">Empezar el parte</Boton>
+      <Boton variante="secundario" icono="reiniciar">Reiniciar demo</Boton>
+    </div>
+    <div class="fila-muestra">
+      <Boton cargando={guardando} onclick={() => (guardando = true)}>
+        {guardando ? "Guardando…" : "Guardar documento"}
+      </Boton>
+      <Boton variante="texto" onclick={() => (guardando = false)}>Simular fin del guardado</Boton>
+      <span class="nota">Con «Guardando…» el botón no se deshabilita (conserva el foco) pero ignora los clics.</span>
+    </div>
+    <div class="fila-muestra">
+      <Boton variante="secundario" disabled>Volver a servicio</Boton>
+      <span class="nota">No se puede: hay una novedad crítica abierta.</span>
+    </div>
+    <div class="fila-muestra">
+      <Boton variante={confirmar ? "peligro" : "secundario"} onclick={() => (confirmar = !confirmar)}>
+        {confirmar ? "Confirmar: descartar" : "Descartar borrador"}
+      </Boton>
+      <span class="nota">Variante peligro tras el primer clic (la confirmación en dos pasos la maneja la pantalla).</span>
+    </div>
+  </Panel>
+
+  <Panel titulo="Campos de formulario" meta="5.11">
+    <div class="formulario">
+      <Campo etiqueta="Número" requerido bind:valor={texto} ayuda="Como figura en la póliza." />
+      <Campo etiqueta="Emisor" bind:valor={textoVacio} ayuda="Precargado con el emisor anterior." />
+      <Campo
+        etiqueta="Número"
+        requerido
+        bind:valor={corto}
+        error="Escriba el número del documento."
+        ayuda="Como figura en la póliza."
+      />
+      <Campo etiqueta="Kilometraje al terminar" tipo="km" requerido bind:valor={km} ayuda="Último registro: 84.320 km (parte del 17/11/2026)." />
+      <Campo
+        etiqueta="Kilometraje al terminar"
+        tipo="km"
+        requerido
+        bind:valor={kmInvalido}
+        error="El kilometraje no puede ser menor que el último registro (84.320 km)."
+      />
+      <Campo etiqueta="Litros cargados" tipo="litros" bind:valor={litros} ayuda="Solo si cargó combustible." />
+      <Campo etiqueta="Vence" tipo="fecha" requerido bind:valor={fecha} ayuda="Formato día/mes/año." />
+      <Campo etiqueta="Proyecto" tipo="select" bind:valor={proyecto}>
+        <option value="a">Proyecto Cerro Demo</option>
+        <option value="b">Proyecto Quebrada Ficticia</option>
+        <option value="c">Sin proyecto asignado</option>
+      </Campo>
+      <Campo etiqueta="¿Qué encontró?" tipo="area" requerido bind:valor={largo} ayuda="Describa lo que vio, en pocas palabras." />
+      <Campo etiqueta="Kilometraje (campo del parte, 48 px)" tipo="km" grande bind:valor={grande} />
+      <dl class="solo-lectura">
+        <Dato etiqueta="Unidad" valor="Toyota Hilux 2022 · Camioneta" />
+        <Dato etiqueta="Conductor">Lucía Ferreyra (ficticia)</Dato>
+        <Dato etiqueta="Estado"><Etiqueta tono="vigente" icono="check">Enviado</Etiqueta></Dato>
+      </dl>
+    </div>
+  </Panel>
+
+  <Panel titulo="Panel completo" meta="11 vencimientos" icono="documento" estado={estadoPanel}>
+    {#snippet controles()}
+      <Boton variante="icono" icono="ayuda" etiqueta="Ayuda de este panel" />
+    {/snippet}
+    {#snippet herramientas()}
+      <Boton variante="secundario">Todos (11)</Boton>
+      <Boton variante="secundario">7 días o menos (4)</Boton>
+      <Boton variante="texto" onclick={() => (estadoPanel = estadoPanel === "" ? "Seguro renovado: vence 15/11/2027." : "")}>
+        Alternar la barra de estado
+      </Boton>
+    {/snippet}
+    <p class="parrafo">
+      Interior del panel. La barra de estado de abajo existe siempre (es una región <span class="codigo">role="status"</span>); sin
+      mensaje no ocupa lugar.
+    </p>
+    <Boton variante="secundario">Un botón para probar el foco dentro del panel</Boton>
+  </Panel>
+
+  <Panel titulo="Panel sin herramientas ni estado" icono="persona">
+    <p class="parrafo">Solo barra de título e interior.</p>
+  </Panel>
+
+  <div class="angosto">
+    <Panel titulo="Panel angosto" meta="dato que baja" icono="unidad" estado="Mensaje en la barra de estado.">
+      <p class="nota">El contenedor mide 20 rem: el dato breve baja a su renglón.</p>
+    </Panel>
+  </div>
+</main>
+
+<style>
+  .encabezado {
+    padding-block: var(--e-5) var(--e-3);
+  }
+  .pagina {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-4);
+    padding-block: var(--e-2) var(--e-7);
+  }
+  @media (min-width: 40rem) {
+    .pagina {
+      gap: var(--e-5);
+    }
+  }
+
+  .grupo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-2);
+  }
+  .muestras-color {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: var(--e-2);
+  }
+  .muestras-color li {
+    display: flex;
+    align-items: center;
+    gap: var(--e-2);
+    min-width: 0;
+  }
+  .cuadro {
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid var(--c-borde-fuerte);
+    border-radius: var(--r-1);
+  }
+
+  .renglon-escala {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--e-1) var(--e-4);
+  }
+  .renglon-escala .nota {
+    flex: none;
+    width: 5rem;
+  }
+  .texto-escala[data-nombre="cifra"] {
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .texto-escala[data-nombre="h1"] {
+    font-family: var(--t-familia-titulo);
+    font-weight: 700;
+    line-height: 1.15;
+  }
+  .texto-escala[data-nombre="h2"] {
+    font-family: var(--t-familia-titulo);
+    font-weight: var(--t-peso-h2);
+    line-height: 1.25;
+  }
+  .texto-escala[data-nombre="h3"] {
+    font-family: var(--t-familia-titulo);
+    font-weight: 600;
+  }
+
+  .iconos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    gap: var(--e-3);
+  }
+  .iconos li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e-1);
+    text-align: center;
+  }
+  .icono-grande {
+    --icono-tam: 1.5rem;
+    display: inline-flex;
+    padding: var(--e-2);
+    border: 1px solid var(--c-borde);
+    border-radius: var(--r-2);
+    background: var(--c-superficie-2);
+    color: var(--c-texto);
+  }
+  .tam-14 {
+    --icono-tam: 0.875rem;
+  }
+  .tam-24 {
+    --icono-tam: 1.5rem;
+  }
+
+  .fila-muestra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e-3);
+  }
+  h3.fila-muestra {
+    font-weight: 600;
+  }
+
+  .tabla-muestra {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--t-tabla);
+  }
+  .tabla-muestra th,
+  .tabla-muestra td {
+    padding: var(--e-3) var(--e-2);
+    border-top: 1px solid var(--c-borde);
+    text-align: left;
+    font-weight: 400;
+  }
+  .tabla-muestra thead th {
+    border-top: 0;
+    color: var(--c-texto-2);
+  }
+
+  .etiquetas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e-2) var(--e-3);
+  }
+
+  .formulario {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--e-4);
+  }
+  @media (min-width: 40rem) {
+    .formulario {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--e-4) var(--e-5);
+    }
+  }
+  .solo-lectura {
+    display: grid;
+    gap: var(--e-3);
+    margin: 0;
+  }
+
+  .angosto {
+    max-width: 20rem;
+  }
+</style>
