@@ -5,6 +5,7 @@ import {
   conductorParaParte,
   documentacionVencidaEn,
   enviadoFueraDeTermino,
+  esBorradorVacio,
   faltantesParaEnviar,
   novedadesDelParte,
   nuevoBorrador,
@@ -314,5 +315,26 @@ describe("P5: enviado fuera de término", () => {
 
   it("P5: un borrador no está fuera de término", () => {
     expect(enviadoFueraDeTermino(parte({ estado: "borrador", enviado: null }))).toBe(false);
+  });
+});
+
+describe("D11: borrador vacío", () => {
+  const vacio = (): Parte => parte({ estado: "borrador", enviado: null, kmInicio: 84320, kmFin: null, combustible: null, litrosCargados: null, checklist: checklistVacio(), otraNovedad: null });
+
+  it("D11: con solo el kilometraje inicial que puso el sistema (P13) está vacío", () => {
+    expect(esBorradorVacio(vacio(), 84320)).toBe(true);
+    expect(esBorradorVacio({ ...vacio(), kmInicio: null }, null)).toBe(true);
+  });
+
+  it("D11: si la persona cambió el kilometraje inicial ya no está vacío", () => {
+    expect(esBorradorVacio({ ...vacio(), kmInicio: 84500 }, 84320)).toBe(false);
+  });
+
+  it("D11: cualquier otro dato lo vuelve no vacío", () => {
+    expect(esBorradorVacio({ ...vacio(), kmFin: 84400 }, 84320)).toBe(false);
+    expect(esBorradorVacio({ ...vacio(), combustible: "lleno" }, 84320)).toBe(false);
+    expect(esBorradorVacio({ ...vacio(), litrosCargados: 10 }, 84320)).toBe(false);
+    expect(esBorradorVacio({ ...vacio(), otraNovedad: { descripcion: "", impideUso: false } }, 84320)).toBe(false);
+    expect(esBorradorVacio({ ...vacio(), checklist: { ...checklistVacio(), cabina: { estado: "en-orden" } } }, 84320)).toBe(false);
   });
 });

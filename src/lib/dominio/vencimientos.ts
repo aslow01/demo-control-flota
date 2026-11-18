@@ -1,7 +1,7 @@
 // Clasificación de vencimientos (V1 a V8) y, más abajo, documento vigente y requisitos (V9 a V17).
 
 import { diasEntre } from "./fechas.ts";
-import { textoVencimiento } from "./textos.ts";
+import { NOMBRES_DOCUMENTO, textoVencimiento } from "./textos.ts";
 import type { Conductor, Documento, FechaCivil, Proyecto, TipoDocumento, Titular, Unidad } from "./tipos.ts";
 
 export type Grupo = "vencidos" | "7" | "15" | "30";
@@ -41,22 +41,20 @@ export interface Requisito {
 
 /** 5.1: requisitos por titular, en el orden en que se muestran. */
 export const REQUISITOS: readonly Requisito[] = [
-  { titular: "unidad", tipo: "seguro", nombre: "Seguro", obligatorio: "siempre" },
-  { titular: "unidad", tipo: "revision-tecnica", nombre: "Revisión técnica", obligatorio: "siempre" },
-  { titular: "unidad", tipo: "matafuego", nombre: "Carga del matafuego", obligatorio: "siempre" },
+  { titular: "unidad", tipo: "seguro", nombre: NOMBRES_DOCUMENTO.seguro, obligatorio: "siempre" },
+  { titular: "unidad", tipo: "revision-tecnica", nombre: NOMBRES_DOCUMENTO["revision-tecnica"], obligatorio: "siempre" },
+  { titular: "unidad", tipo: "matafuego", nombre: NOMBRES_DOCUMENTO.matafuego, obligatorio: "siempre" },
   {
     titular: "unidad",
     tipo: "habilitacion-proyecto",
-    nombre: "Habilitación de ingreso al proyecto",
+    nombre: NOMBRES_DOCUMENTO["habilitacion-proyecto"],
     obligatorio: "si-proyecto-requiere",
   },
-  { titular: "conductor", tipo: "licencia", nombre: "Licencia de conducir", obligatorio: "siempre" },
-  { titular: "conductor", tipo: "habilitacion-manejo", nombre: "Habilitación de manejo en el proyecto", obligatorio: "no" },
+  { titular: "conductor", tipo: "licencia", nombre: NOMBRES_DOCUMENTO.licencia, obligatorio: "siempre" },
+  { titular: "conductor", tipo: "habilitacion-manejo", nombre: NOMBRES_DOCUMENTO["habilitacion-manejo"], obligatorio: "no" },
 ];
 
-export const NOMBRES_DOCUMENTO: Record<TipoDocumento, string> = Object.fromEntries(
-  REQUISITOS.map((r) => [r.tipo, r.nombre]),
-) as Record<TipoDocumento, string>;
+export { NOMBRES_DOCUMENTO };
 
 /** V9: el documento vigente de un titular y un tipo es el de `vence` más tardío (desempata el cargado después, y el id). */
 export function documentoVigente(

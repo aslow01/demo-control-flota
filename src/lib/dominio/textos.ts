@@ -1,7 +1,17 @@
 // Textos de estados y errores, en español neutro, en un solo lugar (se completa en el paso 1.10).
 
-import { formatearFecha } from "./fechas.ts";
-import type { FechaCivil } from "./tipos.ts";
+import { diaDeLaSemana, formatearFecha } from "./fechas.ts";
+import type { Advertencia, FechaCivil, TipoDocumento } from "./tipos.ts";
+
+/** Nombre en pantalla de cada tipo de documento (5.1). */
+export const NOMBRES_DOCUMENTO: Record<TipoDocumento, string> = {
+  seguro: "Seguro",
+  "revision-tecnica": "Revisión técnica",
+  matafuego: "Carga del matafuego",
+  "habilitacion-proyecto": "Habilitación de ingreso al proyecto",
+  licencia: "Licencia de conducir",
+  "habilitacion-manejo": "Habilitación de manejo en el proyecto",
+};
 
 /** `1 día`, `3 días`. */
 export function pluralizar(n: number, singular: string, plural: string): string {
@@ -138,3 +148,74 @@ export const RESUMEN_EVENTO = {
       : `Kilometraje de ${patente} corregido: de ${formatearKm(anterior)} a ${formatearKm(base)} km desde el ${formatearFecha(desde)}`,
   unidadBaja: (patente: string, motivo: string) => `${patente} dada de baja: ${motivo}`,
 } as const;
+
+// ---------------------------------------------------------------------------------------------
+// Textos de estado de las pantallas (docs/diseno-ui.md, secciones 5.6, 6.1 y 7).
+// ---------------------------------------------------------------------------------------------
+
+/** A8: el protagonista del centro de alertas. */
+export function textoProtagonista(n: number): string {
+  if (n === 0) return "Todas las unidades activas pueden salir hoy";
+  return n === 1 ? "1 unidad no puede salir hoy" : `${n} unidades no pueden salir hoy`;
+}
+
+/** A8: "Disponibles hoy: 19 de 23 unidades activas." */
+export function textoDisponibles(disponibles: number, activas: number): string {
+  return `Disponibles hoy: ${disponibles} de ${pluralizar(activas, "unidad activa", "unidades activas")}.`;
+}
+
+/** 5.6: resumen del horizonte para lectores de pantalla. */
+export function textoHorizonte(porGrupo: { vencidos: number; "7": number; "15": number; "30": number }): string {
+  const vencidos =
+    porGrupo.vencidos === 0 ? "" : ` ${pluralizar(porGrupo.vencidos, "documento vencido o faltante", "documentos vencidos o faltantes")}.`;
+  const enHorizonte = porGrupo["7"] + porGrupo["15"] + porGrupo["30"];
+  if (enHorizonte === 0) return `Nada vence en los próximos 30 días.${vencidos}`;
+  return (
+    `Vencimientos de los próximos 30 días: ${porGrupo["7"]} en 7 días o menos, ${porGrupo["15"]} entre 8 y 15 días, ` +
+    `${porGrupo["30"]} entre 16 y 30 días.${vencidos}`
+  );
+}
+
+/** T6: "Hoy es miércoles 18/11/2026 (hora de Argentina)". */
+export function textoHoy(hoy: FechaCivil): string {
+  return `Hoy es ${diaDeLaSemana(hoy)} ${formatearFecha(hoy)} (hora de Argentina)`;
+}
+
+/** "Último registro: 84.320 km (parte del 17/11/2026)." o "Sin registros". */
+export function textoUltimoRegistro(km: number | null, origen: string | null): string {
+  if (km === null || origen === null) return "Sin registros";
+  return `Último registro: ${formatearKm(km)} km (${origen}).`;
+}
+
+/** Texto accesible de la insignia de la pestaña "Alertas". */
+export function textoInsigniaAlertas(criticas: number): string {
+  if (criticas === 0) return "Alertas";
+  return `Alertas, ${pluralizar(criticas, "crítica", "críticas")}`;
+}
+
+/** Barra de estado después de renovar: "Quedan 10 vencimientos." */
+export function textoQuedanVencimientos(n: number): string {
+  if (n === 0) return "No quedan vencimientos.";
+  return n === 1 ? "Queda 1 vencimiento." : `Quedan ${n} vencimientos.`;
+}
+
+/** Unidad recién agregada: "Le faltan 4 documentos". */
+export function textoLeFaltan(n: number): string {
+  if (n === 0) return "No le falta ningún documento";
+  return n === 1 ? "Le falta 1 documento" : `Le faltan ${n} documentos`;
+}
+
+/** K6, K7 y P9: cada advertencia que se acepta antes de enviar el parte. */
+export function textoAdvertencia(a: Advertencia): string {
+  switch (a.tipo) {
+    case "salto-km":
+      return `${formatearKm(a.km)} km sin registrar`;
+    case "recorrido-largo":
+      return `Recorrido del día de ${formatearKm(a.km)} km`;
+    case "documentacion-vencida":
+      return (
+        `Documentación vencida o faltante: ${a.documentos.map((t) => NOMBRES_DOCUMENTO[t]).join(", ")}. ` +
+        "Puede enviar el parte igual: quedará registrado que la unidad circuló con documentación vencida."
+      );
+  }
+}
