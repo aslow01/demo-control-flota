@@ -3,15 +3,17 @@
 
   export interface ContextoDeDocumento {
     titulo: string;
-    /** Línea de contexto («Vigente: póliza …»); solo al renovar. */
+    /** Línea de contexto («Vigente: póliza …» al renovar; la nota de «Use esto para corregir…» al corregir). */
     contexto?: string;
+    /** La ayuda del emisor, si no es la de siempre (al corregir, el emisor no viene «del documento anterior»). */
+    ayudaEmisor?: string;
     primario: string;
     valoresIniciales: ValoresDocumento;
   }
 </script>
 
 <script lang="ts">
-  // Diálogos «Renovar» y «Cargar documento» (5.11, 5.15 y 5.17): el mismo formulario (Número*, Emisor, Vence*, Emitido) con el título, la
+  // Diálogos «Renovar», «Cargar documento» y «Corregir documento» (5.11, 5.15 y 5.17): el mismo formulario (Número*, Emisor, Vence*, Emitido) con el título, la
   // línea de contexto y el botón primario que arma el dominio (`contextoDeRenovar` / `contextoDeCargar`). No tiene reglas: lo escrito va tal
   // cual a `guardar` (que es `app.renovarDocumento` o `app.cargarDocumento`) y lo que vuelve (errores por campo o un error general) se muestra.
   //  - Foco al abrir: el primer campo. Si hay más de un error, el foco va al resumen de arriba (con un enlace a cada campo); con uno solo, al campo.
@@ -114,7 +116,7 @@
       id={idCampo("emisor")}
       bind:valor={valores.emisor}
       autocomplete="off"
-      ayuda={contexto !== null && contexto.valoresIniciales.emisor !== "" ? T.ayudaEmisorHeredado : T.ayudaOpcional}
+      ayuda={contexto?.ayudaEmisor ?? (contexto !== null && contexto.valoresIniciales.emisor !== "" ? T.ayudaEmisorHeredado : T.ayudaOpcional)}
       error={error("emisor")}
     />
     <Campo etiqueta={T.vence} id={idCampo("vence")} tipo="fecha" bind:valor={valores.vence} requerido error={error("vence")} />

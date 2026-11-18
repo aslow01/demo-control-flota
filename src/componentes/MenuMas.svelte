@@ -2,11 +2,23 @@
   // 5.3 Menú "Más": patrón disclosure (no role="menu"). Botón de ícono con aria-expanded y aria-controls; lista de botones
   // en una caja flotante de 15 rem alineada a la derecha. Esc cierra y devuelve el foco al botón; un clic afuera, o salir
   // con Tab, también cierran. Los ítems miden 44 px de alto.
+  // Por defecto es el botón de ícono "Más" de la barra; con `conTexto` es un botón secundario con su rótulo y una flecha ("Más acciones ▾", ficha).
   import Boton from "./Boton.svelte";
+  import Icono from "./Icono.svelte";
   import { TEXTO_MARCO } from "./textos-marco.ts";
   import type { ItemMenu } from "./tipos.ts";
 
-  let { items }: { items: ItemMenu[] } = $props();
+  let {
+    items,
+    etiqueta = TEXTO_MARCO.menuMas,
+    conTexto = false,
+  }: {
+    items: ItemMenu[];
+    /** Nombre del botón. */
+    etiqueta?: string;
+    /** Botón secundario con el nombre visible, en vez del ícono. */
+    conTexto?: boolean;
+  } = $props();
 
   const uid = $props.id();
   const idLista = $derived(`${uid}-lista`);
@@ -46,14 +58,13 @@
 
 {#if items.length > 0}
   <div class="menu" bind:this={raiz} onfocusout={alSalirElFoco}>
-    <Boton
-      variante="icono"
-      icono="mas"
-      etiqueta={TEXTO_MARCO.menuMas}
-      aria-expanded={abierto}
-      aria-controls={idLista}
-      onclick={() => (abierto = !abierto)}
-    />
+    {#if conTexto}
+      <Boton variante="secundario" aria-expanded={abierto} aria-controls={idLista} onclick={() => (abierto = !abierto)}>
+        {etiqueta}<span class="flecha"><Icono nombre="chevron" /></span>
+      </Boton>
+    {:else}
+      <Boton variante="icono" icono="mas" {etiqueta} aria-expanded={abierto} aria-controls={idLista} onclick={() => (abierto = !abierto)} />
+    {/if}
     <ul class="lista" id={idLista} hidden={!abierto}>
       {#each items as item (item.id)}
         <li><button type="button" class="item" onclick={() => activar(item)}>{item.texto}</button></li>
@@ -65,6 +76,13 @@
 <style>
   .menu {
     position: relative;
+  }
+  .menu :global(.boton[data-variante="secundario"]) {
+    width: 100%;
+  }
+  .flecha {
+    display: inline-flex;
+    rotate: 90deg;
   }
   .lista {
     position: absolute;

@@ -118,6 +118,8 @@ export const TEXTO_ALERTAS = {
   venceEl: "Vence",
   /** Lo que se dice cuando la fila que se quiso abrir ya no está pendiente (se renovó o se cargó mientras tanto). */
   yaNoPendiente: "Ese documento ya no está pendiente. La lista está al día.",
+  /** Ídem para una novedad que se resolvió mientras tanto (otra pestaña, o ya resuelta desde la ficha). */
+  novedadYaResuelta: "Esa novedad ya no está abierta. La lista está al día.",
 } as const;
 
 /** Diálogos «Renovar» y «Cargar documento» (5.11, 5.15 y 5.17). Los títulos y los botones primarios salen de `textos.ts`. */
@@ -177,4 +179,97 @@ export const TEXTO_DIALOGO_UNIDAD = {
   yaTiene: (patente: string) => `Ya tiene asignada la unidad ${patente}.`,
   opcionConUnidad: (nombre: string, patente: string) => `${nombre} (ya tiene ${patente})`,
   guardando: "Guardando…",
+} as const;
+
+/** Ficha de unidad (6.3): rótulos de la pantalla que no salen del dominio. Los títulos de los paneles, las acciones, los estados y los textos de cada fila vienen de `textos.ts`. */
+export const TEXTO_FICHA_VISTA = {
+  rutaEtiqueta: "Ruta",
+  motivosDe: "Motivos por los que no puede salir",
+  datos: { proyecto: "Proyecto", conductor: "Conductor", kilometraje: "Kilometraje", sinConductor: "Sin conductor", sinProyecto: "—" },
+  mostrar: "Mostrar",
+  /** Se quiso abrir un diálogo de algo que ya cambió (otra pestaña, o la ficha estaba desactualizada). */
+  yaCambio: "La unidad cambió desde la última vez que se miró. La ficha está al día.",
+  documentos: {
+    columnas: { documento: "Documento", numero: "Número", vence: "Vence", estado: "Estado", accion: "Acciones" },
+    /** Rótulos de las celdas cuando la fila pasa a tarjeta. */
+    numeroDe: "Número",
+    venceEl: "Vence",
+    sinNumero: "—",
+    /** Cada documento reemplazado, dentro de «Anteriores (N)»: «DEMO-88-3320 · Aseguradora Cuyo · venció el 17/11/2025 · cargado el 18/11/2025». */
+    anterior: (a: { numero: string; emisor: string | null; vence: string; cargado: string }) =>
+      [a.numero, a.emisor, `vencía el ${a.vence}`, `cargado el ${a.cargado}`].filter((t) => t !== null).join(" · "),
+    /** El documento ya no es el que se quiso abrir (se renovó o se cargó mientras tanto). */
+    yaNoDisponible: "Ese documento ya cambió. La lista está al día.",
+    sinDocumentos: "Esta unidad no tiene documentos cargados.",
+  },
+  novedades: {
+    /** Lo que se anuncia al cambiar el filtro: «Novedades abiertas: 1.» */
+    anuncio: (etiqueta: string, cantidad: number) => `Novedades ${etiqueta.toLowerCase()}: ${cantidad}.`,
+    impideVolver: "Impide volver a servicio hasta que se resuelva.",
+    resuelta: (fecha: string, autor: string) => `Resuelta el ${fecha} por ${autor}.`,
+    yaResuelta: "Esa novedad ya está resuelta. La lista está al día.",
+  },
+  kilometraje: {
+    columnas: { fecha: "Fecha", registro: "Registro", recorrido: "Recorrido" },
+    motivo: (texto: string) => `Motivo: ${texto}`,
+    /** Texto oculto delante de la fecha del enlace al parte: «Parte del 17/11/2026». */
+    parteDel: "Parte del ",
+  },
+  historial: {
+    resumenDelDetalle: "Detalle del evento",
+    kilometraje: "Kilometraje",
+    recorrido: "Recorrido",
+    combustible: "Combustible",
+    litros: "Litros",
+    novedades: "Novedades",
+    critica: "crítica",
+    fueraDeTermino: "Enviado fuera de término.",
+    campo: "Campo",
+  },
+} as const;
+
+/** Diálogos de la ficha (5.11 y 5.17): rótulos de los campos y ayudas. Los títulos, los primarios, las notas y los errores vienen de `textos.ts`. */
+export const TEXTO_DIALOGOS_FICHA_VISTA = {
+  guardando: "Guardando…",
+  cerrar: "Cerrar",
+  resolver: {
+    campo: "¿Qué se hizo?",
+    ayuda: (min: number, max: number) => `Entre ${min} y ${max} caracteres.`,
+    novedad: "Novedad",
+  },
+  novedad: {
+    descripcion: "Descripción",
+    ayuda: (min: number, max: number) => `Qué se encontró. Entre ${min} y ${max} caracteres.`,
+  },
+  fueraDeServicio: {
+    motivo: "Motivo",
+    ayuda: (min: number, max: number) => `Por ejemplo: «Cambio de embrague en el taller». Entre ${min} y ${max} caracteres.`,
+  },
+  volver: {
+    novedadesAbiertas: "Novedades críticas abiertas",
+  },
+  baja: {
+    motivo: "Motivo",
+    ayuda: (min: number, max: number) => `Por ejemplo: «Venta de la unidad». Entre ${min} y ${max} caracteres.`,
+  },
+  kilometraje: {
+    desde: "Desde",
+    ayudaDesde: "Desde qué día vale el nuevo kilometraje. No puede ser posterior a hoy.",
+    kmBase: "Nuevo kilometraje",
+    ayudaKm: "El que marca hoy el tablero. Se acepta 84320, 84.320 o 84 320.",
+    motivo: "Motivo",
+    ayudaMotivo: (min: number, max: number) => `Por ejemplo: «Se cambió el tablero». Entre ${min} y ${max} caracteres.`,
+  },
+  asignacion: {
+    proyecto: "Proyecto",
+    elegirProyecto: "Elija el proyecto",
+    conductor: "Conductor",
+    ayudaConductor: "Opcional.",
+    yaTiene: (patente: string) => `Ya tiene asignada la unidad ${patente}.`,
+    opcionConUnidad: (nombre: string, patente: string) => `${nombre} (ya tiene ${patente})`,
+  },
+  cargarOtro: {
+    tipo: "Tipo de documento",
+    elegirTipo: "Elija el tipo de documento",
+  },
 } as const;

@@ -32,3 +32,15 @@ const OPERACION: Record<TipoAlertaOperacion, Aspecto> = {
 export function aspectoDeOperacion(tipo: TipoAlertaOperacion): Aspecto {
   return OPERACION[tipo];
 }
+
+/** Cómo se ve la aptitud de una unidad (5.7): la etiqueta de la flota y de la ficha. */
+const APTITUD: Record<"puede-salir" | "no-puede-salir" | "fuera-de-servicio" | "baja", Aspecto> = {
+  "puede-salir": { tono: "vigente", icono: "check" },
+  "no-puede-salir": { tono: "critico", icono: "vencido" },
+  "fuera-de-servicio": { tono: "semana", icono: "llave" },
+  baja: { tono: "neutro", icono: "caja" },
+};
+
+export function aspectoDeAptitud(categoria: keyof typeof APTITUD): Aspecto {
+  return APTITUD[categoria];
+}

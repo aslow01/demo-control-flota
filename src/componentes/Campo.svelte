@@ -27,6 +27,7 @@
     mayusculas = false,
     corto = false,
     maximo = 500,
+    maxFecha,
     children,
   }: {
     etiqueta: string;
@@ -50,6 +51,8 @@
     corto?: boolean;
     /** Tope del contador del tipo `area` (la validación es del dominio). */
     maximo?: number;
+    /** Tope del campo `fecha` (`AAAA-MM-DD`): el selector del navegador no deja elegir una posterior. La validación sigue siendo del dominio. */
+    maxFecha?: string;
     /** Las <option> del tipo `select`. */
     children?: Snippet;
   } = $props();
@@ -107,6 +110,7 @@
         id={idControl}
         class:corto={corto || tipo === "km" || tipo === "litros"}
         type={tipo === "fecha" ? "date" : "text"}
+        max={tipo === "fecha" ? maxFecha : undefined}
         inputmode={tipo === "km" ? "numeric" : tipo === "litros" ? "decimal" : modoEntrada}
         autocapitalize={mayusculas ? "characters" : undefined}
         spellcheck={mayusculas ? false : undefined}

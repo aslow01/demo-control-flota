@@ -14,7 +14,8 @@
 <script lang="ts" generics="F">
   // 5.9 Lista-tabla de alertas: una sola `table` (caption, encabezados con `scope`, un `tbody` por grupo con su fila de encabezado) con tres
   // disposiciones por consulta de contenedor del propio componente (no de la ventana):
-  // La usan el centro de alertas (`vencimientos`, `operacion`) y la flota (`flota`, 5.10: un solo grupo sin título y franja solo en algunas filas).
+  // La usan el centro de alertas (`vencimientos`, `operacion`), la flota (`flota`, 5.10: un solo grupo sin título y franja solo en algunas filas) y los
+  // documentos de la ficha (`documentos`, 6.3: Documento · Número y emisor · Vence · Estado · Acciones).
   //   ≥ 66 rem  tabla completa · 40 a 65,99 rem  compacta (dos líneas por celda) · < 40 rem  tarjetas con la etiqueta de cada dato.
   // El componente pone la estructura, la franja del tono y los cortes; quien lo usa pone las celdas (`fila`) con `data-col` (qué dato es)
   // y `data-etiqueta` (cómo se rotula en la tarjeta) y los roles de `lista-roles.ts`. Los encabezados de columna solo se ven en la tabla completa.
@@ -32,7 +33,7 @@
     tonoDeFila,
     fila,
   }: {
-    variante: "vencimientos" | "operacion" | "flota";
+    variante: "vencimientos" | "operacion" | "flota" | "documentos";
     /** Nombre de la tabla para lectores (el `caption` no se ve). */
     titulo: string;
     columnas: { id: string; titulo: string }[];
@@ -316,6 +317,48 @@
     }
   }
 
+  /* Documentos de la ficha, compacta y tarjetas: cada celda ocupa su área. */
+  @container lista (max-width: 65.99rem) {
+    [data-variante="documentos"] .fila :global(td[data-col="documento"]) {
+      grid-area: documento;
+    }
+    [data-variante="documentos"] .fila :global(td[data-col="numero"]) {
+      grid-area: numero;
+    }
+    [data-variante="documentos"] .fila :global(td[data-col="vence"]) {
+      grid-area: vence;
+    }
+    [data-variante="documentos"] .fila :global(td[data-col="estado"]) {
+      grid-area: estado;
+    }
+    [data-variante="documentos"] .fila :global(td[data-col="accion"]) {
+      grid-area: accion;
+      white-space: normal;
+    }
+  }
+  /* Compacta: (documento · número · vence) y debajo (estado · acciones). */
+  @container lista (min-width: 40rem) and (max-width: 65.99rem) {
+    [data-variante="documentos"] .fila {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) auto;
+      grid-template-areas:
+        "documento numero vence"
+        "estado estado accion";
+      align-items: start;
+    }
+  }
+  /* Tarjeta: documento, estado, (número · vence) y las acciones. */
+  @container lista (max-width: 39.99rem) {
+    [data-variante="documentos"] .fila {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        "documento documento"
+        "estado estado"
+        "numero vence"
+        "accion accion";
+      column-gap: var(--e-3);
+    }
+  }
+
   /* Tarjetas: una columna, cada fila es una tarjeta con su borde y el botón a todo el ancho. */
   @container lista (max-width: 39.99rem) {
     .fila {
@@ -344,13 +387,16 @@
   @media (forced-colors: active) {
     .fila {
       box-shadow: none;
+    }
+    /* La franja solo en las filas que tienen tono (las que están bien no la llevan). */
+    .fila[data-tono] {
       border-left: 4px solid CanvasText;
     }
     @container lista (min-width: 66rem) {
-      .fila {
+      .fila[data-tono] {
         border-left: 0;
       }
-      .fila :global(td:first-of-type) {
+      .fila[data-tono] :global(td:first-of-type) {
         box-shadow: none;
         border-left: 4px solid CanvasText;
       }
