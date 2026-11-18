@@ -79,6 +79,8 @@ export const ERRORES = {
   /** `reiniciar()` con la demo ya cargada: no hay formulario, y lo que había se conserva. */
   noPudoReiniciar: "No se pudo reiniciar la demo. Se conservaron los datos que tenía. Intente de nuevo.",
   noPudoCambiarVista: "No se pudo cambiar la vista. Intente de nuevo.",
+  /** `cambiarPerfil` mientras hay cambios de otra pestaña sin actualizar (D9): guardaría el `meta` viejo de esta pestaña sobre el nuevo. */
+  cambiosEnOtraPestana: "Hay cambios hechos en otra pestaña. Pulse «Actualizar» en el aviso y vuelva a cambiar la vista.",
   sinPermiso: "Esta acción es solo del encargado. En «Ver como», elija «Encargado».",
   sinDatos: "La demo todavía no terminó de cargar. Espere un momento e intente de nuevo.",
   noPudoActualizar: "No se pudieron leer los cambios de la otra pestaña. Intente de nuevo; si sigue fallando, recargue la página.",

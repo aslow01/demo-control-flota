@@ -732,8 +732,13 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   `fechaBase`, `modificada` y `semilla` con valores viejos. Hoy no se nota (la interfaz no modifica datos todavía); con la Etapa 4 sí:
   si la otra pestaña marcó `modificada = true`, al día siguiente el ejemplo se corre en silencio y se pierden sus cambios. Un arreglo
   seguro necesita una operación atómica en el repositorio («guardar solo el perfil», leyendo y escribiendo `meta` en la misma transacción)
-  en las dos implementaciones y en la suite de contrato; no es chico. Alternativa barata para la Etapa 4: que `cambiarPerfil` se niegue
-  (o pida «Actualizar») mientras `hayCambiosEnOtraPestana` sea verdadero.
+  en las dos implementaciones y en la suite de contrato; no es chico. **Mitigación aplicada (18/11/2026):** `cambiarPerfil` se niega con
+  `cambios-en-otra-pestana` (`ERRORES.cambiosEnOtraPestana`: «Pulse «Actualizar» en el aviso y vuelva a cambiar la vista») mientras
+  `hayCambiosEnOtraPestana` sea verdadero. Queda abierto el caso de una pestaña que escribió y todavía no avisó (ventana de milisegundos).
+- **Historial del navegador y cambio de perfil (QA B5, 18/11/2026).** Cambiar de perfil no es navegar: `cambiarPerfil` reemplaza la entrada
+  actual del historial (`reemplazarHash`) en vez de agregar una. Así Atrás no vuelve a un hash del perfil anterior que `leerUbicacion`
+  reescribiría (una pulsación sin efecto). **Límite conocido:** las entradas que se visitaron antes del cambio siguen en el historial y,
+  con el otro perfil, se redirigen al inicio: puede haber una pulsación de Atrás «muerta» por cada una. No se puede borrar historial.
 - **Plazo para abrir el almacenamiento (18/11/2026, QA M1).** Algunos navegadores dejan `indexedDB.open` sin responder. `arrancar`
   espera `PLAZO_ABRIR_MS` (8 s; inyectable con `plazoAbrirMs` en `OpcionesArranque` y en `DependenciasApp`) y, si vence, lo trata como
   almacenamiento no disponible: modo memoria con el aviso D8. Si la conexión llega después, se cierra. El plazo cubre solo la

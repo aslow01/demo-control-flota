@@ -409,6 +409,29 @@ describe("D9: cambios en otra pestaña", () => {
     expect(app.alertas?.resumen.protagonista).toBe(3);
   });
 
+  it("QA D6: mientras hay cambios de otra pestaña sin actualizar, no se puede cambiar de perfil; con 'Actualizar' sí", async () => {
+    const { app, repo, ubicacion, pestanas } = await iniciada();
+    const conductorId = estadoDe(app).conductores[0]!.id;
+    const guardado = await repo.cargar();
+    pestanas.alRecibir();
+
+    const r = await app.cambiarPerfil({ tipo: "conductor", conductorId });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.codigo).toBe("cambios-en-otra-pestana");
+      expect(r.error.mensaje).toBe(ERRORES.cambiosEnOtraPestana);
+    }
+    expect(app.perfil).toEqual({ tipo: "encargado" });
+    expect(ubicacion.hash).toBe("#/alertas");
+    expect(await repo.cargar()).toEqual(guardado); // no se escribió nada (no pisa el meta de la otra pestaña)
+    expect(pestanas.avisos).toBe(0);
+
+    await app.actualizar();
+    const despues = await app.cambiarPerfil({ tipo: "conductor", conductorId });
+    expect(despues.ok).toBe(true);
+    expect(app.perfil).toEqual({ tipo: "conductor", conductorId });
+  });
+
   it("si 'Actualizar' no puede leer, el aviso sigue y el error se informa", async () => {
     const { app, repo, pestanas } = await iniciada();
     pestanas.alRecibir();

@@ -243,6 +243,8 @@ export class EstadoApp {
       const estado = this.estado;
       const repositorio = this.repositorio;
       if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
+      // D6: se guarda el `meta` de esta pestaña; si otra escribió después, se pisarían sus datos. Primero hay que `actualizar()`.
+      if (this.hayCambiosEnOtraPestana) return fallo("cambios-en-otra-pestana", ERRORES.cambiosEnOtraPestana);
       if (perfil.tipo === "conductor" && !estado.conductores.some((c) => c.id === perfil.conductorId)) {
         return fallo("conductor-inexistente", ERRORES.conductorInexistente);
       }

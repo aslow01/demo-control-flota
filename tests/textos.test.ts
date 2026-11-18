@@ -227,6 +227,7 @@ describe("revisión de textos del 18/11/2026 (redactor-ux)", () => {
     );
     expect(ERRORES.noPudoReiniciar).toBe("No se pudo reiniciar la demo. Se conservaron los datos que tenía. Intente de nuevo.");
     expect(ERRORES.noPudoCambiarVista).toBe("No se pudo cambiar la vista. Intente de nuevo.");
+    expect(ERRORES.cambiosEnOtraPestana).toBe("Hay cambios hechos en otra pestaña. Pulse «Actualizar» en el aviso y vuelva a cambiar la vista.");
     expect(ERRORES.sinPermiso).toBe("Esta acción es solo del encargado. En «Ver como», elija «Encargado».");
     expect(ERRORES.sinDatos).toBe("La demo todavía no terminó de cargar. Espere un momento e intente de nuevo.");
     expect(ERRORES.noPudoActualizar).toBe(
