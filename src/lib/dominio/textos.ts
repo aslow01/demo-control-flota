@@ -75,6 +75,10 @@ export const ERRORES = {
   litrosDecimales: "Escriba los litros con un solo decimal, por ejemplo 45,5.",
   litrosCero: "Si no cargó combustible, deje el campo vacío.",
   internoRango: "El número interno tiene que ser un entero de 1 a 999.",
+  noPudoGuardar: "No se pudo guardar. No se aplicó ningún cambio y lo que escribió sigue en el formulario.",
+  sinPermiso: "Esta acción es solo del encargado. Cambie de perfil para hacerla.",
+  sinDatos: "La demo todavía no terminó de cargar.",
+  noPudoActualizar: "No se pudieron leer los cambios de la otra pestaña. Intente de nuevo.",
   noPudoGuardarElParte: "No se pudo guardar el parte. Sus datos siguen en este equipo; intente de nuevo.",
 } as const;
 
@@ -356,3 +360,6 @@ export const TEXTO_AVISO = {
 export function textoDatosDeOtraFecha(fechaBase: FechaCivil): string {
   return `Los datos de ejemplo son del ${formatearFecha(fechaBase)}. Reinicie la demo para verlos con las fechas de hoy.`;
 }
+
+/** diseno-ui.md 5.19: falla grave al iniciar. */
+export const TEXTO_ERROR_ARRANQUE = "No se pudo iniciar la demo. Recargue la página. Si el problema sigue, reinicie la demo.";

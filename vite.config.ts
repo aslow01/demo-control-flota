@@ -8,8 +8,9 @@ import { defineConfig } from "vitest/config";
 const entorno = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
 if (entorno !== undefined && (entorno["TZ"] === undefined || entorno["TZ"] === "")) entorno["TZ"] = "Asia/Tokyo";
 
-export default defineConfig({
-  plugins: [svelte()],
+export default defineConfig(({ mode }) => ({
+  // En los tests Vitest transforma como "servidor" y Svelte compilaría los $effect a nada: se fuerza el modo cliente.
+  plugins: [svelte(mode === "test" ? { dynamicCompileOptions: () => ({ generate: "client" }) } : {})],
   build: {
     target: "es2022",
     sourcemap: false,
@@ -18,4 +19,4 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     environment: "node",
   },
-});
+}));

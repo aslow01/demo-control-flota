@@ -34,4 +34,6 @@ export interface Repositorio {
   escribir(cambios: Cambios, eventos: readonly Evento[]): Promise<void>;
   /** Vacía todo, también el historial. Es lo único que borra eventos (D6). */
   vaciar(): Promise<void>;
+  /** Libera la conexión (IndexedDB). La memoria no la necesita. */
+  cerrar?(): void;
 }
