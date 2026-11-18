@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calcularAlertas, nombreCorto, type Alerta } from "../src/lib/dominio/alertas.ts";
+import { aptitud } from "../src/lib/dominio/aptitud.ts";
 import { sumarDias } from "../src/lib/dominio/fechas.ts";
 import type { Conductor, Documento, Estado, Unidad } from "../src/lib/dominio/tipos.ts";
 import { PROYECTO_BASE, PROYECTO_PIEDRA, conductor, documento, estadoVacio, novedad, parte, unidad } from "./ayuda.ts";
@@ -67,6 +68,55 @@ describe("alertas de documentos", () => {
   it("V13: en la base de mantenimiento no se exige la habilitación", () => {
     const e = base({ unidades: [nueva({ proyectoId: PROYECTO_BASE.id })], documentos: docsUnidad("u1", {}, ["habilitacion-proyecto"]) });
     expect(calcularAlertas(e, H).alertas).toEqual([]);
+  });
+
+  describe("M4 (a confirmar): un documento que el proyecto no exige alerta con gravedad baja", () => {
+    const enBase = (vence: string) =>
+      base({ unidades: [nueva({ proyectoId: PROYECTO_BASE.id })], documentos: docsUnidad("u1", { "habilitacion-proyecto": vence }) });
+
+    it("vencido y cargado en la base de mantenimiento: alerta baja, en el grupo vencidos, que no sube la insignia", () => {
+      const e = enBase(en(-3));
+      const r = calcularAlertas(e, H);
+      expect(r.alertas).toHaveLength(1);
+      expect(r.alertas[0]).toMatchObject({
+        tipo: "documento-vencido",
+        gravedad: "baja",
+        grupo: "vencidos",
+        texto: "Vencido hace 3 días · Habilitación de ingreso al proyecto",
+      });
+      expect(r.resumen.criticas).toBe(0);
+      expect(r.resumen.porGrupo.vencidos).toBe(1);
+    });
+
+    it("es coherente con la aptitud: la unidad puede salir y no hay alertas críticas", () => {
+      const e = enBase(en(-3));
+      expect(aptitud(e.unidades[0]!, e, H).categoria).toBe("puede-salir");
+      expect(calcularAlertas(e, H).resumen.noPuedenSalir).toHaveLength(0);
+    });
+
+    it("por vencer en 5 días en la base: también baja (no 'media'); el grupo sigue siendo 7", () => {
+      const [a] = calcularAlertas(enBase(en(5)), H).alertas;
+      expect(a).toMatchObject({ tipo: "documento-por-vencer", gravedad: "baja", grupo: "7" });
+    });
+
+    it("la misma habilitación vencida en un proyecto que sí la exige sigue siendo crítica y cuenta en la insignia", () => {
+      const e = base({ documentos: docsUnidad("u1", { "habilitacion-proyecto": en(-3) }) });
+      const r = calcularAlertas(e, H);
+      expect(r.alertas[0]).toMatchObject({ tipo: "documento-vencido", gravedad: "critica" });
+      expect(r.resumen.criticas).toBe(1);
+      expect(aptitud(e.unidades[0]!, e, H).categoria).toBe("no-puede-salir");
+    });
+
+    it("el seguro vencido en la base sigue siendo crítico (el cambio es solo para lo que el proyecto no exige)", () => {
+      const e = base({ unidades: [nueva({ proyectoId: PROYECTO_BASE.id })], documentos: docsUnidad("u1", { seguro: en(-1) }) });
+      expect(calcularAlertas(e, H).alertas[0]).toMatchObject({ gravedad: "critica" });
+    });
+
+    it("la habilitación de manejo del conductor (V17) sigue alertando como los demás documentos", () => {
+      const c: Conductor = conductor({ id: "c1" });
+      const e = base({ conductores: [c], documentos: [...docsUnidad("u1"), docConductor("c1", "licencia", en(200)), docConductor("c1", "habilitacion-manejo", en(-2))] });
+      expect(calcularAlertas(e, H).alertas.find((a) => a.tipoDocumento === "habilitacion-manejo")).toMatchObject({ gravedad: "critica" });
+    });
   });
 
   it("V2 a V5: por vencer en grupo 7, 15 y 30 con su gravedad", () => {

@@ -116,7 +116,11 @@ function alertasDeTitular(
     const tipo = req.tipo;
     const vigente = documentoVigente(documentos, titular, tipo);
     // V17: un documento no obligatorio que falta no alerta; si está cargado, alerta como cualquier otro.
-    if (vigente === undefined && !tiposObligatorios.includes(tipo)) continue;
+    const exigido = tiposObligatorios.includes(tipo);
+    if (vigente === undefined && !exigido) continue;
+    // M4 (a confirmar): un documento que solo se exige en ciertos proyectos y este no lo exige (la habilitación de ingreso en
+    // la base de mantenimiento) alerta con gravedad baja: la aptitud (A1) no lo considera bloqueante y no tiene que subir la insignia.
+    const noExigidoAqui = req.obligatorio === "si-proyecto-requiere" && !exigido;
     const evaluacion = evaluarObligatorio(vigente, hoy);
     if (evaluacion.estado === "vigente") continue;
 
@@ -148,7 +152,7 @@ function alertasDeTitular(
           ...base,
           id: `doc:${vigente.id}`,
           tipo: "documento-vencido",
-          gravedad: "critica",
+          gravedad: noExigidoAqui ? "baja" : "critica",
           grupo: "vencidos",
           documentoId: vigente.id,
           d: evaluacion.d,
@@ -163,7 +167,7 @@ function alertasDeTitular(
           ...base,
           id: `doc:${vigente.id}`,
           tipo: "documento-por-vencer",
-          gravedad: grupo === "7" ? "media" : "baja",
+          gravedad: grupo === "7" && !noExigidoAqui ? "media" : "baja",
           grupo,
           documentoId: vigente.id,
           d: evaluacion.d,
