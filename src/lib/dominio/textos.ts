@@ -959,3 +959,107 @@ export const TEXTO_GUARDADO = {
   /** Un borrador que ya existía al abrir el parte (sobrevivió a una recarga). */
   recuperado: (fecha: string, hora: string) => `Borrador recuperado, guardado en este equipo el ${fecha} a las ${hora}.`,
 } as const;
+
+// ---------------------------------------------------------------------------------------------
+// Inicio del conductor y pantalla del parte (docs/diseno-ui.md, 6.4 y 6.5; paso 4.5). `redactor-ux` los revisa.
+// ---------------------------------------------------------------------------------------------
+
+export const TEXTO_INICIO_CONDUCTOR = {
+  empezar: "Empezar el parte",
+  continuar: "Continuar el parte",
+  descartar: "Descartar borrador",
+  verParte: "Ver el parte",
+  usarOtra: "Usar otra unidad",
+  elegirUnidad: "Elija la unidad",
+  continuarPendiente: "Continuarlo",
+  cargarPendiente: "Cargarlo",
+  licenciaTitulo: "Su licencia",
+  ultimosTitulo: "Mis últimos partes",
+  ultimosVacio: "Todavía no envió partes.",
+} as const;
+
+/** «Hoy, miércoles 18/11/2026». */
+export function textoHoyDelConductor(hoy: FechaCivil): string {
+  return `Hoy, ${diaDeLaSemana(hoy)} ${formatearFecha(hoy)}`;
+}
+
+/** «Tiene un parte empezado: faltan 5 datos.» */
+export function textoBorradorDelConductor(faltan: number): string {
+  if (faltan === 0) return "Tiene un parte empezado y está listo para enviar.";
+  return `Tiene un parte empezado: ${textoFaltantes(faltan).toLowerCase()}.`;
+}
+
+/** «Enviado a las 18:42». */
+export function textoEnviadoALas(hora: string): string {
+  return `Enviado a las ${hora}`;
+}
+
+/** Unidad fuera de servicio, vista del conductor: no tiene que hacer parte. */
+export function textoSinParteFueraDeServicio(patente: string, desde: FechaCivil, motivo: string): string {
+  return `${patente} está fuera de servicio desde el ${formatearFecha(desde)} (${motivo}). No hace falta parte.`;
+}
+
+/** Aviso sobre una unidad que está en servicio pero no puede salir (documentos): «Seguro vencido hace 1 día; …». */
+export function textoUnidadNoPuedeSalir(patente: string, motivos: readonly string[], alConductor: boolean): string {
+  const base = `${patente} no puede salir: ${motivos.join("; ")}.`;
+  return alConductor ? `${base} Avise al encargado antes de usarla.` : base;
+}
+
+export function textoPendienteBorrador(fecha: FechaCivil, patente: string): string {
+  return `El parte del ${formatearFecha(fecha)} de ${patente} está empezado y sin enviar.`;
+}
+
+export function textoPendienteSinParte(ayer: FechaCivil, patente: string): string {
+  return `No se envió el parte de ayer (${formatearFecha(ayer)}) de ${patente}.`;
+}
+
+/** Su licencia, desde el punto de vista del conductor. `d` = días hasta el vencimiento; `null` si falta. */
+export function textoSuLicencia(d: number | null, vence: FechaCivil | null): string {
+  if (d === null || vence === null) return "Falta cargar su licencia. Avise al encargado.";
+  const fecha = formatearFecha(vence);
+  if (d < 0) return `Vencida hace ${pluralizar(-d, "día", "días")} (${fecha}). Avise al encargado.`;
+  if (d === 0) return `Vence hoy (${fecha})`;
+  if (d === 1) return `Vence mañana (${fecha})`;
+  return `Vence en ${d} días (${fecha})`;
+}
+
+/** Fila de «Mis últimos partes»: nombre accesible del enlace. */
+export function textoParteReciente(fecha: FechaCivil, patente: string, recorrido: string): string {
+  return `Parte del ${formatearFecha(fecha)} de ${patente}, ${recorrido}`;
+}
+
+export const TEXTO_PANTALLA_PARTE = {
+  noDisponible: "No se puede cargar este parte",
+  descartar: "Descartar borrador",
+  conductorEtiqueta: "Conductor",
+  conductorSinElegir: "Elija quién conduce",
+  vueltaConductor: "Parte diario",
+  vueltaFicha: (patente: string) => `Ficha de ${patente}`,
+  impideUso: "Impide usar la unidad",
+  otraNovedad: "Otra novedad (opcional)",
+  enviado: "Parte enviado",
+  volverAlInicio: "Volver al inicio",
+  sinNovedades: "Sin novedades",
+  noCargo: "No cargó",
+  fueraDeTermino: "Enviado fuera de término.",
+  rotulos: { recorrido: "Recorrido", combustible: "Combustible", litros: "Combustible cargado", novedades: "Novedades" },
+} as const;
+
+/** Línea del panel «Parte enviado»: «ZK 214 BD, 18/11/2026, enviado a las 18:42.»; fuera de término, con el día del envío. */
+export function textoLineaParteEnviado(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil, hora: string): string {
+  if (fecha === diaDeEnvio) return `${patente}, ${formatearFecha(fecha)}, enviado a las ${hora}.`;
+  return `${patente}, ${formatearFecha(fecha)}, enviado el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de término).`;
+}
+
+/** Novedades de un parte enviado: «Sin novedades», «1 crítica: Frenos», «2 críticas: Frenos, Dirección; 1 normal: Otra novedad». */
+export function textoNovedadesDelParte(criticas: readonly string[], normales: readonly string[]): string {
+  const partes: string[] = [];
+  if (criticas.length > 0) partes.push(`${pluralizar(criticas.length, "crítica", "críticas")}: ${criticas.join(", ")}`);
+  if (normales.length > 0) partes.push(`${pluralizar(normales.length, "normal", "normales")}: ${normales.join(", ")}`);
+  return partes.length === 0 ? TEXTO_PANTALLA_PARTE.sinNovedades : partes.join("; ");
+}
+
+/** «9 puntos en orden: Dirección, Neumáticos…» (parte en lectura). */
+export function textoPuntosEnOrdenConNombres(nombres: readonly string[]): string {
+  return `${pluralizar(nombres.length, "punto", "puntos")} en orden: ${nombres.join(", ")}`;
+}
