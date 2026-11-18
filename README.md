@@ -27,9 +27,11 @@ Todavía no hay demo en vivo. Cuando la haya, estará en `flota.matiasormeno.com
 - **Fecha de inicio:** 18/11/2026.
 - Escrita **desde cero**, a partir de un enunciado propio de una página. El diseño (modelo de datos, pantallas y
   reglas) se escribió primero, en este repositorio, y el historial de git empieza con él.
-- **Datos 100 % ficticios:** empresa inventada ("Logística Andina Demo S.A."), patentes con formato argentino válido en
-  una serie no emitida, personas, proyectos, aseguradoras y números de documento inventados, generados con una semilla
-  fija.
+- **Datos 100 % ficticios:** empresa inventada ("Logística Andina Demo S.A."), patentes con formato argentino
+  y una serie elegida para que no se parezca a vehículos reales (todas empiezan con `Z`; falta verificar qué series se
+  emitieron), personas, proyectos, aseguradoras y números de documento inventados, generados con una semilla fija.
+- **El CUIT de la empresa también es ficticio:** tiene dígito verificador válido (lo exige el generador), así que podría
+  coincidir con el de un contribuyente real. Por eso la aplicación siempre lo muestra con la palabra «ficticio».
 - **No usa código, datos, documentos ni capturas de terceros.** Solo reutiliza código propio y público del autor (la
   validación de CUIT de su demo "Lector de facturas").
 

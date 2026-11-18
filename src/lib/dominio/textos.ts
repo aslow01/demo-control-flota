@@ -270,6 +270,13 @@ export const RESUMEN_EVENTO = {
 // Textos de estado de las pantallas (docs/diseno-ui.md, secciones 5.6, 6.1 y 7).
 // ---------------------------------------------------------------------------------------------
 
+/** D3: la empresa de ejemplo con su CUIT, que siempre se muestra rotulado como ficticio (puede coincidir con uno real). */
+export function textoEmpresa(nombre: string, cuit: string): string {
+  const digitos = cuit.replace(/[^0-9]/g, "");
+  const escrito = digitos.length === 11 ? `${digitos.slice(0, 2)}-${digitos.slice(2, 10)}-${digitos.slice(10)}` : cuit;
+  return `${nombre} · CUIT ficticio ${escrito}`;
+}
+
 /** A8: el protagonista del centro de alertas. */
 export function textoProtagonista(n: number): string {
   if (n === 0) return "Todas las unidades activas pueden salir hoy";

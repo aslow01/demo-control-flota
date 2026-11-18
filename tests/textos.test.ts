@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { EMPRESA } from "../src/lib/datos/generador.ts";
+import { formatearCuit } from "../src/lib/datos/cuit.ts";
 import {
   ERRORES,
   RESUMEN_EVENTO,
@@ -9,6 +11,7 @@ import {
   pluralizar,
   textoAdvertencia,
   textoDisponibles,
+  textoEmpresa,
   textoFaltantes,
   textoHoy,
   textoHorizonte,
@@ -168,5 +171,14 @@ describe("errores y resúmenes que arman otros textos", () => {
       expect(texto.length, clave).toBeGreaterThan(5);
       expect(texto.endsWith("."), clave).toBe(true);
     }
+  });
+});
+
+describe("D3: el CUIT de ejemplo siempre se muestra como ficticio", () => {
+  it("textoEmpresa rotula el CUIT con la palabra 'ficticio' y lo escribe con guiones", () => {
+    const t = textoEmpresa(EMPRESA.nombre, EMPRESA.cuit);
+    expect(t).toBe(`Logística Andina Demo S.A. · CUIT ficticio ${formatearCuit(EMPRESA.cuit)}`);
+    expect(t).toContain("ficticio");
+    expect(t).toMatch(/^Logística Andina Demo S\.A\. · CUIT ficticio \d{2}-\d{8}-\d$/);
   });
 });

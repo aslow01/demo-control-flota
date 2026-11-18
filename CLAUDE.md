@@ -13,8 +13,8 @@ En vivo, cuando esté, en `flota.matiasormeno.com.ar`.
 
 - No tiene servidor, login ni base de datos remota. Nada sale del navegador.
 - No usa código, datos, documentos ni repositorios de terceros. **Sala limpia:** mientras se trabaja acá no se abren
-  los repositorios ni los documentos de una empresa de terceros, ni los casos de estudio del portafolio, ni
-  `material-de-terceros/`, y no se le pasan a la IA. Fuentes permitidas: estos documentos, la ficha de la demo y el código
+  ni se le pasan a la IA repositorios, documentos ni material de terceros, ni los casos de estudio del portafolio.
+  Fuentes permitidas: estos documentos, la ficha de la demo y el código
   propio de la Demo 1 (`D:\demo-lector-facturas`).
 - No usa datos reales (empresas, patentes, personas, proyectos mineros). Todo sale del generador con semilla.
 - No dice en ningún texto que reproduce el sistema de una empresa.
