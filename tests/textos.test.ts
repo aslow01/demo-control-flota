@@ -7,6 +7,7 @@ import {
   TEXTO_ALERTA,
   TEXTO_AVISO,
   TEXTO_ERROR_ARRANQUE,
+  TEXTO_PARTE,
   errDocumentoExistente,
   errKmCorreccionAnterior,
   errKmExcedido,
@@ -201,6 +202,16 @@ describe("revisión de textos del 18/11/2026 (redactor-ux)", () => {
     expect(TEXTO_ERROR_ARRANQUE.mensaje).toBe("Recargue la página. Si el problema sigue, pruebe con otro navegador.");
     expect(TEXTO_ERROR_ARRANQUE.mensaje).not.toMatch(/reinici/i); // la fase de error no tiene "Reiniciar demo"
     expect(TEXTO_ERROR_ARRANQUE.mensaje).not.toContain(TEXTO_ERROR_ARRANQUE.titulo);
+  });
+
+  it("el parte dice la acción real que saca a la unidad de «fuera de servicio»: resolver la novedad y volver a servicio", () => {
+    expect(TEXTO_PARTE.puntoCritico).toBe(
+      "Al enviar, la unidad queda fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
+    );
+    expect(TEXTO_PARTE.enviadoConCritica).toBe(
+      "La unidad quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
+    );
+    for (const texto of Object.values(TEXTO_PARTE)) expect(texto).not.toMatch(/revise/i);
   });
 
   it("avisos globales: dicen qué pasó y qué implica", () => {

@@ -721,6 +721,11 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   queda bloqueado, puede ejecutarse más tarde por su cuenta. Se quitó: `reiniciar()` sin estado cargado (arranque o fase `error`)
   devuelve `sin-datos`, no hay `borrarAlmacenamiento` ni `borrarIndexedDB`, y la vista ofrece solo «Recargar la página». El texto
   `TEXTO_ERROR_ARRANQUE.mensaje` dice «Recargue la página. Si el problema sigue, pruebe con otro navegador.».
+- **«Fuera de servicio hasta que el encargado la revise» (revisión del marco, 18/11/2026).** «Revisar» no es una acción de la demo: la
+  unidad vuelve cuando el encargado resuelve la novedad y usa «Volver a servicio» (A4, N2). `TEXTO_PARTE` (`textos.ts`) tiene los dos
+  textos del parte con la acción real; `diseno-ui.md` (wireframe del parte, panel «Parte enviado» y tabla de textos) quedó igual.
+  Falta, del lado de la vista, el mismo cambio en `TEXTO_COMO_FUNCIONA.parte` (`textos-marco.ts`). La regla P9 no cambia: la licencia
+  vencida del conductor solo avisa al enviar el parte.
 - **Plazo para abrir el almacenamiento (18/11/2026, QA M1).** Algunos navegadores dejan `indexedDB.open` sin responder. `arrancar`
   espera `PLAZO_ABRIR_MS` (8 s; inyectable con `plazoAbrirMs` en `OpcionesArranque` y en `DependenciasApp`) y, si vence, lo trata como
   almacenamiento no disponible: modo memoria con el aviso D8. Si la conexión llega después, se cierra. El plazo cubre solo la

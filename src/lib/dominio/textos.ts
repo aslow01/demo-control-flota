@@ -370,3 +370,14 @@ export const TEXTO_ERROR_ARRANQUE = {
   titulo: "No se pudo iniciar la demo",
   mensaje: "Recargue la página. Si el problema sigue, pruebe con otro navegador.",
 } as const;
+
+/**
+ * Pantalla del parte (diseno-ui.md 5.x y sección 10). Una unidad fuera de servicio por una novedad crítica vuelve cuando el
+ * encargado resuelve la novedad y usa «Volver a servicio» (A4, N2): «revisar» no es una acción de la demo.
+ */
+export const TEXTO_PARTE = {
+  /** Nota en tono crítico bajo un punto crítico marcado «Con novedad». */
+  puntoCritico: "Al enviar, la unidad queda fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
+  /** Aviso del panel «Parte enviado» cuando hubo una novedad crítica. */
+  enviadoConCritica: "La unidad quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
+} as const;

@@ -525,7 +525,8 @@ Específicos:
  │ ¿Qué encontró? *                               │
  │ [ textarea                                   ] │
  │ ⬣ Al enviar, la unidad queda fuera de servicio │  ← nota en tono crítico (solo puntos críticos)
- │   hasta que el encargado la revise.            │
+ │   hasta que el encargado resuelva la novedad   │
+ │   y la vuelva a poner en servicio.             │
  │ (no crítico) [ ] Impide usar la unidad         │  ← checkbox 24 px con área de 44 px
  └───────────────────────────────────────────────┘
 ```
@@ -965,7 +966,7 @@ Jerarquía: 1) de qué unidad y qué día es; 2) lo que falta; 3) enviar.
      **"Parte enviado"**: panel con franja vigente, `h1` "Parte enviado" (recibe el foco), "ZK 214 BD, 18/11/2026,
      enviado a las 18:42.", `dl` con Recorrido "132 km (84.320 → 84.452)", Combustible "3/4", "Cargó 45,5 litros",
      Novedades "1 crítica: Frenos" y, si hubo crítica, aviso semana "La unidad quedó fuera de servicio hasta que el
-     encargado la revise." Acciones: "Volver al inicio" (primario) · "Imprimir o guardar en PDF" (P2, botón-texto).
+     encargado resuelva la novedad y la vuelva a poner en servicio." Acciones: "Volver al inicio" (primario) · "Imprimir o guardar en PDF" (P2, botón-texto).
   4. Error al guardar (P12, D10) → mensaje en el resumen de errores, todo lo escrito sigue.
 - **Parte en lectura** (enviado, o fecha fuera de P2): los mismos bloques como `dl`, sin campos; los puntos "En orden"
   se agrupan en una línea ("8 puntos en orden: …") y los que tienen novedad se muestran con su texto.
@@ -991,7 +992,7 @@ exact` solo en las etiquetas).
 | Filtro (cortos) | "Todos", "Vencidos y faltantes", "7 días o menos", "8 a 15 días", "16 a 30 días" |
 | Hoy | "Hoy es miércoles 18/11/2026 (hora de Argentina)" |
 | Parte, ayuda de km | "Último registro: 84.320 km (parte del 17/11/2026)." |
-| Parte, punto crítico | "Al enviar, la unidad queda fuera de servicio hasta que el encargado la revise." |
+| Parte, punto crítico | "Al enviar, la unidad queda fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio." |
 | Parte, documentación vencida (diálogo) | "El seguro de ZK 214 BD venció el 17/11/2026. Puede enviar el parte igual: quedará registrado que la unidad circuló con documentación vencida." |
 | Reinicio | "Se borran los cambios hechos en este navegador y se vuelve a cargar la flota de ejemplo con las fechas de hoy." |
 
