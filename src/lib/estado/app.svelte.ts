@@ -174,6 +174,16 @@ export class EstadoApp {
     this.leerUbicacion(); // en el navegador el aviso del cambio llega después: esto es idempotente
   }
 
+  /**
+   * Cambia de pantalla SIN agregar una entrada al historial. Es para cuando el cambio no es navegar sino cambiar de perfil: la
+   * entrada anterior era de la pantalla del perfil viejo, y con Atrás volvería a un hash que `leerUbicacion` reescribe (el
+   * usuario pulsaría Atrás y no pasaría nada).
+   */
+  private reemplazarPor(ruta: Ruta): void {
+    this.deps.ubicacion.reemplazarHash(aHash(ruta));
+    this.leerUbicacion();
+  }
+
   // --- Reloj ---------------------------------------------------------------------------------------
 
   /** Vuelve a leer la hora: si pasó la medianoche de Argentina, "hoy" cambia y las alertas se recalculan (T1). */
@@ -242,7 +252,7 @@ export class EstadoApp {
         return fallo("escritura-fallida", ERRORES.noPudoCambiarVista);
       }
       this.pestanas?.avisarCambio();
-      this.irA(rutaPorDefecto(perfil));
+      this.reemplazarPor(rutaPorDefecto(perfil));
       return ok(null);
     });
   }

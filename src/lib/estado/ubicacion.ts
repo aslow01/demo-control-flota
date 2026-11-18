@@ -28,13 +28,16 @@ export function ubicacionDelNavegador(): Ubicacion {
   };
 }
 
-export function ubicacionEnMemoria(inicial = ""): Ubicacion & { hash: string } {
+/** Para los tests: `entradas` cuenta las entradas del historial (empieza en 1; `irA` agrega una, `reemplazarHash` no). */
+export function ubicacionEnMemoria(inicial = ""): Ubicacion & { hash: string; entradas: number } {
   const oyentes = new Set<() => void>();
   const u = {
     hash: inicial,
+    entradas: 1,
     leerHash: () => u.hash,
     irA(hash: string) {
       u.hash = hash;
+      u.entradas += 1;
       for (const o of [...oyentes]) o();
     },
     reemplazarHash(hash: string) {

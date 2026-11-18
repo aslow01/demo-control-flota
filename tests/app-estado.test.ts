@@ -302,6 +302,21 @@ describe("perfil", () => {
     expect(ubicacion.hash).toBe("#/alertas");
   });
 
+  it("QA B5: cambiar de perfil reemplaza la entrada actual del historial en vez de agregar otra (que Atrás reescribiría)", async () => {
+    const { app, ubicacion } = await iniciada();
+    ubicacion.irA("#/flota");
+    const entradas = ubicacion.entradas;
+    const v0 = app.versionDePantalla;
+    await app.cambiarPerfil({ tipo: "conductor", conductorId: estadoDe(app).conductores[0]!.id });
+    expect(ubicacion.entradas).toBe(entradas);
+    expect(ubicacion.hash).toBe("#/conductor");
+    expect(app.ruta).toEqual({ tipo: "conductor" });
+    expect(app.versionDePantalla).toBe(v0 + 1); // la vista igual mueve el foco al h1
+    await app.cambiarPerfil({ tipo: "encargado" });
+    expect(ubicacion.entradas).toBe(entradas);
+    expect(ubicacion.hash).toBe("#/alertas");
+  });
+
   it("D11: el primer comando del visitante sí la marca como modificada", async () => {
     const { app } = await iniciada();
     expect(estadoDe(app).meta.modificada).toBe(false);
