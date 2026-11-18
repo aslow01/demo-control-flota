@@ -563,7 +563,7 @@ convence, se cambia acá y en el código a la vez.
   aparte de rango; el límite superior de V11 (hoy + 10 años) sí tiene su mensaje.
 - Los documentos no obligatorios que están cargados alertan, también el de habilitación de ingreso en un proyecto que no la
   pide (generalización de V17). Si falta, no alerta. La habilitación de manejo del conductor (V17) alerta como los demás
-  documentos; la de ingreso en un proyecto que no la exige alerta con gravedad `baja` (**M4**, a confirmar por Matías).
+  documentos; la de ingreso en un proyecto que no la exige alerta con gravedad `baja` (**M4**, confirmada por Matías el 18/11/2026).
 - Un documento "vigente" empata por vencimiento: gana el cargado después y, si sigue el empate, el de mayor id.
 - El nombre en pantalla de la revisión técnica es "Revisión técnica"; las siglas "(VTV/RTO)" de 5.1 quedan para la interfaz.
 
@@ -574,7 +574,7 @@ convence, se cambia acá y en el código a la vez.
 - P6, "creada antes de ayer": la fecha de creación (en hora de Argentina) es anterior a `hoy − 1`.
 - P5: un borrador de una fecha anterior a hoy alerta **mientras exista**, aunque ya no se pueda enviar (más de 7 días,
   P2): la salida es descartarlo.
-- P9 (**M1, a confirmar por Matías**): los documentos se evalúan **como estaban en la fecha del parte**, no con el vigente
+- P9 (**M1, confirmada por Matías el 18/11/2026**): los documentos se evalúan **como estaban en la fecha del parte**, no con el vigente
   de hoy. Un documento ampara la fecha F si vence en F o después **y** ya existía: su emisión es F o antes y, si no tiene
   emisión cargada, su carga (día civil de Argentina) es F o antes. Se miran todos los documentos del titular y el tipo, no
   solo el de vencimiento más tardío. Consecuencia buscada: una renovación cargada con retraso, sin emisión o con emisión
@@ -590,7 +590,7 @@ convence, se cambia acá y en el código a la vez.
   último con fecha menor que F si es un parte, o con fecha menor o igual que F si es una corrección (la corrección "desde
   F" vale para el parte de F). El siguiente es el primero con fecha mayor que F; si es una corrección, K4 no compara.
 - `validarKilometraje` aplica K2, K3 y K4 (bloquean) y devuelve las advertencias K6 y K7 con el kilometraje anterior.
-- **M3 (a confirmar por Matías):** una corrección de kilometraje con `desde` anterior a cualquier registro ya cargado (parte
+- **M3 (confirmada por Matías el 18/11/2026):** una corrección de kilometraje con `desde` anterior a cualquier registro ya cargado (parte
   enviado u otra corrección) se **rechaza** con `km-correccion-anterior` y el mensaje «Ya hay un parte del dd/mm/aaaa,
   posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha de ese parte o una
   posterior.». Motivo: `kmActual` es el último registro por fecha, así que una corrección anterior no cambiaba el
