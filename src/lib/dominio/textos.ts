@@ -21,3 +21,8 @@ export function textoVencimiento(d: number, vence: FechaCivil): string {
 export function formatearKm(km: number): string {
   return String(km).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
+
+/** P4: `Falta 1 dato`, `Faltan 3 datos`. */
+export function textoFaltantes(n: number): string {
+  return n === 1 ? "Falta 1 dato" : `Faltan ${n} datos`;
+}
