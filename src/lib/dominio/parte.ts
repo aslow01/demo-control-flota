@@ -2,7 +2,7 @@
 
 import { diasEntre, fechaEnArgentina, parsearFechaCivil } from "./fechas.ts";
 import { advertenciasDeKm, type EntradaKm } from "./kilometraje.ts";
-import { documentoVigente, faltantesDeConductor, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
+import { hayDocumentoQueAmpare, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 import {
   fallo,
   ok,
@@ -141,20 +141,18 @@ export interface EntradaDocumentacion {
 }
 
 /**
- * P9: documentos obligatorios vencidos o faltantes a la fecha del parte (los de la unidad y la licencia del conductor).
- * Un documento que vence ese mismo día todavía vale (V2). Si no hay conductor (borrador) no se mira la licencia.
+ * P9: documentos obligatorios que no amparaban la fecha del parte (los de la unidad y la licencia del conductor): vencidos
+ * o faltantes **como estaban ese día** (M1), no según el documento vigente de hoy. Un documento que vence ese mismo día
+ * todavía vale (V2). Si no hay conductor (borrador) no se mira la licencia.
  */
 export function documentacionVencidaEn(entrada: EntradaDocumentacion): TipoDocumento[] {
   const { fecha, unidad, proyecto, conductor, documentos } = entrada;
   const problemas: TipoDocumento[] = [];
   for (const tipo of tiposObligatoriosDeUnidad(proyecto)) {
-    const vigente = documentoVigente(documentos, { tipo: "unidad", id: unidad.id }, tipo);
-    if (vigente === undefined || vigente.vence < fecha) problemas.push(tipo);
+    if (!hayDocumentoQueAmpare(documentos, { tipo: "unidad", id: unidad.id }, tipo, fecha)) problemas.push(tipo);
   }
-  if (conductor !== null) {
-    const faltantes = faltantesDeConductor(conductor, documentos);
-    const licencia = documentoVigente(documentos, { tipo: "conductor", id: conductor.id }, "licencia");
-    if (faltantes.includes("licencia") || (licencia !== undefined && licencia.vence < fecha)) problemas.push("licencia");
+  if (conductor !== null && !hayDocumentoQueAmpare(documentos, { tipo: "conductor", id: conductor.id }, "licencia", fecha)) {
+    problemas.push("licencia");
   }
   return problemas;
 }

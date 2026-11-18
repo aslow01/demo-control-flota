@@ -284,10 +284,12 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     const venceAleatorio = d(azar.entero(31, 400));
     const venceAnterior = d(-azar.entero(10, 300));
     const conEmision = azar.probabilidad(0.7);
-    const cargadoAleatorio = d(-azar.entero(1, 300));
+    // M1: se cargó antes del primer parte (H - 45), así a cada parte lo ampara el documento que ya estaba cargado.
+    const cargadoAleatorio = d(-azar.entero(46, 300));
 
     let vence: FechaCivil;
     let cargado: Instante;
+    let emitido: FechaCivil | null;
     let anterior: Documento | null = null;
     if (conAnterior) {
       anterior = {
@@ -303,10 +305,12 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
       };
       documentos.push(anterior);
       vence = sumarAnios(venceAnterior, 1);
+      emitido = conEmision ? venceAnterior : null; // empieza cuando vence el anterior
       cargado = en(sumarDias(venceAnterior, -azar.entero(1, 15)), 12);
     } else {
       vence = p.vence ?? venceAleatorio;
       cargado = en(cargadoAleatorio, 12);
+      emitido = conEmision ? cargadoAleatorio : null; // emitido el día que se cargó, siempre antes del primer parte
     }
     const nuevo: Documento = {
       id: id("d", "d", 4),
@@ -315,7 +319,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
       numero,
       emisor,
       vence,
-      emitido: conEmision ? sumarAnios(vence, -1) : null,
+      emitido,
       cargado,
       reemplazaA: anterior === null ? null : anterior.id,
     };

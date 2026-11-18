@@ -445,6 +445,47 @@ describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
     expect(e.eventos.some((x) => x.tipo === "documento-renovado" && x.datos["documentoId"] === nueva.id)).toBe(true);
   });
 
+  it("C18, M1: si la renovación se hubiera cargado hoy (orden inverso), el parte de H - 6 igual sale con la advertencia y queda registrada", () => {
+    const original = e.partes.find((x) => x.documentacionVencida.length > 0)!;
+    const u = e.unidades.find((x) => x.id === original.unidadId)!;
+    const renovacion = vigente(u, "revision-tecnica");
+    const c = contexto({ hoy: H, ahora: `${H}T15:00:00.000Z` });
+    // el mismo estado, pero con el parte todavía como borrador y la renovación cargada recién hoy, sin fecha de emisión
+    const invertido: Estado = {
+      ...e,
+      partes: e.partes.map((p) =>
+        p.id === original.id ? { ...p, estado: "borrador", enviado: null, documentacionVencida: [], advertenciasAceptadas: [] } : p,
+      ),
+      documentos: e.documentos.map((doc) => (doc.id === renovacion.id ? { ...doc, cargado: c.ahora, emitido: null } : doc)),
+    };
+    const sinAceptar = ejecutar(invertido, { tipo: "enviarParte", parteId: original.id, advertenciasAceptadas: [] }, c);
+    expect(sinAceptar.ok).toBe(false);
+    if (sinAceptar.ok) return;
+    expect(sinAceptar.error.codigo).toBe("advertencias-sin-aceptar");
+    expect(sinAceptar.error.detalle).toEqual({ advertencias: [{ tipo: "documentacion-vencida", documentos: ["revision-tecnica"] }] });
+
+    const aceptado = ejecutar(invertido, { tipo: "enviarParte", parteId: original.id, advertenciasAceptadas: ["documentacion-vencida"] }, c);
+    expect(aceptado.ok).toBe(true);
+    if (!aceptado.ok) return;
+    expect(aceptado.valor.estado.partes.find((p) => p.id === original.id)?.documentacionVencida).toEqual(["revision-tecnica"]);
+    const alerta = calcularAlertas(aceptado.valor.estado, H).alertas.filter((x) => x.tipo === "uso-con-documentacion-vencida");
+    expect(alerta).toHaveLength(1);
+  });
+
+  it("C18, M1: recalcular P9 para el parte de H - 6 con la renovación cargada ese día da lo mismo que lo guardado, salvo que la emisión la haga amparar", () => {
+    const original = e.partes.find((x) => x.documentacionVencida.length > 0)!;
+    const u = e.unidades.find((x) => x.id === original.unidadId)!;
+    const proyecto = e.proyectos.find((x) => x.id === u.proyectoId)!;
+    const conductor = e.conductores.find((x) => x.id === original.conductorId) ?? null;
+    const renovacion = vigente(u, "revision-tecnica");
+    const evaluar = (documentos: Documento[]) => documentacionVencidaEn({ fecha: original.fecha, unidad: u, proyecto, conductor, documentos });
+    // la renovación se cargó el 17/11 (H - 6) a las 19:40 de Argentina y su emisión es de ese día: ampara el día
+    expect(evaluar(e.documentos)).toEqual([]);
+    // sin la fecha de emisión y cargada al día siguiente, no
+    const tarde = e.documentos.map((doc) => (doc.id === renovacion.id ? { ...doc, emitido: null, cargado: `${d(-5)}T15:00:00.000Z` } : doc));
+    expect(evaluar(tarde)).toEqual(["revision-tecnica"]);
+  });
+
   it("C18: ningún otro parte tiene documentación vencida: las renovaciones del pasado se hicieron antes de vencer", () => {
     const con = e.partes.filter((x) => x.documentacionVencida.length > 0);
     expect(con).toHaveLength(1);
@@ -608,4 +649,4 @@ describe("el ejemplo reacciona a los comandos (criterio de la pantalla 4.2)", ()
   });
 });
 
-const HASH_DEL_EJEMPLO = "3d866c2a";
+const HASH_DEL_EJEMPLO = "11301975";

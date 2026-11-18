@@ -253,6 +253,68 @@ describe("P9: documentación vencida a la fecha del parte", () => {
     expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: null, documentos: docs })).toEqual(["seguro", "matafuego"]);
   });
 
+  it("P9/B2: la licencia que vence el mismo día del parte todavía vale; un día antes ya no", () => {
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: cambiar("licencia", H) })).toEqual([]);
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: cambiar("licencia", "2026-11-17") })).toEqual(["licencia"]);
+  });
+
+  describe("M1: con el documento como estaba en la fecha del parte (una renovación tardía no borra el hecho)", () => {
+    const F = "2026-11-15"; // el parte es de hace 3 días
+    const seguroViejo = documento({ id: "seguro-viejo", tipo: "seguro", vence: "2026-11-13", emitido: "2025-11-13", cargado: "2025-11-10T12:00:00.000Z" });
+    const resto = vigentes.filter((d) => d.tipo !== "seguro");
+    const evaluar = (renovacion: ReturnType<typeof documento> | null, fecha = F) =>
+      documentacionVencidaEn({
+        fecha,
+        unidad: U,
+        proyecto: PROYECTO_PIEDRA,
+        conductor: C,
+        documentos: [...resto, seguroViejo, ...(renovacion === null ? [] : [renovacion])],
+      });
+    const renovacion = (parcial: Partial<ReturnType<typeof documento>>) =>
+      documento({ id: "seguro-nuevo", tipo: "seguro", vence: "2027-11-13", reemplazaA: "seguro-viejo", ...parcial });
+
+    it("sin renovación: el seguro venció hace 2 días en la fecha del parte", () => {
+      expect(evaluar(null)).toEqual(["seguro"]);
+    });
+
+    it("renovación cargada hoy, sin fecha de emisión: no cubre un parte de hace 3 días", () => {
+      expect(evaluar(renovacion({ cargado: "2026-11-18T12:00:00.000Z", emitido: null }))).toEqual(["seguro"]);
+    });
+
+    it("renovación emitida después de la fecha del parte: no la cubre", () => {
+      expect(evaluar(renovacion({ cargado: "2026-11-18T12:00:00.000Z", emitido: "2026-11-17" }))).toEqual(["seguro"]);
+    });
+
+    it("renovación emitida antes de la fecha del parte (cargada tarde): sí la cubre, porque el vehículo ya tenía seguro", () => {
+      expect(evaluar(renovacion({ cargado: "2026-11-18T12:00:00.000Z", emitido: "2026-11-14" }))).toEqual([]);
+      expect(evaluar(renovacion({ cargado: "2026-11-18T12:00:00.000Z", emitido: F }))).toEqual([]); // el mismo día cubre
+    });
+
+    it("renovación cargada antes de la fecha del parte, sin emisión: la cubre", () => {
+      expect(evaluar(renovacion({ cargado: "2026-11-14T12:00:00.000Z", emitido: null }))).toEqual([]);
+      // 15:00 de Argentina del mismo día (18:00Z): el mismo día civil cubre
+      expect(evaluar(renovacion({ cargado: "2026-11-15T18:00:00.000Z", emitido: null }))).toEqual([]);
+      // 00:30 de Argentina del día siguiente (03:30Z): ya es otro día civil
+      expect(evaluar(renovacion({ cargado: "2026-11-16T03:30:00.000Z", emitido: null }))).toEqual(["seguro"]);
+    });
+
+    it("un documento anterior que cubría la fecha sigue cubriéndola aunque exista una renovación posterior", () => {
+      // el viejo vence el 20; el parte es del 15; la renovación (cargada hoy) no lo pisa
+      const viejo = documento({ id: "seguro-viejo", tipo: "seguro", vence: "2026-11-20", emitido: "2025-11-20", cargado: "2025-11-10T12:00:00.000Z" });
+      const nuevo = renovacion({ cargado: "2026-11-18T12:00:00.000Z", emitido: "2026-11-18" });
+      const docs = [...resto, viejo, nuevo];
+      expect(documentacionVencidaEn({ fecha: F, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual([]);
+    });
+
+    it("la licencia usa la misma regla", () => {
+      const licenciaVieja = documento({ id: "lic-vieja", titular: { tipo: "conductor", id: "c1" }, tipo: "licencia", vence: "2026-11-10", emitido: null, cargado: "2025-01-01T12:00:00.000Z" });
+      const licenciaNueva = documento({ id: "lic-nueva", titular: { tipo: "conductor", id: "c1" }, tipo: "licencia", vence: "2031-11-10", emitido: null, cargado: "2026-11-18T12:00:00.000Z", reemplazaA: "lic-vieja" });
+      const docs = [...vigentes.filter((d) => d.tipo !== "licencia"), licenciaVieja, licenciaNueva];
+      expect(documentacionVencidaEn({ fecha: F, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual(["licencia"]);
+      expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual([]);
+    });
+  });
+
   it("P9: se evalúa a la fecha del parte, no a hoy (parte de ayer con seguro que venció ayer)", () => {
     const docs = cambiar("seguro", "2026-11-17");
     expect(documentacionVencidaEn({ fecha: "2026-11-17", unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual([]);

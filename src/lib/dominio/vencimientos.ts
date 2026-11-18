@@ -1,6 +1,6 @@
 // Clasificación de vencimientos (V1 a V8) y, más abajo, documento vigente y requisitos (V9 a V17).
 
-import { diasEntre } from "./fechas.ts";
+import { diasEntre, fechaEnArgentina } from "./fechas.ts";
 import { NOMBRES_DOCUMENTO, textoVencimiento } from "./textos.ts";
 import type { Conductor, Documento, FechaCivil, Proyecto, TipoDocumento, Titular, Unidad } from "./tipos.ts";
 
@@ -68,6 +68,23 @@ export function documentoVigente(
     if (mejor === undefined || gana(d, mejor)) mejor = d;
   }
   return mejor;
+}
+
+/**
+ * M1 (a confirmar): ¿este documento amparaba la fecha `fecha`? Vence ese día o después y ya existía: su emisión es ese día
+ * o antes y, si no se cargó la emisión, se carga ese día (en hora de Argentina) o antes. Así una renovación cargada
+ * tarde, sin emisión o con emisión posterior, no borra el hecho de que el parte se hizo con el documento vencido.
+ */
+export function amparaLaFecha(d: Documento, fecha: FechaCivil): boolean {
+  const desde = d.emitido ?? fechaEnArgentina(d.cargado);
+  return d.vence >= fecha && desde <= fecha;
+}
+
+/** M1: hay algún documento del titular y el tipo que ampare la fecha (se miran todos, no solo el vigente de hoy). */
+export function hayDocumentoQueAmpare(documentos: readonly Documento[], titular: Titular, tipo: TipoDocumento, fecha: FechaCivil): boolean {
+  return documentos.some(
+    (d) => d.tipo === tipo && d.titular.tipo === titular.tipo && d.titular.id === titular.id && amparaLaFecha(d, fecha),
+  );
 }
 
 function gana(a: Documento, b: Documento): boolean {
