@@ -5,9 +5,9 @@
   //  - La consulta es estado de esta pantalla (no escribe el hash): arranca en `consultaDeRuta(app.ruta)` y se vuelve a leer cuando sube
   //    `app.versionDePantalla` (por ejemplo, «Ver las 4 en la flota» estando ya en la flota).
   //  - La barra de estado del panel dice «Mostrando 23 de 23 unidades.» y es la región viva: al escribir se actualiza con 500 ms de pausa; al elegir
-  //    un filtro, un proyecto o un orden, al instante. Un mensaje de guardado («Unidad agregada…») ocupa su lugar hasta la acción siguiente.
-  //  - Al agregar bien nos quedamos en la flota (la ficha es del paso 4.4): el mensaje va a la barra de estado y el foco, a la fila nueva
-  //    (o al título del panel si los filtros la esconden). Cuando exista la ficha, `r.href` / `r.ruta` es el destino.
+  //    un filtro, un proyecto o un orden, al instante.
+  //  - Al agregar bien la aplicación navega sola a la ficha de la unidad nueva (`app.agregarUnidad`) y el cambio de pantalla lleva el foco al título de la ficha,
+  //    que muestra el mensaje de llegada («Unidad agregada. Le faltan 4 documentos: cárguelos desde aquí.»): acá no queda nada por hacer salvo cerrar el diálogo.
   import { onDestroy, tick, untrack } from "svelte";
   import { contextoDeAgregarUnidad, type ContextoAgregarUnidad, type ValoresUnidad } from "../lib/dominio/formulario-unidad.ts";
   import type { ResultadoAgregarUnidad } from "../lib/estado/app.svelte.ts";
@@ -20,6 +20,7 @@
     type IdFiltroFlota,
   } from "../lib/estado/flota.ts";
   import { app } from "../lib/estado/instancia.ts";
+  import { aspectoDeAptitud } from "./alertas-aspecto.ts";
   import Boton from "./Boton.svelte";
   import DialogoUnidad from "./DialogoUnidad.svelte";
   import Etiqueta from "./Etiqueta.svelte";
@@ -32,9 +33,7 @@
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
   import { TEXTO_FLOTA_VISTA as T } from "./textos-marco.ts";
-  import type { NombreIcono, Tono } from "./tipos.ts";
-
-  type Agregada = Extract<ResultadoAgregarUnidad, { ok: true }>;
+  import type { Tono } from "./tipos.ts";
 
   const ID_TITULO = "titulo-flota";
   const PAUSA_AL_ESCRIBIR_MS = 500;
@@ -46,13 +45,11 @@
   // ---------- Barra de estado: el conteo (con pausa al escribir) o el mensaje de la última acción ----------
   // Parte con el conteo de ahora (así «escribir» no lo cambia hasta que pase la pausa).
   let anuncio = $state<string | null>(untrack(() => v?.anuncio ?? null));
-  let mensajeEstado = $state<string | null>(null);
-  const textoBarra = $derived(mensajeEstado ?? anuncio ?? v?.anuncio ?? "");
+  const textoBarra = $derived(anuncio ?? v?.anuncio ?? "");
   let plazoAnuncio: ReturnType<typeof setTimeout> | undefined;
 
   function anunciar(): void {
     clearTimeout(plazoAnuncio);
-    mensajeEstado = null;
     if (v !== null) anuncio = v.anuncio;
   }
   /** Los `select` con `bind:value` actualizan la consulta en el mismo evento: se anuncia cuando ya lo hicieron. */
@@ -120,17 +117,9 @@
   ];
   const grupos = $derived<GrupoDeLista<FilaFlota>[]>(v === null ? [] : [{ clave: "flota", titulo: "", tono: "neutro", filas: v.filas }]);
 
-  const ESTADO: Record<FilaFlota["estado"]["categoria"], { tono: Tono; icono: NombreIcono }> = {
-    "puede-salir": { tono: "vigente", icono: "check" },
-    "no-puede-salir": { tono: "critico", icono: "vencido" },
-    "fuera-de-servicio": { tono: "semana", icono: "llave" },
-    baja: { tono: "neutro", icono: "caja" },
-  };
-
   // ---------- Diálogo «Agregar unidad» ----------
   let dialogoAbierto = $state(false);
   let contextoDialogo = $state.raw<ContextoAgregarUnidad | null>(null);
-  let hrefNueva: string | null = null;
 
   function abrirAgregar(): void {
     const estado = app.estado;
@@ -139,26 +128,6 @@
     dialogoAbierto = true;
   }
   const guardar = (valores: ValoresUnidad): Promise<ResultadoAgregarUnidad> => app.agregarUnidad(valores);
-
-  function filaNueva(href: string): HTMLElement | null {
-    return document.querySelector<HTMLElement>(`[data-variante="flota"] a[href="${href}"]`);
-  }
-
-  function alAgregar(r: Agregada): void {
-    clearTimeout(plazoAnuncio);
-    hrefNueva = r.href;
-    // Si la unidad nueva no se ve con los filtros de ahora, el mensaje lo dice (el foco va al título).
-    const visible = panel !== null && vistaDeFlota(panel, consulta).filas.some((f) => f.href === r.href);
-    mensajeEstado = visible ? r.mensaje : `${r.mensaje} ${T.nuevaOculta}`;
-  }
-
-  /** El diálogo ya se cerró: la fila nueva está en el DOM (el panel se recalculó al guardar). Si no se ve, el foco va al título del panel. */
-  function focoDestino(): HTMLElement | null {
-    if (hrefNueva === null) return null;
-    const href = hrefNueva;
-    hrefNueva = null;
-    return filaNueva(href) ?? document.getElementById(ID_TITULO);
-  }
 </script>
 
 {#if panel !== null && v !== null}
@@ -226,7 +195,7 @@
           tonoDeFila={(f) => f.franja ?? undefined}
         >
           {#snippet fila(f: FilaFlota)}
-            {@const aspecto = ESTADO[f.estado.categoria]}
+            {@const aspecto = aspectoDeAptitud(f.estado.categoria)}
             {@const pv = f.proximoVencimiento}
             <td {...CELDA} data-col="unidad">
               <span class="apilado">
@@ -289,7 +258,7 @@
     </Panel>
   </div>
 
-  <DialogoUnidad bind:abierto={dialogoAbierto} contexto={contextoDialogo} {guardar} alGuardar={alAgregar} {focoDestino} />
+  <DialogoUnidad bind:abierto={dialogoAbierto} contexto={contextoDialogo} {guardar} />
 {/if}
 
 <style>

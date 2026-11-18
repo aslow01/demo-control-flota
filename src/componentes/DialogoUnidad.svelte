@@ -5,8 +5,8 @@
   //  - Foco al abrir: el primer campo. Con más de un error el foco va al resumen de arriba (con un enlace a cada campo); con uno solo, al campo.
   //  - Con cambios sin guardar, cancelar pide confirmación (Dialogo). Guardando: el botón queda con aria-disabled y no repite el pedido; el
   //    texto «Guardando…» aparece solo si tarda más de 200 ms (5.19).
-  //  - Al guardar bien se cierra y llama `alGuardar(resultado)`: quien lo usa pone el mensaje en la barra de estado y decide a dónde va el
-  //    foco (`focoDestino`: la fila nueva, o el título del panel si no se ve).
+  //  - Al guardar bien se cierra (y llama `alGuardar(resultado)` si se pasó). `app.agregarUnidad` ya navegó a la ficha de la unidad nueva: la pantalla de
+  //    la flota desaparece y el cambio de pantalla lleva el foco al título de la ficha.
   import { tick, untrack } from "svelte";
   import { CAMPOS_UNIDAD, type CampoUnidad, type ContextoAgregarUnidad, type ErroresDeFormularioUnidad, type ValoresUnidad } from "../lib/dominio/formulario-unidad.ts";
   import type { ResultadoAgregarUnidad } from "../lib/estado/app.svelte.ts";
@@ -29,7 +29,7 @@
     abierto?: boolean;
     contexto: ContextoAgregarUnidad | null;
     guardar: (valores: ValoresUnidad) => Promise<ResultadoAgregarUnidad>;
-    alGuardar: (resultado: Agregada) => void;
+    alGuardar?: (resultado: Agregada) => void;
     focoDestino?: () => HTMLElement | null;
   } = $props();
 
@@ -72,7 +72,7 @@
     guardando = false;
     mostrarGuardando = false;
     if (r.ok) {
-      alGuardar(r);
+      alGuardar?.(r);
       abierto = false;
       return;
     }
