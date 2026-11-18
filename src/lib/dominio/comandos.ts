@@ -187,7 +187,8 @@ export function aplicar(estado: Estado, comando: Comando, ctx: Contexto): Result
     conductorId: e.conductorId,
     tipo: e.tipo,
     resumen: e.resumen,
-    datos: e.datos,
+    // M6: el evento tiene su propia copia; no comparte arreglos ni objetos con el estado (los eventos no se editan, H2).
+    datos: structuredClone(e.datos),
     autor: ctx.autor,
   }));
   return ok({ cambios, eventos });
@@ -589,7 +590,7 @@ function cargarDocumento(
 
   const documento: Documento = {
     id: ctx.nuevoId(),
-    titular: c.titular,
+    titular: { tipo: c.titular.tipo, id: c.titular.id }, // M6: copia, no la referencia del comando
     tipo: c.tipoDocumento,
     numero: datos.valor.numero,
     emisor: datos.valor.emisor,
@@ -929,6 +930,19 @@ function validarCamposDelBorrador(c: Extract<Comando, { tipo: "guardarBorrador" 
   return ok(null);
 }
 
+/** M6: copia solo los campos conocidos de cada respuesta, ya validadas por `validarCamposDelBorrador`. */
+function copiarChecklist(origen: Parte["checklist"]): Parte["checklist"] {
+  const copia = {} as Parte["checklist"];
+  for (const item of ITEMS_CHECKLIST) {
+    const r = origen[item.id];
+    copia[item.id] =
+      r.estado === "con-novedad"
+        ? { estado: "con-novedad", descripcion: r.descripcion, impideUso: r.impideUso }
+        : { estado: r.estado };
+  }
+  return copia;
+}
+
 function guardarBorrador(
   estado: Estado,
   c: Extract<Comando, { tipo: "guardarBorrador" }>,
@@ -972,8 +986,8 @@ function guardarBorrador(
     kmFin: c.kmFin,
     combustible: c.combustible,
     litrosCargados: c.litrosCargados,
-    checklist: c.checklist,
-    otraNovedad: c.otraNovedad,
+    checklist: copiarChecklist(c.checklist),
+    otraNovedad: c.otraNovedad === null ? null : { descripcion: c.otraNovedad.descripcion, impideUso: c.otraNovedad.impideUso },
     advertenciasAceptadas: [],
     documentacionVencida: [],
     creado: existente?.creado ?? ctx.ahora,
