@@ -726,6 +726,7 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   textos del parte con la acción real; `diseno-ui.md` (wireframe del parte, panel «Parte enviado» y tabla de textos) quedó igual.
   Falta, del lado de la vista, el mismo cambio en `TEXTO_COMO_FUNCIONA.parte` (`textos-marco.ts`). La regla P9 no cambia: la licencia
   vencida del conductor solo avisa al enviar el parte.
+- **Listas guardadas con elementos dañados (QA, 18/11/2026).** D7 vale también para ellas: al arrancar, cada lista tiene que ser un arreglo de objetos con los campos básicos (`id` y, según la lista, `patente`, `titular`, `checklist`, etc.) y `calcularAlertas` no puede fallar con ellas; si no, se regenera el ejemplo con el aviso D7. Antes quedaban en la fase `lista` y la pantalla fallaba al dibujar (corrige lo dicho en el párrafo anterior sobre «elementos basura»).
 - **«Último en escribir gana» en `meta` (QA D6): anotado, no arreglado.** `cambiarPerfil` escribe `{ ...estado.meta, perfil }` con el `meta`
   que esta pestaña tiene en memoria. Si otra pestaña reinició o modificó datos y esta todavía no pulsó «Actualizar» (aviso D9), pisa
   `fechaBase`, `modificada` y `semilla` con valores viejos. Hoy no se nota (la interfaz no modifica datos todavía); con la Etapa 4 sí:

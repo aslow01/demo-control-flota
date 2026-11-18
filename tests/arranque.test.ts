@@ -1,11 +1,12 @@
 import { IDBFactory } from "fake-indexeddb";
 import { describe, expect, it } from "vitest";
 import { generar, VERSION_ESQUEMA } from "../src/lib/datos/generador.ts";
+import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import { sinCambios } from "../src/lib/dominio/estado.ts";
 import { TEXTO_AVISO, textoDatosDeOtraFecha } from "../src/lib/dominio/textos.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { arrancar, cambiarPerfil, PLAZO_ABRIR_MS, reiniciarDemo, SEMILLA_POR_DEFECTO } from "../src/lib/persistencia/arranque.ts";
-import { abrirIndexedDB } from "../src/lib/persistencia/indexeddb.ts";
+import { abrirIndexedDB, NOMBRE_BASE } from "../src/lib/persistencia/indexeddb.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
 import type { Repositorio } from "../src/lib/persistencia/repositorio.ts";
 
@@ -313,6 +314,64 @@ describe("arranque con IndexedDB (falso) de punta a punta", () => {
     expect(dos.estado).toEqual(uno.estado);
     expect(dos.avisos).toEqual([]);
     cerrar(dos.repositorio);
+  });
+});
+
+/** Escribe a mano en un almacén de la base (la interfaz nunca lo hace): simula datos dañados o editados desde las herramientas del navegador. */
+async function escribirCrudo(fabrica: IDBFactory, almacen: string, valores: unknown[]): Promise<void> {
+  const db = await new Promise<IDBDatabase>((resolver, rechazar) => {
+    const pedido = fabrica.open(NOMBRE_BASE);
+    pedido.onsuccess = () => resolver(pedido.result);
+    pedido.onerror = () => rechazar(pedido.error);
+  });
+  await new Promise<void>((resolver, rechazar) => {
+    const tx = db.transaction(almacen, "readwrite");
+    tx.objectStore(almacen).clear();
+    for (const valor of valores) tx.objectStore(almacen).add(valor);
+    tx.oncomplete = () => resolver();
+    tx.onerror = () => rechazar(tx.error);
+  });
+  db.close();
+}
+
+describe("D7: elementos dañados en las listas guardadas cuentan como otro formato", () => {
+  const casos: [string, string, unknown[]][] = [
+    ["unidades con un número y un nulo", "unidades", [1, null]],
+    ["conductores con un texto", "conductores", ["x"]],
+    ["documentos sin titular", "documentos", [{ id: "d1", tipo: "seguro", vence: "2026-12-01" }]],
+    ["partes sin checklist", "partes", [{ id: "p1", unidadId: "u1", fecha: "2026-11-18", estado: "borrador" }]],
+    ["novedades con la unidad de otro tipo", "novedades", [{ id: "n1", unidadId: 5 }]],
+    ["eventos con un arreglo adentro", "eventos", [[]]],
+  ];
+
+  for (const [nombre, almacen, valores] of casos) {
+    it(`${nombre}: se regenera el ejemplo y se avisa (D7)`, async () => {
+      const fabrica = new IDBFactory();
+      const primero = await arrancar({ hoy: HOY, abrirAlmacenamiento: () => abrirIndexedDB(fabrica) });
+      cerrar(primero.repositorio);
+      await escribirCrudo(fabrica, almacen, valores);
+
+      const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: () => abrirIndexedDB(fabrica) });
+      expect(r.enMemoria).toBe(false);
+      expect(r.avisos).toEqual([{ tipo: "esquema-actualizado" }]);
+      expect(r.estado).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
+      expect(() => calcularAlertas(r.estado, HOY)).not.toThrow();
+      // y quedó guardado el ejemplo: la próxima vez ya no hay aviso
+      cerrar(r.repositorio);
+      const otra = await arrancar({ hoy: HOY, abrirAlmacenamiento: () => abrirIndexedDB(fabrica) });
+      expect(otra.avisos).toEqual([]);
+      cerrar(otra.repositorio);
+    });
+  }
+
+  it("un dato con la forma correcta pero que hace fallar el cálculo de alertas también se regenera", async () => {
+    const estado = generar(SEMILLA_POR_DEFECTO, HOY);
+    const unidad0 = estado.unidades[0]!;
+    (unidad0 as { estado: unknown }).estado = { tipo: "inventado" };
+    (estado.documentos[0] as { vence: unknown }).vence = "no es una fecha";
+    const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(await repoCon(estado)) });
+    expect(r.avisos).toEqual([{ tipo: "esquema-actualizado" }]);
+    expect(r.estado).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
   });
 });
 

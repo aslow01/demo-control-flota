@@ -2,6 +2,7 @@
 // decide qué avisos hay que mostrar. No toca la interfaz ni el reloj: recibe `hoy` ya calculado y devuelve datos.
 
 import { generar, VERSION_ESQUEMA } from "../datos/generador.ts";
+import { calcularAlertas } from "../dominio/alertas.ts";
 import { sinCambios } from "../dominio/estado.ts";
 import { parsearFechaCivil } from "../dominio/fechas.ts";
 import type { Estado, FechaCivil, Meta, Perfil } from "../dominio/tipos.ts";
@@ -62,6 +63,46 @@ function metaUtilizable(meta: unknown): meta is Meta {
     typeof m.modificada === "boolean" &&
     semillaValida(m.semilla)
   );
+}
+
+function esObjeto(valor: unknown): valor is Record<string, unknown> {
+  return typeof valor === "object" && valor !== null && !Array.isArray(valor);
+}
+
+function textos(o: Record<string, unknown>, ...campos: string[]): boolean {
+  return campos.every((campo) => typeof o[campo] === "string");
+}
+
+/** Lo mínimo que tiene que cumplir cada elemento de cada lista para que las pantallas no revienten (no es la validación de los comandos). */
+const FORMA_DE_ELEMENTO: Record<string, (o: Record<string, unknown>) => boolean> = {
+  proyectos: (o) => textos(o, "id"),
+  conductores: (o) => textos(o, "id", "nombre"),
+  unidades: (o) => textos(o, "id", "patente") && esObjeto(o.estado) && typeof o.estado.tipo === "string",
+  documentos: (o) => textos(o, "id", "tipo", "vence") && esObjeto(o.titular) && textos(o.titular, "tipo", "id"),
+  partes: (o) => textos(o, "id", "unidadId", "fecha", "estado") && esObjeto(o.checklist),
+  novedades: (o) => textos(o, "id", "unidadId", "estado", "gravedad", "fecha"),
+  correccionesKm: (o) => textos(o, "id", "unidadId", "desde"),
+  eventos: (o) => textos(o, "id", "instante", "resumen"),
+};
+
+/**
+ * D7: las listas guardadas tienen la forma que el código espera. Los datos del almacenamiento son entrada externa (se pueden
+ * editar desde las herramientas del navegador): un elemento que no es un objeto, o al que le falta un campo básico, cuenta como
+ * otro formato. Además se prueba que el cálculo de alertas no falle, que es lo primero que hace la pantalla principal.
+ */
+function datosUtilizables(guardado: Estado, hoy: FechaCivil): boolean {
+  const crudo = guardado as unknown as Record<string, unknown>;
+  for (const [lista, valida] of Object.entries(FORMA_DE_ELEMENTO)) {
+    const elementos = crudo[lista];
+    if (!Array.isArray(elementos)) return false;
+    if (!elementos.every((e: unknown) => esObjeto(e) && valida(e))) return false;
+  }
+  try {
+    calcularAlertas(guardado, hoy);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** El ejemplo de `hoy`, con el perfil que había si todavía existe (D6: el perfil es de la persona, no de los datos). */
@@ -137,7 +178,7 @@ async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesAr
     return { repositorio, estado, avisos: [], enMemoria: false };
   }
 
-  if (!metaUtilizable(guardado.meta)) {
+  if (!metaUtilizable(guardado.meta) || !datosUtilizables(guardado, hoy)) {
     // D7: otro formato (o un registro dañado): se vuelve al ejemplo y se avisa. El perfil no se arrastra: no se sabe leer.
     const estado = generar(semilla, hoy);
     await repositorio.reemplazarTodo(estado);
