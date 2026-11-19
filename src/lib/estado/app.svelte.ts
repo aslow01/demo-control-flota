@@ -12,7 +12,7 @@
 import { EMPRESA, ENCARGADA } from "../datos/generador.ts";
 import { calcularAlertas, type ResultadoAlertas } from "../dominio/alertas.ts";
 import { aptitud } from "../dominio/aptitud.ts";
-import { ejecutar as ejecutarComando, type Comando, type Ejecucion } from "../dominio/comandos.ts";
+import { aplicar as aplicarComando, ejecutar as ejecutarComando, type Comando, type Contexto, type Ejecucion } from "../dominio/comandos.ts";
 import {
   comandoDeCargar,
   comandoDeCargarOtro,
@@ -30,7 +30,11 @@ import {
   type ValoresCargarOtro,
   type ValoresDocumento,
 } from "../dominio/formulario-documento.ts";
+import { formatearHora } from "../dominio/fechas.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
+import { comandoDeBorrador, erroresDeNegocioParte, errorGeneralParte, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
+import { kmDeRegistro, registroAnterior } from "../dominio/kilometraje.ts";
+import { esBorradorVacio } from "../dominio/parte.ts";
 import {
   comandoDeAsignacion,
   comandoDeBaja,
@@ -84,6 +88,8 @@ import {
 import {
   ERRORES,
   TEXTO_ERROR_ARRANQUE,
+  TEXTO_FORMULARIO_PARTE,
+  textoAdvertencia,
   textoAsignacionCambiada,
   textoDocumentoCargado,
   textoDocumentoCorregido,
@@ -98,15 +104,17 @@ import {
   textoUnidadDadaDeBaja,
   textoVueltaAServicio,
 } from "../dominio/textos.ts";
-import { fallo, ok, type ErrorDeNegocio, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
+import { fallo, ok, type Advertencia, type ErrorDeNegocio, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
 import { arrancar, cambiarPerfil as guardarPerfil, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
 import type { Repositorio } from "../persistencia/repositorio.ts";
+import { crearAutoguardado, type Autoguardado, type DependenciasAutoguardado, type IndicadorDeGuardado, type ResultadoDeBorrador } from "./autoguardado.ts";
 import { centroDeAlertas, contarVencimientos, type CentroDeAlertas } from "./centro-alertas.ts";
 import { aHash, nombreDePantalla, resolverRuta, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
 import { fichaDeUnidad as armarFicha, type FichaDeUnidad, type FichaNoEncontrada } from "./ficha.ts";
 import { panelDeFlota, type PanelFlota } from "./flota.ts";
 import { generarId } from "./ids.ts";
+import { inicioDelConductor as armarInicio, panelDeParteEnviado, vistaDeParte, type InicioDelConductor, type PanelParteEnviado, type ParteEnEdicion, type VistaDeParte } from "./parte.ts";
 import type { Reloj } from "./reloj.ts";
 import type { Ubicacion } from "./ubicacion.ts";
 
@@ -167,6 +175,30 @@ export type ResultadoAgregarUnidad =
   | { ok: true; mensaje: string; foco: "titulo-de-la-ficha"; href: string; ruta: Ruta }
   | { ok: false; errores: ErroresDeFormularioUnidad };
 
+/** Una advertencia que hay que aceptar antes de enviar (K6, K7, P9): el diálogo «Antes de enviar» las lista; `tono` crítico para la documentación vencida. */
+export interface AdvertenciaDeEnvio {
+  tipo: Advertencia["tipo"];
+  texto: string;
+  tono: "critico" | "semana";
+}
+
+/**
+ * Resultado de «Enviar parte» (paso 4.5). Nunca rechaza.
+ * - `enviado`: el parte salió. `panel` es el «Parte enviado» (el `h1` recibe el foco: `foco`). `yaEnviado` es `true` si ya estaba enviado (doble clic, otra pestaña): no se
+ *   hizo nada y se devuelve el mismo panel.
+ * - `errores`: faltan datos o falla una regla (P4, K2 a K4, P2, P8, escritura): resumen de errores arriba del formulario con el foco (`foco`) y enlaces a cada campo.
+ *   Lo escrito se guardó como borrador (si se podía): no se pierde.
+ * - `advertencias`: el parte está completo pero hay que aceptar algo (K6, K7, P9): abrir «Antes de enviar». Al elegir «Enviar igual» se vuelve a llamar con
+ *   `aceptables` como `aceptadas`.
+ */
+export type ResultadoDeEnvio =
+  | { tipo: "enviado"; yaEnviado: boolean; panel: PanelParteEnviado; foco: "titulo-del-parte-enviado" }
+  | { tipo: "errores"; errores: ErroresDeParte; foco: "resumen-de-errores"; primerCampo: CampoParte | null }
+  | { tipo: "advertencias"; advertencias: AdvertenciaDeEnvio[]; aceptables: Advertencia["tipo"][]; foco: "dialogo-antes-de-enviar" };
+
+/** Resultado de descartar un borrador: el mensaje va a la barra de estado de la pantalla (o es el error). */
+export type ResultadoDeDescarte = { ok: true; mensaje: string } | { ok: false; mensaje: string };
+
 /** El perfil Conductor solo usa los comandos del parte (docs/diseno.md, sección 8). No es seguridad: es la perspectiva. */
 const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarParte", "descartarBorrador"]);
 
@@ -216,6 +248,15 @@ export class EstadoApp {
     const ruta = this.ruta;
     if (ruta.tipo !== "unidad" || this.estado === null || this.alertas === null) return null;
     return armarFicha(this.estado, this.alertas, this.hoy, ruta.patente, this.perfil);
+  });
+  /**
+   * El parte de `#/parte/ZK214BD/2026-11-18` (6.5): para completar, ya enviado (lectura) o el motivo por el que no se puede cargar. `null` fuera de esa ruta o antes de
+   * terminar el arranque. Se recalcula con cada cambio de datos (cada autoguardado también): `valoresIniciales` es solo para ARRANCAR el formulario, no se vuelve a leer.
+   */
+  parteDeLaRuta = $derived.by<VistaDeParte | null>(() => {
+    const ruta = this.ruta;
+    if (ruta.tipo !== "parte" || this.estado === null) return null;
+    return vistaDeParte(this.estado, this.hoy, this.perfil, ruta.patente, ruta.fecha);
   });
   /** Se llegó a una ficha desde otra pantalla con algo que decir (hoy, «Unidad agregada…»): patente y mensaje. Se va al salir de esa ficha. */
   private llegada = $state<{ patente: string; mensaje: string } | null>(null);
@@ -363,30 +404,33 @@ export class EstadoApp {
    * estado. Devuelve el error de negocio con su mensaje, o `escritura-fallida` (D10) sin haber cambiado nada.
    */
   ejecutar(comando: Comando): Promise<Resultado<Ejecucion>> {
-    return this.encolar(async () => {
-      const estado = this.estado;
-      const repositorio = this.repositorio;
-      if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
-      if (this.perfil.tipo === "conductor" && !COMANDOS_DEL_CONDUCTOR.has(comando.tipo)) return fallo("sin-permiso", ERRORES.sinPermiso);
+    return this.encolar(() => this.ejecutarAhora(comando));
+  }
 
-      const momento = this.deps.reloj.momento();
-      const resultado = ejecutarComando(estado, comando, {
-        hoy: momento.hoy,
-        ahora: momento.ahora,
-        autor: this.autor,
-        nuevoId: this.deps.nuevoId ?? generarId,
-      });
-      if (!resultado.ok) return resultado;
-      try {
-        await repositorio.escribir(resultado.valor.cambios, resultado.valor.eventos);
-      } catch {
-        return fallo("escritura-fallida", COMANDOS_DEL_PARTE_A_GUARDAR.has(comando.tipo) ? ERRORES.noPudoGuardarElParte : ERRORES.noPudoGuardar);
-      }
-      this.estado = resultado.valor.estado;
-      this.hoy = momento.hoy;
-      this.pestanas?.avisarCambio();
-      return resultado;
+  /** `ejecutar` sin pasar por la cola: para los métodos que ya están dentro de ella y encadenan más de un comando (guardar y enviar el parte). */
+  private async ejecutarAhora(comando: Comando): Promise<Resultado<Ejecucion>> {
+    const estado = this.estado;
+    const repositorio = this.repositorio;
+    if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
+    if (this.perfil.tipo === "conductor" && !COMANDOS_DEL_CONDUCTOR.has(comando.tipo)) return fallo("sin-permiso", ERRORES.sinPermiso);
+
+    const momento = this.deps.reloj.momento();
+    const resultado = ejecutarComando(estado, comando, {
+      hoy: momento.hoy,
+      ahora: momento.ahora,
+      autor: this.autor,
+      nuevoId: this.deps.nuevoId ?? generarId,
     });
+    if (!resultado.ok) return resultado;
+    try {
+      await repositorio.escribir(resultado.valor.cambios, resultado.valor.eventos);
+    } catch {
+      return fallo("escritura-fallida", COMANDOS_DEL_PARTE_A_GUARDAR.has(comando.tipo) ? ERRORES.noPudoGuardarElParte : ERRORES.noPudoGuardar);
+    }
+    this.estado = resultado.valor.estado;
+    this.hoy = momento.hoy;
+    this.pestanas?.avisarCambio();
+    return resultado;
   }
 
   // --- Diálogos de documentos (paso 4.2) -----------------------------------------------------------
@@ -595,6 +639,130 @@ export class EstadoApp {
         return { mensaje: textoAsignacionCambiada(cambio, falta), foco: "titulo-de-la-ficha" };
       },
     });
+  }
+
+  // --- Inicio del conductor y parte diario (paso 4.5) --------------------------------------------------
+  //
+  // El parte se guarda solo (P3: `guardarBorradorDeParte`, que llama el autoguardado) y se envía con `enviarParte`. Los dos van por la misma cola que el resto de
+  // los comandos, y buscan el borrador de la unidad y la fecha DENTRO de la cola: dos guardados seguidos (autoguardado y «salir del campo») nunca crean dos borradores.
+  // Los dos perfiles pueden usarlos (sección 8); con el perfil Conductor el conductor del parte es siempre quien lo completa.
+
+  /**
+   * La pantalla del perfil Conductor (6.4). `unidadElegidaId` es lo que eligió con «Usar otra unidad» (estado de la vista). `null` con el perfil Encargado o antes de
+   * terminar el arranque. Se llama dentro de un `$derived` de la vista: se recalcula con cada cambio de datos.
+   */
+  inicioDelConductor(unidadElegidaId: string | null = null): InicioDelConductor | null {
+    if (this.estado === null || this.alertas === null) return null;
+    return armarInicio(this.estado, this.alertas, this.hoy, this.perfil, unidadElegidaId);
+  }
+
+  /**
+   * El autoguardado (P3) de la pantalla de un parte, ya conectado: `app.autoguardadoDeParte(vista, (i) => (indicador = i))`. Hay que `cerrar()` al salir de la pantalla y
+   * `reiniciar(valores)` después de descartar el borrador. `opciones` es para los tests (reloj inyectado).
+   */
+  autoguardadoDeParte(vista: ParteEnEdicion, alCambiar: (indicador: IndicadorDeGuardado) => void, opciones: Pick<DependenciasAutoguardado, "esperaMs" | "programar" | "cancelar"> = {}): Autoguardado {
+    return crearAutoguardado({ ...opciones, valores: vista.valoresIniciales, alCambiar, guardar: (valores) => this.guardarBorradorDeParte(vista.unidadId, vista.fecha, valores) });
+  }
+
+  /** El contexto de un ensayo (comando que no se escribe): no gasta ids del generador. */
+  private contextoDeEnsayo(): Contexto {
+    const momento = this.deps.reloj.momento();
+    return { hoy: momento.hoy, ahora: momento.ahora, autor: this.autor, nuevoId: () => "ensayo" };
+  }
+
+  /**
+   * P3: guarda el borrador del parte de `unidadId` y `fecha` con lo que hay en el formulario (`valores`, todo texto). Solo se controla el formato de cada campo: con un
+   * error no se guarda nada y vuelve `tipo: "campos"`. Un borrador que todavía no existe y cuyos valores siguen siendo los iniciales NO se crea (`sinCambios`; D11): el
+   * borrador nace con el primer cambio. No cambia el kilometraje de la unidad ni abre novedades (K9, P3).
+   */
+  guardarBorradorDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte): Promise<ResultadoDeBorrador> {
+    return this.encolar(() => this.guardarBorradorAhora(unidadId, fecha, valores));
+  }
+
+  private erroresDeBorrador(error: ErrorDeNegocio): ResultadoDeBorrador {
+    if (error.codigo === "escritura-fallida") return { ok: false, tipo: "escritura", errores: errorGeneralParte(error.mensaje) };
+    const errores = erroresDeNegocioParte(error);
+    return { ok: false, tipo: errores.lista.length > 0 ? "campos" : "regla", errores };
+  }
+
+  private async guardarBorradorAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte): Promise<ResultadoDeBorrador> {
+    const estado = this.estado;
+    if (estado === null) return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.sinDatos) };
+    const perfil = this.perfil;
+    const v = perfil.tipo === "conductor" ? { ...valores, conductorId: perfil.conductorId } : valores;
+    const existente = estado.partes.find((p) => p.unidadId === unidadId && p.fecha === fecha);
+    if (existente?.estado === "enviado") return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.parteEnviadoInmutable) };
+
+    const c = comandoDeBorrador(unidadId, fecha, existente?.id ?? null, v);
+    if (!c.ok) return { ok: false, tipo: "campos", errores: c.errores };
+
+    if (existente === undefined) {
+      // Un parte nuevo se crea con el primer cambio: abrirlo y no escribir nada no deja un borrador (ni marca la demo como modificada, D11).
+      const ensayo = aplicarComando(estado, c.comando, this.contextoDeEnsayo());
+      if (!ensayo.ok) return this.erroresDeBorrador(ensayo.error);
+      const nuevo = ensayo.valor.cambios.partes[0];
+      const previo = registroAnterior(unidadId, fecha, estado.partes, estado.correccionesKm);
+      if (nuevo !== undefined && esBorradorVacio(nuevo, previo === null ? null : kmDeRegistro(previo))) return { ok: true, parteId: null, hora: null, sinCambios: true };
+    }
+
+    const r = await this.ejecutarAhora(c.comando);
+    if (!r.ok) return this.erroresDeBorrador(r.error);
+    const guardado = r.valor.cambios.partes[0];
+    return { ok: true, parteId: guardado?.id ?? null, hora: guardado === undefined ? null : formatearHora(guardado.actualizado), sinCambios: false };
+  }
+
+  /**
+   * «Enviar parte» (P4, P12, K2 a K4, K6, K7, P9, A3). Primero guarda lo que hay en el formulario como borrador (así lo escrito en los últimos 500 ms no se pierde y, si el envío
+   * se bloquea —K3, por ejemplo—, el borrador queda), después revisa lo que falta y por último envía. El envío es atómico (P12): el parte, las novedades, el cambio de estado de la
+   * unidad y los eventos se escriben juntos; si falla, queda el borrador. `aceptadas` son las advertencias que la persona aceptó en «Antes de enviar».
+   */
+  enviarParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio> {
+    return this.encolar(() => this.enviarParteAhora(unidadId, fecha, valores, aceptadas));
+  }
+
+  private async enviarParteAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][]): Promise<ResultadoDeEnvio> {
+    const errores = (e: ErroresDeParte): ResultadoDeEnvio => ({ tipo: "errores", errores: e, foco: "resumen-de-errores", primerCampo: e.lista[0]?.campo ?? null });
+    const estado = this.estado;
+    if (estado === null) return errores(errorGeneralParte(ERRORES.sinDatos));
+    const perfil = this.perfil;
+    const donde = (p: { unidadId: string; fecha: FechaCivil }) => p.unidadId === unidadId && p.fecha === fecha;
+
+    // Un doble clic, o un parte que otra pestaña ya envió: no se hace nada y se devuelve el mismo parte.
+    const yaEnviado = estado.partes.find((p) => donde(p) && p.estado === "enviado");
+    if (yaEnviado !== undefined) return { tipo: "enviado", yaEnviado: true, panel: panelDeParteEnviado(estado, yaEnviado, perfil), foco: "titulo-del-parte-enviado" };
+
+    const v = perfil.tipo === "conductor" ? { ...valores, conductorId: perfil.conductorId } : valores;
+    // Todo lo que impide enviar (faltantes y errores de formato) se lista junto, en el orden del formulario. Lo escrito se guarda igual, salvo que tenga un error de formato.
+    const previos = validarParaEnviar(v);
+    const guardado = await this.guardarBorradorAhora(unidadId, fecha, v);
+    if (!guardado.ok && guardado.tipo !== "campos") return errores(guardado.errores);
+    if (previos !== null) return errores(previos);
+    if (!guardado.ok) return errores(guardado.errores);
+
+    const borrador = this.estado?.partes.find((p) => donde(p));
+    if (borrador === undefined) return errores(errorGeneralParte(ERRORES.parteInexistente));
+    const r = await this.ejecutarAhora({ tipo: "enviarParte", parteId: borrador.id, advertenciasAceptadas: aceptadas });
+    if (!r.ok) {
+      if (r.error.codigo === "advertencias-sin-aceptar") {
+        const pendientes = (r.error.detalle?.["advertencias"] ?? []) as Advertencia[];
+        return {
+          tipo: "advertencias",
+          advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a), tono: a.tipo === "documentacion-vencida" ? "critico" : "semana" })),
+          aceptables: pendientes.map((a) => a.tipo),
+          foco: "dialogo-antes-de-enviar",
+        };
+      }
+      return errores(erroresDeNegocioParte(r.error));
+    }
+    const enviado = r.valor.estado.partes.find((p) => p.id === borrador.id);
+    if (enviado === undefined) return errores(errorGeneralParte(ERRORES.parteInexistente)); // no pasa: el comando acaba de escribirlo
+    return { tipo: "enviado", yaEnviado: false, panel: panelDeParteEnviado(r.valor.estado, enviado, perfil), foco: "titulo-del-parte-enviado" };
+  }
+
+  /** «Descartar borrador» (el botón-texto de dos pasos del parte y del inicio del conductor). No deja eventos (sección 8); un parte enviado no se descarta (P7). */
+  async descartarBorradorDeParte(parteId: string): Promise<ResultadoDeDescarte> {
+    const r = await this.ejecutar({ tipo: "descartarBorrador", parteId });
+    return r.ok ? { ok: true, mensaje: TEXTO_FORMULARIO_PARTE.borradorDescartado } : { ok: false, mensaje: r.error.mensaje };
   }
 
   // --- Diálogo «Agregar unidad» (paso 4.3) ----------------------------------------------------------

@@ -914,3 +914,156 @@ export function textoUnidadDadaDeBaja(patente: string): string {
 export function textoLitros(litros: number | null): string {
   return litros === null ? TEXTO_FICHA.historial.sinCarga : `${String(litros).replace(".", ",")} ${litros === 1 ? "litro" : "litros"}`;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Formulario del parte (docs/diseno-ui.md, 5.12 a 5.15 y 6.5; paso 4.5). `redactor-ux` los revisa.
+// ---------------------------------------------------------------------------------------------
+
+export const TEXTO_FORMULARIO_PARTE = {
+  /** P4: lo que falta, con el mensaje que va sobre el campo y en el resumen de arriba (5.15). */
+  faltante: {
+    conductor: "Elija quién conduce la unidad.",
+    kmInicio: "Escriba el kilometraje al iniciar.",
+    kmFin: "Escriba el kilometraje al terminar.",
+    combustible: "Elija el nivel de combustible.",
+    otraNovedad: "Cuente qué pasó en «Otra novedad» (al menos 3 caracteres) o déjela vacía.",
+  },
+  itemSinResponder: (punto: string) => `Elija una opción para ${punto}.`,
+  itemSinDescripcion: (punto: string) => `Cuente qué encontró en ${punto} (al menos 3 caracteres).`,
+  /** Título del resumen de errores: todo lo que hay son faltantes (P4), o hay también errores de reglas o de formato. */
+  tituloFaltan: (n: number) => `${textoFaltantes(n)} para enviar el parte`,
+  tituloRevise: (n: number) => `Revise ${pluralizar(n, "dato", "datos")} para enviar el parte`,
+  tituloGeneral: "No se pudo enviar el parte",
+  /** Barra de envío (5.14). */
+  barraLista: "Listo para enviar",
+  sinRecorrido: "—",
+  /** Ayudas de los campos (5.11). */
+  ayudaPrimerRegistro: "Es el primer registro de esta unidad.",
+  ayudaKmFin: "Complételo al final del día.",
+  ayudaLitros: "Deje vacío si no cargó.",
+  fueraDeTermino: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: se va a enviar fuera de término.`,
+  borradorDescartado: "Borrador descartado.",
+} as const;
+
+/** Indicador de guardado (5.15): lo que se ve y lo que se anuncia al lector (solo cuando cambia de estado, no en cada guardado). */
+export const TEXTO_GUARDADO = {
+  guardando: "Guardando…",
+  guardado: (hora: string) => `Guardado en este equipo a las ${hora}`,
+  /** P3: un dato con un error de formato no se guarda. */
+  conErroresDeCampo: "Sin guardar: corrija los campos marcados.",
+  /** D10 y 5.15: la escritura falló; lo escrito sigue en pantalla. */
+  error: "No se pudo guardar en este equipo. Lo escrito sigue en pantalla; no cierre la pestaña.",
+  anuncioGuardado: "Borrador guardado en este equipo.",
+  anuncioRecuperado: "Se volvió a guardar el borrador.",
+  anuncioConErroresDeCampo: "Hay datos que no se pueden guardar: revise los campos marcados.",
+  /** Un borrador que ya existía al abrir el parte (sobrevivió a una recarga). */
+  recuperado: (fecha: string, hora: string) => `Borrador recuperado, guardado en este equipo el ${fecha} a las ${hora}.`,
+  /** El instante guardado no se puede leer (almacenamiento con la forma rota): no se inventa una hora. */
+  recuperadoSinFecha: "Borrador recuperado.",
+} as const;
+
+// ---------------------------------------------------------------------------------------------
+// Inicio del conductor y pantalla del parte (docs/diseno-ui.md, 6.4 y 6.5; paso 4.5). `redactor-ux` los revisa.
+// ---------------------------------------------------------------------------------------------
+
+export const TEXTO_INICIO_CONDUCTOR = {
+  empezar: "Empezar el parte",
+  continuar: "Continuar el parte",
+  descartar: "Descartar borrador",
+  verParte: "Ver el parte",
+  enviado: "Enviado",
+  usarOtra: "Usar otra unidad",
+  elegirUnidad: "Elija la unidad",
+  continuarPendiente: "Continuarlo",
+  cargarPendiente: "Cargarlo",
+  licenciaTitulo: "Su licencia",
+  ultimosTitulo: "Mis últimos partes",
+  ultimosVacio: "Todavía no envió partes.",
+} as const;
+
+/** «Hoy, miércoles 18/11/2026». */
+export function textoHoyDelConductor(hoy: FechaCivil): string {
+  return `Hoy, ${diaDeLaSemana(hoy)} ${formatearFecha(hoy)}`;
+}
+
+/** «Tiene un parte empezado: faltan 5 datos.» */
+export function textoBorradorDelConductor(faltan: number): string {
+  if (faltan === 0) return "Tiene un parte empezado y está listo para enviar.";
+  return `Tiene un parte empezado: ${textoFaltantes(faltan).toLowerCase()}.`;
+}
+
+/** «Enviado a las 18:42». */
+export function textoEnviadoALas(hora: string): string {
+  return `Enviado a las ${hora}`;
+}
+
+/** Unidad fuera de servicio, vista del conductor: no tiene que hacer parte. */
+export function textoSinParteFueraDeServicio(patente: string, desde: FechaCivil, motivo: string): string {
+  return `${patente} está fuera de servicio desde el ${formatearFecha(desde)} (${motivo}). No hace falta parte.`;
+}
+
+/** Aviso sobre una unidad que está en servicio pero no puede salir (documentos): «Seguro vencido hace 1 día; …». */
+export function textoUnidadNoPuedeSalir(patente: string, motivos: readonly string[], alConductor: boolean): string {
+  const base = `${patente} no puede salir: ${motivos.join("; ")}.`;
+  return alConductor ? `${base} Avise al encargado antes de usarla.` : base;
+}
+
+export function textoPendienteBorrador(fecha: FechaCivil, patente: string): string {
+  return `El parte del ${formatearFecha(fecha)} de ${patente} está empezado y sin enviar.`;
+}
+
+export function textoPendienteSinParte(ayer: FechaCivil, patente: string): string {
+  return `No se envió el parte de ayer (${formatearFecha(ayer)}) de ${patente}.`;
+}
+
+/** Su licencia, desde el punto de vista del conductor. `d` = días hasta el vencimiento; `null` si falta. */
+export function textoSuLicencia(d: number | null, vence: FechaCivil | null): string {
+  if (d === null || vence === null) return "Falta cargar su licencia. Avise al encargado.";
+  const fecha = formatearFecha(vence);
+  if (d < 0) return `Vencida hace ${pluralizar(-d, "día", "días")} (${fecha}). Avise al encargado.`;
+  if (d === 0) return `Vence hoy (${fecha})`;
+  if (d === 1) return `Vence mañana (${fecha})`;
+  return `Vence en ${d} días (${fecha})`;
+}
+
+/** Fila de «Mis últimos partes»: nombre accesible del enlace. */
+export function textoParteReciente(fecha: FechaCivil, patente: string, recorrido: string): string {
+  return `Parte del ${formatearFecha(fecha)} de ${patente}, ${recorrido}`;
+}
+
+export const TEXTO_PANTALLA_PARTE = {
+  noDisponible: "No se puede cargar este parte",
+  descartar: "Descartar borrador",
+  conductorEtiqueta: "Conductor",
+  conductorSinElegir: "Elija quién conduce",
+  vueltaConductor: "Parte diario",
+  vueltaFicha: (patente: string) => `Ficha de ${patente}`,
+  impideUso: "Impide usar la unidad",
+  otraNovedad: "Otra novedad (opcional)",
+  enviado: "Parte enviado",
+  volverAlInicio: "Volver al inicio",
+  sinNovedades: "Sin novedades",
+  noCargo: "No cargó",
+  fueraDeTermino: "Enviado fuera de término.",
+  rotulos: { recorrido: "Recorrido", combustible: "Combustible", litros: "Combustible cargado", novedades: "Novedades" },
+} as const;
+
+/** Línea del panel «Parte enviado»: «ZK 214 BD, 18/11/2026, enviado a las 18:42.»; fuera de término, con el día del envío. Sin hora legible: «ZK 214 BD, 16/11/2026, enviado.» */
+export function textoLineaParteEnviado(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil | null, hora: string | null): string {
+  if (diaDeEnvio === null || hora === null) return `${patente}, ${formatearFecha(fecha)}, enviado.`;
+  if (fecha === diaDeEnvio) return `${patente}, ${formatearFecha(fecha)}, enviado a las ${hora}.`;
+  return `${patente}, ${formatearFecha(fecha)}, enviado el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de término).`;
+}
+
+/** Novedades de un parte enviado: «Sin novedades», «1 crítica: Frenos», «2 críticas: Frenos, Dirección; 1 normal: Otra novedad». */
+export function textoNovedadesDelParte(criticas: readonly string[], normales: readonly string[]): string {
+  const partes: string[] = [];
+  if (criticas.length > 0) partes.push(`${pluralizar(criticas.length, "crítica", "críticas")}: ${criticas.join(", ")}`);
+  if (normales.length > 0) partes.push(`${pluralizar(normales.length, "normal", "normales")}: ${normales.join(", ")}`);
+  return partes.length === 0 ? TEXTO_PANTALLA_PARTE.sinNovedades : partes.join("; ");
+}
+
+/** «9 puntos en orden: Dirección, Neumáticos…» (parte en lectura). */
+export function textoPuntosEnOrdenConNombres(nombres: readonly string[]): string {
+  return `${pluralizar(nombres.length, "punto", "puntos")} en orden: ${nombres.join(", ")}`;
+}
