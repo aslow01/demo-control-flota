@@ -46,16 +46,13 @@ export function parsearKm(texto: string): Resultado<number> {
 }
 
 /**
- * Lo que queda escrito en el campo de kilómetros al salir de él: solo dígitos o miles bien agrupados (`84320`, `84 320`)
- * pasan a `84.320`. Cualquier otra cosa (`84.5`, `1.2.3`, `12 3`) queda tal cual, para que `parsearKm` la rechace y la persona
- * la corrija: reformatear un decimal o un tipeo roto lo convertiría en otro kilometraje sin avisar.
+ * Lo que queda escrito en el campo de kilómetros al salir de él (5.11): un entero bien escrito (`84320`, `84 320`) pasa a `84.320`.
+ * Todo lo demás (`84.5`, `1.2.3`, `12 3`) queda tal cual, para que `parsearKm` lo rechace y la persona lo corrija: reformatear un
+ * decimal o un tipeo roto lo convertiría en otro kilometraje sin avisar (QA M2, etapa 4).
  */
 export function reformatearKm(texto: string): string {
-  const t = texto.replace(/[  ]/g, " ").trim();
-  const sueltos = /^\d{1,15}$/.test(t);
-  const conMiles = /^\d{1,3}(?:[. ]\d{3})+$/.test(t) && t.length <= LARGO_MAXIMO_ENTRADA;
-  if (!sueltos && !conMiles) return texto;
-  return formatearKm(Number(t.replace(/[. ]/g, "")));
+  const r = parsearKm(texto);
+  return r.ok ? formatearKm(r.valor) : texto;
 }
 
 /** K2: el fin no puede ser menor que el inicio. Devuelve el recorrido. */

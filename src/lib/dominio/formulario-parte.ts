@@ -292,8 +292,5 @@ export function recorridoDe(kmInicio: string, kmFin: string): string {
   return textoRecorrido(fin.valor - inicio.valor);
 }
 
-/** 5.11: al salir del campo el kilometraje se reformatea con punto de miles (`84320` → `84.320`); lo que no es un número se deja como está. */
-export function reformatearKm(texto: string): string {
-  const r = parsearKm(texto);
-  return r.ok ? formatearKm(r.valor) : texto;
-}
+/** 5.11: al salir del campo el kilometraje se reformatea con punto de miles (`84320` → `84.320`); lo que no es un entero bien escrito se deja como está. */
+export { reformatearKm } from "./kilometraje.ts";
