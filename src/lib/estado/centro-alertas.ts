@@ -149,6 +149,8 @@ export interface FilaVencimiento {
   proyecto: string | null;
   /** `dd/mm/aaaa`, o «—» si falta. */
   vence: string;
+  /** `true` si falta el documento: la vista agrega «Sin fecha» para lectores sin comparar el texto de `vence`. */
+  sinVencimiento: boolean;
   accion: AccionDeDocumento;
 }
 
@@ -195,8 +197,10 @@ export interface FilaOperacion {
   /** El texto de la alerta, tal como lo arma el dominio. */
   texto: string;
   unidad: { unidadId: string; patente: string; patenteTexto: string; interno: string; href: string };
-  /** `dd/mm/aaaa` del parte o de la novedad. */
+  /** `dd/mm/aaaa` del parte o de la novedad, o «—» si no tiene. */
   fecha: string;
+  /** `true` si no tiene fecha (la vista agrega «Sin fecha» para lectores sin comparar el texto de `fecha`). */
+  sinFecha: boolean;
   accion: AccionDeOperacion;
 }
 
@@ -357,6 +361,7 @@ function filaDeVencimiento(estado: Estado, a: Alerta): FilaVencimiento | null {
     titular,
     proyecto: proyectoDeFila(estado, a),
     vence: documento === undefined ? TEXTO_CENTRO.sinFecha : formatearFecha(documento.vence),
+    sinVencimiento: documento === undefined,
     accion: {
       tipo: falta ? "cargar" : "renovar",
       etiqueta: accion,
@@ -456,6 +461,7 @@ function armarDetalle(estado: Estado, r: ResultadoAlertas): PanelDetalle {
       texto: a.texto,
       unidad,
       fecha: a.fecha === null ? TEXTO_CENTRO.sinFecha : formatearFecha(a.fecha),
+      sinFecha: a.fecha === null,
       accion,
     };
   };

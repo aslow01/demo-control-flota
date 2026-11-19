@@ -206,6 +206,7 @@ describe("vencimientos con el ejemplo: 11 en los grupos esperados", () => {
       documento: "Habilitación de ingreso al proyecto",
       numero: null,
       vence: "—",
+      sinVencimiento: true,
       gravedad: "critica",
     });
     expect(falta?.accion).toMatchObject({
@@ -219,6 +220,7 @@ describe("vencimientos con el ejemplo: 11 en los grupos esperados", () => {
       estado: "Vencido hace 1 día",
       documento: "Seguro",
       vence: "17/11/2026",
+      sinVencimiento: false,
       gravedad: "critica",
       proyecto: "Proyecto Piedra Lunar",
     });

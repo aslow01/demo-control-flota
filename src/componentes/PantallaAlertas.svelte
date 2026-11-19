@@ -35,7 +35,6 @@
   import { CELDA } from "./lista-roles.ts";
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
-  import { TEXTO_CENTRO } from "../lib/dominio/textos.ts";
   import { TEXTO_ALERTAS as T } from "./textos-marco.ts";
   import type { Tono } from "./tipos.ts";
 
@@ -302,7 +301,7 @@
               {/if}
             </td>
             <td {...CELDA} data-col="proyecto" data-etiqueta={T.proyectoDe}>{#if f.proyecto !== null}{f.proyecto}{:else}<span aria-hidden="true">—</span><span class="solo-lectores">{T.sinProyecto}</span>{/if}</td>
-            <td {...CELDA} data-col="vence" data-etiqueta={T.venceEl}>{#if f.vence === TEXTO_CENTRO.sinFecha}<span aria-hidden="true">{f.vence}</span><span class="solo-lectores">{T.sinFecha}</span>{:else}{f.vence}{/if}</td>
+            <td {...CELDA} data-col="vence" data-etiqueta={T.venceEl}>{#if f.sinVencimiento}<span aria-hidden="true">{f.vence}</span><span class="solo-lectores">{T.sinFecha}</span>{:else}{f.vence}{/if}</td>
             <td {...CELDA} data-col="accion">
               <Boton variante="secundario" onclick={() => abrirDialogo(f.accion)}>
                 {f.accion.etiqueta}<span class="solo-lectores">{sufijoAccesible(f.accion.nombreAccesible, f.accion.etiqueta)}</span>
@@ -336,7 +335,7 @@
                   <Patente patente={x.fila.unidad.patente} href={x.fila.unidad.href} /><span class="interno">{x.fila.unidad.interno}</span>
                 </span>
               </td>
-              <td {...CELDA} data-col="fecha" data-etiqueta={T.columnasOperacion.fecha}>{#if x.fila.fecha === TEXTO_CENTRO.sinFecha}<span aria-hidden="true">{x.fila.fecha}</span><span class="solo-lectores">{T.sinFecha}</span>{:else}{x.fila.fecha}{/if}</td>
+              <td {...CELDA} data-col="fecha" data-etiqueta={T.columnasOperacion.fecha}>{#if x.fila.sinFecha}<span aria-hidden="true">{x.fila.fecha}</span><span class="solo-lectores">{T.sinFecha}</span>{:else}{x.fila.fecha}{/if}</td>
               <td {...CELDA} data-col="accion">
                 {#if x.fila.accion.tipo === "resolver"}
                   {@const accion = x.fila.accion}
