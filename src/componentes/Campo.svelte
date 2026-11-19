@@ -9,7 +9,7 @@
   //
   // El valor es siempre texto (`bind:valor`): convertirlo y validarlo es del dominio, no del componente.
   import type { Snippet } from "svelte";
-  import { formatearKm } from "../lib/dominio/textos.ts";
+  import { reformatearKm } from "../lib/dominio/kilometraje.ts";
   import Icono from "./Icono.svelte";
 
   let {
@@ -71,11 +71,9 @@
       undefined,
   );
 
-  /** Al salir del campo de kilómetros: 84320 -> 84.320. Si no es un número, se deja tal cual (lo valida el dominio). */
+  /** Al salir del campo de kilómetros: 84320 -> 84.320. Lo que no es un entero bien escrito (84.5, 1.2.3) se deja tal cual: lo valida el dominio. */
   function reformatear(): void {
-    if (tipo !== "km") return;
-    const digitos = valor.replace(/[.\s]/g, "");
-    if (/^\d{1,15}$/.test(digitos)) valor = formatearKm(Number(digitos));
+    if (tipo === "km") valor = reformatearKm(valor);
   }
 </script>
 

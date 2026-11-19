@@ -3,6 +3,7 @@ import {
   advertenciasDeKm,
   kmActual,
   parsearKm,
+  reformatearKm,
   textoRecorrido,
   validarKilometraje,
   validarRecorrido,
@@ -271,5 +272,35 @@ describe("K6 y K7: advertencias", () => {
     const r = validarKilometraje({ unidad: U, fecha: "2026-11-14", kmInicio: 41350, kmFin: 41500, partes, correcciones: [] });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.valor.advertencias).toEqual([{ tipo: "salto-km", km: 1250 }]);
+  });
+});
+
+describe("M2 (QA etapa 4): reformatear el km al salir del campo no cambia lo que se escribió", () => {
+  it("solo dígitos o miles bien escritos se reformatean con punto de miles", () => {
+    expect(reformatearKm("84320")).toBe("84.320");
+    expect(reformatearKm("845")).toBe("845");
+    expect(reformatearKm("84.320")).toBe("84.320");
+    expect(reformatearKm("84 320")).toBe("84.320");
+    expect(reformatearKm("1.234.567")).toBe("1.234.567");
+    expect(reformatearKm("  84320 ")).toBe("84.320");
+    expect(reformatearKm("0")).toBe("0");
+  });
+
+  it("un texto con decimales o mal agrupado queda igual, para que la validación lo vea", () => {
+    for (const texto of ["84.5", "84.32", "1.2.3", "1.000.00", "12 3", "84,5", "84.320,5", "abc", "-5", "", "1234567890123456"]) {
+      expect(reformatearKm(texto)).toBe(texto);
+    }
+  });
+
+  it("lo que queda sin tocar lo rechaza parsearKm: no se convierte en otro kilometraje", () => {
+    expect(parsearKm(reformatearKm("84.5")).ok).toBe(false);
+    expect(parsearKm(reformatearKm("1.2.3")).ok).toBe(false);
+  });
+});
+
+describe("M2: espacios no separables", () => {
+  it("un espacio no separable (lo que a veces pega el teclado) cuenta como espacio", () => {
+    expect(reformatearKm("84 320")).toBe("84.320");
+    expect(reformatearKm("84 320")).toBe("84.320");
   });
 });
