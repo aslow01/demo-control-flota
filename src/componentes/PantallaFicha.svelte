@@ -358,13 +358,8 @@
         "documentos novedades"
         "documentos kilometraje"
         "historial historial";
-    }
-    .area {
-      display: flex;
-      flex-direction: column;
-    }
-    .area > :global(.panel) {
-      flex: 1;
+      /* Cada panel mide lo que tiene: documentos ya no se estira hasta el fondo de la columna de al lado (quedaba un hueco con borde). */
+      align-items: start;
     }
   }
 </style>
