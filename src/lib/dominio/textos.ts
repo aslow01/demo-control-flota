@@ -96,7 +96,7 @@ export function errKmFinMenor(kmFin: number, kmInicio: number): string {
 }
 
 export function errKmRetrocede(patente: string, km: number, registro: string): string {
-  return `El último registro de ${patente} es ${formatearKm(km)} km (${registro}). Revise el número. Si se cambió el tablero, avise al encargado.`;
+  return `El último registro de ${patente} es ${formatearKm(km)} km (${registro}). Revise el número. Si se cambió el tablero, hay que informarlo al encargado.`;
 }
 
 export function errKmSuperaSiguiente(fecha: FechaCivil, kmInicio: number): string {
@@ -1073,7 +1073,7 @@ export function textoPuntosEnOrdenConNombres(nombres: readonly string[]): string
  * intenta guardar algo mientras el aviso «Se hicieron cambios en otra pestaña» sigue sin atender.
  */
 export const ERRORES_PESTANAS = {
-  escrituraConCambiosEnOtraPestana: "Hay cambios hechos en otra pestaña y no se guardó nada. Pulse «Actualizar» en el aviso y vuelva a intentarlo.",
+  escrituraConCambiosEnOtraPestana: "No se guardó nada porque hay cambios hechos en otra pestaña. Pulse «Actualizar» en el aviso y repita la acción.",
 } as const;
 
 /**
@@ -1082,5 +1082,5 @@ export const ERRORES_PESTANAS = {
  */
 export const TEXTO_ERROR_PANTALLA = {
   titulo: "No se pudo mostrar esta pantalla",
-  mensaje: "Es probable que haya datos dañados en este equipo. Recargue la página; si sigue igual, reinicie la demo para volver a la flota de ejemplo.",
+  mensaje: "Los datos guardados en este navegador pueden estar dañados. Recargue la página; si el error sigue, use «Reiniciar demo» para volver a la flota de ejemplo.",
 } as const;

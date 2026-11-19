@@ -237,7 +237,7 @@ describe("enviarParte", () => {
     const err = ejecutarError(estado, enviar(parteId));
     expect(err.codigo).toBe("km-retrocede");
     expect(err.mensaje).toBe(
-      "El último registro de ZK 214 BD es 84.320 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, avise al encargado.",
+      "El último registro de ZK 214 BD es 84.320 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, hay que informarlo al encargado.",
     );
   });
 

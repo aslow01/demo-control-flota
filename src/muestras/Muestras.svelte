@@ -330,7 +330,7 @@
     </div>
     <div class="fila-muestra">
       <Boton variante={confirmar ? "peligro" : "secundario"} onclick={() => (confirmar = !confirmar)}>
-        {confirmar ? "Confirmar: descartar" : "Descartar borrador"}
+        {confirmar ? "Confirmar descarte" : "Descartar borrador"}
       </Boton>
       <span class="nota">Variante peligro tras el primer clic (la confirmación en dos pasos la maneja la pantalla).</span>
     </div>
@@ -339,7 +339,7 @@
   <Panel titulo="Diálogo y confirmación en dos pasos" meta="5.17 y 5.1">
     <div class="fila-muestra">
       <Boton variante="secundario" onclick={() => (dialogoDemo = true)}>Abrir un diálogo con campos</Boton>
-      <BotonConfirmar texto="Descartar borrador" textoConfirmar="Confirmar: descartar" alConfirmar={() => (descartes += 1)} />
+      <BotonConfirmar texto="Descartar borrador" textoConfirmar="Confirmar descarte" alConfirmar={() => (descartes += 1)} />
       <span class="nota">Descartes confirmados: <span class="num">{descartes}</span> (el segundo clic en menos de 500 ms se ignora).</span>
     </div>
     <Dialogo titulo="Corregir kilometraje" bind:abierto={dialogoDemo} hayCambios={dialogoDemoTexto !== ""}>

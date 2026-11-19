@@ -327,7 +327,7 @@ describe("enviar el parte (P4, P12, K2, K3)", () => {
     const r = await app.enviarParte(uid, H, completo(edicion(app).valoresIniciales, { kmInicio: "120.719", kmFin: "120.800" }));
     expect(r.tipo).toBe("errores");
     if (r.tipo !== "errores") return;
-    expect(r.errores.porCampo.kmInicio).toBe("El último registro de ZYN 469 es 120.720 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, avise al encargado.");
+    expect(r.errores.porCampo.kmInicio).toBe("El último registro de ZYN 469 es 120.720 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, hay que informarlo al encargado.");
     expect(r.errores.titulo).toBe("Revise 1 dato para enviar el parte");
     expect(r.primerCampo).toBe("kmInicio");
     const p = estadoDe(app).partes.find((x) => x.unidadId === uid && x.fecha === H);

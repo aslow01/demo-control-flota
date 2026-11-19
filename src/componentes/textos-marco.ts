@@ -31,7 +31,7 @@ export const TEXTO_MARCO = {
   actualizar: "Actualizar",
   recargar: "Recargar la página",
   /** Una dirección que no corresponde a ninguna pantalla («Página no encontrada»). */
-  paginaNoEncontrada: "La dirección que abrió no corresponde a ninguna pantalla de la demo.",
+  paginaNoEncontrada: "No hay ninguna pantalla en esa dirección. Puede que el enlace esté incompleto o desactualizado.",
   irA: (pantalla: string) => `Ir a ${pantalla}`,
   /** Se anuncia a los lectores de pantalla si el arranque llegó a mostrar "Preparando la flota de ejemplo…". */
   listo: "Flota de ejemplo lista.",
@@ -292,7 +292,7 @@ export const TEXTO_CONDUCTOR_VISTA = {
   sinUnidad: "No tiene una unidad asignada. Elija la que va a usar hoy.",
   /** Primera opción del `select` cuando la unidad de hoy no se puede usar (fuera de servicio). */
   elegirOtra: "Elija otra unidad",
-  confirmarDescartar: "Confirmar: descartar",
+  confirmarDescartar: "Confirmar descarte",
   /** Texto oculto delante de cada fila de «Mis últimos partes» (el enlace dice «Parte del 17/11/2026 ZK 214 BD 132 km»). */
   parteDel: "Parte del ",
 } as const;
@@ -315,7 +315,7 @@ export const TEXTO_PARTE_VISTA = {
   enviar: "Enviar parte",
   enviando: "Enviando…",
   descartar: "Descartar borrador",
-  confirmarDescartar: "Confirmar: descartar",
+  confirmarDescartar: "Confirmar descarte",
   /** Diálogo «Antes de enviar» (K6, K7, P9): lo que explica cada aviso viene de `textoAdvertencia` (dominio). */
   antesDeEnviar: {
     titulo: "Antes de enviar",

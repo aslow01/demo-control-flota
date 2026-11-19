@@ -274,7 +274,7 @@ describe("5.15: el resumen de errores al enviar", () => {
 
 describe("errores que devuelve el comando", () => {
   it("K3: el error de kilometraje que apunta a kmInicio va a ese campo, con el título «Revise 1 dato»", () => {
-    const e = erroresDeNegocioParte({ codigo: "km-retrocede", mensaje: "El último registro de ZK 214 BD es 84.320 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, avise al encargado.", campo: "kmInicio" });
+    const e = erroresDeNegocioParte({ codigo: "km-retrocede", mensaje: "El último registro de ZK 214 BD es 84.320 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, hay que informarlo al encargado.", campo: "kmInicio" });
     expect(e.porCampo.kmInicio).toMatch(/^El último registro de ZK 214 BD es 84\.320 km/);
     expect(e.general).toBeNull();
     expect(e.titulo).toBe("Revise 1 dato para enviar el parte");

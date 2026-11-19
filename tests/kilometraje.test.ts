@@ -143,7 +143,7 @@ describe("K3: el kilometraje no retrocede", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error.mensaje).toBe(
-        "El último registro de ZK 214 BD es 84.320 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, avise al encargado.",
+        "El último registro de ZK 214 BD es 84.320 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, hay que informarlo al encargado.",
       );
       expect(r.error.campo).toBe("kmInicio");
       expect(r.error.codigo).toBe("km-retrocede");
