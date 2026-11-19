@@ -699,7 +699,7 @@ convence, se cambia acá y en el código a la vez.
   `escritura-fallida`. La suite de contrato (`tests/contrato-repositorio.ts`) está lista para correrla también contra
   IndexedDB (paso 2.4, decisión S2).
 
-**Correcciones de la revisión del dominio (18/11/2026, `docs/revision-dominio.md`)**
+**Correcciones de la revisión del dominio (18/11/2026; informe de proceso fuera del repositorio)**
 
 Estas decisiones las tomó el programador trabajando solo, con el criterio más conservador. **A confirmar por Matías: M1, M3 y M4.**
 
@@ -756,7 +756,7 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
 - **Ids nuevos.** 24 caracteres hexadecimales de `crypto.getRandomValues` (no `randomUUID`, que no existe fuera de contextos seguros).
 - **Textos nuevos** (`textos.ts`): `TEXTO_AVISO` (D4, D7, D8, D9), `textoDatosDeOtraFecha` (D5), `TEXTO_ERROR_ARRANQUE` (5.19) y errores
   `noPudoGuardar`, `sinPermiso`, `sinDatos`, `noPudoActualizar`. `redactor-ux` los revisó el 18/11/2026
-  (`docs/revision-textos-2026-11-18.md`, con el estado de cada ítem) y la revisión está aplicada.
+  (informe de proceso fuera del repositorio) y la revisión está aplicada.
 - **Revisión de textos (18/11/2026).** `TEXTO_ERROR_ARRANQUE` es `{ titulo, mensaje }` (el título va en el `h1`). Cada escritura que
   falla dice lo suyo: `noPudoGuardar` (formulario), `noPudoGuardarElParte` (`guardarBorrador` y `enviarParte`),
   `noPudoReiniciar` (reiniciar con la demo cargada) y `noPudoCambiarVista` (`cambiarPerfil`). El botón del aviso D9 sigue
