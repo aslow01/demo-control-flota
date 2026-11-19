@@ -23,8 +23,10 @@
   //  - Al guardar bien llama `alGuardar(resultado)` (quien lo usa pone el mensaje y decide el foco con `focoDestino`) y se cierra.
   //  - Sin `primario` (Volver a servicio con novedades críticas abiertas) no hay botón de guardar: solo el que cierra.
   import { tick, untrack, type Snippet } from "svelte";
-  import type { ErroresDeFormularioDe } from "../lib/dominio/formulario.ts";
+  import { errorGeneralEn, type ErroresDeFormularioDe } from "../lib/dominio/formulario.ts";
+  import { ERRORES } from "../lib/dominio/textos.ts";
   import type { ResultadoGuardado } from "../lib/estado/app.svelte.ts";
+  import { guardarConIndicador } from "../lib/estado/guardado.ts";
   import Boton from "./Boton.svelte";
   import Dialogo from "./Dialogo.svelte";
   import Icono from "./Icono.svelte";
@@ -99,11 +101,14 @@
     evento.preventDefault();
     if (guardando || valoresIniciales === null || primario === null) return;
     guardando = true;
-    const plazo = setTimeout(() => (mostrarGuardando = true), 200);
-    const r = await guardar({ ...valores });
-    clearTimeout(plazo);
-    guardando = false;
-    mostrarGuardando = false;
+    const r = await guardarConIndicador(() => guardar({ ...valores }), {
+      alTardar: () => (mostrarGuardando = true),
+      alTerminar: () => {
+        guardando = false;
+        mostrarGuardando = false;
+      },
+      alFallar: () => ({ ok: false as const, errores: errorGeneralEn<C>(ERRORES.noPudoGuardar) }),
+    });
     if (r.ok) {
       alGuardar(r);
       abierto = false;

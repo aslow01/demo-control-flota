@@ -22,8 +22,10 @@
   //  - Al guardar bien se cierra y llama `alGuardar(mensaje)`: quien lo usa pone el mensaje en la barra de estado y decide a dónde va el foco
   //    (`focoDestino`: el título del panel, porque la fila que abrió el diálogo ya no existe).
   import { tick, untrack } from "svelte";
-  import { CAMPOS_DOCUMENTO, type CampoDocumento, type ErroresDeFormulario } from "../lib/dominio/formulario-documento.ts";
+  import { CAMPOS_DOCUMENTO, errorGeneral, type CampoDocumento, type ErroresDeFormulario } from "../lib/dominio/formulario-documento.ts";
+  import { ERRORES } from "../lib/dominio/textos.ts";
   import type { ResultadoGuardadoDocumento } from "../lib/estado/app.svelte.ts";
+  import { guardarConIndicador } from "../lib/estado/guardado.ts";
   import Boton from "./Boton.svelte";
   import Campo from "./Campo.svelte";
   import Dialogo from "./Dialogo.svelte";
@@ -75,11 +77,14 @@
     evento.preventDefault();
     if (guardando || contexto === null) return;
     guardando = true;
-    const plazo = setTimeout(() => (mostrarGuardando = true), 200);
-    const r = await guardar({ ...valores });
-    clearTimeout(plazo);
-    guardando = false;
-    mostrarGuardando = false;
+    const r = await guardarConIndicador(() => guardar({ ...valores }), {
+      alTardar: () => (mostrarGuardando = true),
+      alTerminar: () => {
+        guardando = false;
+        mostrarGuardando = false;
+      },
+      alFallar: () => ({ ok: false as const, errores: errorGeneral(ERRORES.noPudoGuardar) }),
+    });
     if (r.ok) {
       alGuardar(r.mensaje);
       abierto = false;

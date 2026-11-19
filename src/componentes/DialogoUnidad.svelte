@@ -8,8 +8,10 @@
   //  - Al guardar bien se cierra (y llama `alGuardar(resultado)` si se pasó). `app.agregarUnidad` ya navegó a la ficha de la unidad nueva: la pantalla de
   //    la flota desaparece y el cambio de pantalla lleva el foco al título de la ficha.
   import { tick, untrack } from "svelte";
-  import { CAMPOS_UNIDAD, type CampoUnidad, type ContextoAgregarUnidad, type ErroresDeFormularioUnidad, type ValoresUnidad } from "../lib/dominio/formulario-unidad.ts";
+  import { CAMPOS_UNIDAD, errorGeneralUnidad, type CampoUnidad, type ContextoAgregarUnidad, type ErroresDeFormularioUnidad, type ValoresUnidad } from "../lib/dominio/formulario-unidad.ts";
+  import { ERRORES } from "../lib/dominio/textos.ts";
   import type { ResultadoAgregarUnidad } from "../lib/estado/app.svelte.ts";
+  import { guardarConIndicador } from "../lib/estado/guardado.ts";
   import Boton from "./Boton.svelte";
   import Campo from "./Campo.svelte";
   import Dialogo from "./Dialogo.svelte";
@@ -66,11 +68,14 @@
     evento.preventDefault();
     if (guardando || contexto === null) return;
     guardando = true;
-    const plazo = setTimeout(() => (mostrarGuardando = true), 200);
-    const r = await guardar({ ...valores });
-    clearTimeout(plazo);
-    guardando = false;
-    mostrarGuardando = false;
+    const r = await guardarConIndicador(() => guardar({ ...valores }), {
+      alTardar: () => (mostrarGuardando = true),
+      alTerminar: () => {
+        guardando = false;
+        mostrarGuardando = false;
+      },
+      alFallar: () => ({ ok: false as const, errores: errorGeneralUnidad(ERRORES.noPudoGuardar) }),
+    });
     if (r.ok) {
       alGuardar?.(r);
       abierto = false;
