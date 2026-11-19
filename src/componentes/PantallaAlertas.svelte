@@ -248,11 +248,13 @@
           </ul>
         {/if}
         {#snippet contenidoEstado()}
-          <span id="conductor-intro">{c.operacion.barraEstado.intro}</span>
-          <Boton variante="texto" aria-describedby="conductor-aclaracion" onclick={alAbrirParte}>
-            {c.operacion.barraEstado.accion}<Icono nombre="flecha-der" />
-          </Boton>
-          <span id="conductor-aclaracion" class="aclaracion">{c.operacion.barraEstado.aclaracion}</span>
+          <span class="conductor-estado">
+            <span id="conductor-intro">{c.operacion.barraEstado.intro}</span>
+            <Boton variante="texto" aria-describedby="conductor-aclaracion" onclick={alAbrirParte}>
+              {c.operacion.barraEstado.accion}<Icono nombre="flecha-der" />
+            </Boton>
+            <span id="conductor-aclaracion" class="aclaracion">{c.operacion.barraEstado.aclaracion}</span>
+          </span>
         {/snippet}
       </Panel>
     </div>
@@ -300,8 +302,8 @@
                 </span>
               {/if}
             </td>
-            <td {...CELDA} data-col="proyecto" data-etiqueta={T.proyectoDe}>{#if f.proyecto !== null}{f.proyecto}{:else}<span aria-hidden="true">—</span><span class="solo-lectores">{T.sinProyecto}</span>{/if}</td>
-            <td {...CELDA} data-col="vence" data-etiqueta={T.venceEl}>{#if f.sinVencimiento}<span aria-hidden="true">{f.vence}</span><span class="solo-lectores">{T.sinFecha}</span>{:else}{f.vence}{/if}</td>
+            <td {...CELDA} data-col="proyecto" data-etiqueta={T.proyectoDe} data-sin-valor={f.proyecto === null ? "" : undefined}>{#if f.proyecto !== null}{f.proyecto}{:else}<span aria-hidden="true">—</span><span class="solo-lectores">{T.sinProyecto}</span>{/if}</td>
+            <td {...CELDA} data-col="vence" data-etiqueta={T.venceEl} data-sin-valor={f.sinVencimiento ? "" : undefined}>{#if f.sinVencimiento}<span aria-hidden="true">{f.vence}</span><span class="solo-lectores">{T.sinFecha}</span>{:else}{f.vence}{/if}</td>
             <td {...CELDA} data-col="accion">
               <Boton variante="secundario" onclick={() => abrirDialogo(f.accion)}>
                 {f.accion.etiqueta}<span class="solo-lectores">{sufijoAccesible(f.accion.nombreAccesible, f.accion.etiqueta)}</span>
@@ -335,7 +337,7 @@
                   <Patente patente={x.fila.unidad.patente} href={x.fila.unidad.href} /><span class="interno">{x.fila.unidad.interno}</span>
                 </span>
               </td>
-              <td {...CELDA} data-col="fecha" data-etiqueta={T.columnasOperacion.fecha}>{#if x.fila.sinFecha}<span aria-hidden="true">{x.fila.fecha}</span><span class="solo-lectores">{T.sinFecha}</span>{:else}{x.fila.fecha}{/if}</td>
+              <td {...CELDA} data-col="fecha" data-etiqueta={T.columnasOperacion.fecha} data-sin-valor={x.fila.sinFecha ? "" : undefined}>{#if x.fila.sinFecha}<span aria-hidden="true">{x.fila.fecha}</span><span class="solo-lectores">{T.sinFecha}</span>{:else}{x.fila.fecha}{/if}</td>
               <td {...CELDA} data-col="accion">
                 {#if x.fila.accion.tipo === "resolver"}
                   {@const accion = x.fila.accion}
@@ -526,6 +528,13 @@
     display: inline-flex;
     rotate: 90deg;
   }
+  /* «Así lo carga el conductor: Abrir el parte diario → (cambia la vista a Conductor)»: las tres partes juntas, en el mismo renglón si entran (C13). */
+  .conductor-estado {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--e-1);
+  }
   .aclaracion {
     color: var(--c-texto-2);
   }
@@ -564,8 +573,33 @@
     align-items: center;
     gap: var(--e-1) var(--e-2);
   }
+  /* El enlace de la patente mide 44 px de alto (su blanco táctil) y la patente solo 24: los 10 px que sobran arriba y abajo no son aire entre las dos líneas de la celda (C8).
+     El blanco sigue siendo de 44 px; solo deja de ocupar lugar. */
+  .linea-titular :global(.enlace-patente) {
+    margin-block: -0.625rem;
+  }
   .titular .nota {
     line-height: 1.3;
+  }
+  /* Tarjeta (C7): «[ZR 536 MZ] Int. 12 · Toyota Hilux» en un renglón, el documento con su número al lado y los dos de abajo (proyecto, fecha) sin rótulo. */
+  @container lista (max-width: 39.99rem) {
+    .titular {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 var(--e-2);
+    }
+    .titular .interno::after {
+      content: " ·";
+      content: " ·" / "";
+    }
+    .doc,
+    .numero {
+      display: inline;
+    }
+    .numero {
+      margin-left: var(--e-2);
+    }
   }
   td a {
     display: inline-flex;

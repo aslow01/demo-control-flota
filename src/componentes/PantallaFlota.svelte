@@ -115,6 +115,8 @@
     { id: "novedades", titulo: T.columnas.novedades },
     { id: "proyecto", titulo: T.columnas.proyecto },
   ];
+  /** «Volkswagen Amarok 2015 · Camioneta» -> «Volkswagen Amarok 2015»: con el tipo la segunda línea de la celda se parte en dos (C9); el tipo está en la ficha. */
+  const sinTipo = (descripcion: string): string => (descripcion.includes(" · ") ? descripcion.slice(0, descripcion.lastIndexOf(" · ")) : descripcion);
   const grupos = $derived<GrupoDeLista<FilaFlota>[]>(v === null ? [] : [{ clave: "flota", titulo: "", tono: "neutro", filas: v.filas }]);
 
   // ---------- Diálogo «Agregar unidad» ----------
@@ -142,18 +144,20 @@
     <Panel id={ID_TITULO} titulo={panel.titulo} icono="unidad" meta={String(panel.cantidad)} estado={textoBarra}>
       {#snippet herramientas()}
         <div class="busqueda">
-          <label class="solo-lectores" for="buscar-unidad">{T.buscar}</label>
-          <span class="lupa"><Icono nombre="buscar" /></span>
-          <input
-            id="buscar-unidad"
-            type="search"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder={T.buscarMarcador}
-            bind:this={campoBusqueda}
-            bind:value={consulta.busqueda}
-            oninput={alEscribir}
-          />
+          <label class="rotulo-busqueda" for="buscar-unidad">{T.buscar}</label>
+          <div class="campo-busqueda">
+            <span class="lupa"><Icono nombre="buscar" /></span>
+            <input
+              id="buscar-unidad"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder={T.buscarMarcador}
+              bind:this={campoBusqueda}
+              bind:value={consulta.busqueda}
+              oninput={alEscribir}
+            />
+          </div>
         </div>
         <label class="selector">
           <span>{T.proyecto}</span>
@@ -202,7 +206,7 @@
                 <span class="linea-unidad">
                   <Patente patente={f.patente} href={f.href} /><span class="interno">{f.interno}</span>
                 </span>
-                <span class="nota">{f.descripcion}</span>
+                <span class="nota">{sinTipo(f.descripcion)}</span>
               </span>
             </td>
             <td {...CELDA} data-col="estado">
@@ -239,7 +243,7 @@
                 {/if}
               </span>
             </td>
-            <td {...CELDA} data-col="novedades" data-etiqueta={T.columnas.novedades}>
+            <td {...CELDA} data-col="novedades" data-etiqueta={T.columnas.novedades} data-sin-valor={f.novedades.abiertas === 0 ? "" : undefined}>
               {#if f.novedades.criticas > 0}
                 <span class="novedad-critica num"><Icono nombre="octogono" />{f.novedades.texto}</span>
               {:else}
@@ -315,9 +319,20 @@
 
   /* ---------- Herramientas: búsqueda, proyecto, orden y filtros ---------- */
   .busqueda {
-    position: relative;
+    display: flex;
     flex: 1 1 100%;
+    flex-direction: column;
+    gap: var(--e-1);
     min-width: 0;
+  }
+  .campo-busqueda {
+    position: relative;
+  }
+  /* Con el rótulo visible, como Proyecto y Ordenar por (C10); en escritorio, donde todo va en una línea, queda solo para lectores. */
+  .rotulo-busqueda {
+    font-size: var(--t-chico);
+    font-weight: 600;
+    line-height: 1.4;
   }
   .lupa {
     position: absolute;
@@ -349,9 +364,10 @@
     color: var(--c-texto-2);
     opacity: 1;
   }
+  /* Proyecto y Ordenar por, uno al lado del otro (C10): ahorran un renglón entero antes de los resultados. */
   .selector {
     display: flex;
-    flex: 1 1 100%;
+    flex: 1 1 calc(50% - var(--e-3) / 2);
     flex-direction: column;
     gap: var(--e-1);
     min-width: 0;
@@ -394,6 +410,15 @@
     .busqueda {
       flex: 1 1 20rem;
     }
+    .rotulo-busqueda {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
     .selector {
       flex: 0 1 auto;
       flex-direction: row;
@@ -425,15 +450,43 @@
     align-items: center;
     gap: var(--e-1) var(--e-2);
   }
+  /* El enlace de la patente mide 44 px (su blanco táctil) y la patente 24: lo que sobra no ocupa lugar entre las dos líneas de la celda (C8). */
+  .linea-unidad :global(.enlace-patente) {
+    margin-block: -0.625rem;
+  }
+  /* Tarjeta (C7): «[ZZD 563] Int. 10 · Volkswagen Amarok 2015» en un renglón y los datos de abajo, en renglones de dos pasos. */
+  @container lista (max-width: 39.99rem) {
+    td[data-col="unidad"] .apilado {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 var(--e-2);
+    }
+    /* El punto va pegado al interno (nunca queda solo al principio del renglón de abajo si el modelo no entra). */
+    td[data-col="unidad"] .interno::after {
+      content: " ·";
+      content: " ·" / "";
+    }
+    td[data-col="parte"] .apilado {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 var(--e-2);
+    }
+  }
   .interno {
     font-size: var(--t-tabla);
     color: var(--c-texto-2);
   }
+  /* El horizonte mínimo va siempre a la izquierda del texto, en su propia columna de 4 rem (C9): antes pasaba arriba o al lado según si el texto entraba. */
   .con-horizonte {
-    display: inline-flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 4rem minmax(0, 1fr);
     align-items: center;
     gap: var(--e-1) var(--e-3);
+  }
+  .con-horizonte > :global(:only-child) {
+    grid-column: 1 / -1;
   }
   .nota {
     color: var(--c-texto-2);

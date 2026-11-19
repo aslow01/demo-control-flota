@@ -148,9 +148,9 @@ export const TEXTO_DIALOGO_DOCUMENTO = {
 /** Flota (6.2): rótulos de la pantalla que no salen del dominio. Los filtros, los órdenes, los estados y los textos de cada fila vienen de `textos.ts`. */
 export const TEXTO_FLOTA_VISTA = {
   agregarUnidad: "Agregar unidad",
-  /** Nombre del campo de búsqueda (la etiqueta no se ve: el marcador dice qué se puede buscar). */
-  buscar: "Buscar unidad",
-  buscarMarcador: "Buscar por patente, interno, modelo o conductor",
+  /** Rótulo del campo de búsqueda (visible con poco ancho; el marcador, más corto, dice qué se puede buscar y no se corta a 360 px). */
+  buscar: "Buscar",
+  buscarMarcador: "Patente, modelo o conductor",
   proyecto: "Proyecto",
   ordenarPor: "Ordenar por",
   mostrar: "Mostrar",

@@ -2,7 +2,7 @@
   // Panel «Documentos» de la ficha (6.3): el Horizonte mediano con solo los documentos de la unidad, la tabla (Documento · Número y emisor · Vence ·
   // Estado · Acciones; una fila por documento obligatorio y por cada cargado, los que faltan con «Falta cargar» y «Cargar») y «Cargar otro documento».
   // No tiene reglas: todo lo arma `ficha.documentos`. Las acciones avisan con `alAccion` (que abre el diálogo) y `alCargarOtro`.
-  //  - «Anteriores (N)» es un `details` dentro de la celda del documento, solo lectura.
+  //  - «Anteriores (N)» es un `details` de solo lectura en una celda propia, la última de la fila, a todo el ancho (la tabla completa nunca se ve acá: ver más abajo).
   //  - Emisor: la especificación lo pone en una columna que se oculta por debajo de 66 rem; el panel nunca llega a ese ancho (ocupa 8 de 12 columnas),
   //    así que va siempre debajo del número.
   import type { AccionDeDocumentoEnFicha, FilaDocumento, PanelDocumentos } from "../lib/estado/ficha.ts";
@@ -80,15 +80,6 @@
         {@const aspecto = aspectoDe(f)}
         <td {...CELDA} data-col="documento">
           <span class="doc">{f.nombre}</span>
-          {#if f.rotuloAnteriores !== null}
-            <Detalles resumen={f.rotuloAnteriores}>
-              <ul class="anteriores">
-                {#each f.anteriores as a (a.documentoId)}
-                  <li>{T.documentos.anterior(a)}</li>
-                {/each}
-              </ul>
-            </Detalles>
-          {/if}
         </td>
         <td {...CELDA} data-col="numero" data-etiqueta={T.documentos.numeroDe}>
           {#if f.numero !== null}
@@ -111,6 +102,18 @@
             </div>
           {/if}
         </td>
+        <!-- «Anteriores (N)» es la última celda de la fila y ocupa todo su ancho (C6): así el nombre y el estado quedan siempre juntos y a la misma altura en todas las filas. -->
+        {#if f.rotuloAnteriores !== null}
+          <td {...CELDA} data-col="anteriores">
+            <Detalles resumen={f.rotuloAnteriores}>
+              <ul class="anteriores">
+                {#each f.anteriores as a (a.documentoId)}
+                  <li>{T.documentos.anterior(a)}</li>
+                {/each}
+              </ul>
+            </Detalles>
+          </td>
+        {/if}
       {/snippet}
     </ListaTabla>
   {/if}

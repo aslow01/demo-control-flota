@@ -153,10 +153,31 @@
     white-space: nowrap;
     font-variant-numeric: tabular-nums lining-nums;
   }
+  /* Flota, tabla completa (C9): anchos fijos para que cada fila mida lo mismo (unos 60 px) y las columnas no se muevan según lo que cuenten; «Proyecto y conductor» se queda con
+     el resto. Kilometraje, último parte y novedades no se parten. */
   @container lista (min-width: 66rem) {
-    [data-variante="flota"] .fila :global(td[data-col="unidad"]) {
-      min-width: 11rem;
+    [data-variante="flota"] table {
+      table-layout: fixed;
     }
+    [data-variante="flota"] th[data-col="unidad"] {
+      width: 11.5rem;
+    }
+    [data-variante="flota"] th[data-col="estado"] {
+      width: 10.5rem;
+    }
+    [data-variante="flota"] th[data-col="proximo"] {
+      width: 13.5rem;
+    }
+    [data-variante="flota"] th[data-col="km"] {
+      width: 6rem;
+    }
+    [data-variante="flota"] th[data-col="parte"] {
+      width: 6.5rem;
+    }
+    [data-variante="flota"] th[data-col="novedades"] {
+      width: 6.75rem;
+    }
+    [data-variante="flota"] .fila :global(td[data-col="parte"]),
     [data-variante="flota"] .fila :global(td[data-col="novedades"]) {
       white-space: nowrap;
     }
@@ -273,6 +294,50 @@
     }
   }
 
+  /* Tarjeta de vencimientos y de operación (C7): sin rótulos visibles (el dato se entiende solo y la tabla sigue con sus encabezados para los lectores). El estado y la fecha van
+     en el mismo renglón («Vence en 5 días · 24/11/2026») y, si no entran juntos, la fecha baja al renglón de abajo: por eso es una fila con `flex-wrap` y no una grilla. La
+     fecha solo se muestra si agrega algo (`data-sin-valor` la saca). El orden visual es el del DOM salvo la fecha, que sube junto al estado. */
+  @container lista (max-width: 39.99rem) {
+    [data-variante="vencimientos"] .fila,
+    [data-variante="operacion"] .fila {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-1) var(--e-1);
+    }
+    [data-variante="vencimientos"] .fila :global(td),
+    [data-variante="operacion"] .fila :global(td) {
+      flex: 1 1 100%;
+      order: 3;
+    }
+    [data-variante="vencimientos"] .fila :global(td[data-col="estado"]),
+    [data-variante="operacion"] .fila :global(td[data-col="estado"]) {
+      flex: 0 1 auto;
+      order: 1;
+    }
+    [data-variante="vencimientos"] .fila :global(td[data-col="vence"]),
+    [data-variante="operacion"] .fila :global(td[data-col="fecha"]) {
+      flex: 0 1 auto;
+      order: 2;
+    }
+    [data-variante="vencimientos"] .fila :global(td[data-col="accion"]),
+    [data-variante="operacion"] .fila :global(td[data-col="accion"]) {
+      order: 5;
+    }
+    [data-variante="vencimientos"] .fila :global(td[data-col="proyecto"]) {
+      order: 4;
+      font-size: var(--t-chico);
+      color: var(--c-texto-2);
+    }
+    [data-variante="vencimientos"] .fila :global(td[data-col="vence"])::before {
+      content: "· ";
+      content: "· " / "";
+    }
+    .fila :global(td[data-sin-valor]) {
+      display: none;
+    }
+  }
+
   /* Flota, compacta y tarjetas: cada celda ocupa su área (las dos disposiciones solo cambian la grilla). */
   @container lista (max-width: 65.99rem) {
     [data-variante="flota"] .fila :global(td[data-col="unidad"]) {
@@ -308,17 +373,39 @@
       align-items: start;
     }
   }
-  /* Tarjeta de la flota: unidad, estado, próximo vencimiento, tres datos chicos en una fila y el proyecto. */
+  /* Tarjeta de la flota (C7): unidad, estado, próximo vencimiento, un renglón de datos («160.678 km · último parte 18/11/2026»), las novedades solo si hay y el proyecto.
+     Sin rótulos en columnas: el de «último parte» y el de «novedades» se leen del `data-etiqueta` (el resto se entiende solo). */
   @container lista (max-width: 39.99rem) {
     [data-variante="flota"] .fila {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: auto minmax(0, 1fr);
       grid-template-areas:
-        "unidad unidad unidad"
-        "estado estado estado"
-        "proximo proximo proximo"
-        "km parte novedades"
-        "proyecto proyecto proyecto";
-      column-gap: var(--e-3);
+        "unidad unidad"
+        "estado estado"
+        "proximo proximo"
+        "km parte"
+        "novedades novedades"
+        "proyecto proyecto";
+      column-gap: var(--e-2);
+      row-gap: var(--e-1);
+    }
+    [data-variante="flota"] .fila :global(td[data-col="parte"]) {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 var(--e-1);
+    }
+    [data-variante="flota"] .fila :global(td[data-col="parte"])::before {
+      content: "· " attr(data-etiqueta);
+      content: "· " attr(data-etiqueta) / "";
+      text-transform: lowercase;
+    }
+    [data-variante="flota"] .fila :global(td[data-col="novedades"])::before {
+      content: attr(data-etiqueta) ": ";
+      content: attr(data-etiqueta) ": " / "";
+    }
+    [data-variante="flota"] .fila :global(td[data-col="proyecto"]) {
+      font-size: var(--t-chico);
+      color: var(--c-texto-2);
     }
   }
 
@@ -340,6 +427,9 @@
       grid-area: accion;
       white-space: normal;
     }
+    [data-variante="documentos"] .fila :global(td[data-col="anteriores"]) {
+      grid-area: anteriores;
+    }
   }
   /* Compacta: (documento · número · vence) y debajo (estado · acciones). */
   @container lista (min-width: 40rem) and (max-width: 65.99rem) {
@@ -349,6 +439,13 @@
         "documento numero vence"
         "estado estado accion";
       align-items: start;
+    }
+    /* «Anteriores (N)», si la fila lo tiene, va en un renglón propio debajo de todo (sin él no queda un renglón vacío con su separación). */
+    [data-variante="documentos"] .fila:has(:global(td[data-col="anteriores"])) {
+      grid-template-areas:
+        "documento numero vence"
+        "estado estado accion"
+        "anteriores anteriores anteriores";
     }
   }
   /* Tarjeta: documento, estado, (número · vence) y las acciones. */
@@ -362,6 +459,14 @@
         "accion accion";
       column-gap: var(--e-3);
     }
+    [data-variante="documentos"] .fila:has(:global(td[data-col="anteriores"])) {
+      grid-template-areas:
+        "documento documento"
+        "estado estado"
+        "numero vence"
+        "accion accion"
+        "anteriores anteriores";
+    }
   }
 
   /* Tarjetas: una columna, cada fila es una tarjeta con su borde y el botón a todo el ancho. */
@@ -373,7 +478,7 @@
       border: 1px solid var(--c-borde);
       border-radius: var(--r-2);
     }
-    .fila :global(td[data-etiqueta])::before {
+    [data-variante="documentos"] .fila :global(td[data-etiqueta])::before {
       content: attr(data-etiqueta);
       content: attr(data-etiqueta) / "";
       display: block;
