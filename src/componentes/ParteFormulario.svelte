@@ -9,7 +9,8 @@
   //    si sale, avisa a la pantalla (`alEnviado`) y esta pasa a «Parte enviado». El error de un campo se queda mientras el campo tenga lo mismo que al enviar (no desaparece solo
   //    con el tiempo); al tocarlo, su mensaje y su renglón del resumen se van, y el resumen cambia su título al nuevo conteo.
   //  - Los errores de formato de un campo (km con letras…) llegan al salir del campo y bloquean el guardado hasta corregirlos (indicador «Sin guardar: corrija…»).
-  //  - Barra de envío: pegada abajo con poco ancho (5.14); `html` reserva `scroll-padding-bottom` para que no tape el campo con foco (WCAG 2.4.11).
+  //  - Barra de envío: pegada abajo con poco ancho (5.14); `html` reserva `scroll-padding-bottom` para que no tape el campo con foco (WCAG 2.4.11). Con la pantalla muy baja
+  //    (menos de 30 rem de alto: zoom 400 %, teléfono apaisado) no se pega: queda al final del formulario.
   import { onDestroy, tick, untrack } from "svelte";
   import { errorGeneralParte, recorridoDe, respondidos, textoBarraDeEnvio, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../lib/dominio/formulario-parte.ts";
   import { ERRORES, TEXTO_DIALOGOS_FICHA, TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos.ts";
@@ -487,8 +488,14 @@
       box-shadow: none;
     }
   }
+  /* Pantalla muy baja (zoom 400 %, teléfono apaisado): la barra no se queda pegada. Ocuparía casi la mitad de la pantalla y taparía el campo con foco. */
+  @media (max-height: 30rem) {
+    .barra-envio {
+      position: static;
+    }
+  }
   /* El campo con foco no queda tapado por la barra pegada (2.4.11). */
-  @media (max-width: 39.99rem) {
+  @media (max-width: 39.99rem) and (min-height: 30.01rem) {
     :global(html:has(.barra-envio)) {
       scroll-padding-bottom: calc(var(--alto-barra-envio) + var(--e-4));
     }
