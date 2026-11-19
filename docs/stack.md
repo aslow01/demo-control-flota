@@ -120,7 +120,9 @@ demo-control-flota/
 - `npm audit --audit-level=high` sin altas ni críticas (si aparece la misma excepción de herramientas de desarrollo que
   en la Demo 1, se documenta con fecha de revisión).
 - Búsqueda: sin `{@html}`, sin `Math.random` en `src/lib`, sin `new Date(` fuera de `estado/reloj.ts`, sin nombres de
-  empresas reales ni datos personales.
+  empresas reales ni datos personales. Los nombres de terceros se buscan **por huella** (SHA-256 del término normalizado;
+  `scripts/huellas-prohibidas.mjs`), porque un repositorio público no puede nombrarlos ni en la herramienta que los
+  busca; los correos, con una regla genérica (cualquier correo que no sea de un dominio de ejemplo o `noreply`).
 - Tamaño: medir el JS y el CSS de la compilación en el paso 0; tope propuesto 100 KB de JS comprimido con gzip.
 
 ## 8. Publicación

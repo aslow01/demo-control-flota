@@ -1007,3 +1007,19 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 **Vista tocada.** Una línea en `ParteFormulario.svelte` (`erroresEnvio = r.errores;` en `descartar`, antes `errorGeneralParte(r.mensaje)`; la importación sigue en uso).
 
 **Verificación.** `npm test`: 1322 tests (1275 antes), también con `npm run test:tz`; `npm run check`: 0 errores y 0 avisos; `npm run build` y `npm run buscar`: sin hallazgos; sin nombres prohibidos fuera de la regla de `buscar`.
+
+## 19/11/2026 (rama `interfaz-etapa-0`) — La búsqueda de prohibidos ya no nombra a nadie (programador)
+
+**Qué se hizo.** `scripts/buscar-prohibidos.mjs` traía escritos en claro los nombres de terceros y el patrón de correos personales que busca: un repositorio público no puede contenerlos. Se rediseñó para comparar **huellas** (SHA-256 del término normalizado) y se borraron los literales.
+
+| Pieza | Qué es |
+| --- | --- |
+| `scripts/prohibidos.mjs` (+ `.d.mts`) | Módulo puro: `normalizar` (minúsculas, sin acentos), `tokenizar`, `crearHuella`, `contieneProhibido` (una palabra como trozo de cada palabra, frases de 2 a 3 palabras como n-grama exacto), `correosNoPermitidos` (regla genérica: cualquier correo que no sea de dominio de ejemplo ni `noreply`) y `huellasDeLiterales`. |
+| `scripts/huellas-prohibidas.mjs` (+ `.d.mts`) | Las huellas (hoy dos nombres de terceros). Los correos personales no llevan huella: los cubre la regla genérica. |
+| `scripts/buscar-prohibidos.mjs` | Dos reglas en lugar de una (nombres por huella, correos genéricos), sin excepción para sí mismo (ahora se revisa también). Lee `.prohibidos.local` si existe. |
+| `.gitignore` / `.prohibidos.local` | Archivo local opcional con términos extra (uno por línea, `#` comenta); ignorado por git y salteado por la búsqueda. |
+| `tests/prohibidos.test.ts` | 31 tests, todos con términos inventados: normalizador, tokenizado, huellas, detección (otra mayúscula, acento, pegado a otra palabra o identificador, n-grama con otros separadores, frase incompleta o desordenada, falsos positivos), carga local y correos. Los ejemplos de correo arman la arroba aparte para no activar la propia búsqueda. |
+
+**Decisiones propias** (documentadas en `docs/diseno.md`, sección 16, última viñeta, y en `docs/stack.md`, sección 7): un término de una palabra se busca como trozo de palabra (igual que la búsqueda en claro, que encontraba el nombre dentro de un identificador); cada huella guarda la longitud del término para no hashear todos los trozos; se mira línea por línea; la regla de correos es genérica y permite `example.com/.org/.net`, los TLD reservados y `noreply`. Límite: es una huella, no cifrado; una palabra corta se adivina con un diccionario.
+
+**Verificación.** `npm test`: 1354 tests (31 nuevos), `npm run check`: 0 errores y 0 avisos, `npm run build` y `npm run buscar` (8 reglas) sin hallazgos. Comparación con el script anterior (`git show HEAD:`, en un archivo temporal fuera del repo) sobre el árbol actual: ninguno de los dos encuentra nada. Con un archivo plantado temporalmente (términos en minúscula, mayúscula, dentro de un identificador, en una URL y un correo de proveedor personal) el nuevo encontró todo lo que encontró el anterior y además un término con acento y un correo de otro proveedor; con `.prohibidos.local` encontró también el término local. Archivo plantado y archivo local borrados.

@@ -111,7 +111,7 @@ Cifras medidas el 19/11/2026 sobre la rama `interfaz-etapa-0`:
 | Las mismas en tres zonas horarias | `npm run test:tz` | 1.323 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
 | Tipos | `npm run check` | 0 errores y 0 avisos en 327 archivos |
 | Contraste de la paleta | `npm run contraste` | 158 mediciones, 0 fallan, 9 pasan por poco margen |
-| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (7 reglas, 188 archivos): sin `{@html}`, sin `eval`, sin `Math.random` en `src/lib`, sin reloj del sistema fuera de `estado/reloj.ts` |
+| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (8 reglas, 193 archivos): sin `{@html}`, sin `eval`, sin `Math.random` en `src/lib`, sin reloj del sistema fuera de `estado/reloj.ts` |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
 **Probado en un navegador** (Chromium con Playwright, contra el servidor de desarrollo y contra la compilación servida

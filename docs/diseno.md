@@ -892,3 +892,14 @@ Ambigüedades del diseño que se resolvieron al programar `estado/parte.ts`, `es
   (6) *Mensajes* (QA B9): un kilometraje de más de 20 dígitos dice que supera 2.000.000 km; litros `1.000` o `1,000` (entero de 1 a 3 cifras, separador y tres dígitos) dicen que superan 200; `0,500` y `12,25` siguen hablando de decimales.
   (7) *Descartar* (QA B2): `descartarBorradorDeParte` devuelve también `errores` con el título «No se pudo descartar el borrador».
   (8) *Código muerto* (código B1): se borraron `fechaCorta`, `nombreAccesible`, `conductor` (del inicio), `fechaTexto`, `esHoy`, `borrador.guardadoEl` y `borrador.hora` del estado del parte, y `textoParteReciente`. *Avisos «Avise al encargado»:* no hacía falta cambiarlos: el de aptitud ya se arma con `alConductor` (el encargado no lo ve) y el de la licencia solo está en el inicio del conductor.
+- **Búsqueda de prohibidos por huellas (19/11/2026).** `npm run buscar` ya no trae escritos los nombres de terceros que
+  busca. `scripts/prohibidos.mjs` (módulo puro, con tests) normaliza el texto (minúsculas, sin acentos), lo parte en
+  palabras y compara el SHA-256 de cada candidato contra `scripts/huellas-prohibidas.mjs`: un término de una palabra se
+  busca como trozo de cada palabra (encuentra `NombreCentral` o `nombre_id`, como la búsqueda en claro), y una frase de
+  dos o tres palabras como n-grama exacto, con cualquier separador. Cada huella guarda la longitud del término para no
+  hashear todos los trozos. Los correos personales no tienen huella: los cubre una regla genérica (todo correo que no sea
+  de `example.com/.org/.net`, de los TLD reservados `.example`, `.test`, `.invalid`, `.localhost`, ni una dirección
+  `noreply`). Quien trabaja en local puede sumar términos en `.prohibidos.local` (uno por línea, `#` comenta; ignorado
+  por git y por la propia búsqueda). Límites: se mira línea por línea (una frase partida en dos líneas no se ve) y una
+  huella de una palabra corta se puede adivinar con un diccionario: esto evita nombrar, no es cifrado. Los términos de
+  los tests son inventados.

@@ -3,3 +3,6 @@ dist/
 coverage/
 *.log
 .DS_Store
+
+# Términos extra de la búsqueda de prohibidos, solo para quien trabaja en local (ver scripts/buscar-prohibidos.mjs)
+.prohibidos.local
