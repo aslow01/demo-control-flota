@@ -969,7 +969,7 @@ export const TEXTO_GUARDADO = {
   /** P3: un dato con un error de formato no se guarda. */
   conErroresDeCampo: "Sin guardar: corrija los campos marcados.",
   /** Mientras la persona escribe un dato con formato inválido: todavía no hay un campo marcado, así que no se la manda a mirar uno (accesibilidad N1). */
-  sinValidar: "Sin guardar: lo que escribió todavía no es válido.",
+  sinValidar: "Sin guardar: lo escrito todavía no es válido.",
   /** D10 y 5.15: la escritura falló; lo escrito sigue en pantalla. */
   error: "No se pudo guardar en este equipo. Lo escrito sigue en pantalla; no cierre la pestaña.",
   anuncioGuardado: "Borrador guardado en este equipo.",

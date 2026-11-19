@@ -308,7 +308,7 @@ export const TEXTO_CONDUCTOR_VISTA = {
 export const TEXTO_PARTE_VISTA = {
   conductorLinea: (nombre: string) => `Conductor: ${nombre}`,
   /** Sigue a «Los campos con * son obligatorios.» (arriba del parte): los puntos de revisión y el combustible lo son sin llevar asterisco. */
-  obligatoriosRevision: "Los puntos de revisión y el nivel de combustible también.",
+  obligatoriosRevision: "También son obligatorios los puntos de revisión y el nivel de combustible.",
   opcionConductor: (nombre: string, patente: string) => `${nombre} (${patente})`,
   secciones: { km: "1. Kilometraje", revision: "2. Revisión de la unidad", combustible: "3. Combustible", otra: "4. Otra novedad" },
   kmInicio: "Al iniciar",

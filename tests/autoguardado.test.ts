@@ -398,7 +398,7 @@ describe("accesibilidad N1 y QA B7: no se dice «revise los campos marcados» mi
     const t = armar([CAMPOS]);
     t.auto.cambio(con({ kmFin: "12a" }));
     await t.reloj.avanzar(500);
-    expect(t.auto.indicador).toEqual({ estado: "campos", visible: "Sin guardar: lo que escribió todavía no es válido.", anuncio: "", hora: null });
+    expect(t.auto.indicador).toEqual({ estado: "campos", visible: "Sin guardar: lo escrito todavía no es válido.", anuncio: "", hora: null });
     expect(t.indicadores.some((i) => i.anuncio.includes("campos marcados"))).toBe(false);
     expect(t.indicadores.some((i) => i.visible.includes("campos marcados"))).toBe(false);
   });

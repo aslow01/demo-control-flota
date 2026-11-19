@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Control de flota (demo): documentos con vencimiento, parte diario y centro de alertas, en el navegador y con datos ficticios.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
