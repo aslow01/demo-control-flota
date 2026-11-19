@@ -74,8 +74,9 @@
     line-height: 1.4;
   }
   a {
-    display: inline-block;
-    padding-block: var(--e-1);
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--alto-tactil);
     color: var(--c-critico-t);
     font-weight: 600;
   }

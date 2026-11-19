@@ -6,12 +6,13 @@
   //    se pisa: la vista nueva (`valoresIniciales`) solo se lee al arrancar y después de «Descartar borrador». Antes de enviar, de descartar o de irse, se guarda lo pendiente.
   //  - El indicador de guardado es texto visible; el `role="status"` oculto dice SOLO el texto de `indicador.anuncio`, que cambia al cambiar de estado (no en cada guardado).
   //  - «Enviar parte» nunca se deshabilita (5.14): con datos que faltan abre el resumen de errores arriba, con el foco; con avisos (K6, K7, P9), el diálogo «Antes de enviar»;
-  //    si sale, avisa a la pantalla (`alEnviado`) y esta pasa a «Parte enviado». Los errores quedan hasta el próximo envío (no desaparecen solos).
+  //    si sale, avisa a la pantalla (`alEnviado`) y esta pasa a «Parte enviado». El error de un campo se queda mientras el campo tenga lo mismo que al enviar (no desaparece solo
+  //    con el tiempo); al tocarlo, su mensaje y su renglón del resumen se van, y el resumen cambia su título al nuevo conteo.
   //  - Los errores de formato de un campo (km con letras…) llegan al salir del campo y bloquean el guardado hasta corregirlos (indicador «Sin guardar: corrija…»).
   //  - Barra de envío: pegada abajo con poco ancho (5.14); `html` reserva `scroll-padding-bottom` para que no tape el campo con foco (WCAG 2.4.11).
   import { onDestroy, tick, untrack } from "svelte";
   import { errorGeneralParte, recorridoDe, respondidos, textoBarraDeEnvio, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../lib/dominio/formulario-parte.ts";
-  import { ERRORES, TEXTO_DIALOGOS_FICHA } from "../lib/dominio/textos.ts";
+  import { ERRORES, TEXTO_DIALOGOS_FICHA, TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos.ts";
   import type { Advertencia, ItemChecklist } from "../lib/dominio/tipos.ts";
   import type { AdvertenciaDeEnvio, ResultadoDeEnvio } from "../lib/estado/app.svelte.ts";
   import type { IndicadorDeGuardado } from "../lib/estado/autoguardado.ts";
@@ -52,9 +53,29 @@
   let recorrido = $state(untrack(() => recorridoDe(valores.kmInicio, valores.kmFin)));
 
   // Errores: los del último «Enviar parte» (resumen y campos, hasta el próximo envío) y los de formato que dijo el autoguardado al salir de un campo.
+  // El mensaje de un campo se queda hasta que la persona lo toca (no desaparece solo con el tiempo): se compara con lo que había al enviar.
   let erroresEnvio = $state.raw<ErroresDeParte | null>(null);
+  let valoresAlEnviar = $state.raw<ValoresParte | null>(null);
   let erroresCampo = $state.raw<Partial<Record<CampoParte, string>>>({});
-  const errorDe = (campo: CampoParte): string => erroresEnvio?.porCampo[campo] ?? erroresCampo[campo] ?? "";
+  function claveDe(campo: CampoParte, v: ValoresParte): string {
+    switch (campo) {
+      case "conductor":
+        return v.conductorId;
+      case "kmInicio":
+      case "kmFin":
+      case "combustible":
+        return v[campo];
+      case "litrosCargados":
+        return v.litros;
+      case "otraNovedad":
+        return JSON.stringify(v.otraNovedad);
+      default:
+        return JSON.stringify(v.checklist[campo]);
+    }
+  }
+  /** El error del último envío sigue valiendo mientras el campo tenga lo mismo que cuando se envió. */
+  const vigente = (campo: CampoParte): boolean => erroresEnvio !== null && valoresAlEnviar !== null && claveDe(campo, valores) === claveDe(campo, valoresAlEnviar);
+  const errorDe = (campo: CampoParte): string => (vigente(campo) ? erroresEnvio?.porCampo[campo] : undefined) ?? erroresCampo[campo] ?? "";
   let resumen = $state<ReturnType<typeof ResumenErrores> | undefined>();
   let irAlResumen = false;
 
@@ -72,7 +93,12 @@
   function idDelError(campo: CampoParte): string {
     return esItem(campo) && valores.checklist[campo].respuesta === "con-novedad" ? `${idCampo(campo)}-descripcion` : idCampo(campo);
   }
-  const itemsResumen = $derived(erroresEnvio === null ? [] : erroresEnvio.lista.map((x) => ({ campoId: idDelError(x.campo), mensaje: x.mensaje })));
+  const listaVigente = $derived(erroresEnvio === null ? [] : erroresEnvio.lista.filter((x) => vigente(x.campo)));
+  const itemsResumen = $derived(listaVigente.map((x) => ({ campoId: idDelError(x.campo), mensaje: x.mensaje })));
+  const tituloResumen = $derived(
+    erroresEnvio === null ? "" : listaVigente.length === erroresEnvio.lista.length ? erroresEnvio.titulo : TEXTO_FORMULARIO_PARTE.tituloRevise(listaVigente.length),
+  );
+  const hayResumen = $derived(erroresEnvio !== null && (listaVigente.length > 0 || erroresEnvio.general !== null));
 
   const pendientes = $derived(validarParaEnviar(valores)?.lista.length ?? 0);
   const textoIndicador = $derived(
@@ -132,6 +158,7 @@
       return;
     }
     erroresEnvio = r.errores;
+    valoresAlEnviar = copia;
     irAlResumen = dialogoAbierto; // el diálogo, al cerrarse, no se lleva el foco: va al resumen
     dialogoAbierto = false;
     await tick();
@@ -150,6 +177,7 @@
     const r = await app.descartarBorradorDeParte(parteId);
     if (!r.ok) {
       erroresEnvio = errorGeneralParte(r.mensaje);
+      valoresAlEnviar = instantanea();
       await tick();
       resumen?.enfocar();
       return;
@@ -160,6 +188,7 @@
       auto.reiniciar(structuredClone(nueva.valoresIniciales));
     }
     erroresEnvio = null;
+    valoresAlEnviar = null;
     erroresCampo = {};
     recorrido = recorridoDe(valores.kmInicio, valores.kmFin);
     descartado = r.mensaje;
@@ -202,9 +231,9 @@
     <div class="solo-lectores" role="status">{anuncioVivo}</div>
   </header>
 
-  {#if erroresEnvio !== null}
+  {#if erroresEnvio !== null && hayResumen}
     <div data-resumen-parte>
-      <ResumenErrores bind:this={resumen} titulo={erroresEnvio.titulo} general={erroresEnvio.general ?? ""} items={itemsResumen} />
+      <ResumenErrores bind:this={resumen} titulo={tituloResumen} general={erroresEnvio.general ?? ""} items={itemsResumen} />
     </div>
   {/if}
 

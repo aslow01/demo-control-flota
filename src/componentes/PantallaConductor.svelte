@@ -117,7 +117,7 @@
     </Panel>
 
     {#if inicio.pendientes.length > 0}
-      <Panel titulo={T.pendientes} icono="alerta" meta={String(inicio.pendientes.length)}>
+      <Panel titulo={T.pendientes} icono="alerta">
         <ul class="pendientes">
           {#each inicio.pendientes as p (p.clave)}
             <li class="pendiente">

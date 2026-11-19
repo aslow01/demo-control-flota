@@ -940,3 +940,15 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 
 **Verificación.** `npm test`: 1275 tests (1234 antes), también con `npm run test:tz`; `npm run check`: 0 errores; `npm run build` y `npm run buscar`: sin hallazgos.
 **Sin verificar.** El boundary no se probó en un navegador (no hay forma sencilla de forzar un error de dibujo, y el arranque ahora regenera los datos dañados que lo provocaban antes); que «Reiniciar demo» repare datos dañados (QA M3) ya no hace falta, porque el arranque los regenera.
+
+## 18/11/2026 (noche, 17 · rama `interfaz-etapa-0`) — Paso 4.5 (pantallas): inicio del conductor y parte diario; correcciones de presentación de la revisión de la Etapa 4 (maquetador)
+
+**Qué se hizo.**
+- *Pantallas del 4.5.* `PantallaConductor` (6.4: panel «Hoy» con sus cinco estados, `select` «Usar otra unidad» / «Elija la unidad», «Pendientes», «Su licencia», «Mis últimos partes»), `PantallaParte` (6.5) con `ParteFormulario` (kilometraje, conductor en el perfil Encargado, diez puntos con `ItemRevision`, `SelectorCombustible`, litros, «Otra novedad», indicador de guardado, resumen de errores, barra de envío, «Descartar borrador»), `DialogoAntesDeEnviar`, `ParteEnviado` (el panel de «Parte enviado» y, con otro título, el parte en lectura), «No se puede cargar este parte» y «No se encontró la unidad». Enchufadas en `App.svelte` (`#/conductor`, `#/parte/…`); la dirección desconocida muestra «Página no encontrada» con su camino de vuelta. Piezas tocadas: `EnlaceAccion` (variante primaria y grande, nombre accesible), `ResumenErrores` (texto general y enlaces de 44 px), `Panel`. Textos de presentación en `textos-marco.ts` (`TEXTO_CONDUCTOR_VISTA`, `TEXTO_PARTE_VISTA`) para `redactor-ux`.
+- *Correcciones (informes `docs/revisiones/demo2-etapa4-*.md` del portafolio, fuera del repo).* QA M1; accesibilidad M1 a M4 y B1 a B7; código M2 y M7; el `<svelte:boundary>` de `App.svelte` reindentado y probado a mano (ver abajo). Detalle en `diseno.md`, sección 16, últimas dos viñetas.
+
+**Decisiones.** Quince puntos en `diseno.md`, sección 16 («Paso 4.5 … pantallas»). Las que más pesan: «Enviar parte» es `type="button"` (Enter en un campo no envía); el error de un campo del envío queda hasta que se lo toca; «Parte enviado» es estado de la pantalla y «Imprimir» no está (6.1); las secciones son `section` con `h2` y no `legend`; sin unidad, «Empezar el parte» aparece al elegir una.
+
+**Para la lógica (no se tocó).** (1) Con la unidad fuera de servicio por el parte de hoy, el panel «Hoy» no muestra «Enviado a las…» ni «Ver el parte» (`hoyEstado` mira primero la unidad). (2) `ResultadoGuardadoDocumento` (`app.svelte.ts`) quedó sin uso: puede ser `ResultadoGuardado<CampoDocumento>`. (3) QA B1, B3, B4 y D1 a D6 siguen abiertos (son de lógica o de contenido). (4) El error K3 le dice a quien carga «avise al encargado» también cuando lo ve el encargado.
+
+**Sin hacer.** Accesibilidad B8 (token `--c-neutro-r`: `#737980` y los pares `tono-r / acento-suave` en `contraste.mjs`; los tokens quedaron intactos a pedido).
