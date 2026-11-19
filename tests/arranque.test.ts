@@ -375,6 +375,66 @@ describe("D7: elementos dañados en las listas guardadas cuentan como otro forma
   });
 });
 
+describe("D7 (QA M3 y código M1, etapa 4): campos con el tipo roto que las pantallas leen también cuentan como otro formato", () => {
+  type Dano = (e: Estado) => void;
+  const poner = (objeto: unknown, campo: string, valor: unknown): void => {
+    (objeto as Record<string, unknown>)[campo] = valor;
+  };
+
+  const casos: [string, Dano][] = [
+    ["unidad con marca nula", (e) => poner(e.unidades[0], "marca", null)],
+    ["unidad con modelo numérico", (e) => poner(e.unidades[0], "modelo", 5)],
+    ["unidad con tipo desconocido", (e) => poner(e.unidades[0], "tipo", "avioneta")],
+    ["unidad con interno de texto", (e) => poner(e.unidades[0], "interno", "7")],
+    ["unidad con año que no es un número", (e) => poner(e.unidades[0], "anio", null)],
+    ["unidad con conductor de otro tipo", (e) => poner(e.unidades[0], "conductorId", 3)],
+    ["unidad de baja sin motivo", (e) => poner(e.unidades[0], "estado", { tipo: "baja", desde: HOY })],
+    ["unidad fuera de servicio sin lista de novedades", (e) => poner(e.unidades[0], "estado", { tipo: "fuera-de-servicio", desde: HOY, motivo: "x", origen: "manual" })],
+    ["conductor sin legajo", (e) => poner(e.conductores[0], "legajo", undefined)],
+    ["conductor con 'activo' de texto", (e) => poner(e.conductores[0], "activo", "si")],
+    ["proyecto sin nombre", (e) => poner(e.proyectos[0], "nombre", null)],
+    ["documento con emisor nulo", (e) => poner(e.documentos[0], "emisor", null)],
+    ["documento con número que no es texto", (e) => poner(e.documentos[0], "numero", 12)],
+    ["novedad sin origen", (e) => poner(e.novedades[0], "origen", undefined)],
+    ["novedad con origen de otro tipo", (e) => poner(e.novedades[0], "origen", { tipo: "inventado" })],
+    ["novedad sin descripción", (e) => poner(e.novedades[0], "descripcion", null)],
+    ["novedad resuelta sin texto de resolución", (e) => poner(e.novedades.find((n) => n.estado === "resuelta"), "resolucion", {})],
+    ["corrección de km sin motivo", (e) => poner(e.correccionesKm[0], "motivo", undefined)],
+    ["evento con tipo desconocido", (e) => poner(e.eventos[0], "tipo", "inventado")],
+    ["evento parte-enviado sin datos", (e) => poner(e.eventos.find((v) => v.tipo === "parte-enviado"), "datos", undefined)],
+    ["evento con unidad de otro tipo", (e) => poner(e.eventos[0], "unidadId", 4)],
+    ["evento sin autor", (e) => poner(e.eventos[0], "autor", undefined)],
+    ["evento con secuencia de texto", (e) => poner(e.eventos[0], "secuencia", "1")],
+  ];
+
+  for (const [nombre, dañar] of casos) {
+    it(`${nombre}: se regenera el ejemplo y se avisa`, async () => {
+      const estado = generar(SEMILLA_POR_DEFECTO, HOY);
+      dañar(estado);
+      const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(await repoCon(estado)) });
+      expect(r.avisos).toEqual([{ tipo: "esquema-actualizado" }]);
+      expect(r.estado).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
+    });
+  }
+
+  it("un parte con el checklist incompleto no cuenta como otro formato: el parte se lee con `parteLegible` (4.5) y se puede descartar", async () => {
+    const estado = generar(SEMILLA_POR_DEFECTO, HOY);
+    const p = estado.partes.find((x) => x.estado === "enviado")!;
+    (p as { checklist: unknown }).checklist = {};
+    const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(await repoCon(estado)) });
+    expect(r.avisos).toEqual([]);
+    expect(r.estado.partes.find((x) => x.id === p.id)).toBeDefined();
+  });
+
+  it("el ejemplo intacto, y con cambios del visitante, sigue siendo utilizable (sin aviso de esquema)", async () => {
+    const estado = generar(SEMILLA_POR_DEFECTO, "2026-11-10");
+    estado.meta.modificada = true;
+    const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(await repoCon(estado)) });
+    expect(r.avisos).toEqual([{ tipo: "datos-de-otra-fecha", fechaBase: "2026-11-10" }]);
+    expect(r.estado.eventos).toEqual(estado.eventos);
+  });
+});
+
 describe("D6: reiniciar la demo", () => {
   it("vuelve al ejemplo de hoy, sin modificar, conservando el perfil", async () => {
     const actual = generar(SEMILLA_POR_DEFECTO, "2026-11-10");

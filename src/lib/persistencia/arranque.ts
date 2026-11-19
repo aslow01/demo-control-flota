@@ -5,7 +5,7 @@ import { generar, VERSION_ESQUEMA } from "../datos/generador.ts";
 import { calcularAlertas } from "../dominio/alertas.ts";
 import { sinCambios } from "../dominio/estado.ts";
 import { parsearFechaCivil } from "../dominio/fechas.ts";
-import type { Estado, FechaCivil, Meta, Perfil } from "../dominio/tipos.ts";
+import type { Estado, FechaCivil, ItemChecklist, Meta, Perfil, TipoEvento, TipoUnidad } from "../dominio/tipos.ts";
 import { RepositorioMemoria } from "./memoria.ts";
 import type { Repositorio } from "./repositorio.ts";
 
@@ -73,16 +73,96 @@ function textos(o: Record<string, unknown>, ...campos: string[]): boolean {
   return campos.every((campo) => typeof o[campo] === "string");
 }
 
-/** Lo mínimo que tiene que cumplir cada elemento de cada lista para que las pantallas no revienten (no es la validación de los comandos). */
+function numeros(o: Record<string, unknown>, ...campos: string[]): boolean {
+  return campos.every((campo) => typeof o[campo] === "number" && Number.isFinite(o[campo]));
+}
+
+/** Un texto, o `null` cuando el campo es opcional. */
+function textoONulo(o: Record<string, unknown>, ...campos: string[]): boolean {
+  return campos.every((campo) => o[campo] === null || typeof o[campo] === "string");
+}
+
+// Los conjuntos de valores válidos son `Record<…, true>` para que el compilador avise si un tipo del dominio suma un valor y esto no.
+const TIPOS_DE_UNIDAD: Record<TipoUnidad, true> = { camioneta: true, utilitario: true, "camion-liviano": true, minibus: true };
+const ITEMS_DEL_CHECKLIST: Record<ItemChecklist, true> = {
+  frenos: true,
+  direccion: true,
+  neumaticos: true,
+  luces: true,
+  cinturones: true,
+  niveles: true,
+  matafuego: true,
+  botiquin: true,
+  documentacion: true,
+  cabina: true,
+};
+const TIPOS_DE_EVENTO: Record<TipoEvento, true> = {
+  "unidad-alta": true,
+  "asignacion-cambiada": true,
+  "documento-cargado": true,
+  "documento-renovado": true,
+  "documento-corregido": true,
+  "parte-enviado": true,
+  "novedad-abierta": true,
+  "novedad-resuelta": true,
+  "fuera-de-servicio": true,
+  "vuelta-a-servicio": true,
+  "km-corregido": true,
+  "unidad-baja": true,
+};
+
+function estaEn<T extends string>(conjunto: Record<T, true>, valor: unknown): valor is T {
+  return typeof valor === "string" && Object.hasOwn(conjunto, valor);
+}
+
+function estadoOperativoUtilizable(e: Record<string, unknown>): boolean {
+  if (e.tipo === "en-servicio") return true;
+  if (e.tipo === "baja") return textos(e, "desde", "motivo");
+  if (e.tipo === "fuera-de-servicio") {
+    return textos(e, "desde", "motivo", "origen") && Array.isArray(e.novedadIds) && e.novedadIds.every((id: unknown) => typeof id === "string");
+  }
+  return false;
+}
+
+function origenDeNovedadUtilizable(origen: unknown): boolean {
+  if (!esObjeto(origen)) return false;
+  if (origen.tipo === "manual") return true;
+  return origen.tipo === "parte" && textos(origen, "parteId") && (origen.item === "otra" || estaEn(ITEMS_DEL_CHECKLIST, origen.item));
+}
+
+/**
+ * Lo mínimo que tiene que cumplir cada elemento de cada lista para que las pantallas no revienten (no es la validación de los
+ * comandos): los campos que las pantallas, la ficha, el parte y el centro de alertas leen, con su tipo. Un campo que el código
+ * lee y acá no se mira es un hueco: la pantalla queda en blanco con un dato editado a mano o de otra versión (D7).
+ */
 const FORMA_DE_ELEMENTO: Record<string, (o: Record<string, unknown>) => boolean> = {
-  proyectos: (o) => textos(o, "id"),
-  conductores: (o) => textos(o, "id", "nombre"),
-  unidades: (o) => textos(o, "id", "patente") && esObjeto(o.estado) && typeof o.estado.tipo === "string",
-  documentos: (o) => textos(o, "id", "tipo", "vence") && esObjeto(o.titular) && textos(o.titular, "tipo", "id"),
+  proyectos: (o) => textos(o, "id", "nombre") && typeof o.requiereHabilitacion === "boolean",
+  conductores: (o) => textos(o, "id", "nombre", "legajo") && typeof o.activo === "boolean",
+  unidades: (o) =>
+    textos(o, "id", "patente", "marca", "modelo", "proyectoId", "creada") &&
+    numeros(o, "interno", "anio") &&
+    estaEn(TIPOS_DE_UNIDAD, o.tipo) &&
+    textoONulo(o, "conductorId") &&
+    esObjeto(o.estado) &&
+    estadoOperativoUtilizable(o.estado),
+  documentos: (o) =>
+    textos(o, "id", "tipo", "numero", "emisor", "vence", "cargado") &&
+    textoONulo(o, "emitido", "reemplazaA") &&
+    esObjeto(o.titular) &&
+    textos(o.titular, "tipo", "id"),
+  // Los partes se leen siempre por `parteLegible` (docs/diseno.md, sección 16, 4.5): acá solo se pide lo que hace falta para ubicarlos.
   partes: (o) => textos(o, "id", "unidadId", "fecha", "estado") && esObjeto(o.checklist),
-  novedades: (o) => textos(o, "id", "unidadId", "estado", "gravedad", "fecha"),
-  correccionesKm: (o) => textos(o, "id", "unidadId", "desde"),
-  eventos: (o) => textos(o, "id", "instante", "resumen"),
+  novedades: (o) =>
+    textos(o, "id", "unidadId", "estado", "gravedad", "fecha", "descripcion") &&
+    origenDeNovedadUtilizable(o.origen) &&
+    (o.resolucion === null || (esObjeto(o.resolucion) && textos(o.resolucion, "texto", "instante", "autor"))),
+  correccionesKm: (o) => textos(o, "id", "unidadId", "desde", "motivo", "instante", "autor") && numeros(o, "kmBase"),
+  eventos: (o) =>
+    textos(o, "id", "instante", "resumen", "autor") &&
+    numeros(o, "secuencia") &&
+    textoONulo(o, "unidadId", "conductorId") &&
+    estaEn(TIPOS_DE_EVENTO, o.tipo) &&
+    esObjeto(o.datos),
 };
 
 /**
