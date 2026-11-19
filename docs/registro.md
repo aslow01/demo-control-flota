@@ -959,7 +959,7 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 
 | Hallazgo | Arreglo |
 | --- | --- |
-| Código M1, QA M-1 (partes crudos tumban la app o la ficha) | `arrancar` y `actualizar()` leen todos los partes con `parteLegible` (`partesLegibles`, arranque.ts). Un registro que no es un parte (estado o fecha imposibles) cuenta como otro formato (D7). 20 tests nuevos (`tests/partes-rotos.test.ts`). |
+| Código M1, QA M-1 (partes crudos tumban la app o la ficha) | `arrancar` y `actualizar()` leen todos los partes con `parteLegible` (`partesLegibles`, arranque.ts). Un registro que no es un parte (estado o fecha imposibles) cuenta como otro formato (D7). 25 tests nuevos (`tests/partes-rotos.test.ts`). |
 | Código M2 (`guardar` que rechaza cuelga el indicador) | `ejecutar` del autoguardado atrapa el rechazo: error de escritura, indicador en «error», lo escrito sigue pendiente. 3 tests. |
 | Accesibilidad N1, QA B7 («revise los campos marcados» sin campo marcado) | Mientras se escribe, el indicador dice «Sin guardar: lo que escribió todavía no es válido.» y no anuncia; al salir del campo, enviar o irse (acción explícita) dice «corrija los campos marcados» y anuncia. Solo lógica: la vista no cambió. 4 tests. |
 | Código B9 (cambiar de perfil con un guardado en cola) | `autoguardadoDeParte` toma el perfil al abrir; `guardarBorradorDeParte`, `ejecutarAhora` y el ensayo reciben el perfil (conductor y autor). 2 tests. |
