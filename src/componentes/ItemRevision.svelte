@@ -96,14 +96,22 @@
     padding-left: var(--e-3);
     border-left: 4px solid var(--c-critico-r);
   }
+  /* La etiqueta «Punto crítico» siempre en el mismo lugar (C12): debajo del nombre con poco ancho y a su derecha desde 40 rem. Antes bajaba o no según el largo del nombre. */
   legend {
     display: flex;
     width: 100%;
     padding: var(--e-4) 0 0;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--e-2) var(--e-3);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--e-1);
+  }
+  @media (min-width: 40rem) {
+    legend {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--e-3);
+    }
   }
   .nombre {
     font-weight: 600;
@@ -153,6 +161,14 @@
   .segmento :global(.icono) {
     flex: none;
     color: var(--icono-color);
+  }
+  /* Con poco ancho (C11) cada segmento mide unos 143 px y «Con novedad» con su ícono no entraba: menos relleno y menos aire; si igual no entra, el ícono pasa arriba del texto. */
+  @container parte (max-width: 21.99rem) {
+    .segmento {
+      flex-wrap: wrap;
+      gap: 0 var(--e-1);
+      padding: 0 var(--e-2);
+    }
   }
   .segmento input {
     position: absolute;
