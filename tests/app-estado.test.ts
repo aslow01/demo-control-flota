@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { generar } from "../src/lib/datos/generador.ts";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
 import { sumarDias } from "../src/lib/dominio/fechas.ts";
-import { ERRORES, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE } from "../src/lib/dominio/textos.ts";
+import { ERRORES, ERRORES_PESTANAS, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE } from "../src/lib/dominio/textos.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { EstadoApp, type DependenciasApp } from "../src/lib/estado/app.svelte.ts";
 import { crearReloj } from "../src/lib/estado/reloj.ts";
@@ -533,5 +533,80 @@ describe("la fase 'error' no tiene reinicio (los datos guardados no llevan a ell
     const r = await app.reiniciar();
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.codigo).toBe("sin-datos");
+  });
+});
+
+describe("A1 (QA etapa 4): una pestaña desactualizada no escribe", () => {
+  /** Dos pestañas sobre el mismo almacenamiento: `a` hace lo suyo y `b` es la que quedó vieja. */
+  async function dosPestanas() {
+    const repo = new RepositorioMemoria();
+    const a = await iniciada({ abrirAlmacenamiento: async () => repo });
+    const b = await iniciada({ abrirAlmacenamiento: async () => repo });
+    return { repo, a, b };
+  }
+  const unidadC01 = (app: EstadoApp) => estadoDe(app).unidades.find((u) => u.patente === "ZK214BD")!;
+
+  it("con cambios de otra pestaña sin actualizar, un comando se rechaza y no se escribe nada ni se avisa", async () => {
+    const { repo, a, b } = await dosPestanas();
+    const baja = await a.app.ejecutar({ tipo: "darDeBaja", unidadId: unidadC01(a.app).id, motivo: "Baja por venta de la unidad" });
+    expect(baja.ok).toBe(true);
+    b.pestanas.alRecibir();
+    const guardado = await repo.cargar();
+    const antes = estadoDe(b.app);
+    const avisos = b.pestanas.avisos;
+
+    const r = await b.app.ejecutar({ tipo: "ponerFueraDeServicio", unidadId: unidadC01(b.app).id, motivo: "Fuera por taller prolongado" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.codigo).toBe("cambios-en-otra-pestana");
+      expect(r.error.mensaje).toBe(ERRORES_PESTANAS.escrituraConCambiosEnOtraPestana);
+    }
+    expect(await repo.cargar()).toEqual(guardado); // la baja de la otra pestaña sigue en pie
+    expect(estadoDe(b.app)).toBe(antes);
+    expect(b.pestanas.avisos).toBe(avisos);
+    const final = (await repo.cargar())!.unidades.find((u) => u.patente === "ZK214BD")!;
+    expect(final.estado.tipo).toBe("baja");
+  });
+
+  it("tampoco se duplica una renovación hecha desde una pestaña vieja", async () => {
+    const { repo, a, b } = await dosPestanas();
+    await a.app.ejecutar(renovarSeguroDeC01(estadoDe(a.app)));
+    b.pestanas.alRecibir();
+    const r = await b.app.ejecutar(renovarSeguroDeC01(estadoDe(b.app)));
+    expect(r.ok).toBe(false);
+    const comando = renovarSeguroDeC01(estadoDe(b.app));
+    const vigenteId = comando.tipo === "renovarDocumento" ? comando.documentoId : "";
+    const renovaciones = (await repo.cargar())!.documentos.filter((d) => d.reemplazaA === vigenteId);
+    expect(renovaciones).toHaveLength(1); // la de la otra pestaña, no una segunda
+  });
+
+  it("los guardados del parte (borrador y envío) y los métodos de formulario también se rechazan", async () => {
+    const { repo, b } = await dosPestanas();
+    b.pestanas.alRecibir();
+    const guardado = await repo.cargar();
+    const e = await b.app.descartarBorradorDeParte("no-importa");
+    expect(e.ok).toBe(false);
+    const alta = await b.app.agregarUnidad({
+      patente: "AB123CD", interno: "88", marca: "Marca", modelo: "Modelo", anio: "2022", tipo: "camioneta", proyectoId: estadoDe(b.app).proyectos[0]!.id, conductorId: "",
+    });
+    expect(alta.ok).toBe(false);
+    expect(await repo.cargar()).toEqual(guardado);
+  });
+
+  it("después de 'Actualizar' vuelve a poder escribir", async () => {
+    const { repo, a, b } = await dosPestanas();
+    await a.app.ejecutar({ tipo: "darDeBaja", unidadId: unidadC01(a.app).id, motivo: "Baja por venta de la unidad" });
+    b.pestanas.alRecibir();
+    expect((await b.app.actualizar()).ok).toBe(true);
+    const r = await b.app.ejecutar({ tipo: "cargarNovedad", unidadId: estadoDe(b.app).unidades[1]!.id, descripcion: "Ruido en la caja", impideUso: false });
+    expect(r.ok).toBe(true);
+    expect((await repo.cargar())!.novedades.some((n) => n.descripcion === "Ruido en la caja")).toBe(true);
+  });
+
+  it("'Reiniciar demo' sigue andando con el aviso encendido (reemplaza todo y lo apaga)", async () => {
+    const { b } = await dosPestanas();
+    b.pestanas.alRecibir();
+    expect((await b.app.reiniciar()).ok).toBe(true);
+    expect(b.app.hayCambiosEnOtraPestana).toBe(false);
   });
 });

@@ -1067,3 +1067,11 @@ export function textoNovedadesDelParte(criticas: readonly string[], normales: re
 export function textoPuntosEnOrdenConNombres(nombres: readonly string[]): string {
   return `${pluralizar(nombres.length, "punto", "puntos")} en orden: ${nombres.join(", ")}`;
 }
+
+/**
+ * Escrituras desde una pestaña que quedó atrás de otra (QA A1, etapa 4). Texto nuevo, a revisar por el redactor: lo ve quien
+ * intenta guardar algo mientras el aviso «Se hicieron cambios en otra pestaña» sigue sin atender.
+ */
+export const ERRORES_PESTANAS = {
+  escrituraConCambiosEnOtraPestana: "Hay cambios hechos en otra pestaña y no se guardó nada. Pulse «Actualizar» en el aviso y vuelva a intentarlo.",
+} as const;

@@ -87,6 +87,7 @@ import {
 } from "../dominio/formulario-unidad.ts";
 import {
   ERRORES,
+  ERRORES_PESTANAS,
   TEXTO_ERROR_ARRANQUE,
   TEXTO_FORMULARIO_PARTE,
   textoAdvertencia,
@@ -413,6 +414,9 @@ export class EstadoApp {
     const repositorio = this.repositorio;
     if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
     if (this.perfil.tipo === "conductor" && !COMANDOS_DEL_CONDUCTOR.has(comando.tipo)) return fallo("sin-permiso", ERRORES.sinPermiso);
+    // A1: los comandos se evalúan contra el estado de esta pestaña; si otra ya escribió y esta no se actualizó, se pisarían sus
+    // cambios (una baja desaparecería, una renovación se duplicaría). Hasta que se pulse «Actualizar» no se escribe nada.
+    if (this.hayCambiosEnOtraPestana) return fallo("cambios-en-otra-pestana", ERRORES_PESTANAS.escrituraConCambiosEnOtraPestana);
 
     const momento = this.deps.reloj.momento();
     const resultado = ejecutarComando(estado, comando, {
