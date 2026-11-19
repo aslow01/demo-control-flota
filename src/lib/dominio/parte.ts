@@ -70,6 +70,10 @@ export function parsearLitros(texto: string): Resultado<number | null> {
     return fallo("litros-no-numerico", ERRORES.litrosNoNumerico, { campo: "litrosCargados" });
   }
   const decimales = m[2] ?? "";
+  // `1.000` o `1,000`: quien lo escribe quiso decir mil (con separador de miles), y mil supera el máximo; no es un número con tres decimales.
+  if (decimales.length === 3 && /^[1-9]\d{0,2}$/.test(m[1] ?? "")) {
+    return fallo("litros-excedidos", errLitrosExcedidos(LITROS_MAXIMO), { campo: "litrosCargados" });
+  }
   if (decimales.length > 1) {
     return fallo("litros-decimales", ERRORES.litrosDecimales, { campo: "litrosCargados" });
   }

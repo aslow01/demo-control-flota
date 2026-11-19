@@ -27,7 +27,8 @@ export function parsearKm(texto: string): Resultado<number> {
   if (t === "") return fallo("km-vacio", ERRORES.kmVacio, { campo: "km" });
   if (/^-\s*\d/.test(t)) return fallo("km-negativo", ERRORES.kmNegativo, { campo: "km" });
   if (t.length > LARGO_MAXIMO_ENTRADA) {
-    return fallo("km-no-numerico", ERRORES.kmNoNumerico, { campo: "km" });
+    // Solo dígitos y muy largo: es un número, y supera el máximo; con otra cosa mezclada, no es un número.
+    return /^\d+$/.test(t) ? fallo("km-excedido", errKmExcedido(KM_MAXIMO), { campo: "km" }) : fallo("km-no-numerico", ERRORES.kmNoNumerico, { campo: "km" });
   }
 
   let digitos: string | null = null;
