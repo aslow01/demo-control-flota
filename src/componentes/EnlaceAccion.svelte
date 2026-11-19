@@ -1,12 +1,27 @@
 <script lang="ts">
-  // Un enlace con el aspecto del botón secundario (5.1): para las acciones de una fila que llevan a otra pantalla ("Abrir parte", "Ver ficha").
+  // Un enlace con el aspecto de un botón (5.1): para las acciones que llevan a otra pantalla («Abrir parte», «Ver ficha», «Empezar el parte»).
   // Es un <a>: navega; las acciones que hacen algo en el lugar son <button> (componente Boton).
+  //  - `variante`: «secundario» (por defecto) o «primario» (el que lleva a lo principal de la pantalla; uno solo por zona).
+  //  - `tamano`: «grande» (3 rem) para «Empezar el parte» y «Continuar el parte».
+  //  - `etiqueta`: nombre accesible cuando el texto visible solo no alcanza («Cargarlo» + la patente y la fecha). Tiene que empezar con el texto visible.
   import type { Snippet } from "svelte";
 
-  let { href, children }: { href: string; children: Snippet } = $props();
+  let {
+    href,
+    variante = "secundario",
+    tamano = "normal",
+    etiqueta,
+    children,
+  }: {
+    href: string;
+    variante?: "primario" | "secundario";
+    tamano?: "normal" | "grande";
+    etiqueta?: string;
+    children: Snippet;
+  } = $props();
 </script>
 
-<a class="enlace-accion" {href}>{@render children()}</a>
+<a class="enlace-accion" data-variante={variante} data-tamano={tamano} {href} aria-label={etiqueta}>{@render children()}</a>
 
 <style>
   .enlace-accion {
@@ -25,9 +40,25 @@
     text-decoration: none;
     transition: background-color var(--m-rapido) var(--m-curva);
   }
+  .enlace-accion[data-tamano="grande"] {
+    min-height: 3rem;
+    padding: 0 var(--e-5);
+    font-size: 1.0625rem;
+  }
+  .enlace-accion[data-variante="primario"] {
+    background: var(--c-acento);
+    border-color: transparent;
+    color: var(--c-acento-texto);
+  }
+  .enlace-accion:active {
+    transform: translateY(1px);
+  }
   @media (hover: hover) {
     .enlace-accion:hover {
       background: var(--c-superficie-2);
+    }
+    .enlace-accion[data-variante="primario"]:hover {
+      background: var(--c-acento-hover);
     }
   }
 </style>

@@ -6,10 +6,13 @@
   //   vuelva ahí si el botón que lo abrió desapareció (5.17; el diálogo solo conoce el h1 de la página). Su id se puede fijar con `id`.
   // - `estado` es el texto de la barra de estado (role="status"). La región existe siempre, vacía mide 0 y el mensaje
   //   no desaparece solo: lo reemplaza la acción siguiente.
+  //   Para que un lector de pantalla lo diga, el texto entra a la región unos 80 ms después de pedirlo (nunca nace junto con ella) y, si ya
+  //   había uno, se vacía antes: así también se anuncia el segundo «Novedad cargada.» igual al primero. `repetir` es cualquier valor que
+  //   cambie cada vez que la pantalla emite un mensaje (aunque el texto sea el mismo). La barra no se achica entre uno y otro.
   // - `contenidoEstado` (opcional) pone en su lugar un contenido fijo con un control adentro ("Así lo carga el conductor: Abrir el parte diario"):
   //   al no ser un mensaje que cambia, esa barra no es `role="status"`.
   // - El interior es un contenedor de consultas (`interior`) para que las tablas cambien de disposición por su ancho.
-  import type { Snippet } from "svelte";
+  import { untrack, type Snippet } from "svelte";
   import Icono from "./Icono.svelte";
   import type { NombreIcono } from "./tipos.ts";
 
@@ -19,6 +22,7 @@
     icono,
     meta = "",
     estado = "",
+    repetir,
     contenidoEstado,
     herramientas,
     controles,
@@ -30,6 +34,8 @@
     /** Dato breve, a la derecha del título: "11 vencimientos". */
     meta?: string;
     estado?: string;
+    /** Cambia cada vez que se emite un mensaje, aunque el texto sea el mismo (así se vuelve a anunciar). */
+    repetir?: unknown;
     contenidoEstado?: Snippet;
     herramientas?: Snippet;
     controles?: Snippet;
@@ -38,6 +44,17 @@
 
   const uid = $props.id();
   const idTitulo = $derived(id ?? `${uid}-titulo`);
+
+  const ESPERA_ANUNCIO_MS = 80;
+  let anunciado = $state("");
+  $effect(() => {
+    const texto = estado;
+    void repetir;
+    untrack(() => (anunciado = ""));
+    if (texto === "") return;
+    const plazo = setTimeout(() => (anunciado = texto), ESPERA_ANUNCIO_MS);
+    return () => clearTimeout(plazo);
+  });
 </script>
 
 <section class="panel" aria-labelledby={idTitulo}>
@@ -60,7 +77,7 @@
   {#if contenidoEstado !== undefined}
     <div class="estado">{@render contenidoEstado()}</div>
   {:else}
-    <div class="estado" class:vacio={estado === ""} role="status">{estado}</div>
+    <div class="estado" class:vacio={estado === ""} role="status"><span>{anunciado}</span></div>
   {/if}
 </section>
 

@@ -7,10 +7,13 @@
   let {
     titulo,
     items,
+    general = "",
   }: {
     titulo: string;
     /** `campoId` es el id del control al que lleva el enlace. */
     items: { campoId: string; mensaje: string }[];
+    /** Un error que no es de ningún campo (la fecha ya no vale, no se pudo guardar): va como texto, antes de la lista. */
+    general?: string;
   } = $props();
 
   const uid = $props.id();
@@ -29,6 +32,7 @@
 
 <div class="resumen" tabindex="-1" bind:this={caja} role="group" aria-labelledby={idTitulo}>
   <h3 id={idTitulo}><Icono nombre="vencido" />{titulo}</h3>
+  {#if general !== ""}<p class="general">{general}</p>{/if}
   <ul>
     {#each items as item (item.campoId)}
       <li><a href={`#${item.campoId}`} onclick={(e) => ir(e, item.campoId)}>{item.mensaje}</a></li>
@@ -54,6 +58,11 @@
     gap: var(--e-2);
     font-size: 1rem;
     color: var(--c-critico-t);
+  }
+  .general {
+    font-size: var(--t-chico);
+    line-height: 1.4;
+    overflow-wrap: anywhere;
   }
   ul {
     display: flex;
