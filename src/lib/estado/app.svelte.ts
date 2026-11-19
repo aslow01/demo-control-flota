@@ -105,7 +105,7 @@ import {
   textoUnidadDadaDeBaja,
   textoVueltaAServicio,
 } from "../dominio/textos.ts";
-import { fallo, ok, type Advertencia, type ErrorDeNegocio, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
+import { fallo, ok, type Advertencia, type ErrorDeNegocio, type Estado, type FechaCivil, type Parte, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
 import { esTipoDocumento } from "../dominio/vencimientos.ts";
 import { arrancar, cambiarPerfil as guardarPerfil, partesLegibles, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
@@ -206,6 +206,11 @@ const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBo
 
 /** Si no se pueden escribir, el mensaje habla del parte ("lo escrito sigue en pantalla; no cierre la pestaña"). */
 const COMANDOS_DEL_PARTE_A_GUARDAR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarParte"]);
+
+/** Dos versiones del mismo borrador son iguales si solo difiere el instante del último guardado. */
+function mismoBorrador(a: Parte, b: Parte): boolean {
+  return JSON.stringify({ ...a, actualizado: "" }) === JSON.stringify({ ...b, actualizado: "" });
+}
 
 export class EstadoApp {
   fase = $state<FaseApp>("arrancando");
@@ -711,13 +716,18 @@ export class EstadoApp {
     const c = comandoDeBorrador(unidadId, fecha, existente?.id ?? null, v);
     if (!c.ok) return { ok: false, tipo: "campos", errores: c.errores };
 
+    // Ensayo: qué parte quedaría guardado (no se escribe nada ni se gastan ids).
+    const ensayo = aplicarComando(estado, c.comando, this.contextoDeEnsayo(perfil));
     if (existente === undefined) {
       // Un parte nuevo se crea con el primer cambio: abrirlo y no escribir nada no deja un borrador (ni marca la demo como modificada, D11).
-      const ensayo = aplicarComando(estado, c.comando, this.contextoDeEnsayo(perfil));
       if (!ensayo.ok) return this.erroresDeBorrador(ensayo.error);
       const nuevo = ensayo.valor.cambios.partes[0];
       const previo = registroAnterior(unidadId, fecha, estado.partes, estado.correccionesKm);
       if (nuevo !== undefined && esBorradorVacio(nuevo, previo === null ? null : kmDeRegistro(previo))) return { ok: true, parteId: null, hora: null, sinCambios: true };
+    } else if (ensayo.ok) {
+      // Código B8: lo que ya está guardado no se vuelve a escribir (por ejemplo, «Enviar parte» guarda de nuevo lo que el autoguardado acababa de guardar).
+      const nuevo = ensayo.valor.cambios.partes[0];
+      if (nuevo !== undefined && mismoBorrador(existente, nuevo)) return { ok: true, parteId: existente.id, hora: formatearHora(existente.actualizado), sinCambios: false };
     }
 
     const r = await this.ejecutarAhora(c.comando, perfil);

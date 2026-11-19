@@ -298,6 +298,50 @@ describe("código B9: un guardado pendiente no cambia de dueño si cambia el per
   });
 });
 
+describe("código B8: guardar dos veces lo mismo no escribe dos veces", () => {
+  it("el formulario guarda («vaciar») y después envía: el borrador se escribe una sola vez y el envío, una", async () => {
+    const { app, repo } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    let escrituras = 0;
+    const escribir = repo.escribir.bind(repo);
+    repo.escribir = async (...args: Parameters<typeof escribir>) => {
+      escrituras += 1;
+      return escribir(...args);
+    };
+    const v = edicion(app);
+    const auto = app.autoguardadoDeParte(v, () => {});
+    const valores = completo(v.valoresIniciales);
+    await auto.vaciar(valores);
+    expect(escrituras).toBe(1);
+    const r = await app.enviarParte(idDe(app, "ZYN469"), H, valores);
+    expect(r.tipo).toBe("enviado");
+    expect(escrituras).toBe(2);
+  });
+
+  it("guardar el mismo borrador por segunda vez devuelve la misma hora y no cambia `actualizado`", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    const v = edicion(app);
+    const uid = idDe(app, "ZYN469");
+    const valores = { ...v.valoresIniciales, kmFin: "120.800" };
+    const a = await app.guardarBorradorDeParte(uid, H, valores);
+    const antes = estadoDe(app).partes.find((p) => p.id === "nuevo-1");
+    const b = await app.guardarBorradorDeParte(uid, H, valores);
+    expect(a).toMatchObject({ ok: true, hora: "12:00" });
+    expect(b).toMatchObject({ ok: true, parteId: "nuevo-1", hora: "12:00" });
+    expect(estadoDe(app).partes.find((p) => p.id === "nuevo-1")).toBe(antes);
+  });
+
+  it("si algo cambió, sí se escribe", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469", reloj: MEDIODIA });
+    const v = edicion(app);
+    const uid = idDe(app, "ZYN469");
+    await app.guardarBorradorDeParte(uid, H, { ...v.valoresIniciales, kmFin: "120.800" });
+    const antes = estadoDe(app).partes.find((p) => p.id === "nuevo-1");
+    await app.guardarBorradorDeParte(uid, H, { ...v.valoresIniciales, kmFin: "120.900" });
+    expect(estadoDe(app).partes.find((p) => p.id === "nuevo-1")?.kmFin).toBe(120900);
+    expect(estadoDe(app).partes.find((p) => p.id === "nuevo-1")).not.toBe(antes);
+  });
+});
+
 describe("enviar el parte (P4, P12, K2, K3)", () => {
   it("enviar vacío: resumen de errores con los 12 datos que faltan, en el orden del formulario, con el foco en el resumen; no se guarda nada", async () => {
     const { app, repo } = await iniciada({ perfil: C01, patente: "ZYN469" });
