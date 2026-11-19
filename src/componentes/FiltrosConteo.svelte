@@ -84,8 +84,9 @@
       background: var(--c-superficie-2);
     }
   }
+  /* Elegido (S2): fondo de superficie 2 + línea de 3 px del tono + texto firme. El fondo verde azulado (`--c-acento-suave`) quedaba junto a la línea ámbar o roja del tono. */
   .opcion:has(input:checked) {
-    background: var(--c-acento-suave);
+    background: var(--c-superficie-2);
     box-shadow: inset 0 -3px 0 var(--linea);
     color: var(--c-texto);
     font-weight: 600;
