@@ -215,18 +215,18 @@ describe("5.15: el indicador y lo que se anuncia", () => {
     const t = armar([{ ok: false, tipo: "escritura", errores: errorGeneralParte(ERRORES.noPudoGuardarElParte) }]);
     await t.auto.alSalirDelCampo(con({ kmFin: "1" }));
     await t.auto.alSalirDelCampo(con({ kmFin: "12" }));
-    expect(t.auto.indicador).toMatchObject({ estado: "guardado", anuncio: "Se volvió a guardar el borrador.", hora: "14:32" });
+    expect(t.auto.indicador).toMatchObject({ estado: "guardado", anuncio: "Borrador guardado de nuevo en este equipo.", hora: "14:32" });
     expect(t.guardados.map((v) => v.kmFin)).toEqual(["1", "12"]);
   });
 
-  it("tras recuperarse, los guardados siguientes no vuelven a anunciar nada (el anuncio queda en «Se volvió a guardar»)", async () => {
+  it("tras recuperarse, los guardados siguientes no vuelven a anunciar nada (el anuncio queda en «Borrador guardado de nuevo»)", async () => {
     const t = armar([{ ok: false, tipo: "escritura", errores: errorGeneralParte(ERRORES.noPudoGuardarElParte) }]);
     await t.auto.alSalirDelCampo(con({ kmFin: "1" }));
     await t.auto.alSalirDelCampo(con({ kmFin: "12" }));
     await t.auto.alSalirDelCampo(con({ kmFin: "123" }));
-    expect(t.auto.indicador).toMatchObject({ estado: "guardado", anuncio: "Se volvió a guardar el borrador." });
+    expect(t.auto.indicador).toMatchObject({ estado: "guardado", anuncio: "Borrador guardado de nuevo en este equipo." });
     const distintos = [...new Set(t.indicadores.map((i) => i.anuncio).filter((x) => x !== ""))];
-    expect(distintos).toEqual(["No se pudo guardar en este equipo. Lo escrito sigue en pantalla; no cierre la pestaña.", "Se volvió a guardar el borrador."]);
+    expect(distintos).toEqual(["No se pudo guardar en este equipo. Lo escrito sigue en pantalla; no cierre la pestaña.", "Borrador guardado de nuevo en este equipo."]);
   });
 
   it("tras un error, `vaciar` (antes de enviar) reintenta con lo que había fallado, aunque no se le pasen los valores", async () => {

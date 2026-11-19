@@ -118,7 +118,7 @@ describe("las vistas según la ruta y el perfil", () => {
     const { app } = await iniciada({ perfil: { tipo: "conductor", conductorId: "c-13" } });
     const v = app.inicioDelConductor();
     expect(v?.pendientes).toEqual([
-      { clave: "pt-0579", tipo: "borrador", texto: "El parte del 17/11/2026 de ZW 749 JE está empezado y sin enviar.", accion: { texto: "Continuarlo", href: "#/parte/ZW749JE/2026-11-17" } },
+      { clave: "pt-0579", tipo: "borrador", texto: "ZW 749 JE: el parte del 17/11/2026 está empezado y sin enviar.", accion: { texto: "Continuarlo", href: "#/parte/ZW749JE/2026-11-17" } },
     ]);
   });
 });

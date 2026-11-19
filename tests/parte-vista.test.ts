@@ -142,8 +142,8 @@ describe("inicio del conductor (6.4)", () => {
     e.partes = e.partes.filter((p) => !(p.unidadId === "u1" && p.fecha === "2026-11-17"));
     e.partes.push(parte({ id: "pa", estado: "borrador", enviado: null, fecha: "2026-11-16", unidadId: "u1" }));
     expect(inicio(e)?.pendientes).toEqual([
-      { clave: "pa", tipo: "borrador", texto: "El parte del 16/11/2026 de ZK 214 BD está empezado y sin enviar.", accion: { texto: "Continuarlo", href: "#/parte/ZK214BD/2026-11-16" } },
-      { clave: "sin-parte:u1:2026-11-17", tipo: "sin-parte", texto: "No se envió el parte de ayer (17/11/2026) de ZK 214 BD.", accion: { texto: "Cargarlo", href: "#/parte/ZK214BD/2026-11-17" } },
+      { clave: "pa", tipo: "borrador", texto: "ZK 214 BD: el parte del 16/11/2026 está empezado y sin enviar.", accion: { texto: "Continuarlo", href: "#/parte/ZK214BD/2026-11-16" } },
+      { clave: "sin-parte:u1:2026-11-17", tipo: "sin-parte", texto: "ZK 214 BD: no se envió el parte de ayer (17/11/2026).", accion: { texto: "Cargarlo", href: "#/parte/ZK214BD/2026-11-17" } },
     ]);
   });
 
@@ -193,10 +193,10 @@ describe("inicio del conductor (6.4)", () => {
     expect(u?.vacio).toBeNull();
   });
 
-  it("mis últimos partes: sin partes enviados, «Todavía no envió partes.»", () => {
+  it("mis últimos partes: sin partes enviados, «Todavía no envió partes. Los últimos cinco aparecerán aquí.»", () => {
     const e = flotaDePrueba();
     e.partes = [];
-    expect(inicio(e)?.ultimosPartes).toMatchObject({ filas: [], vacio: "Todavía no envió partes." });
+    expect(inicio(e)?.ultimosPartes).toMatchObject({ filas: [], vacio: "Todavía no envió partes. Los últimos cinco aparecerán aquí." });
   });
 
   it("«Sin uso» cuando el recorrido es 0", () => {
@@ -231,7 +231,7 @@ describe("pantalla del parte, edición (6.5)", () => {
       vuelta: { texto: "Parte diario", href: "#/conductor" },
       ayudaKmInicio: "Último registro: 84.320 km (parte del 17/11/2026).",
       ayudaKmFin: "Complételo al final del día.",
-      ayudaLitros: "Deje vacío si no cargó.",
+      ayudaLitros: "Déjelo vacío si no cargó.",
     });
     expect(v.valoresIniciales).toMatchObject({ conductorId: "c1", kmInicio: "84.320", kmFin: "", combustible: "" });
     expect(v.puntos).toHaveLength(10);
