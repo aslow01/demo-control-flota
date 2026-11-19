@@ -9,10 +9,10 @@
   //    diaria» si el detalle quedó vacío). "Abrir el parte diario" cambia la vista a Conductor con el diálogo ya existente (`alAbrirParte`, que lo abre el marco).
   //  - Cambiar el filtro anuncia "Mostrando 4 de 11 vencimientos." en una región `role="status"` aparte (la barra de estado del panel es para lo que pasó).
   import { formatearFecha } from "../lib/dominio/fechas.ts";
-  import { contextoDeCargar, contextoDeRenovar, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
+  import { contextoDeCargar, contextoDeRenovar, type CampoDocumento, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
   import { contextoDeResolver } from "../lib/dominio/formulario-novedad.ts";
   import type { TipoAlertaOperacion } from "../lib/dominio/alertas.ts";
-  import type { ResultadoGuardadoDocumento } from "../lib/estado/app.svelte.ts";
+  import type { ResultadoGuardado } from "../lib/estado/app.svelte.ts";
   import {
     vencimientosVisibles,
     type AccionDeDocumento,
@@ -114,11 +114,10 @@
   // ---------- Diálogos Renovar y Cargar ----------
   let dialogoAbierto = $state(false);
   let contextoDialogo = $state.raw<ContextoDeDocumento | null>(null);
-  let guardarDocumento = $state.raw<(valores: ValoresDocumento) => Promise<ResultadoGuardadoDocumento>>(() =>
+  let guardarDocumento = $state.raw<(valores: ValoresDocumento) => Promise<ResultadoGuardado<CampoDocumento>>>(() =>
     Promise.resolve({ ok: true, mensaje: "", foco: "titulo-del-panel" }),
   );
   let estadoVencimientos = $state("");
-  let irAlTitulo = false;
 
   function abrirDialogo(accion: AccionDeDocumento): void {
     const estado = app.estado;
@@ -144,16 +143,14 @@
     dialogoAbierto = true;
   }
 
-  function alGuardar(mensaje: string): void {
-    estadoVencimientos = mensaje;
-    irAlTitulo = true;
+  function alGuardar(r: { mensaje: string }): void {
+    estadoVencimientos = r.mensaje;
   }
 
   // ---------- Diálogo Resolver (novedades) ----------
   let dialogoResolverAbierto = $state(false);
   let contextoResolver = $state.raw<ReturnType<typeof contextoDeResolver>>(null);
   let estadoDetalle = $state("");
-  let irAlDetalle = false;
 
   function abrirResolver(novedadId: string): void {
     const estado = app.estado;
@@ -167,19 +164,16 @@
   }
   function alResolver(r: { mensaje: string }): void {
     estadoDetalle = r.mensaje;
-    irAlDetalle = true;
   }
-  /** La fila que abrió el diálogo ya no existe: el foco va al título del detalle o, si quedó vacío, al de «Operación diaria». Al cancelar, `null` (vuelve al botón). */
-  function focoDestinoResolver(): HTMLElement | null {
-    if (!irAlDetalle) return null;
-    irAlDetalle = false;
+  // A dónde va el foco al cerrarse un diálogo: reciben el resultado del guardado, o `null` si se cerró sin guardar (el foco vuelve al botón que lo abrió, 5.17).
+  /** La fila que abrió «Resolver» ya no existe: el foco va al título del detalle o, si quedó vacío, al de «Operación diaria». */
+  function focoDestinoResolver(r: { foco: string } | null): HTMLElement | null {
+    if (r === null) return null;
     return document.getElementById("titulo-detalle") ?? document.getElementById("titulo-operacion");
   }
-
-  /** Al cerrar tras guardar, el botón que abrió el diálogo ya no existe: el foco va al h2 del panel (5.17). Al cancelar, `null` (vuelve al botón). */
-  function focoDestino(): HTMLElement | null {
-    if (!irAlTitulo) return null;
-    irAlTitulo = false;
+  /** La fila que abrió «Renovar» o «Cargar» ya no existe: el foco va al h2 del panel de vencimientos. */
+  function focoDestino(r: { foco: string } | null): HTMLElement | null {
+    if (r === null) return null;
     return document.getElementById(ID_TITULO_VENCIMIENTOS);
   }
 </script>

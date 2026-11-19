@@ -1,25 +1,12 @@
 <script lang="ts">
-  // Diálogo «Agregar unidad» (5.11, 5.15 y 5.17): Patente*, Interno*, Tipo*, Marca*, Modelo*, Año*, Proyecto* y Conductor, con las opciones de los
-  // `select` y los textos que arma el dominio (`contextoDeAgregarUnidad`). No tiene reglas: lo escrito va tal cual a `guardar` (`app.agregarUnidad`)
-  // y lo que vuelve (errores por campo o un error general) se muestra. Lo escrito se conserva siempre y el diálogo no se cierra con errores.
-  //  - Foco al abrir: el primer campo. Con más de un error el foco va al resumen de arriba (con un enlace a cada campo); con uno solo, al campo.
-  //  - Con cambios sin guardar, cancelar pide confirmación (Dialogo). Guardando: el botón queda con aria-disabled y no repite el pedido; el
-  //    texto «Guardando…» aparece solo si tarda más de 200 ms (5.19).
-  //  - Al guardar bien se cierra (y llama `alGuardar(resultado)` si se pasó). `app.agregarUnidad` ya navegó a la ficha de la unidad nueva: la pantalla de
-  //    la flota desaparece y el cambio de pantalla lleva el foco al título de la ficha.
-  import { tick, untrack } from "svelte";
-  import { CAMPOS_UNIDAD, errorGeneralUnidad, type CampoUnidad, type ContextoAgregarUnidad, type ErroresDeFormularioUnidad, type ValoresUnidad } from "../lib/dominio/formulario-unidad.ts";
-  import { ERRORES } from "../lib/dominio/textos.ts";
-  import type { ResultadoAgregarUnidad } from "../lib/estado/app.svelte.ts";
-  import { guardarConIndicador } from "../lib/estado/guardado.ts";
-  import Boton from "./Boton.svelte";
+  // Diálogo «Agregar unidad» (5.11, 5.15 y 5.17): Patente*, Interno*, Tipo*, Marca*, Modelo*, Año*, Proyecto* y Conductor, con las opciones de los `select` y los textos que arma
+  // el dominio (`contextoDeAgregarUnidad`). Solo pone sus campos: el resumen de errores, el «Guardando…», el foco y el cierre son de `DialogoFormulario`. `guardar` es
+  // `app.agregarUnidad`, que al guardar bien ya navegó a la ficha de la unidad nueva (el cambio de pantalla lleva el foco al título de la ficha).
+  import type { CampoUnidad, ContextoAgregarUnidad, ValoresUnidad } from "../lib/dominio/formulario-unidad.ts";
+  import type { ResultadoGuardado } from "../lib/estado/app.svelte.ts";
   import Campo from "./Campo.svelte";
-  import Dialogo from "./Dialogo.svelte";
-  import Icono from "./Icono.svelte";
-  import ResumenErrores from "./ResumenErrores.svelte";
-  import { TEXTO_DIALOGO_DOCUMENTO, TEXTO_DIALOGO_UNIDAD as T } from "./textos-marco.ts";
-
-  type Agregada = Extract<ResultadoAgregarUnidad, { ok: true }>;
+  import DialogoFormulario, { type DestinoDelFoco } from "./DialogoFormulario.svelte";
+  import { TEXTO_DIALOGO_UNIDAD as T } from "./textos-marco.ts";
 
   let {
     abierto = $bindable(false),
@@ -30,144 +17,89 @@
   }: {
     abierto?: boolean;
     contexto: ContextoAgregarUnidad | null;
-    guardar: (valores: ValoresUnidad) => Promise<ResultadoAgregarUnidad>;
-    alGuardar?: (resultado: Agregada) => void;
-    focoDestino?: () => HTMLElement | null;
+    guardar: (valores: ValoresUnidad) => Promise<ResultadoGuardado<CampoUnidad>>;
+    alGuardar?: (resultado: Extract<ResultadoGuardado<CampoUnidad>, { ok: true }>) => void;
+    focoDestino?: DestinoDelFoco;
   } = $props();
-
-  const uid = $props.id();
-  const idFormulario = `${uid}-formulario`;
-  const idCampo = (campo: CampoUnidad): string => `${uid}-${campo}`;
-
-  const VACIOS: ValoresUnidad = { patente: "", interno: "", tipo: "", marca: "", modelo: "", anio: "", proyectoId: "", conductorId: "" };
-
-  let valores = $state<ValoresUnidad>({ ...VACIOS });
-  let errores = $state.raw<ErroresDeFormularioUnidad | null>(null);
-  let guardando = $state(false);
-  let mostrarGuardando = $state(false);
-  let resumen = $state<ReturnType<typeof ResumenErrores> | undefined>();
-
-  // Cada vez que se abre, parte de los valores del contexto (todos vacíos) y sin errores.
-  $effect(() => {
-    if (!abierto) return;
-    untrack(() => {
-      valores = { ...(contexto?.valoresIniciales ?? VACIOS) };
-      errores = null;
-      guardando = false;
-      mostrarGuardando = false;
-    });
-  });
-
-  const hayCambios = $derived(contexto !== null && CAMPOS_UNIDAD.some((c) => valores[c] !== contexto.valoresIniciales[c]));
-  const itemsResumen = $derived(errores === null ? [] : errores.lista.map((e) => ({ campoId: idCampo(e.campo), mensaje: e.mensaje })));
-  const error = (campo: CampoUnidad): string => errores?.porCampo[campo] ?? "";
-  const conductorElegido = $derived(contexto?.conductores.find((c) => c.valor === valores.conductorId));
-  const ayudaConductor = $derived(conductorElegido?.asignadoA != null ? T.yaTiene(conductorElegido.asignadoA) : T.ayudaConductor);
-
-  async function enviar(evento: SubmitEvent): Promise<void> {
-    evento.preventDefault();
-    if (guardando || contexto === null) return;
-    guardando = true;
-    const r = await guardarConIndicador(() => guardar({ ...valores }), {
-      alTardar: () => (mostrarGuardando = true),
-      alTerminar: () => {
-        guardando = false;
-        mostrarGuardando = false;
-      },
-      alFallar: () => ({ ok: false as const, errores: errorGeneralUnidad(ERRORES.noPudoGuardar) }),
-    });
-    if (r.ok) {
-      alGuardar?.(r);
-      abierto = false;
-      return;
-    }
-    errores = r.errores;
-    await tick();
-    if (r.errores.lista.length > 1) resumen?.enfocar();
-    else if (r.errores.lista[0] !== undefined) document.getElementById(idCampo(r.errores.lista[0].campo))?.focus();
-  }
 </script>
 
-<Dialogo titulo={contexto?.titulo ?? ""} bind:abierto {hayCambios} bloqueado={guardando} {focoDestino}>
-  <form id={idFormulario} class="formulario" novalidate onsubmit={enviar}>
-    {#if errores !== null && errores.lista.length > 1}
-      <ResumenErrores bind:this={resumen} titulo={TEXTO_DIALOGO_DOCUMENTO.resumen(errores.lista.length)} items={itemsResumen} />
+<DialogoFormulario
+  bind:abierto
+  titulo={contexto?.titulo ?? ""}
+  valoresIniciales={contexto?.valoresIniciales ?? null}
+  primario={contexto?.primario ?? null}
+  {guardar}
+  alGuardar={(r) => alGuardar?.(r)}
+  {focoDestino}
+>
+  {#snippet children(f)}
+    {#if contexto !== null}
+      {@const conductorElegido = contexto.conductores.find((c) => c.valor === f.valores.conductorId)}
+      <div class="campos">
+        <Campo
+          etiqueta={T.patente}
+          id={f.idCampo("patente")}
+          bind:valor={f.valores.patente}
+          requerido
+          autocomplete="off"
+          mayusculas
+          ayuda={T.ayudaPatente}
+          error={f.error("patente")}
+        />
+        <Campo
+          etiqueta={T.interno}
+          id={f.idCampo("interno")}
+          bind:valor={f.valores.interno}
+          requerido
+          autocomplete="off"
+          modoEntrada="numeric"
+          corto
+          ayuda={T.ayudaInterno}
+          error={f.error("interno")}
+        />
+        <Campo etiqueta={T.tipo} id={f.idCampo("tipo")} tipo="select" bind:valor={f.valores.tipo} requerido error={f.error("tipo")}>
+          <option value="">{T.elegirTipo}</option>
+          {#each contexto.tipos as t (t.valor)}
+            <option value={t.valor}>{t.etiqueta}</option>
+          {/each}
+        </Campo>
+        <Campo etiqueta={T.marca} id={f.idCampo("marca")} bind:valor={f.valores.marca} requerido autocomplete="off" error={f.error("marca")} />
+        <Campo etiqueta={T.modelo} id={f.idCampo("modelo")} bind:valor={f.valores.modelo} requerido autocomplete="off" error={f.error("modelo")} />
+        <Campo
+          etiqueta={T.anio}
+          id={f.idCampo("anio")}
+          bind:valor={f.valores.anio}
+          requerido
+          autocomplete="off"
+          modoEntrada="numeric"
+          corto
+          ayuda={T.ayudaAnio(contexto.anios.minimo, contexto.anios.maximo)}
+          error={f.error("anio")}
+        />
+        <Campo etiqueta={T.proyecto} id={f.idCampo("proyectoId")} tipo="select" bind:valor={f.valores.proyectoId} requerido error={f.error("proyectoId")}>
+          <option value="">{T.elegirProyecto}</option>
+          {#each contexto.proyectos as p (p.valor)}
+            <option value={p.valor}>{p.etiqueta}</option>
+          {/each}
+        </Campo>
+        <Campo
+          etiqueta={T.conductor}
+          id={f.idCampo("conductorId")}
+          tipo="select"
+          bind:valor={f.valores.conductorId}
+          ayuda={conductorElegido?.asignadoA != null ? T.yaTiene(conductorElegido.asignadoA) : T.ayudaConductor}
+          error={f.error("conductorId")}
+        >
+          {#each contexto.conductores as c (c.valor)}
+            <option value={c.valor}>{c.asignadoA === null ? c.etiqueta : T.opcionConUnidad(c.etiqueta, c.asignadoA)}</option>
+          {/each}
+        </Campo>
+      </div>
     {/if}
-    {#if errores?.general}
-      <p class="error-general" role="alert"><Icono nombre="vencido" /><span>{errores.general}</span></p>
-    {/if}
-    <div class="campos">
-      <Campo
-        etiqueta={T.patente}
-        id={idCampo("patente")}
-        bind:valor={valores.patente}
-        requerido
-        autocomplete="off"
-        mayusculas
-        ayuda={T.ayudaPatente}
-        error={error("patente")}
-      />
-      <Campo
-        etiqueta={T.interno}
-        id={idCampo("interno")}
-        bind:valor={valores.interno}
-        requerido
-        autocomplete="off"
-        modoEntrada="numeric"
-        corto
-        ayuda={T.ayudaInterno}
-        error={error("interno")}
-      />
-      <Campo etiqueta={T.tipo} id={idCampo("tipo")} tipo="select" bind:valor={valores.tipo} requerido error={error("tipo")}>
-        <option value="">{T.elegirTipo}</option>
-        {#each contexto?.tipos ?? [] as t (t.valor)}
-          <option value={t.valor}>{t.etiqueta}</option>
-        {/each}
-      </Campo>
-      <Campo etiqueta={T.marca} id={idCampo("marca")} bind:valor={valores.marca} requerido autocomplete="off" error={error("marca")} />
-      <Campo etiqueta={T.modelo} id={idCampo("modelo")} bind:valor={valores.modelo} requerido autocomplete="off" error={error("modelo")} />
-      <Campo
-        etiqueta={T.anio}
-        id={idCampo("anio")}
-        bind:valor={valores.anio}
-        requerido
-        autocomplete="off"
-        modoEntrada="numeric"
-        corto
-        ayuda={contexto === null ? "" : T.ayudaAnio(contexto.anios.minimo, contexto.anios.maximo)}
-        error={error("anio")}
-      />
-      <Campo etiqueta={T.proyecto} id={idCampo("proyectoId")} tipo="select" bind:valor={valores.proyectoId} requerido error={error("proyectoId")}>
-        <option value="">{T.elegirProyecto}</option>
-        {#each contexto?.proyectos ?? [] as p (p.valor)}
-          <option value={p.valor}>{p.etiqueta}</option>
-        {/each}
-      </Campo>
-      <Campo
-        etiqueta={T.conductor}
-        id={idCampo("conductorId")}
-        tipo="select"
-        bind:valor={valores.conductorId}
-        ayuda={ayudaConductor}
-        error={error("conductorId")}
-      >
-        {#each contexto?.conductores ?? [] as c (c.valor)}
-          <option value={c.valor}>{c.asignadoA === null ? c.etiqueta : T.opcionConUnidad(c.etiqueta, c.asignadoA)}</option>
-        {/each}
-      </Campo>
-    </div>
-  </form>
-  {#snippet pie()}
-    <Boton type="submit" form={idFormulario} cargando={guardando}>{mostrarGuardando ? T.guardando : (contexto?.primario ?? "")}</Boton>
   {/snippet}
-</Dialogo>
+</DialogoFormulario>
 
 <style>
-  .formulario {
-    display: flex;
-    flex-direction: column;
-    gap: var(--e-4);
-  }
   /* Dos columnas cuando el diálogo es una ventana (desde 40 rem); el orden del DOM es el de lectura, fila por fila. */
   .campos {
     display: grid;
@@ -179,22 +111,5 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       align-items: start;
     }
-  }
-  .error-general {
-    --icono-tam: 1rem;
-    display: flex;
-    align-items: flex-start;
-    gap: var(--e-2);
-    padding: var(--e-3);
-    background: var(--c-critico-f);
-    border-left: 4px solid var(--c-critico-r);
-    border-radius: var(--r-2);
-    font-size: var(--t-chico);
-    font-weight: 600;
-    line-height: 1.4;
-    color: var(--c-critico-t);
-  }
-  .error-general :global(.icono) {
-    margin-top: 0.1rem;
   }
 </style>

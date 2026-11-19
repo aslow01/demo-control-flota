@@ -8,7 +8,7 @@
   import Aviso from "./Aviso.svelte";
   import Campo from "./Campo.svelte";
   import Casilla from "./Casilla.svelte";
-  import DialogoFormulario from "./DialogoFormulario.svelte";
+  import DialogoFormulario, { type DestinoDelFoco } from "./DialogoFormulario.svelte";
   import Etiqueta from "./Etiqueta.svelte";
   import { TEXTO_DIALOGOS_FICHA_VISTA as T } from "./textos-marco.ts";
 
@@ -23,7 +23,7 @@
     contexto: ContextoResolver | null;
     guardar: (valores: ValoresResolver) => Promise<ResultadoGuardado<CampoResolver>>;
     alGuardar: (resultado: Extract<ResultadoGuardado<CampoResolver>, { ok: true }>) => void;
-    focoDestino?: () => HTMLElement | null;
+    focoDestino?: DestinoDelFoco;
   } = $props();
 </script>
 

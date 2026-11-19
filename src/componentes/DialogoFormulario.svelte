@@ -1,4 +1,13 @@
 <script lang="ts" module>
+  import type { FocoTrasGuardar } from "../lib/estado/app.svelte.ts";
+
+  /**
+   * A dónde va el foco al cerrarse el diálogo (5.17). Recibe el resultado del guardado (`foco` dice qué título de la pantalla cambió: la fila o el botón que abrió el
+   * diálogo puede haber desaparecido) o `null` si se cerró sin guardar (Cancelar, Esc): ahí devuelve `null` y el foco vuelve al botón que lo abrió. No hay banderas
+   * sueltas que alguien tenga que acordarse de armar antes de cerrar.
+   */
+  export type DestinoDelFoco = (resultado: { foco: FocoTrasGuardar } | null) => HTMLElement | null;
+
   /** Lo que recibe el contenido de cada diálogo. */
   export interface ArgsDelFormulario<Valores, Campo extends string> {
     /** Los valores del formulario (se enlazan con `bind:` a cada campo). */
@@ -9,6 +18,8 @@
     idCampo: (campo: Campo) => string;
     /** El id que lleva el texto que describe el diálogo (`aria-describedby`), si hay uno. */
     idDescripcion: string;
+    /** Cierra el diálogo sin guardar, con el foco en el título de `foco` («Ver novedades» de «Volver a servicio»). */
+    cerrarEn: (foco: FocoTrasGuardar) => void;
   }
 </script>
 
@@ -62,7 +73,7 @@
     conDescripcion?: boolean;
     guardar: (valores: V) => Promise<ResultadoGuardado<C>>;
     alGuardar: (resultado: Extract<ResultadoGuardado<C>, { ok: true }>) => void;
-    focoDestino?: () => HTMLElement | null;
+    focoDestino?: DestinoDelFoco;
     children: Snippet<[ArgsDelFormulario<V, C>]>;
   } = $props();
 
@@ -76,6 +87,8 @@
   let guardando = $state(false);
   let mostrarGuardando = $state(false);
   let resumen = $state<ReturnType<typeof ResumenErrores> | undefined>();
+  // Cómo se cerró (con qué resultado de guardado, o `null`): lo consume `focoDestino` cuando el diálogo ya se cerró.
+  let cierre: { foco: FocoTrasGuardar } | null = null;
 
   // Cada vez que se abre, parte de los valores del contexto y sin errores. `$effect.pre`: tiene que correr antes de que se dibuje el contenido (los campos
   // se enlazan con `bind:` y no aceptan un valor que todavía no existe).
@@ -87,8 +100,19 @@
       errores = null;
       guardando = false;
       mostrarGuardando = false;
+      cierre = null;
     });
   });
+
+  function cerrarEn(foco: FocoTrasGuardar): void {
+    cierre = { foco };
+    abierto = false;
+  }
+  function destinoDelFoco(): HTMLElement | null {
+    const como = cierre;
+    cierre = null;
+    return focoDestino?.(como) ?? null;
+  }
 
   const hayCambios = $derived(
     valoresIniciales !== null &&
@@ -110,6 +134,7 @@
       alFallar: () => ({ ok: false as const, errores: errorGeneralEn<C>(ERRORES.noPudoGuardar) }),
     });
     if (r.ok) {
+      cierre = r;
       alGuardar(r);
       abierto = false;
       return;
@@ -129,7 +154,7 @@
   {cancelar}
   {focoInicial}
   descripcionId={conDescripcion ? idDescripcion : undefined}
-  {focoDestino}
+  focoDestino={destinoDelFoco}
 >
   <form id={idFormulario} class="formulario" novalidate onsubmit={enviar}>
     {#if errores !== null && errores.lista.length > 1}
@@ -138,7 +163,7 @@
     {#if errores?.general}
       <p class="error-general" role="alert"><Icono nombre="vencido" /><span>{errores.general}</span></p>
     {/if}
-    {@render children({ valores, error, idCampo, idDescripcion })}
+    {@render children({ valores, error, idCampo, idDescripcion, cerrarEn })}
   </form>
   {#snippet pie()}
     {#if primario !== null}

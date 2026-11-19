@@ -7,13 +7,13 @@
   //    (`DialogoDocumento`). Cada contexto se arma al abrir; si ya no hay nada que abrir (otra pestaña cambió la unidad) la barra de estado lo dice.
   //  - Al guardar bien: el mensaje va a la barra de estado de lo que cambió (Documentos, Novedades, Kilometraje) o, si cambió la unidad entera,
   //    a la región de estado del encabezado; solo hay un mensaje a la vez (la acción siguiente lo reemplaza). El foco va adonde dice `r.foco`
-  //    (5.17): la fila o el botón que abrió el diálogo puede haber cambiado. Al cancelar, vuelve al botón.
+  //    (5.17), que cada diálogo recibe al cerrarse (`focoDestino`): la fila o el botón que abrió el diálogo puede haber cambiado. Al cancelar, vuelve al botón.
   //  - La pantalla se vuelve a crear al llegar a otra ficha (`{#key}` en App.svelte): el filtro del historial, los mensajes y los diálogos arrancan limpios.
   import { tick } from "svelte";
   import { avisoDeAsignacion, contextoDeAsignacion, contextoDeBaja, contextoDeFueraDeServicio, contextoDeKilometraje, contextoDeVolverAServicio } from "../lib/dominio/formulario-ficha.ts";
-  import { contextoDeCargarOtro, contextoDeCargar, contextoDeCorregir, contextoDeRenovar, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
+  import { contextoDeCargarOtro, contextoDeCargar, contextoDeCorregir, contextoDeRenovar, type CampoDocumento, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
   import { contextoDeCargarNovedad, contextoDeResolver } from "../lib/dominio/formulario-novedad.ts";
-  import type { ResultadoGuardadoDocumento, FocoTrasGuardar } from "../lib/estado/app.svelte.ts";
+  import type { FocoTrasGuardar, ResultadoGuardado } from "../lib/estado/app.svelte.ts";
   import type { AccionDeDocumentoEnFicha, IdAccionDeFicha } from "../lib/estado/ficha.ts";
   import { app } from "../lib/estado/instancia.ts";
   import DialogoAsignacion from "./DialogoAsignacion.svelte";
@@ -55,12 +55,10 @@
   }
 
   // ---------- Foco al cerrar un diálogo ----------
-  let focoPendiente: Lugar | null = null;
-  function focoDestino(): HTMLElement | null {
-    const lugar = focoPendiente;
-    focoPendiente = null;
-    if (lugar === null) return null;
-    switch (lugar) {
+  // Cada diálogo, al cerrarse, pregunta a dónde va el foco y recibe el resultado del guardado (`null` si se cerró sin guardar: vuelve al botón que lo abrió).
+  function focoDestino(r: { foco: FocoTrasGuardar } | null): HTMLElement | null {
+    if (r === null) return null;
+    switch (lugarDe(r.foco)) {
       case "titulo-de-documentos":
         return document.getElementById(ID.documentos);
       case "titulo-de-novedades":
@@ -72,9 +70,7 @@
     }
   }
   function guardado(r: { mensaje: string; foco: FocoTrasGuardar }): void {
-    const lugar = lugarDe(r.foco);
-    mensaje = { lugar, texto: r.mensaje };
-    focoPendiente = lugar;
+    mensaje = { lugar: lugarDe(r.foco), texto: r.mensaje };
   }
   function yaCambio(lugar: Lugar, texto: string): void {
     mensaje = { lugar, texto };
@@ -101,7 +97,7 @@
   let cAsignacion = $state.raw<ReturnType<typeof contextoDeAsignacion>>(null);
   let cCargarOtro = $state.raw<ReturnType<typeof contextoDeCargarOtro>>(null);
   let cDocumento = $state.raw<ContextoDeDocumento | null>(null);
-  let guardarDocumento = $state.raw<(valores: ValoresDocumento) => Promise<ResultadoGuardadoDocumento>>(() =>
+  let guardarDocumento = $state.raw<(valores: ValoresDocumento) => Promise<ResultadoGuardado<CampoDocumento>>>(() =>
     Promise.resolve({ ok: true, mensaje: "", foco: "titulo-de-documentos" }),
   );
 
@@ -194,13 +190,8 @@
     }
     abierto.documento = true;
   }
-  function alGuardarDocumento(texto: string): void {
-    guardado({ mensaje: texto, foco: "titulo-de-documentos" });
-  }
-
-  /** «Ver novedades» de «Volver a servicio»: el diálogo se cierra y el foco va al título de Novedades. */
+  /** «Ver novedades» de «Volver a servicio»: el diálogo se cierra con el foco en el título de Novedades (`focoDestino`) y la vista baja hasta ahí. */
   function verNovedades(): void {
-    focoPendiente = "titulo-de-novedades";
     void tick().then(() => document.getElementById(ID.novedades)?.scrollIntoView({ block: "start" }));
   }
 </script>
@@ -295,7 +286,7 @@
       alGuardar={guardado}
       {focoDestino}
     />
-    <DialogoDocumento bind:abierto={abierto.documento} contexto={cDocumento} guardar={guardarDocumento} alGuardar={alGuardarDocumento} {focoDestino} />
+    <DialogoDocumento bind:abierto={abierto.documento} contexto={cDocumento} guardar={guardarDocumento} alGuardar={guardado} {focoDestino} />
   {:else}
     <!-- La patente no existe: h1, el motivo y el camino de vuelta (8: Error). -->
     <div class="pantalla">

@@ -1,14 +1,14 @@
 <script lang="ts">
   // Diálogo «Volver a servicio» (5.17, A4 y A5): no tiene campos, solo confirma.
   //  - Con novedades críticas abiertas (A4) no hay botón de guardar: el texto dice cuáles son y «Ver novedades» cierra el diálogo y lleva el foco al
-  //    título de Novedades (lo resuelve quien lo usa con `alVerNovedades` y `focoDestino`).
+  //    título de Novedades (`cerrarEn` pone el foco ahí y `alVerNovedades` lleva la vista).
   //  - Con documentos vencidos o faltantes (A5) la unidad vuelve igual: un aviso lo dice.
   //  - El foco inicial es el título: se lee qué pasa antes de decidir.
   import type { ContextoVolverAServicio } from "../lib/dominio/formulario-ficha.ts";
   import type { ResultadoGuardado } from "../lib/estado/app.svelte.ts";
   import Aviso from "./Aviso.svelte";
   import Boton from "./Boton.svelte";
-  import DialogoFormulario from "./DialogoFormulario.svelte";
+  import DialogoFormulario, { type DestinoDelFoco } from "./DialogoFormulario.svelte";
   import { TEXTO_DIALOGO } from "./textos-marco.ts";
 
   let {
@@ -23,15 +23,11 @@
     contexto: ContextoVolverAServicio | null;
     guardar: () => Promise<ResultadoGuardado<never>>;
     alGuardar: (resultado: Extract<ResultadoGuardado<never>, { ok: true }>) => void;
-    /** «Ver novedades»: quien lo usa anota adónde va el foco; el diálogo se cierra solo. */
+    /** «Ver novedades»: el diálogo se cierra con el foco en el título de Novedades (`focoDestino` lo recibe como `titulo-de-novedades`); quien lo usa, además, lleva la vista ahí. */
     alVerNovedades: () => void;
-    focoDestino?: () => HTMLElement | null;
+    focoDestino?: DestinoDelFoco;
   } = $props();
 
-  function verNovedades(): void {
-    alVerNovedades();
-    abierto = false;
-  }
 </script>
 
 <DialogoFormulario
@@ -54,7 +50,7 @@
           <p>{contexto.bloqueo.texto}</p>
         </Aviso>
         <div class="acciones-bloqueo">
-          <Boton variante="secundario" onclick={verNovedades}>{contexto.bloqueo.verNovedades}</Boton>
+          <Boton variante="secundario" onclick={() => { alVerNovedades(); f.cerrarEn("titulo-de-novedades"); }}>{contexto.bloqueo.verNovedades}</Boton>
         </div>
       {:else if contexto.aviso !== null}
         <Aviso tono="semana" icono="alerta">{contexto.aviso}</Aviso>

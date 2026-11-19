@@ -7,7 +7,7 @@
   import type { ResultadoGuardado } from "../lib/estado/app.svelte.ts";
   import Aviso from "./Aviso.svelte";
   import Campo from "./Campo.svelte";
-  import DialogoFormulario from "./DialogoFormulario.svelte";
+  import DialogoFormulario, { type DestinoDelFoco } from "./DialogoFormulario.svelte";
   import { TEXTO_DIALOGOS_FICHA_VISTA as T } from "./textos-marco.ts";
 
   let {
@@ -21,7 +21,7 @@
     contexto: ContextoBaja | null;
     guardar: (valores: ValoresBaja) => Promise<ResultadoGuardado<CampoBaja>>;
     alGuardar: (resultado: Extract<ResultadoGuardado<CampoBaja>, { ok: true }>) => void;
-    focoDestino?: () => HTMLElement | null;
+    focoDestino?: DestinoDelFoco;
   } = $props();
 </script>
 
