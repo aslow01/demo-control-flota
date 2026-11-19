@@ -198,6 +198,16 @@
     document.querySelector<HTMLElement>("main h1")?.focus();
   }
 
+  // La línea del conductor no se repite acá: con perfil Conductor ya está en la barra («Tamara Olivera (ficticia)»), y con perfil Encargado es el `select`.
+  // «Toyota Hilux 2022 · Camioneta»: el tipo sobra junto a la patente (se mira la unidad, no se la clasifica).
+  const modelo = $derived(vista.descripcion.includes(" · ") ? vista.descripcion.slice(0, vista.descripcion.lastIndexOf(" · ")) : vista.descripcion);
+  // «ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.»: la primera parte es el hecho (firme) y la última frase, la acción (más chica).
+  const avisoAptitud = $derived.by(() => {
+    const t = vista.avisoAptitud ?? "";
+    const corte = t.lastIndexOf(". ");
+    return corte < 0 ? { titular: t, accion: "" } : { titular: t.slice(0, corte + 1), accion: t.slice(corte + 2) };
+  });
+
   function etiquetaConductor(o: { etiqueta: string; asignadoA: string | null }): string {
     return o.asignadoA === null ? o.etiqueta : T.opcionConductor(o.etiqueta, o.asignadoA);
   }
@@ -206,24 +216,26 @@
 <svelte:document onvisibilitychange={alOcultarse} />
 
 <div class="parte">
-  <a class="vuelta" href={vista.vuelta.href}><Icono nombre="flecha-izq" />{vista.vuelta.texto}</a>
+  <!-- Con poco ancho, el enlace de vuelta y el rótulo de la demo comparten renglón: ahorra uno entero antes del primer campo (C1). -->
+  <div class="fila-vuelta">
+    <a class="vuelta" href={vista.vuelta.href}><Icono nombre="flecha-izq" />{vista.vuelta.texto}</a>
+    <div class="solo-angosto"><EtiquetaDemo /></div>
+  </div>
 
   <header class="encabezado">
-    <div class="solo-angosto"><EtiquetaDemo /></div>
     <h1 tabindex="-1">{vista.titulo}</h1>
     <p class="identidad">
       <Patente patente={vista.patente} tamano="grande" />
-      <span class="interno">{vista.interno}</span>
+      <span class="datos-unidad"><span class="interno">{vista.interno}</span><span class="modelo">{modelo}</span></span>
     </p>
-    <p class="descripcion">{vista.descripcion}</p>
-    {#if vista.conductor.tipo === "fijo"}
-      <p class="conductor">{T.conductorLinea(vista.conductor.nombre)}</p>
-    {/if}
     {#if vista.avisoFueraDeTermino !== null}
       <Aviso tono="semana" icono="calendario">{vista.avisoFueraDeTermino}</Aviso>
     {/if}
     {#if vista.avisoAptitud !== null}
-      <Aviso tono="critico" icono="vencido"><span class="largo">{vista.avisoAptitud}</span></Aviso>
+      <Aviso tono="critico" icono="vencido">
+        <span class="aviso-titular largo">{avisoAptitud.titular}</span>
+        {#if avisoAptitud.accion !== ""}<span class="aviso-accion largo">{avisoAptitud.accion}</span>{/if}
+      </Aviso>
     {/if}
     {#if textoIndicador !== ""}
       <p class="indicador" class:con-error={indicadorConError}><Icono nombre={indicadorConError ? "vencido" : "guardado"} /><span>{textoIndicador}</span></p>
@@ -294,7 +306,7 @@
 
   {#if vista.parteId !== null}
     <div class="descartar">
-      <BotonConfirmar texto={T.descartar} textoConfirmar={T.confirmarDescartar} alConfirmar={descartar} />
+      <BotonConfirmar texto={T.descartar} textoConfirmar={T.confirmarDescartar} variante="texto" alConfirmar={descartar} />
     </div>
   {/if}
 
@@ -318,10 +330,16 @@
     min-width: 0;
     margin-inline: auto;
   }
+  .fila-vuelta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0 var(--e-3);
+  }
   .vuelta {
     --icono-tam: 1.125rem;
     display: inline-flex;
-    align-self: flex-start;
     align-items: center;
     gap: var(--e-2);
     min-height: var(--alto-tactil);
@@ -337,6 +355,18 @@
   .encabezado > :global(.aviso) {
     align-self: stretch;
   }
+  /* Con poco ancho el título (tamaño de un h2, 22 px) entra en un renglón con cualquier día de la semana («Parte del miércoles 25/11/2026» mide unos 315 px a 360):
+     la pantalla gana unos 37 px antes del primer campo. Con 28 px se partía en dos. */
+  @container parte (max-width: 29.99rem) {
+    .encabezado h1 {
+      font-size: var(--t-h2);
+    }
+  }
+  @media (max-width: 31.99rem) {
+    .parte {
+      gap: var(--e-3);
+    }
+  }
   /* El rótulo "Demo con datos ficticios" baja acá cuando la barra superior no tiene lugar (menos de 40 rem). */
   @media (min-width: 40rem) {
     .solo-angosto {
@@ -349,13 +379,53 @@
     align-items: center;
     gap: var(--e-2) var(--e-3);
   }
+  /* Con poco ancho, el interno y el modelo van uno sobre otro al lado de la patente (la altura de la patente); con más lugar, en un solo renglón: «Int. 07 · Toyota Hilux 2022». */
+  .datos-unidad {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    font-size: var(--t-chico);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
   .interno {
     font-weight: 600;
   }
-  .descripcion,
-  .conductor,
+  .modelo {
+    color: var(--c-texto-2);
+  }
+  @container parte (min-width: 30rem) {
+    .datos-unidad {
+      flex-direction: row;
+      gap: var(--e-2);
+      font-size: var(--t-cuerpo);
+      line-height: 1.5;
+    }
+    .modelo {
+      color: var(--c-texto);
+    }
+    .modelo::before {
+      content: "· ";
+      color: var(--c-texto-2);
+    }
+  }
   .largo {
     overflow-wrap: anywhere;
+  }
+  /* Aviso de que la unidad no puede salir: compacto. El hecho en firme, la acción debajo en letra chica. */
+  .encabezado > :global(.aviso) {
+    padding: var(--e-2) var(--e-3);
+  }
+  .aviso-titular,
+  .aviso-accion {
+    display: block;
+  }
+  .aviso-titular {
+    font-weight: 600;
+  }
+  .aviso-accion {
+    font-size: var(--t-chico);
+    line-height: 1.4;
   }
   .indicador {
     --icono-tam: 1rem;

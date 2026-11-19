@@ -14,11 +14,14 @@
     texto,
     textoConfirmar,
     icono,
+    variante = "secundario",
     alConfirmar,
   }: {
     texto: string;
     textoConfirmar: string;
     icono?: NombreIcono;
+    /** Cómo se ve antes de armarse: «texto» para una salida que no compite con la acción principal de la pantalla (5.1). Armado, siempre Peligro. */
+    variante?: "secundario" | "texto";
     alConfirmar: () => void;
   } = $props();
 
@@ -68,7 +71,7 @@
     }
   }}
 >
-  <Boton variante={armado ? "peligro" : "secundario"} {icono} onclick={alHacerClic}>{armado ? textoConfirmar : texto}</Boton>
+  <Boton variante={armado ? "peligro" : variante} {icono} onclick={alHacerClic}>{armado ? textoConfirmar : texto}</Boton>
   <span class="solo-lectores" role="status">{armado ? textoConfirmar : ""}</span>
 </span>
 
