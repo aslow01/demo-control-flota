@@ -161,7 +161,7 @@
 >
   <form id={idFormulario} class="formulario" novalidate onsubmit={enviar}>
     {#if errores !== null && errores.lista.length > 1}
-      <ResumenErrores bind:this={resumen} titulo={TEXTO_DIALOGO_DOCUMENTO.resumen(errores.lista.length)} items={itemsResumen} />
+      <ResumenErrores bind:this={resumen} nivel="h3" titulo={TEXTO_DIALOGO_DOCUMENTO.resumen(errores.lista.length)} items={itemsResumen} />
     {/if}
     {#if errores?.general}
       <p class="error-general" role="alert"><Icono nombre="vencido" /><span>{errores.general}</span></p>

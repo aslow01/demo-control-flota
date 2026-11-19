@@ -157,6 +157,8 @@
   const seccion = $derived(seccionDe(app.ruta.tipo, app.perfil.tipo === "conductor"));
   const seccionContieneLaPantalla = $derived(app.ruta.tipo === "unidad" || app.ruta.tipo === "parte");
   const nombreDeLaPantalla = $derived(app.nombrePantalla);
+  // Título de pestaña propio del parte («Parte enviado», «No se puede cargar este parte», «No se encontró la unidad»): `PantallaParte` lo informa con `bind:titulo`.
+  let tituloDelParte = $state("");
 
   function elegirPerfil(tipo: "encargado" | "conductor"): void {
     if (tipo === "encargado") void elegirEncargado();
@@ -174,7 +176,7 @@
 
   // ---------- Título, foco y desplazamiento al cambiar de pantalla ----------
   $effect(() => {
-    document.title = app.fase === "lista" ? app.titulo : TITULO_BASE;
+    document.title = app.fase !== "lista" ? TITULO_BASE : app.ruta.tipo === "parte" && tituloDelParte !== "" ? `${tituloDelParte} · ${TITULO_BASE}` : app.titulo;
   });
 
   // La primera pantalla no roba el foco al cargar: solo los cambios posteriores (y el error de arranque) lo mueven al h1.
@@ -337,7 +339,7 @@
       {:else if app.ruta.tipo === "parte"}
         <!-- Un parte nuevo (otra unidad u otra fecha) arranca limpio: formulario, errores y el panel de «Parte enviado». -->
         {#key app.versionDePantalla}
-          <PantallaParte />
+          <PantallaParte bind:titulo={tituloDelParte} />
         {/key}
       {:else}
         <!-- Una dirección que no corresponde a ninguna pantalla (8: Error): nunca una pantalla en blanco, y el camino de vuelta. -->

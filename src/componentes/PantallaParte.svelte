@@ -17,6 +17,10 @@
   import Patente from "./Patente.svelte";
   import { TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
 
+  // `titulo` es el de la pestaña (`document.title`) cuando el `h1` no es el nombre de la ruta: «Parte enviado», «No se puede cargar este parte», «No se encontró la unidad».
+  // `App.svelte` lo lee con `bind:titulo`; vacío = el de la ruta.
+  let { titulo = $bindable("") }: { titulo?: string } = $props();
+
   const vista = $derived(app.parteDeLaRuta);
 
   // El panel que sale de enviar: se muestra en lugar del formulario hasta que se vuelve al inicio.
@@ -27,6 +31,10 @@
     window.scrollTo(0, 0);
     document.querySelector<HTMLElement>("main h1")?.focus();
   }
+
+  $effect(() => {
+    titulo = recienEnviado !== null ? recienEnviado.titulo : vista !== null && (vista.tipo === "no-disponible" || vista.tipo === "no-encontrada") ? vista.titulo : "";
+  });
 
   // «Borrador descartado.» en «No se puede cargar este parte».
   let mensaje = $state("");
@@ -79,7 +87,7 @@
               <li class="novedad" data-tono={n.critica ? "critico" : "semana"}>
                 <span class="icono-novedad"><Icono nombre={n.critica ? "octogono" : "alerta"} /></span>
                 <p>
-                  <strong>{n.rotulo}{#if n.critica} ({T.lectura.critica}){/if}:</strong>
+                  <strong>{n.critica ? `${n.rotulo} (${T.lectura.critica})` : n.rotulo}:</strong>
                   {n.texto}
                 </p>
               </li>

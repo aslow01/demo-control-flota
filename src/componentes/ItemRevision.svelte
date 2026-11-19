@@ -4,6 +4,7 @@
   // queda fuera de servicio; en uno que no lo es, la casilla «Impide usar la unidad». El texto escrito se conserva aunque se vuelva a «En orden».
   //  - Sin responder después de intentar enviar: borde izquierdo de 4 px crítico y el mensaje arriba de los segmentos (si ya eligió «Con novedad», el
   //    mensaje va sobre la descripción). El error no desaparece solo: se vuelve a calcular al enviar.
+  //  - El `fieldset` es un `radiogroup` obligatorio (`aria-required`: el punto no lleva asterisco y el lector lo dice) y, sin responder tras intentar enviar, `aria-invalid`.
   //  - El primer radio lleva el id del ítem (`idBase`): el resumen de errores enlaza ahí; la descripción, `idBase-descripcion`.
   //  - El campo de la descripción aparece con el radio, sin animación de alto, y no roba el foco (se llega con Tab).
   import type { ValoresItem } from "../lib/dominio/formulario-parte.ts";
@@ -41,10 +42,11 @@
   // El error de la descripción va sobre su campo; el de «sin responder», sobre los segmentos.
   const errorDeSegmentos = $derived(conNovedad ? "" : error);
   const errorDeDescripcion = $derived(conNovedad ? error : "");
+  const sinResponder = $derived(errorDeSegmentos !== "");
   const describedby = $derived([errorDeSegmentos !== "" ? idError : "", conNovedad && critico ? idNota : ""].filter((s) => s !== "").join(" ") || undefined);
 </script>
 
-<fieldset class="item" class:con-error={error !== ""} class:critico aria-describedby={describedby}>
+<fieldset class="item" class:con-error={error !== ""} class:critico role="radiogroup" aria-required="true" aria-invalid={sinResponder ? "true" : undefined} aria-describedby={describedby}>
   <legend>
     <span class="nombre">{texto}</span>
     {#if critico}<Etiqueta tono="neutro" icono="octogono">{T.puntoCritico}</Etiqueta>{/if}

@@ -26,7 +26,7 @@
   const elegido = $derived(opciones.findIndex((o) => o.valor === valor));
 </script>
 
-<fieldset class="combustible" class:con-error={error !== ""} aria-describedby={error !== "" ? idError : undefined}>
+<fieldset class="combustible" class:con-error={error !== ""} role="radiogroup" aria-required="true" aria-invalid={error !== "" ? "true" : undefined} aria-describedby={error !== "" ? idError : undefined}>
   <legend>{leyenda}</legend>
   {#if error !== ""}
     <p class="error" id={idError}><Icono nombre="vencido" /><span>{error}</span></p>

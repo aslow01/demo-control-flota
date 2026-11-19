@@ -31,7 +31,7 @@
   import Patente from "./Patente.svelte";
   import ResumenErrores from "./ResumenErrores.svelte";
   import SelectorCombustible from "./SelectorCombustible.svelte";
-  import { TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_DIALOGO, TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
 
   let { vista, alEnviado }: { vista: ParteEnEdicion; alEnviado: (panel: PanelParteEnviado) => void } = $props();
 
@@ -236,6 +236,8 @@
       <ResumenErrores bind:this={resumen} titulo={tituloResumen} general={erroresEnvio.general ?? ""} items={itemsResumen} />
     </div>
   {/if}
+
+  <p class="nota">{TEXTO_DIALOGO.obligatorios} {T.obligatoriosRevision}</p>
 
   <!-- Los cambios llegan por `input` (texto) y `change` (radios, casillas y listas); el foco al salir de un campo guarda ya y actualiza el recorrido. -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

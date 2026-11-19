@@ -8,12 +8,15 @@
     titulo,
     items,
     general = "",
+    nivel = "h2",
   }: {
     titulo: string;
     /** `campoId` es el id del control al que lleva el enlace. */
     items: { campoId: string; mensaje: string }[];
     /** Un error que no es de ningún campo (la fecha ya no vale, no se pudo guardar): va como texto, antes de la lista. */
     general?: string;
+    /** Nivel del título: `h2` en una pantalla (el `h1` es lo anterior); `h3` dentro de un diálogo, cuyo título ya es un `h2`. */
+    nivel?: "h2" | "h3";
   } = $props();
 
   const uid = $props.id();
@@ -31,7 +34,7 @@
 </script>
 
 <div class="resumen" tabindex="-1" bind:this={caja} role="group" aria-labelledby={idTitulo}>
-  <h3 id={idTitulo}><Icono nombre="vencido" />{titulo}</h3>
+  <svelte:element this={nivel} class="titulo" id={idTitulo}><Icono nombre="vencido" />{titulo}</svelte:element>
   {#if general !== ""}<p class="general">{general}</p>{/if}
   <ul>
     {#each items as item (item.campoId)}
@@ -51,7 +54,7 @@
     border-left: 4px solid var(--c-critico-r);
     border-radius: var(--r-2);
   }
-  h3 {
+  .titulo {
     --icono-tam: 1.125rem;
     display: flex;
     align-items: center;
