@@ -3,7 +3,7 @@
 // unidad aparece en «No pueden salir» del encargado. Con el ejemplo del generador (H = 2026-11-18): ZYN 469 (Int. 01) es de Andrés Echegaray (c-01),
 // con su último parte del 17/11 terminado en 120.720 km; ZK 214 BD (Int. 07) es de Tamara Olivera (c-07) y tiene el seguro vencido (C01).
 import { describe, expect, it } from "vitest";
-import { generar } from "../src/lib/datos/generador.ts";
+import { ENCARGADA, generar } from "../src/lib/datos/generador.ts";
 import { valoresDeParte, valoresIniciales, type ValoresParte } from "../src/lib/dominio/formulario-parte.ts";
 import { ERRORES } from "../src/lib/dominio/textos.ts";
 import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
@@ -268,6 +268,33 @@ describe("autoguardado del borrador (P3) y recarga", () => {
     expect(estadoDe(app).partes.find((p) => p.id === "nuevo-1")?.kmFin).toBe(120800);
     expect(auto.indicador).toMatchObject({ estado: "guardado", visible: "Guardado en este equipo a las 12:00" });
     expect(edicion(app).parteId).toBe("nuevo-1");
+  });
+});
+
+describe("código B9: un guardado pendiente no cambia de dueño si cambia el perfil", () => {
+  it("el formulario del Encargado se destruye al pasar a Conductor y guarda lo pendiente: queda con el conductor y el autor del Encargado", async () => {
+    const { app } = await iniciada({ patente: "ZYN469" });
+    const v = edicion(app);
+    const auto = app.autoguardadoDeParte(v, () => {});
+    const valores = { ...v.valoresIniciales, conductorId: "c-02", kmFin: "120.800" };
+    auto.cambio(valores);
+    await app.cambiarPerfil(C07); // el `{#key}` de la pantalla destruye el formulario, que guarda lo pendiente ya con el perfil nuevo
+    await auto.vaciar(valores);
+    const guardado = estadoDe(app).partes.find((p) => p.unidadId === idDe(app, "ZYN469") && p.fecha === H);
+    expect(guardado).toMatchObject({ estado: "borrador", conductorId: "c-02", kmFin: 120800 });
+    expect(guardado?.autor).toBe(ENCARGADA);
+  });
+
+  it("al revés: el formulario del Conductor guarda como ese conductor aunque ya se haya pasado a Encargado", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    const v = edicion(app);
+    const auto = app.autoguardadoDeParte(v, () => {});
+    const valores = { ...v.valoresIniciales, kmFin: "120.800" };
+    auto.cambio(valores);
+    await app.cambiarPerfil({ tipo: "encargado" });
+    await auto.vaciar(valores);
+    const guardado = estadoDe(app).partes.find((p) => p.unidadId === idDe(app, "ZYN469") && p.fecha === H);
+    expect(guardado).toMatchObject({ estado: "borrador", conductorId: "c-01", kmFin: 120800, autor: estadoDe(app).conductores.find((c) => c.id === "c-01")?.nombre });
   });
 });
 

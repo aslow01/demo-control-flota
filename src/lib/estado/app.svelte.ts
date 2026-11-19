@@ -267,11 +267,13 @@ export class EstadoApp {
     this.llegada !== null && this.ruta.tipo === "unidad" && this.ruta.patente === this.llegada.patente ? this.llegada.mensaje : null,
   );
   /** Nombre con el que firman los eventos: el conductor elegido o la encargada. */
-  autor = $derived.by(() => {
-    const perfil = this.perfil;
+  autor = $derived(this.autorDe(this.perfil));
+
+  /** El nombre que firma lo que hace `perfil` (no siempre el perfil de ahora: un guardado en cola firma como quien lo pidió, código B9). */
+  private autorDe(perfil: Perfil): string {
     if (perfil.tipo === "conductor") return this.estado?.conductores.find((c) => c.id === perfil.conductorId)?.nombre ?? "Conductor";
     return ENCARGADA;
-  });
+  }
 
   private readonly deps: DependenciasApp;
   private repositorio: Repositorio | null = null;
@@ -410,11 +412,11 @@ export class EstadoApp {
   }
 
   /** `ejecutar` sin pasar por la cola: para los métodos que ya están dentro de ella y encadenan más de un comando (guardar y enviar el parte). */
-  private async ejecutarAhora(comando: Comando): Promise<Resultado<Ejecucion>> {
+  private async ejecutarAhora(comando: Comando, perfil: Perfil = this.perfil): Promise<Resultado<Ejecucion>> {
     const estado = this.estado;
     const repositorio = this.repositorio;
     if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
-    if (this.perfil.tipo === "conductor" && !COMANDOS_DEL_CONDUCTOR.has(comando.tipo)) return fallo("sin-permiso", ERRORES.sinPermiso);
+    if (perfil.tipo === "conductor" && !COMANDOS_DEL_CONDUCTOR.has(comando.tipo)) return fallo("sin-permiso", ERRORES.sinPermiso);
     // A1: los comandos se evalúan contra el estado de esta pestaña; si otra ya escribió y esta no se actualizó, se pisarían sus
     // cambios (una baja desaparecería, una renovación se duplicaría). Hasta que se pulse «Actualizar» no se escribe nada.
     if (this.hayCambiosEnOtraPestana) return fallo("cambios-en-otra-pestana", ERRORES_PESTANAS.escrituraConCambiosEnOtraPestana);
@@ -423,7 +425,7 @@ export class EstadoApp {
     const resultado = ejecutarComando(estado, comando, {
       hoy: momento.hoy,
       ahora: momento.ahora,
-      autor: this.autor,
+      autor: this.autorDe(perfil),
       nuevoId: this.deps.nuevoId ?? generarId,
     });
     if (!resultado.ok) return resultado;
@@ -672,13 +674,16 @@ export class EstadoApp {
    * `reiniciar(valores)` después de descartar el borrador. `opciones` es para los tests (reloj inyectado).
    */
   autoguardadoDeParte(vista: ParteEnEdicion, alCambiar: (indicador: IndicadorDeGuardado) => void, opciones: Pick<DependenciasAutoguardado, "esperaMs" | "programar" | "cancelar"> = {}): Autoguardado {
-    return crearAutoguardado({ ...opciones, valores: vista.valoresIniciales, alCambiar, guardar: (valores) => this.guardarBorradorDeParte(vista.unidadId, vista.fecha, valores) });
+    // El perfil se toma ahora, al abrir el formulario: si se cambia de perfil, el formulario se destruye y guarda lo pendiente ya con el perfil nuevo, y ese guardado
+    // tiene que seguir firmado por quien escribió (código B9).
+    const perfil = this.perfil;
+    return crearAutoguardado({ ...opciones, valores: vista.valoresIniciales, alCambiar, guardar: (valores) => this.guardarBorradorDeParte(vista.unidadId, vista.fecha, valores, perfil) });
   }
 
   /** El contexto de un ensayo (comando que no se escribe): no gasta ids del generador. */
-  private contextoDeEnsayo(): Contexto {
+  private contextoDeEnsayo(perfil: Perfil): Contexto {
     const momento = this.deps.reloj.momento();
-    return { hoy: momento.hoy, ahora: momento.ahora, autor: this.autor, nuevoId: () => "ensayo" };
+    return { hoy: momento.hoy, ahora: momento.ahora, autor: this.autorDe(perfil), nuevoId: () => "ensayo" };
   }
 
   /**
@@ -686,8 +691,8 @@ export class EstadoApp {
    * error no se guarda nada y vuelve `tipo: "campos"`. Un borrador que todavía no existe y cuyos valores siguen siendo los iniciales NO se crea (`sinCambios`; D11): el
    * borrador nace con el primer cambio. No cambia el kilometraje de la unidad ni abre novedades (K9, P3).
    */
-  guardarBorradorDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte): Promise<ResultadoDeBorrador> {
-    return this.encolar(() => this.guardarBorradorAhora(unidadId, fecha, valores));
+  guardarBorradorDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil = this.perfil): Promise<ResultadoDeBorrador> {
+    return this.encolar(() => this.guardarBorradorAhora(unidadId, fecha, valores, perfil));
   }
 
   private erroresDeBorrador(error: ErrorDeNegocio): ResultadoDeBorrador {
@@ -696,10 +701,9 @@ export class EstadoApp {
     return { ok: false, tipo: errores.lista.length > 0 ? "campos" : "regla", errores };
   }
 
-  private async guardarBorradorAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte): Promise<ResultadoDeBorrador> {
+  private async guardarBorradorAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil): Promise<ResultadoDeBorrador> {
     const estado = this.estado;
     if (estado === null) return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.sinDatos) };
-    const perfil = this.perfil;
     const v = perfil.tipo === "conductor" ? { ...valores, conductorId: perfil.conductorId } : valores;
     const existente = estado.partes.find((p) => p.unidadId === unidadId && p.fecha === fecha);
     if (existente?.estado === "enviado") return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.parteEnviadoInmutable) };
@@ -709,14 +713,14 @@ export class EstadoApp {
 
     if (existente === undefined) {
       // Un parte nuevo se crea con el primer cambio: abrirlo y no escribir nada no deja un borrador (ni marca la demo como modificada, D11).
-      const ensayo = aplicarComando(estado, c.comando, this.contextoDeEnsayo());
+      const ensayo = aplicarComando(estado, c.comando, this.contextoDeEnsayo(perfil));
       if (!ensayo.ok) return this.erroresDeBorrador(ensayo.error);
       const nuevo = ensayo.valor.cambios.partes[0];
       const previo = registroAnterior(unidadId, fecha, estado.partes, estado.correccionesKm);
       if (nuevo !== undefined && esBorradorVacio(nuevo, previo === null ? null : kmDeRegistro(previo))) return { ok: true, parteId: null, hora: null, sinCambios: true };
     }
 
-    const r = await this.ejecutarAhora(c.comando);
+    const r = await this.ejecutarAhora(c.comando, perfil);
     if (!r.ok) return this.erroresDeBorrador(r.error);
     const guardado = r.valor.cambios.partes[0];
     return { ok: true, parteId: guardado?.id ?? null, hora: guardado === undefined ? null : formatearHora(guardado.actualizado), sinCambios: false };
@@ -745,14 +749,14 @@ export class EstadoApp {
     const v = perfil.tipo === "conductor" ? { ...valores, conductorId: perfil.conductorId } : valores;
     // Todo lo que impide enviar (faltantes y errores de formato) se lista junto, en el orden del formulario. Lo escrito se guarda igual, salvo que tenga un error de formato.
     const previos = validarParaEnviar(v);
-    const guardado = await this.guardarBorradorAhora(unidadId, fecha, v);
+    const guardado = await this.guardarBorradorAhora(unidadId, fecha, v, perfil);
     if (!guardado.ok && guardado.tipo !== "campos") return errores(guardado.errores);
     if (previos !== null) return errores(previos);
     if (!guardado.ok) return errores(guardado.errores);
 
     const borrador = this.estado?.partes.find((p) => donde(p));
     if (borrador === undefined) return errores(errorGeneralParte(ERRORES.parteInexistente));
-    const r = await this.ejecutarAhora({ tipo: "enviarParte", parteId: borrador.id, advertenciasAceptadas: aceptadas });
+    const r = await this.ejecutarAhora({ tipo: "enviarParte", parteId: borrador.id, advertenciasAceptadas: aceptadas }, perfil);
     if (!r.ok) {
       if (r.error.codigo === "advertencias-sin-aceptar") {
         const pendientes = advertenciasLegibles(r.error.detalle?.["advertencias"]);
