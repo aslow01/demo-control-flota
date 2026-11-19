@@ -940,7 +940,7 @@ export const TEXTO_FORMULARIO_PARTE = {
   /** Ayudas de los campos (5.11). */
   ayudaPrimerRegistro: "Es el primer registro de esta unidad.",
   ayudaKmFin: "Complételo al final del día.",
-  ayudaLitros: "Deje vacío si no cargó.",
+  ayudaLitros: "Déjelo vacío si no cargó.",
   fueraDeTermino: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: se va a enviar fuera de término.`,
   borradorDescartado: "Borrador descartado.",
 } as const;
@@ -954,7 +954,7 @@ export const TEXTO_GUARDADO = {
   /** D10 y 5.15: la escritura falló; lo escrito sigue en pantalla. */
   error: "No se pudo guardar en este equipo. Lo escrito sigue en pantalla; no cierre la pestaña.",
   anuncioGuardado: "Borrador guardado en este equipo.",
-  anuncioRecuperado: "Se volvió a guardar el borrador.",
+  anuncioRecuperado: "Borrador guardado de nuevo en este equipo.",
   anuncioConErroresDeCampo: "Hay datos que no se pueden guardar: revise los campos marcados.",
   /** Un borrador que ya existía al abrir el parte (sobrevivió a una recarga). */
   recuperado: (fecha: string, hora: string) => `Borrador recuperado, guardado en este equipo el ${fecha} a las ${hora}.`,
@@ -978,7 +978,7 @@ export const TEXTO_INICIO_CONDUCTOR = {
   cargarPendiente: "Cargarlo",
   licenciaTitulo: "Su licencia",
   ultimosTitulo: "Mis últimos partes",
-  ultimosVacio: "Todavía no envió partes.",
+  ultimosVacio: "Todavía no envió partes. Los últimos cinco aparecerán aquí.",
 } as const;
 
 /** «Hoy, miércoles 18/11/2026». */
@@ -1009,11 +1009,11 @@ export function textoUnidadNoPuedeSalir(patente: string, motivos: readonly strin
 }
 
 export function textoPendienteBorrador(fecha: FechaCivil, patente: string): string {
-  return `El parte del ${formatearFecha(fecha)} de ${patente} está empezado y sin enviar.`;
+  return `${patente}: el parte del ${formatearFecha(fecha)} está empezado y sin enviar.`;
 }
 
 export function textoPendienteSinParte(ayer: FechaCivil, patente: string): string {
-  return `No se envió el parte de ayer (${formatearFecha(ayer)}) de ${patente}.`;
+  return `${patente}: no se envió el parte de ayer (${formatearFecha(ayer)}).`;
 }
 
 /** Su licencia, desde el punto de vista del conductor. `d` = días hasta el vencimiento; `null` si falta. */
