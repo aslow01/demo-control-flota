@@ -119,7 +119,7 @@ export function comandoDeRenovar(documentoId: string, v: ValoresDocumento): Coma
   return { tipo: "renovarDocumento", documentoId, ...datosDelComando(v) };
 }
 
-export function comandoDeCargar(titular: Titular, tipoDocumento: TipoDocumento, v: ValoresDocumento): Comando {
+export function comandoDeCargar(titular: Titular, tipoDocumento: string, v: ValoresDocumento): Comando {
   return { tipo: "cargarDocumento", titular: { tipo: titular.tipo, id: titular.id }, tipoDocumento, ...datosDelComando(v) };
 }
 
@@ -252,7 +252,7 @@ export function contextoDeCargarOtro(estado: Estado, unidadId: string): Contexto
 
 export function comandoDeCargarOtro(unidadId: string, v: ValoresCargarOtro): Comando {
   // Si el tipo no es uno de los ofrecidos, el dominio lo rechaza con `tipo-no-corresponde` o `documento-existente` (campo tipoDocumento).
-  return comandoDeCargar({ tipo: "unidad", id: unidadId }, v.tipoDocumento as TipoDocumento, v);
+  return comandoDeCargar({ tipo: "unidad", id: unidadId }, v.tipoDocumento, v);
 }
 
 /** El tipo primero y después los mismos validadores de siempre sobre los cuatro campos, todo junto (5.15). `null` si no encontró nada. */

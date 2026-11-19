@@ -17,7 +17,7 @@ import {
   validarFechaParte,
 } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
-import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errNovedadesCriticasAbiertas, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
+import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errNovedadesCriticasAbiertas, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
 import {
   fallo,
   ok,
@@ -51,7 +51,7 @@ import {
   validarTextoDeBorrador,
   validarVencimiento,
 } from "./validacion.ts";
-import { NOMBRES_DOCUMENTO, REQUISITOS, documentoVigente } from "./vencimientos.ts";
+import { NOMBRES_DOCUMENTO, REQUISITOS, documentoVigente, esTipoDocumento } from "./vencimientos.ts";
 
 /** Lo que el dominio necesita saber del momento y de quién actúa. El reloj y los ids se inyectan: nada es global. */
 export interface Contexto {
@@ -70,7 +70,8 @@ export type Comando =
       marca: string;
       modelo: string;
       anio: number;
-      tipoUnidad: TipoUnidad;
+      /** Lo que llega del formulario: el comando comprueba que sea uno de `TIPOS_DE_UNIDAD` (no se afirma el tipo antes de tiempo). */
+      tipoUnidad: string;
       proyectoId: string;
       conductorId: string | null;
     }
@@ -78,7 +79,8 @@ export type Comando =
   | {
       tipo: "cargarDocumento";
       titular: Titular;
-      tipoDocumento: TipoDocumento;
+      /** Igual que `tipoUnidad`: el comando comprueba que sea un `TipoDocumento` (`esTipoDocumento`). */
+      tipoDocumento: string;
       numero: string;
       emisor: string;
       vence: string;
@@ -141,7 +143,12 @@ interface Parcial {
   modifica: boolean;
 }
 
-const TIPOS_DE_UNIDAD: readonly TipoUnidad[] = ["camioneta", "utilitario", "camion-liviano", "minibus"];
+export const TIPOS_DE_UNIDAD: readonly TipoUnidad[] = ["camioneta", "utilitario", "camion-liviano", "minibus"];
+
+/** Guarda de tipo: `true` si el texto es uno de los tipos de unidad del dominio. */
+export function esTipoDeUnidad(valor: string): valor is TipoUnidad {
+  return TIPOS_DE_UNIDAD.some((t) => t === valor);
+}
 const NIVELES_COMBUSTIBLE: readonly NivelCombustible[] = ["reserva", "cuarto", "medio", "tres-cuartos", "lleno"];
 const LARGO_MAXIMO_MOTIVO = 200;
 
@@ -308,7 +315,7 @@ function altaUnidad(estado: Estado, c: Extract<Comando, { tipo: "altaUnidad" }>,
   if (!marca.ok) return marca;
   const modelo = validarTexto(c.modelo, REGLAS.modelo);
   if (!modelo.ok) return modelo;
-  if (!TIPOS_DE_UNIDAD.includes(c.tipoUnidad)) {
+  if (!esTipoDeUnidad(c.tipoUnidad)) {
     return fallo("tipo-unidad-invalido", ERRORES.tipoDeUnidadInvalido, { campo: "tipoUnidad" });
   }
   const proyecto = buscarProyecto(estado, c.proyectoId);
@@ -569,6 +576,9 @@ function cargarDocumento(
 ): Resultado<Parcial> {
   const titular = verificarTitular(estado, c.titular);
   if (!titular.ok) return titular;
+  if (!esTipoDocumento(c.tipoDocumento)) {
+    return fallo("tipo-documento-invalido", TEXTO_DIALOGOS_FICHA.cargarOtro.tipoVacio, { campo: "tipoDocumento" });
+  }
   const nombre = NOMBRES_DOCUMENTO[c.tipoDocumento];
   if (!tiposDelTitular(c.titular.tipo).includes(c.tipoDocumento)) {
     return fallo("tipo-no-corresponde", errTipoDeDocumentoNoCorresponde(nombre, c.titular.tipo), {

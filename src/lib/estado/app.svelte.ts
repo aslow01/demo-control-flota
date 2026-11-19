@@ -106,6 +106,7 @@ import {
   textoVueltaAServicio,
 } from "../dominio/textos.ts";
 import { fallo, ok, type Advertencia, type ErrorDeNegocio, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
+import { esTipoDocumento } from "../dominio/vencimientos.ts";
 import { arrancar, cambiarPerfil as guardarPerfil, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
 import type { Repositorio } from "../persistencia/repositorio.ts";
@@ -526,13 +527,19 @@ export class EstadoApp {
   }
 
   /** «Cargar otro documento»: el `select` Tipo elige cuál (uno de `contextoDeCargarOtro(...).tipos`) y el resto es igual que `cargarDocumento`. */
-  cargarOtroDocumento(unidadId: string, valores: ValoresCargarOtro): Promise<ResultadoGuardado<CampoCargarOtro>> {
+  async cargarOtroDocumento(unidadId: string, valores: ValoresCargarOtro): Promise<ResultadoGuardado<CampoCargarOtro>> {
+    const tipo = valores.tipoDocumento;
+    if (!esTipoDocumento(tipo)) {
+      // El `select` no ofrece otra cosa: un valor vacío o inventado se contesta igual que la revisión del formulario (el error va al campo Tipo).
+      const previos = this.estado === null ? null : validarCargarOtro(valores, this.estado, unidadId, this.hoy);
+      return { ok: false, errores: previos ?? errorGeneralCargarOtro(ERRORES.sinDatos) };
+    }
     return this.guardarFormulario({
       previos: (estado) => validarCargarOtro(valores, estado, unidadId, this.hoy),
       comando: comandoDeCargarOtro(unidadId, valores),
       errores: erroresDeNegocioCargarOtro,
       general: errorGeneralCargarOtro,
-      exito: (e) => ({ mensaje: textoDocumentoCargado(valores.tipoDocumento as TipoDocumento, this.patenteDe(e.estado, unidadId)), foco: "titulo-de-documentos" }),
+      exito: (e) => ({ mensaje: textoDocumentoCargado(tipo, this.patenteDe(e.estado, unidadId)), foco: "titulo-de-documentos" }),
     });
   }
 

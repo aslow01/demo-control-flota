@@ -128,6 +128,15 @@ describe("documentos desde la ficha", () => {
     expect(app.estado).toBe(antes);
   });
 
+  it("código M4: «Cargar otro documento» con un tipo inventado (no ofrecido) lo dice en el campo Tipo y no guarda nada", async () => {
+    const { app } = await iniciada();
+    const antes = estadoDe(app);
+    const r = await app.cargarOtroDocumento(idDe(app, "ZK214BD"), { tipoDocumento: "inventado", numero: "DEMO-1", emisor: "", vence: "2027-11-18", emitido: "" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errores.porCampo.tipoDocumento).toBe("Elija el tipo de documento.");
+    expect(app.estado).toBe(antes);
+  });
+
   it("corregir el número y el vencimiento: «Seguro … corregido», evento con antes y después y los datos nuevos en la fila", async () => {
     const { app } = await iniciada();
     const doc = estadoDe(app).documentos.find((d) => d.id === "d-0032");

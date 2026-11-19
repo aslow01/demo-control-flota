@@ -53,6 +53,14 @@ describe("cargarDocumento", () => {
     expect(ejecutarError(e, { ...carga, tipoDocumento: "licencia" }).codigo).toBe("tipo-no-corresponde");
   });
 
+  it("código M4: un tipo que no existe se rechaza con un mensaje claro (no «undefined no corresponde…»)", () => {
+    const e = flotaDePrueba();
+    const err = ejecutarError(e, { ...carga, tipoDocumento: "inventado" });
+    expect(err.codigo).toBe("tipo-documento-invalido");
+    expect(err.campo).toBe("tipoDocumento");
+    expect(err.mensaje).toBe("Elija el tipo de documento.");
+  });
+
   it("si ya hay uno de ese tipo, se pide renovarlo", () => {
     const e = flotaDePrueba();
     const err = ejecutarError(e, { ...carga, titular: { tipo: "unidad", id: "u1" }, tipoDocumento: "seguro" });

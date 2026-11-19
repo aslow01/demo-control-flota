@@ -57,6 +57,11 @@ export const REQUISITOS: readonly Requisito[] = [
 export { NOMBRES_DOCUMENTO };
 
 /** V9: el documento vigente de un titular y un tipo es el de `vence` más tardío (desempata el cargado después, y el id). */
+/** Guarda de tipo: `true` si el texto es uno de los tipos de documento del dominio (`NOMBRES_DOCUMENTO` tiene todos, y solo esos). */
+export function esTipoDocumento(valor: string): valor is TipoDocumento {
+  return Object.hasOwn(NOMBRES_DOCUMENTO, valor);
+}
+
 export function documentoVigente(
   documentos: readonly Documento[],
   titular: Titular,

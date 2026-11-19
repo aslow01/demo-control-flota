@@ -4,10 +4,10 @@
 //
 // Los valores del formulario son siempre texto (lo que dan los `input` y los `select`). `conductorId` vacío = «Sin conductor asignado».
 
-import type { Comando } from "./comandos.ts";
+import { TIPOS_DE_UNIDAD, esTipoDeUnidad, type Comando } from "./comandos.ts";
 import { armarErrores, opcionesDeConductor, opcionesDeProyecto, type ErroresDeFormularioDe, type OpcionDeConductor, type OpcionDeLista } from "./formulario.ts";
 import { ERRORES, NOMBRES_TIPO_UNIDAD, TEXTO_AGREGAR } from "./textos.ts";
-import type { ErrorDeNegocio, Estado, FechaCivil, TipoUnidad } from "./tipos.ts";
+import type { ErrorDeNegocio, Estado, FechaCivil } from "./tipos.ts";
 import { REGLAS, rangoDeAnios, validarAnioDeAlta, validarInternoDeAlta, validarPatenteDeAlta, validarTexto } from "./validacion.ts";
 
 export type CampoUnidad = "patente" | "interno" | "tipo" | "marca" | "modelo" | "anio" | "proyectoId" | "conductorId";
@@ -47,7 +47,6 @@ export interface ContextoAgregarUnidad {
 }
 
 const VALORES_VACIOS: ValoresUnidad = { patente: "", interno: "", tipo: "", marca: "", modelo: "", anio: "", proyectoId: "", conductorId: "" };
-const TIPOS: readonly TipoUnidad[] = ["camioneta", "utilitario", "camion-liviano", "minibus"];
 
 /** Lo que muestra el diálogo al abrirse. */
 export function contextoDeAgregarUnidad(estado: Estado, hoy: FechaCivil): ContextoAgregarUnidad {
@@ -55,7 +54,7 @@ export function contextoDeAgregarUnidad(estado: Estado, hoy: FechaCivil): Contex
     titulo: TEXTO_AGREGAR.titulo,
     primario: TEXTO_AGREGAR.primario,
     valoresIniciales: { ...VALORES_VACIOS },
-    tipos: TIPOS.map((t) => ({ valor: t, etiqueta: NOMBRES_TIPO_UNIDAD[t] })),
+    tipos: TIPOS_DE_UNIDAD.map((t) => ({ valor: t, etiqueta: NOMBRES_TIPO_UNIDAD[t] })),
     proyectos: opcionesDeProyecto(estado),
     conductores: opcionesDeConductor(estado),
     anios: rangoDeAnios(hoy),
@@ -68,10 +67,6 @@ function entero(texto: string): number | null {
   return /^\d{1,9}$/.test(t) ? Number(t) : null;
 }
 
-function esTipo(valor: string): valor is TipoUnidad {
-  return TIPOS.some((t) => t === valor);
-}
-
 /** El comando del dominio con lo que escribió la persona. Lo que no se pueda convertir lo rechaza el dominio igual (no lanza). */
 export function comandoDeAgregarUnidad(v: ValoresUnidad): Comando {
   return {
@@ -82,7 +77,7 @@ export function comandoDeAgregarUnidad(v: ValoresUnidad): Comando {
     modelo: v.modelo,
     anio: entero(v.anio) ?? Number.NaN,
     // Si no es uno de los cuatro, el dominio lo rechaza con `tipoUnidad`: la validación previa ya avisó antes de llegar acá.
-    tipoUnidad: esTipo(v.tipo) ? v.tipo : (v.tipo as TipoUnidad),
+    tipoUnidad: v.tipo,
     proyectoId: v.proyectoId,
     conductorId: v.conductorId === "" ? null : v.conductorId,
   };
@@ -106,7 +101,7 @@ export function validarValoresUnidad(v: ValoresUnidad, estado: Estado, hoy: Fech
   if (v.interno.trim() === "") vacio("interno", TEXTO_AGREGAR.internoVacio);
   else agregar("interno", validarInternoDeAlta(estado.unidades, entero(v.interno) ?? Number.NaN));
 
-  if (!esTipo(v.tipo)) vacio("tipo", ERRORES.tipoDeUnidadInvalido);
+  if (!esTipoDeUnidad(v.tipo)) vacio("tipo", ERRORES.tipoDeUnidadInvalido);
   agregar("marca", validarTexto(v.marca, REGLAS.marca));
   agregar("modelo", validarTexto(v.modelo, REGLAS.modelo));
 
