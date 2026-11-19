@@ -43,10 +43,19 @@
   };
 
   async function mostrarSelect(): Promise<void> {
-    seleccion = inicio?.unidad?.unidadId ?? "";
+    // La unidad de hoy parte como elegida solo si está entre las opciones (las que están en servicio); una fuera de servicio no: el `select` quedaría en blanco.
+    const actual = inicio?.unidad?.unidadId ?? "";
+    seleccion = inicio?.elegirUnidad.opciones.some((o) => o.valor === actual) === true ? actual : "";
     mostrandoSelect = true;
     await tick();
     document.getElementById(idSelect)?.focus();
+  }
+
+  // Elegir otra unidad cambia patente, interno, último registro y destino del botón: se dice en la barra de estado del panel.
+  function alElegirUnidad(): void {
+    const u = inicio?.unidad;
+    if (seleccion === "" || u === null || u === undefined) return;
+    mensaje = { texto: T.unidadElegida(u.patenteTexto, u.interno), n: mensaje.n + 1 };
   }
 
   async function descartar(parteId: string): Promise<void> {
@@ -104,12 +113,15 @@
 
       {#if inicio.elegirUnidad.opciones.length > 0}
         {#if inicio.elegirUnidad.modo === "elegir" || mostrandoSelect || seleccion !== ""}
-          <Campo etiqueta={inicio.elegirUnidad.etiqueta} tipo="select" id={idSelect} grande bind:valor={seleccion}>
-            <option value="">{inicio.unidad === null || inicio.hoyEstado.tipo === "fuera-de-servicio" ? T.elegirOtra : inicio.elegirUnidad.etiqueta}</option>
-            {#each inicio.elegirUnidad.opciones as o (o.valor)}
-              <option value={o.valor}>{o.etiqueta}</option>
-            {/each}
-          </Campo>
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div onchange={alElegirUnidad}>
+            <Campo etiqueta={inicio.elegirUnidad.etiqueta} tipo="select" id={idSelect} grande bind:valor={seleccion}>
+              <option value="">{inicio.unidad === null || inicio.hoyEstado.tipo === "fuera-de-servicio" ? T.elegirOtra : inicio.elegirUnidad.etiqueta}</option>
+              {#each inicio.elegirUnidad.opciones as o (o.valor)}
+                <option value={o.valor}>{o.etiqueta}</option>
+              {/each}
+            </Campo>
+          </div>
         {:else}
           <div class="secundaria"><Boton variante="texto" onclick={mostrarSelect}>{inicio.elegirUnidad.etiqueta}</Boton></div>
         {/if}

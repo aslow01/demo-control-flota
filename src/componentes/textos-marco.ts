@@ -292,6 +292,8 @@ export const TEXTO_CONDUCTOR_VISTA = {
   sinUnidad: "No tiene una unidad asignada. Elija la que va a usar hoy.",
   /** Primera opción del `select` cuando la unidad de hoy no se puede usar (fuera de servicio). */
   elegirOtra: "Elija otra unidad",
+  /** Se anuncia en la barra de estado del panel «Hoy» al elegir una unidad con «Usar otra unidad» (el panel cambia de unidad y de destino sin otro aviso). */
+  unidadElegida: (patente: string, interno: string) => `Unidad elegida: ${patente} (${interno}).`,
   confirmarDescartar: "Confirmar descarte",
   /** Texto oculto delante de cada fila de «Mis últimos partes» (el enlace dice «Parte del 17/11/2026 ZK 214 BD 132 km»). */
   parteDel: "Parte del ",
