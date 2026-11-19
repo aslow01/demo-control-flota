@@ -26,7 +26,7 @@ import {
   validarCargarOtro,
   validarValores,
   type CampoCargarOtro,
-  type ErroresDeFormulario,
+  type CampoDocumento,
   type ValoresCargarOtro,
   type ValoresDocumento,
 } from "../dominio/formulario-documento.ts";
@@ -136,15 +136,6 @@ export interface DependenciasApp {
 }
 
 export type FaseApp = "arrancando" | "lista" | "error";
-
-/**
- * Resultado de guardar desde un diálogo de documento. Con `ok: false` el diálogo no se cierra y muestra `errores`; el texto
- * escrito se conserva. Con `ok: true`, `mensaje` va a la barra de estado del panel y `foco` dice dónde cae el foco al cerrar:
- * la fila que abrió el diálogo ya no existe (la alerta se resolvió o cambió de documento), así que va al título del panel (5.17).
- */
-export type ResultadoGuardadoDocumento =
-  | { ok: true; mensaje: string; foco: "titulo-del-panel" | "titulo-de-documentos" }
-  | { ok: false; errores: ErroresDeFormulario };
 
 /** Desde dónde se guarda: la alerta del centro de alertas (4.2) o la ficha de la unidad (4.4). Cambia el mensaje y adónde cae el foco. */
 export type DondeSeGuarda = "centro" | "ficha";
@@ -451,7 +442,7 @@ export class EstadoApp {
    * «Renovar documento»: revisa todos los campos, ejecuta `renovarDocumento` (cambios y evento en una escritura) y actualiza el
    * estado sin recargar. Nunca rechaza: los errores vuelven repartidos por campo (o como error general) para el formulario.
    */
-  renovarDocumento(documentoId: string, valores: ValoresDocumento, donde: DondeSeGuarda = "centro"): Promise<ResultadoGuardadoDocumento> {
+  renovarDocumento(documentoId: string, valores: ValoresDocumento, donde: DondeSeGuarda = "centro"): Promise<ResultadoGuardado<CampoDocumento>> {
     return this.guardarDocumento(
       valores,
       comandoDeRenovar(documentoId, valores),
@@ -466,7 +457,7 @@ export class EstadoApp {
   }
 
   /** «Cargar documento» (un obligatorio que falta, o uno nuevo): igual que `renovarDocumento`. */
-  cargarDocumento(titular: Titular, tipoDocumento: TipoDocumento, valores: ValoresDocumento, donde: DondeSeGuarda = "centro"): Promise<ResultadoGuardadoDocumento> {
+  cargarDocumento(titular: Titular, tipoDocumento: TipoDocumento, valores: ValoresDocumento, donde: DondeSeGuarda = "centro"): Promise<ResultadoGuardado<CampoDocumento>> {
     return this.guardarDocumento(
       valores,
       comandoDeCargar(titular, tipoDocumento, valores),
@@ -480,7 +471,7 @@ export class EstadoApp {
     comando: Comando,
     texto: (despues: Estado) => string | null,
     donde: DondeSeGuarda,
-  ): Promise<ResultadoGuardadoDocumento> {
+  ): Promise<ResultadoGuardado<CampoDocumento>> {
     if (this.estado === null) return { ok: false, errores: errorGeneral(ERRORES.sinDatos) };
     const previos = validarValores(valores, this.hoy);
     if (previos !== null) return { ok: false, errores: previos };
@@ -521,7 +512,7 @@ export class EstadoApp {
   }
 
   /** «Corregir documento»: el vigente de una unidad o de un conductor, con sus cuatro campos. Es de la ficha (foco al título de Documentos). */
-  corregirDocumento(documentoId: string, valores: ValoresDocumento): Promise<ResultadoGuardadoDocumento> {
+  corregirDocumento(documentoId: string, valores: ValoresDocumento): Promise<ResultadoGuardado<CampoDocumento>> {
     return this.guardarDocumento(
       valores,
       comandoDeCorregir(documentoId, valores),
