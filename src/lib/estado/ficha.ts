@@ -28,6 +28,7 @@ import {
   formatearKm,
   textoAccionDocumento,
   textoAdvertencia,
+  textoAdvertenciaAceptada,
   textoAnteriores,
   textoCorreccionKm,
   textoDadaDeBaja,
@@ -686,7 +687,7 @@ function detalleDeParte(estado: Estado, unidad: Unidad, datos: Record<string, un
     litros: textoLitros(parte.litrosCargados),
     novedades,
     puntosEnOrden: enOrden === 0 ? null : textoPuntosEnOrden(enOrden),
-    advertencias: parte.advertenciasAceptadas.map(textoAdvertencia),
+    advertencias: parte.advertenciasAceptadas.map(textoAdvertenciaAceptada),
     fueraDeTermino: datos["fueraDeTermino"] === true,
     href: aHash({ tipo: "parte", patente: unidad.patente, fecha: parte.fecha }),
   };

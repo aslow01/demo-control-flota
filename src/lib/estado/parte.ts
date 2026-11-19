@@ -19,7 +19,7 @@ import {
   TEXTO_PARTE,
   errUnidadDeBaja,
   errUnidadFueraDeServicio,
-  textoAdvertencia,
+  textoAdvertenciaAceptada,
   textoBorradorDelConductor,
   textoDescripcionUnidad,
   textoEnviadoALas,
@@ -415,7 +415,7 @@ export function panelDeParteEnviado(estado: Estado, entrada: Parte, perfil: Perf
       { rotulo: TP.rotulos.novedades, valor: textoNovedadesDelParte(criticas, normales) },
     ],
     avisoCritica: criticas.length > 0 && unidad?.estado.tipo === "fuera-de-servicio" ? TEXTO_PARTE.enviadoConCritica : null,
-    advertencias: parte.advertenciasAceptadas.map(textoAdvertencia),
+    advertencias: parte.advertenciasAceptadas.map(textoAdvertenciaAceptada),
     fueraDeTermino: fueraDeTermino ? TP.fueraDeTermino : null,
     volverAlInicio: { texto: TP.volverAlInicio, href: aHash(rutaPorDefecto(perfil)) },
   };

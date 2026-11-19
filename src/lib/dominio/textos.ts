@@ -363,6 +363,18 @@ export function textoAdvertencia(a: Advertencia): string {
   }
 }
 
+/**
+ * El mismo aviso ya aceptado, como queda en el registro de un parte enviado («Avisos aceptados al enviar» y el historial): en pasado y sin la invitación a enviar igual,
+ * que solo tiene sentido en el diálogo «Antes de enviar». Los otros dos avisos se leen igual en los dos lugares.
+ */
+export function textoAdvertenciaAceptada(a: Advertencia): string {
+  if (a.tipo !== "documentacion-vencida") return textoAdvertencia(a);
+  return (
+    `Documentación vencida o faltante: ${a.documentos.map((t) => NOMBRES_DOCUMENTO[t]).join(", ")}. ` +
+    "Se envió igual: quedó registrado que la unidad circuló con documentación vencida."
+  );
+}
+
 /** Avisos globales del arranque y de la sincronización entre pestañas (D4, D5, D7, D8, D9). */
 export const TEXTO_AVISO = {
   preparando: "Preparando la flota de ejemplo…",

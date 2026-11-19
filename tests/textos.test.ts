@@ -20,6 +20,7 @@ import {
   formatearKm,
   pluralizar,
   textoAdvertencia,
+  textoAdvertenciaAceptada,
   textoDisponibles,
   textoEmpresa,
   textoFaltantes,
@@ -149,6 +150,14 @@ describe("advertencias antes de enviar (K6, K7, P9)", () => {
     expect(textoAdvertencia({ tipo: "documentacion-vencida", documentos: ["seguro", "licencia"] })).toBe(
       "Documentación vencida o faltante: Seguro, Licencia de conducir. Puede enviar el parte igual: quedará registrado que la unidad circuló con documentación vencida.",
     );
+  });
+
+  it("registro de un parte enviado: la documentación vencida en pasado y sin la invitación; los otros avisos no cambian", () => {
+    expect(textoAdvertenciaAceptada({ tipo: "documentacion-vencida", documentos: ["seguro", "licencia"] })).toBe(
+      "Documentación vencida o faltante: Seguro, Licencia de conducir. Se envió igual: quedó registrado que la unidad circuló con documentación vencida.",
+    );
+    expect(textoAdvertenciaAceptada({ tipo: "recorrido-largo", km: 1350 })).toBe(textoAdvertencia({ tipo: "recorrido-largo", km: 1350 }));
+    expect(textoAdvertenciaAceptada({ tipo: "salto-km", km: 1180 })).toBe(textoAdvertencia({ tipo: "salto-km", km: 1180 }));
   });
 });
 
