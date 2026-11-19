@@ -952,3 +952,30 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 **Para la lógica (no se tocó).** (1) Con la unidad fuera de servicio por el parte de hoy, el panel «Hoy» no muestra «Enviado a las…» ni «Ver el parte» (`hoyEstado` mira primero la unidad). (2) `ResultadoGuardadoDocumento` (`app.svelte.ts`) quedó sin uso: puede ser `ResultadoGuardado<CampoDocumento>`. (3) QA B1, B3, B4 y D1 a D6 siguen abiertos (son de lógica o de contenido). (4) El error K3 le dice a quien carga «avise al encargado» también cuando lo ve el encargado.
 
 **Sin hacer.** Accesibilidad B8 (token `--c-neutro-r`: `#737980` y los pares `tono-r / acento-suave` en `contraste.mjs`; los tokens quedaron intactos a pedido).
+
+## 18/11/2026 (noche, 18 · rama `logica-4-5c`) — Correcciones de lógica de la revisión del paso 4.5 (programador)
+
+**Qué se hizo.** La lógica que marcaron los informes de código, QA y accesibilidad del 4.5 (`docs/revisiones/demo2-etapa45-*.md` del portafolio, fuera del repo), con el test que falla primero. Un commit por tema, sin push. Rama aparte (`git worktree` en `D:\demo-control-flota-logica`, desde `interfaz-etapa-0`) para no pisar al maquetador.
+
+| Hallazgo | Arreglo |
+| --- | --- |
+| Código M1, QA M-1 (partes crudos tumban la app o la ficha) | `arrancar` y `actualizar()` leen todos los partes con `parteLegible` (`partesLegibles`, arranque.ts). Un registro que no es un parte (estado o fecha imposibles) cuenta como otro formato (D7). 20 tests nuevos (`tests/partes-rotos.test.ts`). |
+| Código M2 (`guardar` que rechaza cuelga el indicador) | `ejecutar` del autoguardado atrapa el rechazo: error de escritura, indicador en «error», lo escrito sigue pendiente. 3 tests. |
+| Accesibilidad N1, QA B7 («revise los campos marcados» sin campo marcado) | Mientras se escribe, el indicador dice «Sin guardar: lo que escribió todavía no es válido.» y no anuncia; al salir del campo, enviar o irse (acción explícita) dice «corrija los campos marcados» y anuncia. Solo lógica: la vista no cambió. 4 tests. |
+| Código B9 (cambiar de perfil con un guardado en cola) | `autoguardadoDeParte` toma el perfil al abrir; `guardarBorradorDeParte`, `ejecutarAhora` y el ensayo reciben el perfil (conductor y autor). 2 tests. |
+| Código B8 (doble guardado) | Un borrador igual (salvo `actualizado`) no se escribe. 3 tests. |
+| QA M-2 («Revisión técnica vencido») | `textoVencimiento`, `clasificar` y `evaluarObligatorio` concuerdan con el documento. 5 tests (los 6 tipos). |
+| QA B2 (descartar desde pestaña vieja) | `descartarBorradorDeParte` devuelve `errores` con el título «No se pudo descartar el borrador». 1 línea de vista. 1 test. |
+| QA B9 (mensajes de formato) | Km de más de 20 dígitos: «no puede superar 2.000.000 km»; litros `1.000`/`1,000`: «no pueden superar 200». 2 tests. |
+| Código B5 | `parteLegible` deja `kmFin = null` si es menor que `kmInicio`. 1 test. |
+| Código B4 | `nivelLegible` y `advertenciasLegibles` reemplazan dos casts. 1 test. |
+| Código B1 | Se borran los campos que ninguna pantalla leía (`fechaCorta`, `nombreAccesible`, `conductor` del inicio, `fechaTexto`, `esHoy`, `borrador.guardadoEl`/`.hora`) y `textoParteReciente`. |
+| Código B2, B3 | `ResultadoGuardadoDocumento` → `ResultadoGuardado<CampoDocumento>`; el comentario de `documentoVigente` vuelve a su función. |
+
+**Decisiones propias** (en `diseno.md`, sección 16, última viñeta, y sección 14): un parte ilegible regenera el ejemplo con el aviso D7 en vez de descartarse en silencio; «Avise al encargado» no se tocó (el de aptitud ya no le llega al encargado y el de la licencia solo está en el inicio del conductor); la pérdida al recargar dentro de los 500 ms queda como límite conocido.
+
+**No hecho.** QA B1 (escribir y recargar en menos de 500 ms pierde el texto): se probó agregar `pagehide` (vacía el autoguardado) y no alcanza, porque guardar en IndexedDB son tres idas y vueltas (leer `meta`, buscar la clave, escribir) y una recarga real no las espera; con `pagehide` simulado sí guarda. Arreglarlo es cambiar el repositorio (otra tarea) o sumar otro almacenamiento síncrono; quedó como límite conocido y se revirtió la línea de vista. Código B4 tercer cast (`ParteFormulario.svelte`, `$state.snapshot(valores) as ValoresParte`), B6 y B7: de vista. M3 y M4 del informe de código (pruebas de pantalla, README y licencia): fuera de esta tanda. QA B3 y B4, accesibilidad N2 a N7 y D1 a D5: de vista o de contenido.
+
+**Vista tocada.** Una línea en `ParteFormulario.svelte` (`erroresEnvio = r.errores;` en `descartar`, antes `errorGeneralParte(r.mensaje)`; la importación sigue en uso).
+
+**Verificación.** `npm test`: 1322 tests (1275 antes), también con `npm run test:tz`; `npm run check`: 0 errores y 0 avisos; `npm run build` y `npm run buscar`: sin hallazgos; sin nombres de terceros ni «@gmail» fuera de la regla de `buscar`.
