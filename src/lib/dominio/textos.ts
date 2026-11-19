@@ -1075,3 +1075,12 @@ export function textoPuntosEnOrdenConNombres(nombres: readonly string[]): string
 export const ERRORES_PESTANAS = {
   escrituraConCambiosEnOtraPestana: "Hay cambios hechos en otra pestaña y no se guardó nada. Pulse «Actualizar» en el aviso y vuelva a intentarlo.",
 } as const;
+
+/**
+ * Cuando una pantalla falla al dibujarse (código M1, etapa 4: datos dañados que el arranque no detectó). Texto nuevo, a revisar por
+ * el redactor. Los botones son los del marco («Recargar la página», «Reiniciar demo»).
+ */
+export const TEXTO_ERROR_PANTALLA = {
+  titulo: "No se pudo mostrar esta pantalla",
+  mensaje: "Es probable que haya datos dañados en este equipo. Recargue la página; si sigue igual, reinicie la demo para volver a la flota de ejemplo.",
+} as const;

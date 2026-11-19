@@ -18,7 +18,7 @@
   import { TEXTO_MARCO, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { ItemMenu, OpcionConductor, SeccionActiva } from "./componentes/tipos.ts";
   import { formatearPatente } from "./lib/dominio/patente.ts";
-  import { TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
+  import { TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_PANTALLA, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
   import { app } from "./lib/estado/instancia.ts";
 
   const TITULO_BASE = `${TEXTO_MARCO.nombreApp} (demo)`;
@@ -199,6 +199,16 @@
     }
   });
 
+  // Si una pantalla falla al dibujarse (datos dañados que el arranque no detectó), la red de seguridad de `main` muestra el error y el marco
+  // sigue andando. Al cambiar de pantalla se vuelve a intentar: sin esto, el error quedaría pegado aunque la persona navegue.
+  let reponerPantalla: (() => void) | null = null;
+  $effect(() => {
+    void app.versionDePantalla;
+    const reponer = reponerPantalla;
+    reponerPantalla = null;
+    reponer?.();
+  });
+
   // "Preparando la flota de ejemplo…" solo se mostró si el arranque tardó: cuando termina, se avisa que está lista.
   let vioPreparando = false;
   $effect(() => {
@@ -290,6 +300,7 @@
   </header>
 
   <main id="principal" class="contenedor" tabindex="-1">
+    <svelte:boundary onerror={(_error, reponer) => (reponerPantalla = reponer)}>
     {#if app.fase === "arrancando"}
       <!-- 5.19: nada durante 300 ms; después, el texto y un <progress> indeterminado. La región existe desde el principio para que se anuncie. -->
       <div class="preparando" role="status">
@@ -324,6 +335,18 @@
       </div>
       <p class="parrafo nota">{TEXTO_MARCO.pantallaEnPreparacion}</p>
     {/if}
+    {#snippet failed()}
+      <div class="encabezado">
+        <div class="solo-angosto"><EtiquetaDemo /></div>
+        <h1 tabindex="-1">{TEXTO_ERROR_PANTALLA.titulo}</h1>
+      </div>
+      <p class="parrafo">{TEXTO_ERROR_PANTALLA.mensaje}</p>
+      <div class="acciones-error">
+        <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
+        <Boton variante="secundario" onclick={pedirReinicio}>{TEXTO_MARCO.reiniciarDemo}</Boton>
+      </div>
+    {/snippet}
+    </svelte:boundary>
   </main>
 
   <Pie />
