@@ -107,7 +107,7 @@ import {
 } from "../dominio/textos.ts";
 import { fallo, ok, type Advertencia, type ErrorDeNegocio, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
 import { esTipoDocumento } from "../dominio/vencimientos.ts";
-import { arrancar, cambiarPerfil as guardarPerfil, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
+import { arrancar, cambiarPerfil as guardarPerfil, partesLegibles, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
 import type { Repositorio } from "../persistencia/repositorio.ts";
 import { crearAutoguardado, type Autoguardado, type DependenciasAutoguardado, type IndicadorDeGuardado, type ResultadoDeBorrador } from "./autoguardado.ts";
@@ -858,8 +858,10 @@ export class EstadoApp {
       } catch {
         return fallo("lectura-fallida", ERRORES.noPudoActualizar);
       }
-      if (nuevo === null) return fallo("lectura-fallida", ERRORES.noPudoActualizar);
-      this.estado = nuevo;
+      // Lo que escribió la otra pestaña también se lee con `parteLegible`: una sola vía de lectura para los partes (código M1).
+      const partes = nuevo === null ? null : partesLegibles(nuevo.partes);
+      if (nuevo === null || partes === null) return fallo("lectura-fallida", ERRORES.noPudoActualizar);
+      this.estado = { ...nuevo, partes };
       this.hayCambiosEnOtraPestana = false;
       this.leerUbicacion(); // el perfil o los datos pudieron cambiar: puede haber que redirigir
       return ok(null);

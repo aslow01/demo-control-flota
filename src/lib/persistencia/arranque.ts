@@ -5,7 +5,8 @@ import { generar, VERSION_ESQUEMA } from "../datos/generador.ts";
 import { calcularAlertas } from "../dominio/alertas.ts";
 import { sinCambios } from "../dominio/estado.ts";
 import { parsearFechaCivil } from "../dominio/fechas.ts";
-import type { Estado, FechaCivil, ItemChecklist, Meta, Perfil, TipoEvento, TipoUnidad } from "../dominio/tipos.ts";
+import { parteLegible } from "../dominio/parte.ts";
+import type { Estado, FechaCivil, ItemChecklist, Meta, Parte, Perfil, TipoEvento, TipoUnidad } from "../dominio/tipos.ts";
 import { RepositorioMemoria } from "./memoria.ts";
 import type { Repositorio } from "./repositorio.ts";
 
@@ -150,7 +151,7 @@ const FORMA_DE_ELEMENTO: Record<string, (o: Record<string, unknown>) => boolean>
     textoONulo(o, "emitido", "reemplazaA") &&
     esObjeto(o.titular) &&
     textos(o.titular, "tipo", "id"),
-  // Los partes se leen siempre por `parteLegible` (docs/diseno.md, sección 16, 4.5): acá solo se pide lo que hace falta para ubicarlos.
+  // Los partes pasan después por `parteLegible` (`conPartesLegibles`): acá solo se pide lo que hace falta para ubicarlos.
   partes: (o) => textos(o, "id", "unidadId", "fecha", "estado") && esObjeto(o.checklist),
   novedades: (o) =>
     textos(o, "id", "unidadId", "estado", "gravedad", "fecha", "descripcion") &&
@@ -166,22 +167,42 @@ const FORMA_DE_ELEMENTO: Record<string, (o: Record<string, unknown>) => boolean>
 };
 
 /**
+ * Los partes guardados, leídos con `parteLegible` (4.5, código M1): quien los usa nunca ve un campo con la forma rota (una lista que falta, un
+ * punto del checklist nulo, un kilometraje de texto). Lo que no se puede leer queda vacío, no se inventa nada. `null` si alguno no es un parte
+ * (estado o fecha imposibles): ese registro está dañado y no se puede descartar en silencio.
+ */
+export function partesLegibles(partes: unknown): Parte[] | null {
+  if (!Array.isArray(partes)) return null;
+  const leidos: Parte[] = [];
+  for (const crudo of partes) {
+    const parte = parteLegible(crudo);
+    if (parte === null) return null;
+    leidos.push(parte);
+  }
+  return leidos;
+}
+
+/**
  * D7: las listas guardadas tienen la forma que el código espera. Los datos del almacenamiento son entrada externa (se pueden
  * editar desde las herramientas del navegador): un elemento que no es un objeto, o al que le falta un campo básico, cuenta como
- * otro formato. Además se prueba que el cálculo de alertas no falle, que es lo primero que hace la pantalla principal.
+ * otro formato. Los partes se normalizan con `parteLegible` (una sola vía de lectura para todas las pantallas) y se prueba que el
+ * cálculo de alertas no falle, que es lo primero que hace la pantalla principal. Devuelve el estado listo para usar, o `null`.
  */
-function datosUtilizables(guardado: Estado, hoy: FechaCivil): boolean {
+function datosUtilizables(guardado: Estado, hoy: FechaCivil): Estado | null {
   const crudo = guardado as unknown as Record<string, unknown>;
   for (const [lista, valida] of Object.entries(FORMA_DE_ELEMENTO)) {
     const elementos = crudo[lista];
-    if (!Array.isArray(elementos)) return false;
-    if (!elementos.every((e: unknown) => esObjeto(e) && valida(e))) return false;
+    if (!Array.isArray(elementos)) return null;
+    if (!elementos.every((e: unknown) => esObjeto(e) && valida(e))) return null;
   }
+  const partes = partesLegibles(guardado.partes);
+  if (partes === null) return null;
+  const legible: Estado = { ...guardado, partes };
   try {
-    calcularAlertas(guardado, hoy);
-    return true;
+    calcularAlertas(legible, hoy);
+    return legible;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -248,17 +269,18 @@ async function arrancarConAlmacenamiento(opciones: OpcionesArranque, semilla: nu
 }
 
 async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesArranque, semilla: number): Promise<ResultadoArranque> {
-  const guardado = await repositorio.cargar();
+  const cargado = await repositorio.cargar();
   const { hoy } = opciones;
 
-  if (guardado === null) {
+  if (cargado === null) {
     // D4: primera visita.
     const estado = generar(semilla, hoy);
     await repositorio.reemplazarTodo(estado);
     return { repositorio, estado, avisos: [], enMemoria: false };
   }
 
-  if (!metaUtilizable(guardado.meta) || !datosUtilizables(guardado, hoy)) {
+  const guardado = metaUtilizable(cargado.meta) ? datosUtilizables(cargado, hoy) : null;
+  if (guardado === null) {
     // D7: otro formato (o un registro dañado): se vuelve al ejemplo y se avisa. El perfil no se arrastra: no se sabe leer.
     const estado = generar(semilla, hoy);
     await repositorio.reemplazarTodo(estado);

@@ -262,6 +262,10 @@ function kmLegible(valor: unknown): number | null {
   return typeof valor === "number" && Number.isInteger(valor) && valor >= 0 && valor <= KM_MAXIMO ? valor : null;
 }
 
+function nivelLegible(valor: unknown): NivelCombustible | null {
+  return NIVELES.find((n) => n === valor) ?? null;
+}
+
 function tipoDeDocumentoLegible(valor: unknown): valor is TipoDocumento {
   return typeof valor === "string" && Object.hasOwn(NOMBRES_DOCUMENTO, valor);
 }
@@ -314,15 +318,18 @@ export function parteLegible(crudo: unknown): Parte | null {
   const otra = crudo["otraNovedad"];
   const litros = crudo["litrosCargados"];
   const combustible = crudo["combustible"];
+  const kmInicio = kmLegible(crudo["kmInicio"]);
+  const kmFin = kmLegible(crudo["kmFin"]);
   return {
     id,
     unidadId,
     fecha,
     conductorId: typeof crudo["conductorId"] === "string" ? crudo["conductorId"] : null,
     estado,
-    kmInicio: kmLegible(crudo["kmInicio"]),
-    kmFin: kmLegible(crudo["kmFin"]),
-    combustible: typeof combustible === "string" && NIVELES.includes(combustible as NivelCombustible) ? (combustible as NivelCombustible) : null,
+    kmInicio,
+    // Un recorrido negativo no existe (K3): si el final es menor que el inicial no se lee, para no dibujar «-20 km».
+    kmFin: kmFin !== null && kmInicio !== null && kmFin < kmInicio ? null : kmFin,
+    combustible: nivelLegible(combustible),
     litrosCargados: typeof litros === "number" && validarLitros(litros).ok ? litros : null,
     checklist,
     otraNovedad:

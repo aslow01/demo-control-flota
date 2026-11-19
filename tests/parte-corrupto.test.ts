@@ -48,6 +48,12 @@ describe("parteLegible: lo que se puede leer de un parte con la forma rota", () 
     expect(parteLegible(roto({ checklist: "nada" }))?.checklist.frenos).toEqual({ estado: "sin-responder" });
   });
 
+  it("código B5: un kilometraje final menor que el inicial no se lee (no se dibuja «-20 km»)", () => {
+    expect(parteLegible(roto({ kmInicio: 84400, kmFin: 84380 }))).toMatchObject({ kmInicio: 84400, kmFin: null });
+    expect(parteLegible(roto({ kmInicio: 84400, kmFin: 84400 }))).toMatchObject({ kmInicio: 84400, kmFin: 84400 });
+    expect(parteLegible(roto({ kmInicio: null, kmFin: 100 }))).toMatchObject({ kmInicio: null, kmFin: 100 });
+  });
+
   it("los números fuera de rango, con texto o NaN quedan en null; los kilómetros y los litros válidos se conservan", () => {
     const p = parteLegible(roto({ kmInicio: "abc", kmFin: -5, litrosCargados: 500, combustible: "lleno-de-todo" }));
     expect(p).toMatchObject({ kmInicio: null, kmFin: null, litrosCargados: null, combustible: null });
