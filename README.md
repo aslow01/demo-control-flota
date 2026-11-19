@@ -95,6 +95,9 @@ Esta demo se hizo con IA y el repositorio lo muestra tal cual:
 - **El método:** primero se escribió el diseño (modelo de datos, reglas de negocio con un caso de prueba cada una,
   pantallas y accesibilidad); después un plan de pasos chicos ([`docs/plan.md`](docs/plan.md)); la lógica se hizo con
   pruebas primero (TDD: se escribe la prueba que falla y después el código que la hace pasar).
+- **Los roles de `docs/`:** «programador», «QA», «revisor» y «auditor» son agentes de IA con un rol asignado, dirigidos
+  por Matías; no son personas del equipo.
+<!-- Matías: confirmar qué decisiones tomó y qué verificó en persona (crítica R1–R3) -->
 - **Revisiones:** al terminar cada etapa, agentes de IA con rol distinto revisaron el código, intentaron romper la
   aplicación (QA adversarial) y auditaron la accesibilidad. Sus hallazgos se corrigieron por gravedad. Son revisiones
   hechas también por IA, no por terceras personas.
@@ -118,7 +121,8 @@ Cifras medidas el 19/11/2026 sobre la rama `interfaz-etapa-0`:
 con la CSP real; detalle en `docs/registro.md`): 24 pantallas y estados, a 320, 360, 768 y 1280 px, en modo claro y
 oscuro (192 combinaciones sin problemas de desborde, de tamaño de los controles ni de consola), 0 violaciones de CSP y
 0 violaciones de axe-core (WCAG 2.0 a 2.2, niveles A y AA). También zoom al 200 % y al 400 % en el parte. Los guiones de
-Playwright no están en este repositorio.
+Playwright no están en este repositorio: estas cifras (incluidas las 192 combinaciones) salen del registro (`docs/registro.md`)
+y no se pueden reproducir con un comando del repositorio.
 
 **No se probó:**
 
@@ -143,6 +147,11 @@ El flujo de integración continua (`.github/workflows/ci.yml`) está escrito per
 - **Un parte por unidad y por día:** no hay turnos ni relevos de conductor dentro del mismo día.
 - **Sin pruebas automáticas de las pantallas:** las pruebas cubren las reglas, el generador, la persistencia y el estado;
   las pantallas se verificaron a mano y con guiones que no forman parte del repositorio.
+- **El checklist del parte es de fin de jornada (decisión de alcance, pendiente de revisión):** la unidad sale de servicio
+  cuando se envía el parte, no cuando se marca la novedad crítica. En una operación real suele haber además un checklist
+  previo al uso, que la demo no modela.
+- **Una licencia vencida no impide salir (decisión de alcance, pendiente de revisión):** solo genera un aviso al enviar el
+  parte, que el conductor puede aceptar. No bloquea la salida de la unidad.
 - **Imprimir o guardar el parte en PDF:** previsto, todavía no está.
 - **Otros extras sin hacer:** fecha de consulta simulada, modo sin conexión y fotos en el parte.
 - **Un hallazgo menor de contraste** de un color de la paleta de neutros (`--c-neutro-r`) sigue sin corregirse; consta

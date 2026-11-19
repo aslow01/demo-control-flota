@@ -110,7 +110,7 @@ describe("A1: puede salir", () => {
     const a = aptitud(u, estadoCon(u, documentosAlDia("u1")), H);
     expect(a.puedeSalir).toBe(false);
     expect(a.categoria).toBe("fuera-de-servicio");
-    expect(a.motivos.map((m) => m.texto)).toEqual(["Fuera de servicio desde 13/11/2026: En taller: cambio de embrague"]);
+    expect(a.motivos.map((m) => m.texto)).toEqual(["Desde el 13/11/2026: en taller: cambio de embrague"]);
   });
 
   it("A7: una unidad de baja no puede salir y tiene su propia categoría", () => {

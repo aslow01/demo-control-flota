@@ -43,7 +43,7 @@ const frenos: Novedad = novedad({
 
 function fueraPorFrenos(): Estado {
   return {
-    ...conUnidad(flotaDePrueba(), "u1", { tipo: "fuera-de-servicio", desde: "2026-11-16", motivo: "Novedad crítica en el parte del 16/11/2026: Frenos", origen: "novedad-critica", novedadIds: ["n1"] }),
+    ...conUnidad(flotaDePrueba(), "u1", { tipo: "fuera-de-servicio", desde: "2026-11-16", motivo: "Novedad crítica en Frenos, parte del 16/11/2026", origen: "novedad-critica", novedadIds: ["n1"] }),
     novedades: [frenos],
   };
 }
@@ -82,7 +82,7 @@ describe("«Volver a servicio» (A4, A5)", () => {
     expect(c).toEqual({
       unidadId: "u1",
       titulo: "Volver a servicio: ZK 214 BD",
-      situacion: "Fuera de servicio desde 16/11/2026: Novedad crítica en el parte del 16/11/2026: Frenos",
+      situacion: "Fuera de servicio desde el 16/11/2026: novedad crítica en Frenos, parte del 16/11/2026",
       bloqueo: {
         texto: "Antes de volver a servicio, resuelva: Frenos (parte del 16/11/2026).",
         novedades: [{ novedadId: "n1", rotulo: "Frenos", origen: "parte del 16/11/2026", texto: "Frenos (parte del 16/11/2026)" }],

@@ -222,7 +222,7 @@ describe("panel Novedades", () => {
     expect(r.map((x) => x.novedadId)).toEqual(esperadas.map((x) => x.id));
     expect(r[0]).toMatchObject({
       estado: "Resuelta",
-      texto: esperadas[0]?.descripcion,
+      texto: expect.stringContaining(esperadas[0]?.descripcion ?? ""),
       resolucion: { texto: esperadas[0]?.resolucion?.texto, autor: "Rocío Medina" },
       accion: null,
       impideVolver: false,
@@ -262,7 +262,7 @@ describe("C11 (ZU 899 QE): A4 y N2 a la vista", () => {
 
   it("está fuera de servicio por la novedad de frenos: etiqueta, motivo y estado operativo", () => {
     expect(f.aptitud).toMatchObject({ categoria: "fuera-de-servicio", etiqueta: "Fuera de servicio" });
-    expect(f.aptitud.linea).toBe("Fuera de servicio desde 16/11/2026: Novedad crítica en el parte del 16/11/2026: Frenos");
+    expect(f.aptitud.linea).toBe("Desde el 16/11/2026: novedad crítica en Frenos, parte del 16/11/2026");
     expect(f.estadoOperativo).toMatchObject({ tipo: "fuera-de-servicio", desde: "16/11/2026", origen: "novedad-critica" });
   });
 

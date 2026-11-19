@@ -3,7 +3,7 @@
   // selector de perfil a la derecha (a menos de 40 rem, en una fila propia debajo de la navegación: así el orden visual es el del foco).
   // Con perfil Conductor el selector lleva además «{nombre} (ficticia) · Cambiar» a su lado: hasta 48 rem la fila del selector también va debajo, para que la barra
   // de una sola fila (52 px) solo exista cuando todo entra.
-  //  - Encargado: "Alertas" (con insignia de alertas críticas) · "Flota".  Conductor: "Parte de hoy".
+  //  - Encargado: "Alertas" (con insignia de alertas críticas) · "Flota".  Conductor: "Parte diario".
   //  - Pestaña activa: aria-current="page" (la sección que contiene la pantalla actual lleva aria-current="true").
   // Los enlaces son del enrutador por hash: no hay clics que interceptar.
   import { textoInsigniaAlertas } from "../lib/dominio/textos.ts";

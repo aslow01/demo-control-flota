@@ -354,11 +354,11 @@ describe("enviarParte", () => {
     expect(r.estado.unidades[0]?.estado).toEqual({
       tipo: "fuera-de-servicio",
       desde: H,
-      motivo: "Novedad crítica en el parte del 18/11/2026: Frenos",
+      motivo: "Novedad crítica en Frenos, parte del 18/11/2026",
       origen: "novedad-critica",
       novedadIds: [n.id],
     });
-    expect(r.eventos[2]?.resumen).toBe("ZK 214 BD fuera de servicio: Novedad crítica en el parte del 18/11/2026: Frenos");
+    expect(r.eventos[2]?.resumen).toBe("ZK 214 BD fuera de servicio: Novedad crítica en Frenos, parte del 18/11/2026");
     // el parte y la novedad también quedan trimmeados y consistentes
     expect(r.estado.partes.find((p) => p.id === parteId)?.checklist.frenos).toEqual({ estado: "con-novedad", descripcion: "ruido al frenar en bajada", impideUso: false });
   });
@@ -373,7 +373,7 @@ describe("enviarParte", () => {
     const r = ejecutarOk(estado, enviar(parteId));
     expect(r.eventos.map((x) => x.tipo)).toEqual(["parte-enviado", "novedad-abierta", "novedad-abierta", "fuera-de-servicio"]);
     const u = r.estado.unidades[0]!;
-    expect(u.estado.tipo === "fuera-de-servicio" && u.estado.motivo).toBe("Novedad crítica en el parte del 18/11/2026: Frenos, Dirección");
+    expect(u.estado.tipo === "fuera-de-servicio" && u.estado.motivo).toBe("Novedad crítica en Frenos, Dirección, parte del 18/11/2026");
     expect(u.estado.tipo === "fuera-de-servicio" && u.estado.novedadIds).toHaveLength(2);
   });
 
@@ -398,7 +398,7 @@ describe("enviarParte", () => {
     const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ otraNovedad: { descripcion: "Vidrio roto", impideUso: true } }));
     const r = ejecutarOk(estado, enviar(parteId));
     const u = r.estado.unidades[0]!;
-    expect(u.estado.tipo === "fuera-de-servicio" && u.estado.motivo).toBe("Novedad crítica en el parte del 18/11/2026: Otra novedad");
+    expect(u.estado.tipo === "fuera-de-servicio" && u.estado.motivo).toBe("Novedad crítica en Otra novedad, parte del 18/11/2026");
     expect(r.estado.novedades[0]?.origen).toEqual({ tipo: "parte", parteId, item: "otra" });
   });
 

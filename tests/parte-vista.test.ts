@@ -470,7 +470,7 @@ describe("parte enviado: lectura y panel «Parte enviado» (6.5)", () => {
     const panel = panelDeParteEnviado(r.estado, p, COND);
     expect(panel.advertencias).toEqual([
       "1.180 km sin registrar desde el último parte",
-      "Documentación vencida o faltante: Seguro. Se envió igual: quedó registrado que la unidad circuló con documentación vencida.",
+      "Seguro: vencido o sin cargar. Se envió igual: quedó registrado que la unidad circuló con documentación vencida.",
     ]);
     // Fuera de término: el parte es de ayer y se envía hoy.
     const tarde = { ...p, fecha: "2026-11-17", enviado: "2026-11-18T12:30:00.000Z" };

@@ -623,7 +623,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
 
       if (frenosCriticos) {
         const nov = abrir("frenos", "ruido al frenar en bajada", "critica");
-        const motivo = `Novedad crítica en el parte del ${formatearFecha(fecha)}: Frenos`;
+        const motivo = `Novedad crítica en Frenos, parte del ${formatearFecha(fecha)}`;
         u.estado = { tipo: "fuera-de-servicio", desde: fecha, motivo, origen: "novedad-critica", novedadIds: [nov.id] };
         evento({
           instante: enviado,

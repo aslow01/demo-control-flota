@@ -58,8 +58,8 @@ describe("protagonista «No pueden salir hoy» con el ejemplo", () => {
   it("C10 dice que le falta la habilitación; C11 y C12 dicen que están fuera de servicio y por qué", () => {
     const motivos = c.protagonista.items.map((i) => i.motivo);
     expect(motivos).toContain("Falta cargar: Habilitación de ingreso al proyecto");
-    expect(motivos.filter((m) => m.startsWith("Fuera de servicio desde"))).toHaveLength(2);
-    expect(motivos.some((m) => m.includes("En taller: cambio de embrague"))).toBe(true);
+    expect(motivos.filter((m) => m.startsWith("Desde el"))).toHaveLength(2);
+    expect(motivos.some((m) => m.includes("en taller: cambio de embrague"))).toBe(true);
   });
 
   it("el motivo es el primero; los otros quedan en `motivos`", () => {

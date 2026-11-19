@@ -517,7 +517,8 @@ function filaDeNovedad(estado: Estado, unidad: Unidad, n: Novedad, puedeResolver
     novedadId: n.id,
     gravedad: n.gravedad,
     estado: !abierta ? TEXTO_FICHA.novedades.etiquetaResuelta : n.gravedad === "critica" ? TEXTO_FICHA.novedades.etiquetaCritica : TEXTO_FICHA.novedades.etiquetaAbierta,
-    texto: n.descripcion,
+    // Igual que en el centro de alertas: el punto del parte delante («Frenos: ruido al frenar en bajada»).
+    texto: n.origen.tipo === "parte" && n.origen.item !== "otra" ? `${rotuloNovedad(n)}: ${n.descripcion}` : n.descripcion,
     origen: origenDeNovedad(n),
     fecha: formatearFecha(n.fecha),
     impideVolver: abierta && n.gravedad === "critica" && unidad.estado.tipo === "fuera-de-servicio",

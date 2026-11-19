@@ -19,7 +19,7 @@ export const TEXTO_MARCO = {
   navegacionSecciones: "Secciones",
   pestanaAlertas: "Alertas",
   pestanaFlota: "Flota",
-  pestanaParteDeHoy: "Parte de hoy",
+  pestanaParteDeHoy: "Parte diario",
   verComo: "Ver como",
   perfilEncargado: "Encargado",
   perfilConductor: "Conductor",

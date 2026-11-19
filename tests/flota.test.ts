@@ -107,7 +107,7 @@ describe("filas (5.10)", () => {
   it("fuera de servicio: franja de semana y el motivo del dominio; de baja: franja neutra y etiqueta «De baja»", () => {
     const taller = fila("ZR536MZ");
     expect(taller.franja).toBe("semana");
-    expect(taller.estado).toMatchObject({ categoria: "fuera-de-servicio", etiqueta: "Fuera de servicio", motivo: "Fuera de servicio desde 13/11/2026: En taller: cambio de embrague" });
+    expect(taller.estado).toMatchObject({ categoria: "fuera-de-servicio", etiqueta: "Fuera de servicio", motivo: "Desde el 13/11/2026: en taller: cambio de embrague" });
     const baja = fila("ZUE512");
     expect(baja.franja).toBe("neutro");
     expect(baja.estado).toMatchObject({ categoria: "baja", etiqueta: "De baja", motivo: "Dada de baja el 21/10/2026: Venta de la unidad" });

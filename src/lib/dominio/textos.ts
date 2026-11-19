@@ -163,7 +163,8 @@ export const TEXTO_FALTA_CARGAR = "Falta cargar";
 /** Motivos que muestra la aptitud de una unidad (A1). */
 export const MOTIVO_APTITUD = {
   baja: (desde: FechaCivil, motivo: string) => `Dada de baja el ${formatearFecha(desde)}: ${motivo}`,
-  fueraDeServicio: (desde: FechaCivil, motivo: string) => `Fuera de servicio desde ${formatearFecha(desde)}: ${motivo}`,
+  /** Va junto a la etiqueta «Fuera de servicio»: solo la fecha y el motivo, sin repetir el estado. */
+  fueraDeServicio: (desde: FechaCivil, motivo: string) => `Desde el ${formatearFecha(desde)}: ${minuscula(motivo)}`,
   documentoFaltante: (nombre: string) => `${TEXTO_FALTA_CARGAR}: ${nombre}`,
   novedadCritica: (rotulo: string, origen: string) => `Novedad crítica abierta: ${rotulo} (${origen})`,
 } as const;
@@ -179,9 +180,14 @@ export const TEXTO_ALERTA = {
 
 /** Motivo con que una novedad crítica deja la unidad fuera de servicio (A3). */
 export const MOTIVO_NOVEDAD_CRITICA = {
-  delParte: (fecha: FechaCivil, items: string) => `Novedad crítica en el parte del ${formatearFecha(fecha)}: ${items}`,
+  delParte: (fecha: FechaCivil, items: string) => `Novedad crítica en ${items}, parte del ${formatearFecha(fecha)}`,
   cargada: (fecha: FechaCivil, descripcion: string) => `Novedad crítica cargada el ${formatearFecha(fecha)}: ${descripcion}`,
 } as const;
+
+/** Pasa a minúscula la primera letra: el motivo va después de «:» y no abre oración. */
+function minuscula(texto: string): string {
+  return texto.charAt(0).toLowerCase() + texto.slice(1);
+}
 
 /** Acorta un texto a `max` caracteres terminando en «…». */
 export function abreviar(texto: string, max: number): string {
@@ -351,6 +357,12 @@ export function textoLeFaltan(n: number): string {
   return n === 1 ? "Le falta 1 documento" : `Le faltan ${n} documentos`;
 }
 
+/** «Seguro: vencido o sin cargar.» / «Seguro, Licencia de conducir: vencidos o sin cargar.»: nombra los documentos primero y dice qué les pasa. */
+function estadoDeDocumentos(documentos: readonly TipoDocumento[]): string {
+  const nombres = documentos.map((t) => NOMBRES_DOCUMENTO[t]).join(", ");
+  return `${nombres}: ${documentos.length === 1 ? "vencido o sin cargar" : "vencidos o sin cargar"}.`;
+}
+
 /** K6, K7 y P9: cada advertencia que se acepta antes de enviar el parte. */
 export function textoAdvertencia(a: Advertencia): string {
   switch (a.tipo) {
@@ -360,7 +372,7 @@ export function textoAdvertencia(a: Advertencia): string {
       return `Recorrido del día inusualmente largo: ${formatearKm(a.km)} km`;
     case "documentacion-vencida":
       return (
-        `Documentación vencida o faltante: ${a.documentos.map((t) => NOMBRES_DOCUMENTO[t]).join(", ")}. ` +
+        `${estadoDeDocumentos(a.documentos)} ` +
         "Puede enviar el parte igual: quedará registrado que la unidad circuló con documentación vencida."
       );
   }
@@ -373,7 +385,7 @@ export function textoAdvertencia(a: Advertencia): string {
 export function textoAdvertenciaAceptada(a: Advertencia): string {
   if (a.tipo !== "documentacion-vencida") return textoAdvertencia(a);
   return (
-    `Documentación vencida o faltante: ${a.documentos.map((t) => NOMBRES_DOCUMENTO[t]).join(", ")}. ` +
+    `${estadoDeDocumentos(a.documentos)} ` +
     "Se envió igual: quedó registrado que la unidad circuló con documentación vencida."
   );
 }
@@ -842,7 +854,7 @@ export const TEXTO_DIALOGOS_FICHA = {
     titulo: (patente: string) => `Volver a servicio: ${patente}`,
     primario: "Volver a servicio",
     verNovedades: "Ver novedades",
-    situacion: (desde: FechaCivil, motivo: string) => `Fuera de servicio desde ${formatearFecha(desde)}: ${motivo}`,
+    situacion: (desde: FechaCivil, motivo: string) => `Fuera de servicio desde el ${formatearFecha(desde)}: ${minuscula(motivo)}`,
     /** A5: vuelve, pero la aptitud sigue pendiente de documentos. */
     sinPoderSalir: (aRenovar: readonly string[], aCargar: readonly string[]) => {
       const accion = aRenovar.length > 0 && aCargar.length > 0 ? "renovar o cargar" : aCargar.length > 0 ? "cargar" : "renovar";
