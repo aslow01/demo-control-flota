@@ -937,6 +937,8 @@ export const TEXTO_FORMULARIO_PARTE = {
   tituloFaltan: (n: number) => `${textoFaltantes(n)} para enviar el parte`,
   tituloRevise: (n: number) => `Revise ${pluralizar(n, "dato", "datos")} para enviar el parte`,
   tituloGeneral: "No se pudo enviar el parte",
+  /** El resumen cuando falla «Descartar borrador» (QA B2): no es un envío. */
+  tituloNoSePudoDescartar: "No se pudo descartar el borrador",
   /** Barra de envío (5.14). */
   barraLista: "Listo para enviar",
   sinRecorrido: "—",

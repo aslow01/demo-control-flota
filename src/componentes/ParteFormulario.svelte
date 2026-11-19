@@ -176,7 +176,7 @@
     if (parteId === null) return;
     const r = await app.descartarBorradorDeParte(parteId);
     if (!r.ok) {
-      erroresEnvio = errorGeneralParte(r.mensaje);
+      erroresEnvio = r.errores;
       valoresAlEnviar = instantanea();
       await tick();
       resumen?.enfocar();

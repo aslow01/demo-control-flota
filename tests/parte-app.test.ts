@@ -632,14 +632,22 @@ describe("descartar el borrador", () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
     await app.enviarParte(idDe(app, "ZYN469"), H, completo(edicion(app).valoresIniciales));
     const enviado = estadoDe(app).partes.find((p) => p.unidadId === idDe(app, "ZYN469") && p.fecha === H);
-    expect(await app.descartarBorradorDeParte(enviado?.id ?? "")).toEqual({ ok: false, mensaje: ERRORES.parteEnviadoInmutable });
-    expect(await app.descartarBorradorDeParte("no-existe")).toEqual({ ok: false, mensaje: ERRORES.parteInexistente });
+    expect(await app.descartarBorradorDeParte(enviado?.id ?? "")).toMatchObject({ ok: false, mensaje: ERRORES.parteEnviadoInmutable });
+    expect(await app.descartarBorradorDeParte("no-existe")).toMatchObject({ ok: false, mensaje: ERRORES.parteInexistente });
+  });
+
+  it("QA B2: si el descarte falla, el resumen se titula «No se pudo descartar el borrador» (no «No se pudo enviar el parte») y trae el mismo mensaje", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    const r = await app.descartarBorradorDeParte("no-existe");
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.errores).toMatchObject({ titulo: "No se pudo descartar el borrador", general: ERRORES.parteInexistente, lista: [] });
   });
 
   it("si falla la escritura, el borrador sigue y el mensaje lo dice", async () => {
     const { app, repo } = await iniciada({ perfil: { tipo: "conductor", conductorId: "c-13" }, patente: "ZW749JE", fecha: "2026-11-17" });
     repo.escribir = () => Promise.reject(new Error("cuota agotada"));
-    expect(await app.descartarBorradorDeParte("pt-0579")).toEqual({ ok: false, mensaje: ERRORES.noPudoGuardar });
+    expect(await app.descartarBorradorDeParte("pt-0579")).toMatchObject({ ok: false, mensaje: ERRORES.noPudoGuardar });
     expect(estadoDe(app).partes.some((p) => p.id === "pt-0579")).toBe(true);
   });
 

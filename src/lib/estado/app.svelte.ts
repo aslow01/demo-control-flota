@@ -199,7 +199,7 @@ export type ResultadoDeEnvio =
   | { tipo: "advertencias"; advertencias: AdvertenciaDeEnvio[]; aceptables: Advertencia["tipo"][]; foco: "dialogo-antes-de-enviar" };
 
 /** Resultado de descartar un borrador: el mensaje va a la barra de estado de la pantalla (o es el error). */
-export type ResultadoDeDescarte = { ok: true; mensaje: string } | { ok: false; mensaje: string };
+export type ResultadoDeDescarte = { ok: true; mensaje: string } | { ok: false; mensaje: string; errores: ErroresDeParte };
 
 /** El perfil Conductor solo usa los comandos del parte (docs/diseno.md, sección 8). No es seguridad: es la perspectiva. */
 const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarParte", "descartarBorrador"]);
@@ -787,7 +787,9 @@ export class EstadoApp {
   /** «Descartar borrador» (el botón-texto de dos pasos del parte y del inicio del conductor). No deja eventos (sección 8); un parte enviado no se descarta (P7). */
   async descartarBorradorDeParte(parteId: string): Promise<ResultadoDeDescarte> {
     const r = await this.ejecutar({ tipo: "descartarBorrador", parteId });
-    return r.ok ? { ok: true, mensaje: TEXTO_FORMULARIO_PARTE.borradorDescartado } : { ok: false, mensaje: r.error.mensaje };
+    return r.ok
+      ? { ok: true, mensaje: TEXTO_FORMULARIO_PARTE.borradorDescartado }
+      : { ok: false, mensaje: r.error.mensaje, errores: errorGeneralParte(r.error.mensaje, TEXTO_FORMULARIO_PARTE.tituloNoSePudoDescartar) };
   }
 
   // --- Diálogo «Agregar unidad» (paso 4.3) ----------------------------------------------------------
