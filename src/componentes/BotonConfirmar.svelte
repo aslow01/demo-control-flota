@@ -1,14 +1,14 @@
 <script lang="ts">
   // 5.1 Confirmación en dos pasos (por ejemplo "Descartar borrador"): el primer clic pasa el botón a la variante Peligro con el
-  // texto de confirmación; el segundo hace la acción. Se restablece con Esc, al mover el foco, al salir del botón con el mouse
-  // y a los 4 segundos (en pantallas táctiles no hay "salir con el cursor": `pointerleave` llega antes del `click` y lo desarmaría).
+  // texto de confirmación; el segundo hace la acción. Se restablece con Esc, al mover el foco, al salir del botón con el mouse y al tocar o hacer clic en cualquier
+  // otro lado (en pantallas táctiles no hay "salir con el cursor": `pointerleave` llega antes del `click` y lo desarmaría). No vence por tiempo: un límite que la
+  // persona no controla deja afuera a quien lee con lector de pantalla, con temblor o con un conmutador (WCAG 2.2.1); el botón armado no hace nada por sí solo.
   // Un doble clic (segundo clic a menos de 500 ms) se ignora: no confirma sin querer.
   // Es para acciones chicas y fáciles de rehacer; lo grande (Reiniciar demo, Dar de baja) lleva un diálogo (5.17).
   import Boton from "./Boton.svelte";
   import type { NombreIcono } from "./tipos.ts";
 
   const INTERVALO_DOBLE_CLIC_MS = 500;
-  const VENCIMIENTO_MS = 4000;
 
   let {
     texto,
@@ -24,16 +24,20 @@
 
   let armado = $state(false);
   let armadoEn = 0;
+  let caja = $state<HTMLElement | null>(null);
 
   function restablecer(): void {
     armado = false;
   }
 
-  // El segundo paso vence solo: una persona que toca y se arrepiente no deja el botón armado para siempre.
+  // Un toque o clic fuera del botón lo desarma (en el táctil no hay otra forma de «salir»); no hay un límite de tiempo.
   $effect(() => {
     if (!armado) return;
-    const plazo = setTimeout(restablecer, VENCIMIENTO_MS);
-    return () => clearTimeout(plazo);
+    const fuera = (evento: PointerEvent): void => {
+      if (!(evento.target instanceof Node) || caja?.contains(evento.target) !== true) restablecer();
+    };
+    document.addEventListener("pointerdown", fuera, true);
+    return () => document.removeEventListener("pointerdown", fuera, true);
   });
 
   function alHacerClic(): void {
@@ -51,6 +55,7 @@
 <span
   class="confirmar"
   role="presentation"
+  bind:this={caja}
   onfocusout={restablecer}
   onpointerleave={(evento) => {
     if (evento.pointerType === "mouse") restablecer();
