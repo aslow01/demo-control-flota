@@ -1006,4 +1006,4 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 
 **Vista tocada.** Una línea en `ParteFormulario.svelte` (`erroresEnvio = r.errores;` en `descartar`, antes `errorGeneralParte(r.mensaje)`; la importación sigue en uso).
 
-**Verificación.** `npm test`: 1322 tests (1275 antes), también con `npm run test:tz`; `npm run check`: 0 errores y 0 avisos; `npm run build` y `npm run buscar`: sin hallazgos; sin nombres de terceros ni «@gmail» fuera de la regla de `buscar`.
+**Verificación.** `npm test`: 1322 tests (1275 antes), también con `npm run test:tz`; `npm run check`: 0 errores y 0 avisos; `npm run build` y `npm run buscar`: sin hallazgos; sin nombres prohibidos fuera de la regla de `buscar`.
