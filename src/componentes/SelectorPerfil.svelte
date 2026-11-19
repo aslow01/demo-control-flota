@@ -122,8 +122,14 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0 var(--e-1);
+    min-width: 0;
     font-size: var(--t-chico);
     color: var(--c-texto-2);
+  }
+  /* El nombre es un dato: uno larguísimo y sin espacios se parte en lugar de ensanchar la página. */
+  .conductor > span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   @media (forced-colors: active) {
