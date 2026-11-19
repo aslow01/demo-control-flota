@@ -2,13 +2,17 @@
   // Safari y Firefox en Mac no enfocan un botón al hacer clic: sin esto, un diálogo abierto con el mouse no sabría a dónde devolver el foco.
   let ultimoPuntero: HTMLElement | null = null;
   let ultimoPunteroEn = 0;
+  let ultimoPunteroX = 0;
+  let ultimoPunteroY = 0;
   if (typeof document !== "undefined") {
     document.addEventListener(
       "pointerdown",
-      (evento) => {
+      (evento: PointerEvent) => {
         const blanco = evento.target;
         ultimoPuntero = blanco instanceof Element ? blanco.closest<HTMLElement>("button, a[href], [tabindex]") : null;
         ultimoPunteroEn = performance.now();
+        ultimoPunteroX = evento.clientX;
+        ultimoPunteroY = evento.clientY;
       },
       true,
     );
@@ -21,13 +25,24 @@
     document.documentElement.classList.toggle("dialogo-abierto", abiertos > 0);
   }
 
+  // Un doble clic cae en el mismo lugar (a pocos píxeles); un clic en otro lado, aunque sea enseguida, es otra intención y no se frena.
+  const RADIO_DOBLE_CLIC_PX = 12;
+  // El lugar es el del toque que abrió o cerró el diálogo, anotado en ese momento (el último `pointerdown` de todos ya es el del clic que se está evaluando).
+  function esDelMismoLugar(evento: Event, x: number, y: number): boolean {
+    if (!(evento instanceof MouseEvent)) return true;
+    return Math.hypot(evento.clientX - x, evento.clientY - y) <= RADIO_DOBLE_CLIC_PX;
+  }
+
   /**
    * El segundo clic de un doble clic sobre el botón que abre un diálogo cae sobre el diálogo ya abierto (la caja o el fondo) y le quita el foco al primer campo. Solo si el
    * diálogo se abrió tras un toque o clic muy reciente: un instante después se sigue con normalidad (el teclado no frena nada).
    */
   function protegerFocoAlAbrir(): void {
     if (performance.now() - ultimoPunteroEn > 800) return;
-    const frenar = (evento: Event): void => evento.preventDefault(); // sin esto el segundo `mousedown` mueve el foco
+    const [x, y] = [ultimoPunteroX, ultimoPunteroY];
+    const frenar = (evento: Event): void => {
+      if (esDelMismoLugar(evento, x, y)) evento.preventDefault(); // sin esto el segundo `mousedown` mueve el foco
+    };
     document.addEventListener("mousedown", frenar, true);
     setTimeout(() => document.removeEventListener("mousedown", frenar, true), ABSORBER_CLICS_MS);
   }
@@ -45,7 +60,9 @@
    */
   function absorberClics(): void {
     if (performance.now() - ultimoPunteroEn > 800) return;
+    const [x, y] = [ultimoPunteroX, ultimoPunteroY];
     const absorber = (evento: Event): void => {
+      if (!esDelMismoLugar(evento, x, y)) return;
       evento.stopPropagation();
       evento.preventDefault();
     };
