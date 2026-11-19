@@ -16,9 +16,9 @@ export interface Clasificacion {
 }
 
 /** V1 a V8: clasifica un vencimiento respecto de hoy (fecha civil de Argentina). */
-export function clasificar(vence: FechaCivil, hoy: FechaCivil): Clasificacion {
+export function clasificar(vence: FechaCivil, hoy: FechaCivil, tipo?: TipoDocumento): Clasificacion {
   const d = diasEntre(hoy, vence);
-  const texto = textoVencimiento(d, vence);
+  const texto = textoVencimiento(d, vence, tipo);
   if (d < 0) return { d, estado: "vencido", grupo: "vencidos", texto };
   if (d === 0) return { d, estado: "vence-hoy", grupo: "7", texto };
   if (d <= 7) return { d, estado: "por-vencer", grupo: "7", texto };
@@ -56,12 +56,12 @@ export const REQUISITOS: readonly Requisito[] = [
 
 export { NOMBRES_DOCUMENTO };
 
-/** V9: el documento vigente de un titular y un tipo es el de `vence` más tardío (desempata el cargado después, y el id). */
 /** Guarda de tipo: `true` si el texto es uno de los tipos de documento del dominio (`NOMBRES_DOCUMENTO` tiene todos, y solo esos). */
 export function esTipoDocumento(valor: string): valor is TipoDocumento {
   return Object.hasOwn(NOMBRES_DOCUMENTO, valor);
 }
 
+/** V9: el documento vigente de un titular y un tipo es el de `vence` más tardío (desempata el cargado después, y el id). */
 export function documentoVigente(
   documentos: readonly Documento[],
   titular: Titular,
@@ -136,7 +136,7 @@ export type Evaluacion = Clasificacion | Faltante;
 /** V12: un obligatorio sin documento se trata como vencido ("Falta cargar"); si hay documento, V1 a V6. */
 export function evaluarObligatorio(vigente: Documento | undefined, hoy: FechaCivil): Evaluacion {
   if (vigente === undefined) return { estado: "faltante", grupo: "vencidos", texto: TEXTO_FALTA_CARGAR };
-  return clasificar(vigente.vence, hoy);
+  return clasificar(vigente.vence, hoy, vigente.tipo);
 }
 
 /** V16: los faltantes primero; después, el que vence antes (el más vencido, primero). */

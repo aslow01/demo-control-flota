@@ -70,6 +70,10 @@ export function parsearLitros(texto: string): Resultado<number | null> {
     return fallo("litros-no-numerico", ERRORES.litrosNoNumerico, { campo: "litrosCargados" });
   }
   const decimales = m[2] ?? "";
+  // `1.000` o `1,000`: quien lo escribe quiso decir mil (con separador de miles), y mil supera el máximo; no es un número con tres decimales.
+  if (decimales.length === 3 && /^[1-9]\d{0,2}$/.test(m[1] ?? "")) {
+    return fallo("litros-excedidos", errLitrosExcedidos(LITROS_MAXIMO), { campo: "litrosCargados" });
+  }
   if (decimales.length > 1) {
     return fallo("litros-decimales", ERRORES.litrosDecimales, { campo: "litrosCargados" });
   }
@@ -262,6 +266,10 @@ function kmLegible(valor: unknown): number | null {
   return typeof valor === "number" && Number.isInteger(valor) && valor >= 0 && valor <= KM_MAXIMO ? valor : null;
 }
 
+function nivelLegible(valor: unknown): NivelCombustible | null {
+  return NIVELES.find((n) => n === valor) ?? null;
+}
+
 function tipoDeDocumentoLegible(valor: unknown): valor is TipoDocumento {
   return typeof valor === "string" && Object.hasOwn(NOMBRES_DOCUMENTO, valor);
 }
@@ -291,6 +299,11 @@ function advertenciaLegible(valor: unknown): Advertencia | null {
   return null;
 }
 
+/** Las advertencias que se pueden leer de un valor de afuera (el detalle de un error, un parte guardado); lo que no es una advertencia se descarta. */
+export function advertenciasLegibles(valor: unknown): Advertencia[] {
+  return Array.isArray(valor) ? valor.map(advertenciaLegible).filter((a): a is Advertencia => a !== null) : [];
+}
+
 function instanteLegible(valor: unknown): string | null {
   return typeof valor === "string" && parsearInstante(valor) !== null ? valor : null;
 }
@@ -314,20 +327,23 @@ export function parteLegible(crudo: unknown): Parte | null {
   const otra = crudo["otraNovedad"];
   const litros = crudo["litrosCargados"];
   const combustible = crudo["combustible"];
+  const kmInicio = kmLegible(crudo["kmInicio"]);
+  const kmFin = kmLegible(crudo["kmFin"]);
   return {
     id,
     unidadId,
     fecha,
     conductorId: typeof crudo["conductorId"] === "string" ? crudo["conductorId"] : null,
     estado,
-    kmInicio: kmLegible(crudo["kmInicio"]),
-    kmFin: kmLegible(crudo["kmFin"]),
-    combustible: typeof combustible === "string" && NIVELES.includes(combustible as NivelCombustible) ? (combustible as NivelCombustible) : null,
+    kmInicio,
+    // Un recorrido negativo no existe (K3): si el final es menor que el inicial no se lee, para no dibujar «-20 km».
+    kmFin: kmFin !== null && kmInicio !== null && kmFin < kmInicio ? null : kmFin,
+    combustible: nivelLegible(combustible),
     litrosCargados: typeof litros === "number" && validarLitros(litros).ok ? litros : null,
     checklist,
     otraNovedad:
       esObjeto(otra) && typeof otra["descripcion"] === "string" ? { descripcion: otra["descripcion"], impideUso: otra["impideUso"] === true } : null,
-    advertenciasAceptadas: Array.isArray(crudo["advertenciasAceptadas"]) ? crudo["advertenciasAceptadas"].map(advertenciaLegible).filter((a): a is Advertencia => a !== null) : [],
+    advertenciasAceptadas: advertenciasLegibles(crudo["advertenciasAceptadas"]),
     documentacionVencida: Array.isArray(crudo["documentacionVencida"]) ? crudo["documentacionVencida"].filter(tipoDeDocumentoLegible) : [],
     creado: instanteLegible(crudo["creado"]) ?? "",
     actualizado: instanteLegible(crudo["actualizado"]) ?? "",

@@ -68,6 +68,16 @@ describe("K1: parsear kilometraje", () => {
     expect(parsearKm("9".repeat(100_000)).ok).toBe(false);
   });
 
+  it("QA B9: un número de muchos dígitos dice que supera el máximo (no «solo con números»)", () => {
+    for (const t of ["9".repeat(23), "1".repeat(21), "9".repeat(100_000)]) {
+      const r = parsearKm(t);
+      expect(r.ok, t.slice(0, 5)).toBe(false);
+      if (!r.ok) expect(r.error.mensaje).toBe("El kilometraje no puede superar 2.000.000 km.");
+    }
+    const letras = parsearKm("1".repeat(21) + "a");
+    if (!letras.ok) expect(letras.error.mensaje).toBe("Escriba el kilometraje solo con números.");
+  });
+
   it("formatearKm usa punto como separador de miles", () => {
     expect(formatearKm(84320)).toBe("84.320");
     expect(formatearKm(120)).toBe("120");

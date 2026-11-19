@@ -186,7 +186,7 @@ function proximoDeAlerta(a: Alerta, r: ResultadoAlertas, unidadId: string): Prox
   const documento = a.tipoDocumento === null ? null : NOMBRES_DOCUMENTO[a.tipoDocumento];
   if (a.tipo === "documento-faltante" || a.tipo === "documento-vencido") {
     const faltante = a.tipo === "documento-faltante";
-    const etiqueta = faltante || a.d === null ? TEXTO_FALTA_CARGAR : textoVencimiento(a.d, "");
+    const etiqueta = faltante || a.d === null ? TEXTO_FALTA_CARGAR : textoVencimiento(a.d, "", a.tipoDocumento ?? undefined);
     return { tipo: faltante ? "faltante" : "vencido", documento, etiqueta, texto: a.texto, dias: a.d, horizonte: null };
   }
   const d = a.d ?? 0;

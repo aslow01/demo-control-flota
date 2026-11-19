@@ -110,6 +110,19 @@ describe("P10: litros cargados", () => {
     if (!r.ok) expect(r.error.mensaje).toBe("Escriba los litros con un solo decimal, por ejemplo 45,5.");
   });
 
+  it("QA B9: 1.000 y 1,000 (mil con separador de miles) dicen que superan el máximo, no «un solo decimal»; 0,500 y 12,25 sí hablan de decimales", () => {
+    for (const t of ["1.000", "1,000", "12.500", "199,999"]) {
+      const r = parsearLitros(t);
+      expect(r.ok, t).toBe(false);
+      if (!r.ok) expect(r.error.mensaje, t).toBe("Los litros no pueden superar 200.");
+    }
+    for (const t of ["0,500", "0.125", "12,25", "45,55"]) {
+      const r = parsearLitros(t);
+      expect(r.ok, t).toBe(false);
+      if (!r.ok) expect(r.error.mensaje, t).toBe("Escriba los litros con un solo decimal, por ejemplo 45,5.");
+    }
+  });
+
   it("P10: letras, negativos y basura no son litros", () => {
     for (const t of ["abc", "-5", "1e2", "4 5", "5,", ",5", "1.000", "٣"]) {
       expect(parsearLitros(t).ok, t).toBe(false);

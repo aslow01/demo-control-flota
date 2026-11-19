@@ -346,3 +346,88 @@ describe("antes de enviar, de salir o de descartar", () => {
     expect(t.guardados).toHaveLength(0);
   });
 });
+
+describe("código M2: un `guardar` que rechaza no cuelga el indicador ni pierde lo escrito", () => {
+  /** Un `guardar` que lanza las primeras `veces` llamadas y después responde bien. */
+  function armarQueLanza(veces: number) {
+    let llamadas = 0;
+    return armar(async () => {
+      llamadas += 1;
+      if (llamadas <= veces) throw new Error("boom");
+      return OK;
+    });
+  }
+
+  it("al salir del campo: el resultado es un error de escritura (no rechaza), el indicador queda en error y lo escrito sigue pendiente", async () => {
+    const t = armarQueLanza(1);
+    const r = await t.auto.alSalirDelCampo(con({ kmFin: "1" }));
+    expect(r).toMatchObject({ ok: false, tipo: "escritura" });
+    expect(t.auto.indicador).toMatchObject({ estado: "error", visible: "No se pudo guardar en este equipo. Lo escrito sigue en pantalla; no cierre la pestaña." });
+    expect(t.auto.indicador.estado).not.toBe("guardando");
+    // lo que falló se reintenta con el siguiente cambio (aunque no cambie nada más)
+    const otra = await t.auto.alSalirDelCampo(con({ kmFin: "1" }));
+    expect(otra).toEqual(OK);
+    expect(t.guardados.map((v) => v.kmFin)).toEqual(["1", "1"]);
+    expect(t.auto.indicador).toMatchObject({ estado: "guardado", anuncio: "Borrador guardado de nuevo en este equipo." });
+  });
+
+  it("por el plazo de 500 ms: no queda ningún rechazo sin atrapar y el próximo cambio vuelve a intentar con lo último", async () => {
+    const t = armarQueLanza(1);
+    t.auto.cambio(con({ kmFin: "1" }));
+    await t.reloj.avanzar(500);
+    expect(t.auto.indicador.estado).toBe("error");
+    t.auto.cambio(con({ kmFin: "12" }));
+    await t.reloj.avanzar(500);
+    expect(t.guardados.map((v) => v.kmFin)).toEqual(["1", "12"]);
+    expect(t.auto.indicador.estado).toBe("guardado");
+  });
+
+  it("`vaciar` tras un rechazo reintenta con lo que había fallado", async () => {
+    const t = armarQueLanza(1);
+    await t.auto.alSalirDelCampo(con({ kmFin: "1" }));
+    expect(await t.auto.vaciar()).toEqual(OK);
+    expect(t.guardados.map((v) => v.kmFin)).toEqual(["1", "1"]);
+  });
+});
+
+describe("accesibilidad N1 y QA B7: no se dice «revise los campos marcados» mientras no haya un campo marcado", () => {
+  const errores = { porCampo: { kmFin: "Escriba el kilometraje solo con números." }, lista: [{ campo: "kmFin" as const, mensaje: "Escriba el kilometraje solo con números." }], general: null, titulo: "Revise 1 dato para enviar el parte" };
+  const CAMPOS: ResultadoDeBorrador = { ok: false, tipo: "campos", errores };
+
+  it("mientras se escribe (el plazo de 500 ms) el indicador dice que lo escrito todavía no es válido y no anuncia nada", async () => {
+    const t = armar([CAMPOS]);
+    t.auto.cambio(con({ kmFin: "12a" }));
+    await t.reloj.avanzar(500);
+    expect(t.auto.indicador).toEqual({ estado: "campos", visible: "Sin guardar: lo que escribió todavía no es válido.", anuncio: "", hora: null });
+    expect(t.indicadores.some((i) => i.anuncio.includes("campos marcados"))).toBe(false);
+    expect(t.indicadores.some((i) => i.visible.includes("campos marcados"))).toBe(false);
+  });
+
+  it("al salir del campo (cuando la vista marca el error) sí dice «corrija los campos marcados» y lo anuncia una vez", async () => {
+    const t = armar([CAMPOS, CAMPOS]);
+    t.auto.cambio(con({ kmFin: "12a" }));
+    await t.reloj.avanzar(500);
+    const r = await t.auto.alSalirDelCampo(con({ kmFin: "12a" }));
+    expect(r).toEqual(CAMPOS);
+    expect(t.auto.indicador).toEqual({ estado: "campos", visible: "Sin guardar: corrija los campos marcados.", anuncio: "Hay datos que no se pueden guardar: revise los campos marcados.", hora: null });
+    await t.auto.alSalirDelCampo(con({ kmFin: "12b" }));
+    expect(new Set(t.indicadores.filter((i) => i.estado === "campos" && i.anuncio !== "").map((i) => i.anuncio)).size).toBe(1);
+  });
+
+  it("`vaciar` (antes de enviar) cuenta como salir del campo: ahí los campos ya se marcan", async () => {
+    const t = armar([CAMPOS]);
+    t.auto.cambio(con({ kmFin: "12a" }));
+    const r = await t.auto.vaciar(con({ kmFin: "12a" }));
+    expect(r).toEqual(CAMPOS);
+    expect(t.auto.indicador.visible).toBe("Sin guardar: corrija los campos marcados.");
+  });
+
+  it("corregido el dato, vuelve a guardar y anuncia el guardado", async () => {
+    const t = armar([CAMPOS]);
+    t.auto.cambio(con({ kmFin: "12a" }));
+    await t.reloj.avanzar(500);
+    t.auto.cambio(con({ kmFin: "120" }));
+    await t.reloj.avanzar(500);
+    expect(t.auto.indicador).toMatchObject({ estado: "guardado", anuncio: "Borrador guardado en este equipo." });
+  });
+});

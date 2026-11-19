@@ -19,9 +19,12 @@ export function pluralizar(n: number, singular: string, plural: string): string 
   return `${n} ${n === 1 ? singular : plural}`;
 }
 
-/** V1 a V6: texto del estado de un vencimiento. `d` = días desde hoy hasta el vencimiento. */
-export function textoVencimiento(d: number, vence: FechaCivil): string {
-  if (d < 0) return `Vencido hace ${pluralizar(-d, "día", "días")}`;
+/**
+ * V1 a V6: texto del estado de un vencimiento. `d` = días desde hoy hasta el vencimiento. Con `tipo`, «vencido» concuerda con el documento
+ * («Seguro vencido», «Revisión técnica vencida»); sin tipo, masculino.
+ */
+export function textoVencimiento(d: number, vence: FechaCivil, tipo?: TipoDocumento): string {
+  if (d < 0) return `${tipo === undefined ? "Vencido" : concordar(tipo, "Vencido", "Vencida")} hace ${pluralizar(-d, "día", "días")}`;
   if (d === 0) return "Vence hoy";
   if (d === 1) return "Vence mañana";
   if (d <= 30) return `Vence en ${d} días`;
@@ -946,6 +949,8 @@ export const TEXTO_FORMULARIO_PARTE = {
   tituloFaltan: (n: number) => `${textoFaltantes(n)} para enviar el parte`,
   tituloRevise: (n: number) => `Revise ${pluralizar(n, "dato", "datos")} para enviar el parte`,
   tituloGeneral: "No se pudo enviar el parte",
+  /** El resumen cuando falla «Descartar borrador» (QA B2): no es un envío. */
+  tituloNoSePudoDescartar: "No se pudo descartar el borrador",
   /** Barra de envío (5.14). */
   barraLista: "Listo para enviar",
   sinRecorrido: "—",
@@ -963,6 +968,8 @@ export const TEXTO_GUARDADO = {
   guardado: (hora: string) => `Guardado en este equipo a las ${hora}`,
   /** P3: un dato con un error de formato no se guarda. */
   conErroresDeCampo: "Sin guardar: corrija los campos marcados.",
+  /** Mientras la persona escribe un dato con formato inválido: todavía no hay un campo marcado, así que no se la manda a mirar uno (accesibilidad N1). */
+  sinValidar: "Sin guardar: lo que escribió todavía no es válido.",
   /** D10 y 5.15: la escritura falló; lo escrito sigue en pantalla. */
   error: "No se pudo guardar en este equipo. Lo escrito sigue en pantalla; no cierre la pestaña.",
   anuncioGuardado: "Borrador guardado en este equipo.",
@@ -1036,11 +1043,6 @@ export function textoSuLicencia(d: number | null, vence: FechaCivil | null): str
   if (d === 0) return `Vence hoy (${fecha})`;
   if (d === 1) return `Vence mañana (${fecha})`;
   return `Vence en ${d} días (${fecha})`;
-}
-
-/** Fila de «Mis últimos partes»: nombre accesible del enlace. */
-export function textoParteReciente(fecha: FechaCivil, patente: string, recorrido: string): string {
-  return `Parte del ${formatearFecha(fecha)} de ${patente}, ${recorrido}`;
 }
 
 export const TEXTO_PANTALLA_PARTE = {

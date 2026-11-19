@@ -193,10 +193,10 @@ function enOrden(errores: Map<CampoParte, string>): { campo: CampoParte; mensaje
   return lista;
 }
 
-function conTitulo(lista: { campo: CampoParte; mensaje: string }[], general: string | null, faltan: number): ErroresDeParte {
+function conTitulo(lista: { campo: CampoParte; mensaje: string }[], general: string | null, faltan: number, tituloGeneral: string = T.tituloGeneral): ErroresDeParte {
   const base = armarErrores<CampoParte>(lista, general);
   let titulo: string;
-  if (lista.length === 0) titulo = T.tituloGeneral;
+  if (lista.length === 0) titulo = tituloGeneral;
   else if (faltan === lista.length) titulo = T.tituloFaltan(faltan);
   else titulo = T.tituloRevise(lista.length);
   return { ...base, titulo };
@@ -266,9 +266,9 @@ export function erroresDeNegocioParte(error: ErrorDeNegocio): ErroresDeParte {
   return campo === undefined ? conTitulo([], error.mensaje, 0) : conTitulo([{ campo, mensaje: error.mensaje }], null, 0);
 }
 
-/** Solo un error general (sin datos, sin permiso, guardado fallido, algo que cambió en otra pestaña). */
-export function errorGeneralParte(mensaje: string): ErroresDeParte {
-  return conTitulo([], mensaje, 0);
+/** Solo un error general (sin datos, sin permiso, guardado fallido, algo que cambió en otra pestaña). El título por defecto es el del envío; otras acciones pasan el suyo. */
+export function errorGeneralParte(mensaje: string, titulo: string = T.tituloGeneral): ErroresDeParte {
+  return conTitulo([], mensaje, 0, titulo);
 }
 
 // --- Lo que muestra el formulario ------------------------------------------------------------------
