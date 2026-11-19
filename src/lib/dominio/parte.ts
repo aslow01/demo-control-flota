@@ -295,6 +295,11 @@ function advertenciaLegible(valor: unknown): Advertencia | null {
   return null;
 }
 
+/** Las advertencias que se pueden leer de un valor de afuera (el detalle de un error, un parte guardado); lo que no es una advertencia se descarta. */
+export function advertenciasLegibles(valor: unknown): Advertencia[] {
+  return Array.isArray(valor) ? valor.map(advertenciaLegible).filter((a): a is Advertencia => a !== null) : [];
+}
+
 function instanteLegible(valor: unknown): string | null {
   return typeof valor === "string" && parsearInstante(valor) !== null ? valor : null;
 }
@@ -334,7 +339,7 @@ export function parteLegible(crudo: unknown): Parte | null {
     checklist,
     otraNovedad:
       esObjeto(otra) && typeof otra["descripcion"] === "string" ? { descripcion: otra["descripcion"], impideUso: otra["impideUso"] === true } : null,
-    advertenciasAceptadas: Array.isArray(crudo["advertenciasAceptadas"]) ? crudo["advertenciasAceptadas"].map(advertenciaLegible).filter((a): a is Advertencia => a !== null) : [],
+    advertenciasAceptadas: advertenciasLegibles(crudo["advertenciasAceptadas"]),
     documentacionVencida: Array.isArray(crudo["documentacionVencida"]) ? crudo["documentacionVencida"].filter(tipoDeDocumentoLegible) : [],
     creado: instanteLegible(crudo["creado"]) ?? "",
     actualizado: instanteLegible(crudo["actualizado"]) ?? "",

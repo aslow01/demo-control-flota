@@ -34,7 +34,7 @@ import { formatearHora } from "../dominio/fechas.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
 import { comandoDeBorrador, erroresDeNegocioParte, errorGeneralParte, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { kmDeRegistro, registroAnterior } from "../dominio/kilometraje.ts";
-import { esBorradorVacio } from "../dominio/parte.ts";
+import { advertenciasLegibles, esBorradorVacio } from "../dominio/parte.ts";
 import {
   comandoDeAsignacion,
   comandoDeBaja,
@@ -755,7 +755,7 @@ export class EstadoApp {
     const r = await this.ejecutarAhora({ tipo: "enviarParte", parteId: borrador.id, advertenciasAceptadas: aceptadas });
     if (!r.ok) {
       if (r.error.codigo === "advertencias-sin-aceptar") {
-        const pendientes = (r.error.detalle?.["advertencias"] ?? []) as Advertencia[];
+        const pendientes = advertenciasLegibles(r.error.detalle?.["advertencias"]);
         return {
           tipo: "advertencias",
           advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a), tono: a.tipo === "documentacion-vencida" ? "critico" : "semana" })),

@@ -2,7 +2,7 @@
 // pasó la revisión mínima de D7) no tiene que romper la pantalla: se lee lo que se pueda, lo demás queda como «sin responder» o vacío, y siempre se puede
 // descartar o completar el borrador. Los datos del almacenamiento son entrada externa.
 import { describe, expect, it } from "vitest";
-import { esBorradorVacio, parteLegible } from "../src/lib/dominio/parte.ts";
+import { advertenciasLegibles, esBorradorVacio, parteLegible } from "../src/lib/dominio/parte.ts";
 import type { Estado, Parte } from "../src/lib/dominio/tipos.ts";
 import { valoresDeParte } from "../src/lib/dominio/formulario-parte.ts";
 import { inicioDelConductor, panelDeParteEnviado, vistaDeParte } from "../src/lib/estado/parte.ts";
@@ -203,5 +203,16 @@ describe("la aplicación con un borrador roto en el almacenamiento", () => {
     const guardado = app.estado?.partes.find((p) => p.id === "pr");
     expect(parteLegible(guardado as Parte)).toEqual(guardado);
     expect(guardado).toMatchObject({ kmInicio: 84320, kmFin: 84400 });
+  });
+});
+
+describe("advertenciasLegibles (código B4: sin casts sobre el detalle de un error)", () => {
+  it("devuelve las advertencias bien formadas y descarta el resto; un valor que no es una lista da una lista vacía", () => {
+    expect(advertenciasLegibles([{ tipo: "salto-km", km: 900 }, null, "x", { tipo: "recorrido-largo" }, { tipo: "documentacion-vencida", documentos: ["seguro", "nada"] }])).toEqual([
+      { tipo: "salto-km", km: 900 },
+      { tipo: "documentacion-vencida", documentos: ["seguro"] },
+    ]);
+    expect(advertenciasLegibles(undefined)).toEqual([]);
+    expect(advertenciasLegibles({ tipo: "salto-km", km: 1 })).toEqual([]);
   });
 });
