@@ -918,3 +918,25 @@ ResultadoDeEnvio =
 frenos con novedad → eventos `parte-enviado`, `novedad-abierta`, `fuera-de-servicio`, la unidad pasa de 4 a 5 en el protagonista del encargado («fuera de servicio»), sube en uno la fila de novedades críticas de operación, el Horizonte queda igual y la ficha dice «fuera de servicio». Además: doble envío, parte ya enviado, parte de otra fecha (C13 «fuera de término» y adiós a la alerta P5), unidad inexistente, fuera de servicio y de baja, conductor sin unidad asignada, salto absurdo, P12 (falla del envío, el borrador no cambia), D10 (falla del guardado) y partes con la forma rota.
 `npm test`: 1234 tests (1060 + 174), verdes también con `npm run test:tz` (UTC, Asia/Tokyo y America/Los_Angeles); `npm run check`: 0 errores; `npm run buscar`: sin hallazgos.
 Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) con el diálogo «Antes de enviar», el panel «Parte enviado» y el parte en lectura; revisión de los textos nuevos por `redactor-ux`.
+
+## 18/11/2026 (noche, 16 · rama `interfaz-etapa-0`) — Correcciones de lógica de la revisión de la Etapa 4
+
+**Qué se hizo.** Los hallazgos de lógica de los informes de QA y de código de la Etapa 4, con el test que falla primero. Lo de presentación (QA M1, accesibilidad, código M2 y M7) queda para el maquetador.
+
+| Hallazgo | Arreglo |
+| --- | --- |
+| QA A1 (alta): una pestaña desactualizada pisa lo hecho en otra | `EstadoApp.ejecutarAhora` rechaza todo comando con `cambios-en-otra-pestana` mientras el aviso D9 siga sin atender (texto nuevo `ERRORES_PESTANAS`). 5 tests con dos pestañas sobre el mismo almacenamiento (baja que no se deshace, renovación que no se duplica, formularios, «Actualizar» y «Reiniciar demo» siguen). |
+| QA M2: `84.5` en un `Campo` km pasaba a 845 | `reformatearKm` (kilometraje.ts, basada en `parsearKm`) solo reformatea un entero bien escrito; `Campo.svelte` la usa y `formulario-parte.ts` la reexporta (había una copia). 4 tests (decimales, `1.2.3`, `1.000.00`, `12 3`, espacios no separables). |
+| QA M3 y código M1(a): datos con el tipo roto dejaban la pantalla en blanco | El arranque (D7) valida el tipo de todos los campos que leen las pantallas (unidades, conductores, proyectos, documentos, novedades, correcciones, eventos). 30 tests de casos dañados que regeneran el ejemplo con el aviso, más uno que confirma que un parte con checklist incompleto sigue leyéndose con `parteLegible`. |
+| Código M1(b): sin red de seguridad | `<svelte:boundary>` en `main` de `App.svelte` con pantalla de error (recargar / reiniciar demo); reintenta al cambiar de pantalla. Sin test automático (no hay DOM en vitest): ver «Sin verificar». |
+| Código M3: un guardado que falla deja el diálogo bloqueado | `guardarConIndicador` (estado/guardado.ts, 5 tests) con `try/catch/finally`; los tres diálogos de formulario lo usan. |
+| Código M4: casts que mienten | `Comando.altaUnidad.tipoUnidad` y `cargarDocumento.tipoDocumento` son `string` y el dominio los estrecha con `esTipoDeUnidad` / `esTipoDocumento`; `cargarOtroDocumento` estrecha antes de armar el comando. 2 tests. Quedan los casts de `DialogoFormulario` (genérico, aceptable según el informe) y `a.grupo as Grupo` (el informe lo deja «a futuro»). |
+
+**Decisiones propias** (también en `diseno.md`, sección 16, última viñeta): pestaña desactualizada = solo lectura para todos los comandos (incluye el autoguardado del parte); los partes quedan fuera de la validación estricta del arranque porque `parteLegible` los tolera a propósito; la pantalla de error del boundary usa los botones del marco.
+
+**Textos nuevos** (al final de `src/lib/dominio/textos.ts`, para que el redactor los revise): `ERRORES_PESTANAS.escrituraConCambiosEnOtraPestana` y `TEXTO_ERROR_PANTALLA` (`titulo`, `mensaje`).
+
+**Para el maquetador.** `DialogoDocumento` y `DialogoUnidad` siguen duplicando a `DialogoFormulario` (código M2): los tres ya usan `guardarConIndicador`, así que al unificarlos queda un solo lugar. El `<svelte:boundary>` de `App.svelte` envuelve el `{#if}` de `main` sin reindentarlo (para no tocar de más el archivo); la pantalla de error reusa las clases `.encabezado`, `.parrafo` y `.acciones-error`. Vale revisar cómo se ve (360 px y claro/oscuro).
+
+**Verificación.** `npm test`: 1275 tests (1234 antes), también con `npm run test:tz`; `npm run check`: 0 errores; `npm run build` y `npm run buscar`: sin hallazgos.
+**Sin verificar.** El boundary no se probó en un navegador (no hay forma sencilla de forzar un error de dibujo, y el arranque ahora regenera los datos dañados que lo provocaban antes); que «Reiniciar demo» repare datos dañados (QA M3) ya no hace falta, porque el arranque los regenera.
