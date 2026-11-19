@@ -110,7 +110,7 @@ describe("las pantallas con un borrador roto", () => {
     expect(v.parteId).toBe("pr");
     expect(v.valoresIniciales).toMatchObject({ kmInicio: "", kmFin: "84.400" });
     expect(v.valoresIniciales.checklist.frenos.respuesta).toBe("");
-    expect(v.borrador).toEqual({ guardadoEl: null, hora: null, mensaje: "Borrador recuperado." });
+    expect(v.borrador).toEqual({ mensaje: "Borrador recuperado." });
   });
 
   it("un parte con la fecha rota no es de ninguna fecha: se ignora (la pantalla del día se abre como nuevo)", () => {

@@ -4,7 +4,7 @@
 
 import type { ResultadoAlertas } from "../dominio/alertas.ts";
 import { aptitud } from "../dominio/aptitud.ts";
-import { diasEntre, fechaEnArgentina, formatearFecha, formatearHora, formatearInstante, parsearInstante } from "../dominio/fechas.ts";
+import { diasEntre, fechaEnArgentina, formatearFecha, formatearHora, parsearInstante } from "../dominio/fechas.ts";
 import { opcionesDeConductor, type OpcionDeConductor } from "../dominio/formulario.ts";
 import { OPCIONES_COMBUSTIBLE, faltantesDeValores, valoresDeParte, valoresIniciales, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { describirRegistro, kmDeRegistro, registroAnterior, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
@@ -28,7 +28,6 @@ import {
   textoLineaParteEnviado,
   textoLitros,
   textoNovedadesDelParte,
-  textoParteReciente,
   textoPendienteBorrador,
   textoPendienteSinParte,
   textoPuntosEnOrdenConNombres,
@@ -84,19 +83,15 @@ export interface FilaDeParteReciente {
   parteId: string;
   /** `17/11/2026`. */
   fecha: string;
-  /** `17/11`. */
-  fechaCorta: string;
   patenteTexto: string;
   /** «132 km» o «Sin uso». */
   recorrido: string;
   href: string;
-  nombreAccesible: string;
 }
 
 export interface InicioDelConductor {
   /** El `h1`: «Parte diario». */
   titulo: string;
-  conductor: { id: string; nombre: string };
   hoy: { titulo: string };
   /** La unidad del panel «Hoy»: la elegida o, si no hay, la asignada. `null` si hay que elegir una. */
   unidad: {
@@ -241,12 +236,11 @@ export function inicioDelConductor(
       const patenteTexto = formatearPatente(u.patente);
       const recorrido = textoRecorrido(p.kmFin - p.kmInicio);
       const fecha = formatearFecha(p.fecha);
-      return [{ parteId: p.id, fecha, fechaCorta: fecha.slice(0, 5), patenteTexto, recorrido, href: hrefDelParte(u, p.fecha), nombreAccesible: textoParteReciente(p.fecha, patenteTexto, recorrido) }];
+      return [{ parteId: p.id, fecha, patenteTexto, recorrido, href: hrefDelParte(u, p.fecha) }];
     });
 
   return {
     titulo: nombreDePantalla({ tipo: "conductor" }),
-    conductor: { id: conductor.id, nombre: conductor.nombre },
     hoy: { titulo: textoHoyDelConductor(hoy) },
     unidad:
       unidad === null
@@ -347,15 +341,13 @@ export interface ParteEnEdicion {
   interno: string;
   descripcion: string;
   fecha: FechaCivil;
-  fechaTexto: string;
-  esHoy: boolean;
   /** «Este parte es del 17/11/2026: se va a enviar fuera de término.» */
   avisoFueraDeTermino: string | null;
   avisoAptitud: string | null;
   /** El id del borrador guardado; `null` si todavía no se guardó nada (se crea con el primer cambio). */
   parteId: string | null;
   /** Un borrador que ya existía al abrir (por ejemplo, tras recargar): cuándo se guardó. */
-  borrador: { guardadoEl: string | null; hora: string | null; mensaje: string } | null;
+  borrador: { mensaje: string } | null;
   /** Perfil Conductor: el conductor es quien completa (texto fijo). Perfil Encargado: un `select`. */
   conductor: { tipo: "fijo"; id: string; nombre: string } | { tipo: "elegir"; etiqueta: string; opciones: OpcionDeConductor[] };
   /**
@@ -442,12 +434,8 @@ function lecturaDe(estado: Estado, unidad: Unidad, parte: Parte, perfil: Perfil)
 /** Cuándo se guardó el borrador que se retoma; sin un instante legible, solo «Borrador recuperado.» */
 function borradorRecuperado(p: Parte): NonNullable<ParteEnEdicion["borrador"]> {
   const hora = horaDe(p.actualizado === "" ? null : p.actualizado);
-  if (hora === null) return { guardadoEl: null, hora: null, mensaje: TEXTO_GUARDADO.recuperadoSinFecha };
-  return {
-    guardadoEl: formatearInstante(p.actualizado),
-    hora,
-    mensaje: TEXTO_GUARDADO.recuperado(formatearFecha(fechaEnArgentina(p.actualizado)), hora),
-  };
+  if (hora === null) return { mensaje: TEXTO_GUARDADO.recuperadoSinFecha };
+  return { mensaje: TEXTO_GUARDADO.recuperado(formatearFecha(fechaEnArgentina(p.actualizado)), hora) };
 }
 
 /** Por qué no se puede cargar un parte nuevo o seguir uno empezado (P8 y P2, en el orden en que los revisa el comando); `null` si se puede. */
@@ -510,8 +498,6 @@ export function vistaDeParte(estado: Estado, hoy: FechaCivil, perfil: Perfil, pa
     interno: textoInterno(unidad.interno),
     descripcion: textoDescripcionUnidad(unidad.marca, unidad.modelo, unidad.anio, unidad.tipo),
     fecha,
-    fechaTexto: formatearFecha(fecha),
-    esHoy: fecha === hoy,
     avisoFueraDeTermino: fecha < hoy ? TEXTO_FORMULARIO_PARTE.fueraDeTermino(fecha) : null,
     avisoAptitud: aviso,
     parteId: existente?.id ?? null,

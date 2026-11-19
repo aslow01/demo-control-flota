@@ -1033,11 +1033,6 @@ export function textoSuLicencia(d: number | null, vence: FechaCivil | null): str
   return `Vence en ${d} días (${fecha})`;
 }
 
-/** Fila de «Mis últimos partes»: nombre accesible del enlace. */
-export function textoParteReciente(fecha: FechaCivil, patente: string, recorrido: string): string {
-  return `Parte del ${formatearFecha(fecha)} de ${patente}, ${recorrido}`;
-}
-
 export const TEXTO_PANTALLA_PARTE = {
   noDisponible: "No se puede cargar este parte",
   descartar: "Descartar borrador",

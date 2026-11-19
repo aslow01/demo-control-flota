@@ -85,7 +85,7 @@ describe("las vistas según la ruta y el perfil", () => {
   it("perfil Conductor en #/parte/ZYN469/…: el parte nuevo con su kilometraje inicial (P13) y el conductor fijo", async () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
     const v = edicion(app);
-    expect(v).toMatchObject({ patenteTexto: "ZYN 469", interno: "Int. 01", esHoy: true, parteId: null, borrador: null, conductor: { tipo: "fijo", id: "c-01", nombre: "Andrés Echegaray" } });
+    expect(v).toMatchObject({ patenteTexto: "ZYN 469", interno: "Int. 01", parteId: null, borrador: null, conductor: { tipo: "fijo", id: "c-01", nombre: "Andrés Echegaray" } });
     expect(v.valoresIniciales).toMatchObject({ conductorId: "c-01", kmInicio: "120.720" });
     expect(v.ayudaKmInicio).toBe("Último registro: 120.720 km (parte del 17/11/2026).");
   });
@@ -101,7 +101,6 @@ describe("las vistas según la ruta y el perfil", () => {
     const { app } = await iniciada({ perfil: C07 });
     const v = app.inicioDelConductor();
     expect(v).toMatchObject({
-      conductor: { nombre: "Tamara Olivera" },
       unidad: { patenteTexto: "ZK 214 BD", interno: "Int. 07" },
       hoyEstado: { tipo: "sin-parte", primario: { texto: "Empezar el parte", href: "#/parte/ZK214BD/2026-11-18" } },
       avisoAptitud: "ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.",
@@ -152,7 +151,7 @@ describe("autoguardado del borrador (P3) y recarga", () => {
     const w = edicion(otra.app);
     expect(w.parteId).toBe("nuevo-1");
     expect(w.valoresIniciales).toEqual(v);
-    expect(w.borrador).toEqual({ guardadoEl: "18/11/2026 12:00", hora: "12:00", mensaje: "Borrador recuperado, guardado en este equipo el 18/11/2026 a las 12:00." });
+    expect(w.borrador).toEqual({ mensaje: "Borrador recuperado, guardado en este equipo el 18/11/2026 a las 12:00." });
     expect(w.valoresIniciales.checklist.luces).toEqual({ respuesta: "con-novedad", descripcion: "Una baliza no enciende", impideUso: false });
   });
 
@@ -605,7 +604,7 @@ describe("enviar el parte (P4, P12, K2, K3)", () => {
     const uid = idDe(app, "ZW749JE");
     expect(app.alertas?.alertas.some((a) => a.tipo === "parte-sin-enviar" && a.unidadId === uid)).toBe(true);
     const v = edicion(app);
-    expect(v).toMatchObject({ parteId: "pt-0579", esHoy: false, avisoFueraDeTermino: "Este parte es del 17/11/2026: se va a enviar fuera de término." });
+    expect(v).toMatchObject({ parteId: "pt-0579", avisoFueraDeTermino: "Este parte es del 17/11/2026: se va a enviar fuera de término." });
     const r = await app.enviarParte(uid, "2026-11-17", completo(v.valoresIniciales));
     expect(r.tipo).toBe("enviado");
     if (r.tipo !== "enviado") return;

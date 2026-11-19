@@ -45,7 +45,6 @@ describe("inicio del conductor (6.4)", () => {
     const v = inicio(flotaDePrueba());
     expect(v).toMatchObject({
       titulo: "Parte diario",
-      conductor: { id: "c1", nombre: "Luis Ferreyra" },
       hoy: { titulo: "Hoy, miércoles 18/11/2026" },
       unidad: { unidadId: "u1", patente: "ZK214BD", patenteTexto: "ZK 214 BD", interno: "Int. 07", ultimoRegistro: "Último registro: 84.320 km (parte del 17/11/2026)." },
       hoyEstado: { tipo: "sin-parte", primario: { texto: "Empezar el parte", href: "#/parte/ZK214BD/2026-11-18" } },
@@ -189,7 +188,7 @@ describe("inicio del conductor (6.4)", () => {
     e.partes.push(parte({ id: "borr", estado: "borrador", enviado: null, fecha: "2026-11-16", conductorId: "c1" }));
     const u = inicio(e)?.ultimosPartes;
     expect(u?.filas.map((f) => f.parteId)).toEqual(["h7", "h6", "h5", "h4", "h3"]);
-    expect(u?.filas[0]).toEqual({ parteId: "h7", fecha: "17/11/2026", fechaCorta: "17/11", patenteTexto: "ZK 214 BD", recorrido: "70 km", href: "#/parte/ZK214BD/2026-11-17", nombreAccesible: "Parte del 17/11/2026 de ZK 214 BD, 70 km" });
+    expect(u?.filas[0]).toEqual({ parteId: "h7", fecha: "17/11/2026", patenteTexto: "ZK 214 BD", recorrido: "70 km", href: "#/parte/ZK214BD/2026-11-17" });
     expect(u?.vacio).toBeNull();
   });
 
@@ -221,8 +220,6 @@ describe("pantalla del parte, edición (6.5)", () => {
       interno: "Int. 07",
       descripcion: "Marca Modelo 2020 · Camioneta",
       fecha: H,
-      fechaTexto: "18/11/2026",
-      esHoy: true,
       avisoFueraDeTermino: null,
       avisoAptitud: null,
       parteId: null,
@@ -285,7 +282,7 @@ describe("pantalla del parte, edición (6.5)", () => {
     expect(v.parteId).toBe(g.cambios.partes[0]?.id);
     expect(v.valoresIniciales).toMatchObject({ kmInicio: "84.320", kmFin: "84.400", combustible: "cuarto", litros: "45,5" });
     expect(v.valoresIniciales.checklist.frenos).toEqual({ respuesta: "con-novedad", descripcion: "Ruido al frenar", impideUso: true });
-    expect(v.borrador).toEqual({ guardadoEl: "18/11/2026 12:00", hora: "12:00", mensaje: "Borrador recuperado, guardado en este equipo el 18/11/2026 a las 12:00." });
+    expect(v.borrador).toEqual({ mensaje: "Borrador recuperado, guardado en este equipo el 18/11/2026 a las 12:00." });
   });
 
   it("un parte de un día pasado (dentro de los 7 días): aviso de fuera de término y el kilometraje inicial sale del registro anterior a esa fecha", () => {
@@ -300,7 +297,7 @@ describe("pantalla del parte, edición (6.5)", () => {
     const w = ver({ ...e, partes: [...e.partes.filter((p) => p.id !== "p17"), posterior] }, COND, "ZK214BD", "2026-11-17");
     expect(w.tipo).toBe("edicion");
     if (w.tipo !== "edicion") return;
-    expect(w).toMatchObject({ esHoy: false, avisoFueraDeTermino: "Este parte es del 17/11/2026: se va a enviar fuera de término.", ayudaKmInicio: "Último registro: 84.000 km (parte del 16/11/2026)." });
+    expect(w).toMatchObject({ avisoFueraDeTermino: "Este parte es del 17/11/2026: se va a enviar fuera de término.", ayudaKmInicio: "Último registro: 84.000 km (parte del 16/11/2026)." });
     expect(w.valoresIniciales.kmInicio).toBe("84.000");
   });
 
