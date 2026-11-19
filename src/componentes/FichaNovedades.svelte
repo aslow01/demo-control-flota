@@ -20,12 +20,15 @@
     novedades,
     idTitulo,
     estado = "",
+    repetir,
     alResolver,
     alCargar,
   }: {
     novedades: PanelNovedades;
     idTitulo: string;
     estado?: string;
+    /** Cambia cada vez que la pantalla emite un mensaje, aunque el texto sea el mismo (así se vuelve a anunciar). */
+    repetir?: unknown;
     alResolver: (novedadId: string) => void;
     alCargar: () => void;
   } = $props();
@@ -53,7 +56,7 @@
   }
 </script>
 
-<Panel id={idTitulo} titulo={novedades.titulo} icono="novedad" meta={novedades.rotuloCantidad} {estado}>
+<Panel id={idTitulo} titulo={novedades.titulo} icono="novedad" meta={novedades.rotuloCantidad} {estado} {repetir}>
   <FiltrosConteo leyenda={T.mostrar} opciones={novedades.filtros} valor={filtro} alElegir={elegirFiltro} />
   <div class="solo-lectores" role="status">{anuncio}</div>
 

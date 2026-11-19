@@ -35,6 +35,7 @@
   import { CELDA } from "./lista-roles.ts";
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
+  import { TEXTO_CENTRO } from "../lib/dominio/textos.ts";
   import { TEXTO_ALERTAS as T } from "./textos-marco.ts";
   import type { Tono } from "./tipos.ts";
 
@@ -117,7 +118,8 @@
   let guardarDocumento = $state.raw<(valores: ValoresDocumento) => Promise<ResultadoGuardado<CampoDocumento>>>(() =>
     Promise.resolve({ ok: true, mensaje: "", foco: "titulo-del-panel" }),
   );
-  let estadoVencimientos = $state("");
+  // Cada mensaje es un objeto nuevo: dos iguales seguidos («Seguro renovado…») cambian la identidad y el panel los vuelve a anunciar.
+  let estadoVencimientos = $state({ texto: "" });
 
   function abrirDialogo(accion: AccionDeDocumento): void {
     const estado = app.estado;
@@ -126,7 +128,7 @@
       const documentoId = accion.documentoId;
       const ctx = contextoDeRenovar(estado, documentoId, app.hoy);
       if (ctx === null) {
-        estadoVencimientos = T.yaNoPendiente;
+        estadoVencimientos = { texto: T.yaNoPendiente };
         return;
       }
       contextoDialogo = { titulo: ctx.titulo, contexto: ctx.contexto, primario: ctx.primario, valoresIniciales: ctx.valoresIniciales };
@@ -134,7 +136,7 @@
     } else {
       const ctx = contextoDeCargar(estado, accion.titular, accion.tipoDocumento);
       if (ctx === null) {
-        estadoVencimientos = T.yaNoPendiente;
+        estadoVencimientos = { texto: T.yaNoPendiente };
         return;
       }
       contextoDialogo = { titulo: ctx.titulo, primario: ctx.primario, valoresIniciales: ctx.valoresIniciales };
@@ -144,26 +146,26 @@
   }
 
   function alGuardar(r: { mensaje: string }): void {
-    estadoVencimientos = r.mensaje;
+    estadoVencimientos = { texto: r.mensaje };
   }
 
   // ---------- Diálogo Resolver (novedades) ----------
   let dialogoResolverAbierto = $state(false);
   let contextoResolver = $state.raw<ReturnType<typeof contextoDeResolver>>(null);
-  let estadoDetalle = $state("");
+  let estadoDetalle = $state({ texto: "" });
 
   function abrirResolver(novedadId: string): void {
     const estado = app.estado;
     if (estado === null) return;
     contextoResolver = contextoDeResolver(estado, novedadId, app.hoy);
     if (contextoResolver === null) {
-      estadoDetalle = T.novedadYaResuelta;
+      estadoDetalle = { texto: T.novedadYaResuelta };
       return;
     }
     dialogoResolverAbierto = true;
   }
   function alResolver(r: { mensaje: string }): void {
-    estadoDetalle = r.mensaje;
+    estadoDetalle = { texto: r.mensaje };
   }
   // A dónde va el foco al cerrarse un diálogo: reciben el resultado del guardado, o `null` si se cerró sin guardar (el foco vuelve al botón que lo abrió, 5.17).
   /** La fila que abrió «Resolver» ya no existe: el foco va al título del detalle o, si quedó vacío, al de «Operación diaria». */
@@ -177,6 +179,10 @@
     return document.getElementById(ID_TITULO_VENCIMIENTOS);
   }
 </script>
+
+<!-- «Disponibles hoy: 20 de 23 unidades activas.»: es un dato de la pantalla, no un mensaje de lo que se hizo; sin `role="status"` no se anuncia cada vez que cambian los datos
+     (guardar un documento lo cambiaba y pisaba la confirmación, auditoría de accesibilidad M3). -->
+{#snippet disponibles()}{c?.protagonista.disponibles}{/snippet}
 
 {#if c !== null && v !== null}
   <div class="pantalla">
@@ -193,7 +199,7 @@
         titulo={c.protagonista.titulo}
         icono="vencido"
         meta={T.alFecha(formatearFecha(app.hoy))}
-        estado={c.protagonista.disponibles}
+        contenidoEstado={c.protagonista.disponibles === "" ? undefined : disponibles}
       >
         <div class="protagonista" data-tono={c.protagonista.tono}>
           {#if c.protagonista.cifra > 0}
@@ -253,7 +259,7 @@
     </div>
 
     <!-- 3: horizonte, filtros y lista de vencimientos. -->
-    <Panel id={ID_TITULO_VENCIMIENTOS} titulo={c.vencimientos.titulo} icono="calendario" meta={c.vencimientos.rotuloCantidad} estado={estadoVencimientos}>
+    <Panel id={ID_TITULO_VENCIMIENTOS} titulo={c.vencimientos.titulo} icono="calendario" meta={c.vencimientos.rotuloCantidad} estado={estadoVencimientos.texto} repetir={estadoVencimientos}>
       <Horizonte horizonte={c.vencimientos.horizonte} />
       <FiltrosConteo leyenda={T.mostrar} opciones={filtros} valor={filtro} alElegir={elegirFiltro} />
       <div class="solo-lectores" role="status">{anuncioFiltro}</div>
@@ -295,8 +301,8 @@
                 </span>
               {/if}
             </td>
-            <td {...CELDA} data-col="proyecto" data-etiqueta={T.proyectoDe}>{f.proyecto ?? "—"}</td>
-            <td {...CELDA} data-col="vence" data-etiqueta={T.venceEl}>{f.vence}</td>
+            <td {...CELDA} data-col="proyecto" data-etiqueta={T.proyectoDe}>{#if f.proyecto !== null}{f.proyecto}{:else}<span aria-hidden="true">—</span><span class="solo-lectores">{T.sinProyecto}</span>{/if}</td>
+            <td {...CELDA} data-col="vence" data-etiqueta={T.venceEl}>{#if f.vence === TEXTO_CENTRO.sinFecha}<span aria-hidden="true">{f.vence}</span><span class="solo-lectores">{T.sinFecha}</span>{:else}{f.vence}{/if}</td>
             <td {...CELDA} data-col="accion">
               <Boton variante="secundario" onclick={() => abrirDialogo(f.accion)}>
                 {f.accion.etiqueta}<span class="solo-lectores">{sufijoAccesible(f.accion.nombreAccesible, f.accion.etiqueta)}</span>
@@ -308,8 +314,8 @@
     </Panel>
 
     <!-- 4: detalle de la operación (solo los tipos con pendientes). -->
-    {#if gruposDetalle.length > 0 || estadoDetalle !== ""}
-      <Panel id="titulo-detalle" titulo={c.detalle.titulo} icono="novedad" estado={estadoDetalle}>
+    {#if gruposDetalle.length > 0 || estadoDetalle.texto !== ""}
+      <Panel id="titulo-detalle" titulo={c.detalle.titulo} icono="novedad" estado={estadoDetalle.texto} repetir={estadoDetalle}>
         {#if gruposDetalle.length === 0}
           <p class="vacio"><Icono nombre="check" />{c.operacion.vacio ?? ""}</p>
         {:else}
@@ -330,7 +336,7 @@
                   <Patente patente={x.fila.unidad.patente} href={x.fila.unidad.href} /><span class="interno">{x.fila.unidad.interno}</span>
                 </span>
               </td>
-              <td {...CELDA} data-col="fecha" data-etiqueta={T.columnasOperacion.fecha}>{x.fila.fecha}</td>
+              <td {...CELDA} data-col="fecha" data-etiqueta={T.columnasOperacion.fecha}>{#if x.fila.fecha === TEXTO_CENTRO.sinFecha}<span aria-hidden="true">{x.fila.fecha}</span><span class="solo-lectores">{T.sinFecha}</span>{:else}{x.fila.fecha}{/if}</td>
               <td {...CELDA} data-col="accion">
                 {#if x.fila.accion.tipo === "resolver"}
                   {@const accion = x.fila.accion}

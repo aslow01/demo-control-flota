@@ -248,7 +248,7 @@
             </td>
             <td {...CELDA} data-col="proyecto" data-etiqueta={T.columnas.proyecto}>
               <span class="apilado">
-                <span>{f.proyecto ?? "—"}</span>
+                <span>{#if f.proyecto !== null}{f.proyecto}{:else}<span aria-hidden="true">—</span><span class="solo-lectores">{T.sinProyecto}</span>{/if}</span>
                 <span class="nota">{f.conductor ?? T.sinConductor}</span>
               </span>
             </td>

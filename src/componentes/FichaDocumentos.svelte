@@ -21,6 +21,7 @@
     documentos,
     idTitulo,
     estado = "",
+    repetir,
     alAccion,
     alCargarOtro,
   }: {
@@ -29,6 +30,8 @@
     idTitulo: string;
     /** El mensaje de lo último que se hizo acá. */
     estado?: string;
+    /** Cambia cada vez que la pantalla emite un mensaje, aunque el texto sea el mismo (así se vuelve a anunciar). */
+    repetir?: unknown;
     alAccion: (accion: AccionDeDocumentoEnFicha) => void;
     alCargarOtro: () => void;
   } = $props();
@@ -60,7 +63,7 @@
   }
 </script>
 
-<Panel id={idTitulo} titulo={documentos.titulo} icono="documento" meta={documentos.rotuloCantidad} {estado}>
+<Panel id={idTitulo} titulo={documentos.titulo} icono="documento" meta={documentos.rotuloCantidad} {estado} {repetir}>
   <Horizonte horizonte={documentos.horizonte} />
   {#if documentos.filas.length === 0}
     <p class="vacio"><Icono nombre="guion" />{T.documentos.sinDocumentos}</p>

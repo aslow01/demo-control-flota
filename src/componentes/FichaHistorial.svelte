@@ -5,9 +5,10 @@
   //    puntos con novedad, «8 puntos en orden», advertencias y el enlace al parte); el documento corregido muestra «Antes / Después» por campo.
   //  - «Ver 30 más»: el foco va al primer evento nuevo (`ids[límiteAnterior]`). Cambiar el filtro vuelve al primer tramo de 30.
   //  - La barra de estado del panel dice «Mostrando 30 de 128 eventos.» y es la región viva: se actualiza al elegir un filtro y al pedir más.
-  import { tick, untrack } from "svelte";
+  import { tick } from "svelte";
   import { vistaDeHistorial, PASO_HISTORIAL, type IdFiltroHistorial, type PanelHistorial } from "../lib/estado/ficha.ts";
   import { TEXTO_FICHA } from "../lib/dominio/textos.ts";
+  import { textoAnunciado } from "./anuncio.svelte.ts";
   import Boton from "./Boton.svelte";
   import Detalles from "./Detalles.svelte";
   import FiltrosConteo from "./FiltrosConteo.svelte";
@@ -21,27 +22,22 @@
   let limite = $state(PASO_HISTORIAL);
   const vista = $derived(vistaDeHistorial(historial, filtro, limite));
 
-  // La barra de estado arranca con el conteo de ahora y se pone al día al elegir un filtro, pedir más o cuando cambian los datos.
-  let anuncio = $state(untrack(() => vista.anuncio));
-  let historialAnterior = untrack(() => historial);
-  $effect(() => {
-    const actual = historial;
-    if (actual === historialAnterior) return;
-    historialAnterior = actual;
-    untrack(() => (anuncio = vista.anuncio));
-  });
+  // La barra de estado muestra siempre el conteo de ahora (texto simple, sin `role="status"`: cuando cambian los datos por una acción de otro panel no se anuncia, para no
+  // pisar el mensaje de esa acción). Lo que sí se dice es lo que hace la persona en este panel (elegir un filtro, pedir más), en una región aparte que existe desde el principio.
+  let accion = $state({ texto: "" });
+  const anunciado = textoAnunciado(() => ({ texto: accion.texto, repetir: accion }));
 
   function elegirFiltro(id: IdFiltroHistorial): void {
     filtro = id;
     limite = PASO_HISTORIAL;
-    anuncio = vistaDeHistorial(historial, id, PASO_HISTORIAL).anuncio;
+    accion = { texto: vistaDeHistorial(historial, id, PASO_HISTORIAL).anuncio };
   }
 
   async function verMas(): Promise<void> {
     const antes = limite;
     limite = antes + PASO_HISTORIAL;
     await tick();
-    anuncio = vista.anuncio;
+    accion = { texto: vista.anuncio };
     const primeroNuevo = vista.ids[antes];
     if (primeroNuevo !== undefined) document.getElementById(idDeEvento(primeroNuevo))?.focus();
   }
@@ -49,7 +45,12 @@
   const idDeEvento = (eventoId: string): string => `${idTitulo}-ev-${eventoId}`;
 </script>
 
-<Panel id={idTitulo} titulo={historial.titulo} icono="reloj" meta={historial.rotuloCantidad} estado={anuncio}>
+{#snippet conteo()}
+  <span>{vista.anuncio}</span>
+  <span class="solo-lectores" role="status">{anunciado.valor}</span>
+{/snippet}
+
+<Panel id={idTitulo} titulo={historial.titulo} icono="reloj" meta={historial.rotuloCantidad} contenidoEstado={conteo}>
   {#snippet herramientas()}
     <FiltrosConteo leyenda={T.mostrar} opciones={historial.filtros} valor={filtro} alElegir={elegirFiltro} />
   {/snippet}
@@ -59,8 +60,9 @@
   {:else}
     <div class="dias">
       {#each vista.grupos as g (g.dia)}
-        <section class="dia" aria-labelledby={`${idTitulo}-dia-${g.dia}`}>
-          <h3 id={`${idTitulo}-dia-${g.dia}`}>{g.titulo}</h3>
+        <!-- Un `div` y no una región: con 30 días serían 30 puntos de referencia (auditoría de accesibilidad B7). El `h3` ya titula el grupo. -->
+        <div class="dia">
+          <h3>{g.titulo}</h3>
           <ul>
             {#each g.eventos as e (e.eventoId)}
               {@const d = e.detalle}
@@ -134,7 +136,7 @@
               </li>
             {/each}
           </ul>
-        </section>
+        </div>
       {/each}
     </div>
     {#if vista.botonVerMas !== null}

@@ -12,7 +12,8 @@
   // - `contenidoEstado` (opcional) pone en su lugar un contenido fijo con un control adentro ("Así lo carga el conductor: Abrir el parte diario"):
   //   al no ser un mensaje que cambia, esa barra no es `role="status"`.
   // - El interior es un contenedor de consultas (`interior`) para que las tablas cambien de disposición por su ancho.
-  import { untrack, type Snippet } from "svelte";
+  import type { Snippet } from "svelte";
+  import { textoAnunciado } from "./anuncio.svelte.ts";
   import Icono from "./Icono.svelte";
   import type { NombreIcono } from "./tipos.ts";
 
@@ -45,16 +46,7 @@
   const uid = $props.id();
   const idTitulo = $derived(id ?? `${uid}-titulo`);
 
-  const ESPERA_ANUNCIO_MS = 80;
-  let anunciado = $state("");
-  $effect(() => {
-    const texto = estado;
-    void repetir;
-    untrack(() => (anunciado = ""));
-    if (texto === "") return;
-    const plazo = setTimeout(() => (anunciado = texto), ESPERA_ANUNCIO_MS);
-    return () => clearTimeout(plazo);
-  });
+  const anunciado = textoAnunciado(() => ({ texto: estado, repetir }));
 </script>
 
 <section class="panel" aria-labelledby={idTitulo}>
@@ -77,7 +69,7 @@
   {#if contenidoEstado !== undefined}
     <div class="estado">{@render contenidoEstado()}</div>
   {:else}
-    <div class="estado" class:vacio={estado === ""} role="status"><span>{anunciado}</span></div>
+    <div class="estado" class:vacio={estado === ""} role="status"><span>{anunciado.valor}</span></div>
   {/if}
 </section>
 

@@ -53,10 +53,12 @@
     --tam: var(--t-patente-grande);
   }
 
-  /* Dentro de un enlace: el rótulo es el enlace. El área de toque llega a 44 px de alto sin cambiar el aspecto. */
+  /* Dentro de un enlace: el rótulo es el enlace. El propio enlace mide 44 px de alto como mínimo (no solo un área invisible), con el rótulo centrado. */
   .enlace-patente {
     position: relative;
     display: inline-flex;
+    align-items: center;
+    min-height: var(--alto-tactil);
     border-radius: var(--r-1);
     text-decoration: none;
     vertical-align: middle;
@@ -65,10 +67,7 @@
     content: "";
     position: absolute;
     inset-inline: -0.25rem;
-    inset-block: calc((var(--alto-tactil) - 1.5rem) / -2);
-  }
-  .enlace-patente:has(.patente[data-tamano="grande"])::after {
-    inset-block: calc((var(--alto-tactil) - 2.25rem) / -2);
+    inset-block: 0;
   }
   @media (hover: hover) {
     .enlace-patente:hover .patente {

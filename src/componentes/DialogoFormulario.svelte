@@ -42,7 +42,7 @@
   import Dialogo from "./Dialogo.svelte";
   import Icono from "./Icono.svelte";
   import ResumenErrores from "./ResumenErrores.svelte";
-  import { TEXTO_DIALOGO_DOCUMENTO, TEXTO_DIALOGOS_FICHA_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_DIALOGO, TEXTO_DIALOGO_DOCUMENTO, TEXTO_DIALOGOS_FICHA_VISTA as T } from "./textos-marco.ts";
 
   let {
     abierto = $bindable(false),
@@ -53,6 +53,7 @@
     cancelar,
     focoInicial = "campo",
     conDescripcion = false,
+    obligatorios = true,
     guardar,
     alGuardar,
     focoDestino,
@@ -71,6 +72,8 @@
     focoInicial?: "campo" | "cancelar" | "titulo";
     /** El diálogo tiene un texto que lo describe: se lee al abrirlo (el contenido lo pone con `idDescripcion`). */
     conDescripcion?: boolean;
+    /** Tiene campos con `*`: la línea «Los campos con * son obligatorios.» va al inicio. Sin campos (Volver a servicio), `false`. */
+    obligatorios?: boolean;
     guardar: (valores: V) => Promise<ResultadoGuardado<C>>;
     alGuardar: (resultado: Extract<ResultadoGuardado<C>, { ok: true }>) => void;
     focoDestino?: DestinoDelFoco;
@@ -163,6 +166,7 @@
     {#if errores?.general}
       <p class="error-general" role="alert"><Icono nombre="vencido" /><span>{errores.general}</span></p>
     {/if}
+    {#if obligatorios}<p class="nota">{TEXTO_DIALOGO.obligatorios}</p>{/if}
     {@render children({ valores, error, idCampo, idDescripcion, cerrarEn })}
   </form>
   {#snippet pie()}

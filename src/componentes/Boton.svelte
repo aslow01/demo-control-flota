@@ -149,6 +149,7 @@
   /* Ícono: 44 × 44 de área, 2 rem de caja visible. El anillo de foco rodea la caja visible. */
   .boton[data-variante="icono"] {
     --icono-tam: 1.125rem;
+    flex: none; /* en una barra con un título largo no se achica por debajo de 44 px */
     width: var(--alto-tactil);
     padding: 0;
     background: none;

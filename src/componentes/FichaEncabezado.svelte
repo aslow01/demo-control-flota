@@ -7,6 +7,7 @@
   //  - La región `role="status"` de abajo existe siempre (vacía no ocupa lugar): el mensaje de lo último que se hizo desde el encabezado.
   import type { AccionDeFicha, FichaDeUnidad, IdAccionDeFicha } from "../lib/estado/ficha.ts";
   import { aspectoDeAptitud } from "./alertas-aspecto.ts";
+  import { textoAnunciado } from "./anuncio.svelte.ts";
   import Aviso from "./Aviso.svelte";
   import Boton from "./Boton.svelte";
   import Dato from "./Dato.svelte";
@@ -22,14 +23,19 @@
   let {
     ficha,
     mensaje = "",
+    repetir,
     alAccion,
   }: {
     ficha: FichaDeUnidad;
     /** Lo último que se hizo desde el encabezado («Unidad agregada…», «ZK 214 BD está fuera de servicio.»). */
     mensaje?: string;
+    /** Cambia cada vez que la pantalla emite un mensaje, aunque el texto sea el mismo (así se vuelve a anunciar). */
+    repetir?: unknown;
     alAccion: (id: IdAccionDeFicha) => void;
   } = $props();
 
+  // El texto del mensaje entra a la región `role="status"` (que existe desde el principio, vacía) unos ms después: también el de llegada («Unidad agregada…»), que nace con la pantalla.
+  const anunciado = textoAnunciado(() => ({ texto: mensaje, repetir }));
   const aspecto = $derived(aspectoDeAptitud(ficha.aptitud.categoria));
   const items = $derived<ItemMenu[]>(
     ficha.acciones.masAcciones.map((a: AccionDeFicha) => ({ id: a.id, texto: a.etiqueta, alActivar: () => alAccion(a.id) })),
@@ -96,7 +102,7 @@
     </div>
   {/if}
 
-  <div class="mensaje" role="status">{#if mensaje !== ""}<Aviso tono="vigente" icono="check">{mensaje}</Aviso>{/if}</div>
+  <div class="mensaje" role="status">{#if mensaje !== ""}<Aviso tono="vigente" icono="check">{anunciado.valor}</Aviso>{/if}</div>
 </div>
 
 <style>

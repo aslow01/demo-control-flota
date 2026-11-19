@@ -12,16 +12,19 @@
     kilometraje,
     idTitulo,
     estado = "",
+    repetir,
     alCorregir,
   }: {
     kilometraje: PanelKilometraje;
     idTitulo: string;
     estado?: string;
+    /** Cambia cada vez que la pantalla emite un mensaje, aunque el texto sea el mismo (así se vuelve a anunciar). */
+    repetir?: unknown;
     alCorregir: () => void;
   } = $props();
 </script>
 
-<Panel id={idTitulo} titulo={kilometraje.titulo} icono="km" meta={kilometraje.rotuloKm} {estado}>
+<Panel id={idTitulo} titulo={kilometraje.titulo} icono="km" meta={kilometraje.rotuloKm} {estado} {repetir}>
   <p class="subtitulo">{kilometraje.subtitulo}</p>
   {#if kilometraje.vacio !== null}
     <p class="vacio"><Icono nombre="guion" />{kilometraje.vacio}</p>

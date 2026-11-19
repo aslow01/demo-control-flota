@@ -38,6 +38,7 @@
   cancelar={contexto?.bloqueo != null ? TEXTO_DIALOGO.cerrar : undefined}
   focoInicial="titulo"
   conDescripcion
+  obligatorios={false}
   guardar={() => guardar()}
   {alGuardar}
   {focoDestino}

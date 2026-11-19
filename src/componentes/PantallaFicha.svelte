@@ -199,7 +199,7 @@
 {#if f !== null}
   {#if f.encontrada}
     <div class="pantalla">
-      <FichaEncabezado ficha={f} mensaje={textoDe("titulo-de-la-ficha")} alAccion={abrirDeEncabezado} />
+      <FichaEncabezado ficha={f} mensaje={textoDe("titulo-de-la-ficha")} repetir={mensaje} alAccion={abrirDeEncabezado} />
 
       <div class="paneles">
         <div class="area area-documentos">
@@ -207,6 +207,7 @@
             documentos={f.documentos}
             idTitulo={ID.documentos}
             estado={textoDe("titulo-de-documentos")}
+            repetir={mensaje}
             alAccion={abrirDocumento}
             alCargarOtro={abrirCargarOtro}
           />
@@ -216,20 +217,22 @@
             novedades={f.novedades}
             idTitulo={ID.novedades}
             estado={textoDe("titulo-de-novedades")}
+            repetir={mensaje}
             alResolver={abrirResolver}
             alCargar={abrirCargarNovedad}
           />
-        </div>
-        <div class="area area-historial">
-          <FichaHistorial historial={f.historial} idTitulo={ID.historial} />
         </div>
         <div class="area area-kilometraje">
           <FichaKilometraje
             kilometraje={f.kilometraje}
             idTitulo={ID.kilometraje}
             estado={textoDe("titulo-de-kilometraje")}
+            repetir={mensaje}
             alCorregir={() => abrirDeEncabezado("corregir-kilometraje")}
           />
+        </div>
+        <div class="area area-historial">
+          <FichaHistorial historial={f.historial} idTitulo={ID.historial} />
         </div>
       </div>
     </div>
@@ -320,7 +323,8 @@
     }
   }
 
-  /* Teléfono y tableta: una columna (documentos, novedades, historial, kilometraje). Escritorio (desde 68,75 rem): documentos en 8 de 12 columnas, novedades y
+  /* Teléfono y tableta: una columna (documentos, novedades, kilometraje, historial). El orden del DOM es el de la columna y el de Tab: en escritorio Kilometraje se ve a la
+     derecha, bajo Novedades, y viene antes que el historial (que puede tener decenas de eventos). Escritorio (desde 68,75 rem): documentos en 8 de 12 columnas, novedades y
      kilometraje en las otras 4 y el historial a todo el ancho. */
   .paneles {
     display: grid;
@@ -328,8 +332,8 @@
     grid-template-areas:
       "documentos"
       "novedades"
-      "historial"
-      "kilometraje";
+      "kilometraje"
+      "historial";
     gap: var(--e-5);
   }
   .area {

@@ -21,6 +21,17 @@
     document.documentElement.classList.toggle("dialogo-abierto", abiertos > 0);
   }
 
+  /**
+   * El segundo clic de un doble clic sobre el botón que abre un diálogo cae sobre el diálogo ya abierto (la caja o el fondo) y le quita el foco al primer campo. Solo si el
+   * diálogo se abrió tras un toque o clic muy reciente: un instante después se sigue con normalidad (el teclado no frena nada).
+   */
+  function protegerFocoAlAbrir(): void {
+    if (performance.now() - ultimoPunteroEn > 800) return;
+    const frenar = (evento: Event): void => evento.preventDefault(); // sin esto el segundo `mousedown` mueve el foco
+    document.addEventListener("mousedown", frenar, true);
+    setTimeout(() => document.removeEventListener("mousedown", frenar, true), ABSORBER_CLICS_MS);
+  }
+
   const ENFOCABLES = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   const ABSORBER_CLICS_MS = 350;
 
@@ -100,6 +111,9 @@
   let desborda = $state(false);
   let disparador: HTMLElement | null = null;
   let bloqueandoFondo = false;
+  // Dónde estaba el foco cuando se pidió cerrar con cambios sin guardar: «Seguir editando» lo devuelve ahí (no al primer elemento del diálogo).
+  let focoAntesDeConfirmar: HTMLElement | null = null;
+  const idCambios = $derived(`${uid}-cambios`);
 
   $effect(() => {
     if (dialogo === null) return;
@@ -129,6 +143,7 @@
     disparador = activo instanceof HTMLElement && activo !== document.body ? activo : ultimoPuntero;
     confirmandoDescarte = false;
     el.showModal();
+    protegerFocoAlAbrir();
     if (!bloqueandoFondo) {
       bloqueandoFondo = true;
       bloquearFondo(true);
@@ -175,6 +190,8 @@
   function pedirCierre(): void {
     if (bloqueado) return;
     if (hayCambios && !confirmandoDescarte) {
+      const activo = document.activeElement;
+      focoAntesDeConfirmar = activo instanceof HTMLElement && dialogo?.contains(activo) === true ? activo : null;
       confirmandoDescarte = true;
       void tick().then(() => dialogo?.querySelector<HTMLElement>("[data-seguir-editando]")?.focus());
     } else {
@@ -184,7 +201,14 @@
 
   function seguirEditando(): void {
     confirmandoDescarte = false;
-    if (dialogo !== null) void tick().then(() => dialogo !== null && enfocarInicial(dialogo));
+    const antes = focoAntesDeConfirmar;
+    focoAntesDeConfirmar = null;
+    void tick().then(() => {
+      if (dialogo === null) return;
+      // Vuelve donde estaba la persona; si ese control ya no existe (era el botón «Cancelar»), al primer campo.
+      if (antes !== null && antes.isConnected && antes.getClientRects().length > 0) antes.focus();
+      else enfocarInicial(dialogo);
+    });
   }
 
   function alCancelar(evento: Event): void {
@@ -236,13 +260,15 @@
     </div>
     <!-- Región desplazable: si desborda debe poder enfocarse para desplazarla con el teclado (no todos los navegadores lo hacen solos). -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-    <div class="cuerpo" bind:this={cuerpo} role="region" aria-labelledby={idTitulo} tabindex={desborda ? 0 : undefined}>
+    <!-- Solo con desplazamiento es una región con nombre (y se puede enfocar): si no, no suma un punto de referencia por diálogo. -->
+    <div class="cuerpo" bind:this={cuerpo} role={desborda ? "region" : undefined} aria-labelledby={desborda ? idTitulo : undefined} tabindex={desborda ? 0 : undefined}>
       <div class="contenido" bind:this={contenido}>{@render children()}</div>
     </div>
     <div class="pie">
       {#if confirmandoDescarte}
-        <p class="cambios">{TEXTO_DIALOGO.tieneCambios}</p>
-        <div class="acciones">
+        <p class="cambios" id={idCambios}>{TEXTO_DIALOGO.tieneCambios}</p>
+        <!-- El grupo se nombra con la frase: al caer el foco en «Seguir editando» el lector dice «Tiene cambios sin guardar» antes del botón. -->
+        <div class="acciones" role="group" aria-labelledby={idCambios}>
           <Boton variante="peligro" onclick={cerrar}>{TEXTO_DIALOGO.descartarCambios}</Boton>
           <Boton variante="secundario" data-seguir-editando onclick={seguirEditando}>{TEXTO_DIALOGO.seguirEditando}</Boton>
         </div>
@@ -323,6 +349,10 @@
     padding: var(--e-4);
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+  /* El anillo de foco del cuerpo desplazable va por dentro: por fuera lo recortaría el diálogo y lo taparía el pie. */
+  .cuerpo:focus-visible {
+    outline-offset: -2px;
   }
   .contenido {
     display: flex;

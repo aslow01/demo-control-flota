@@ -44,6 +44,8 @@ export const TEXTO_DIALOGO = {
   tieneCambios: "Tiene cambios sin guardar.",
   descartarCambios: "Descartar cambios",
   seguirEditando: "Seguir editando",
+  /** Una línea al inicio de cada formulario con campos obligatorios (3.3.2: el asterisco no se explica solo). */
+  obligatorios: "Los campos con * son obligatorios.",
 } as const;
 
 /** Diálogo "Reiniciar demo" (5.17). La descripción es la de la especificación; los errores salen de `ERRORES` del dominio. */
@@ -118,6 +120,9 @@ export const TEXTO_ALERTAS = {
   /** Etiquetas de las celdas cuando la fila pasa a tarjeta. */
   proyectoDe: "Proyecto",
   venceEl: "Vence",
+  /** Texto oculto de las celdas que muestran «—» (un lector de pantalla diría «raya» o nada). */
+  sinFecha: "Sin fecha",
+  sinProyecto: "Sin proyecto",
   /** Lo que se dice cuando la fila que se quiso abrir ya no está pendiente (se renovó o se cargó mientras tanto). */
   yaNoPendiente: "Ese documento ya no está pendiente. La lista está al día.",
   /** Ídem para una novedad que se resolvió mientras tanto (otra pestaña, o ya resuelta desde la ficha). */
@@ -148,6 +153,8 @@ export const TEXTO_FLOTA_VISTA = {
   mostrar: "Mostrar",
   quitarFiltros: "Quitar filtros",
   sinConductor: "Sin conductor",
+  /** Texto oculto de la celda que muestra «—» (un lector de pantalla diría «raya» o nada). */
+  sinProyecto: "Sin proyecto",
   columnas: {
     unidad: "Unidad",
     estado: "Estado hoy",
