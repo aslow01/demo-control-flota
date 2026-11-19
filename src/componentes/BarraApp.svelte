@@ -1,6 +1,8 @@
 <script lang="ts">
   // 4.2 Barra de la aplicación (fondo de superficie, borde inferior, 52 px): navegación por pestañas-enlace a la izquierda y
   // selector de perfil a la derecha (a menos de 40 rem, en una fila propia debajo de la navegación: así el orden visual es el del foco).
+  // Con perfil Conductor el selector lleva además «{nombre} (ficticia) · Cambiar» a su lado: hasta 48 rem la fila del selector también va debajo, para que la barra
+  // de una sola fila (52 px) solo exista cuando todo entra.
   //  - Encargado: "Alertas" (con insignia de alertas críticas) · "Flota".  Conductor: "Parte de hoy".
   //  - Pestaña activa: aria-current="page" (la sección que contiene la pantalla actual lleva aria-current="true").
   // Los enlaces son del enrutador por hash: no hay clics que interceptar.
@@ -46,7 +48,7 @@
 </script>
 
 <div class="barra-app">
-  <div class="interior contenedor">
+  <div class="interior contenedor" class:con-conductor={nombreConductor !== undefined}>
     <nav aria-label={TEXTO_MARCO.navegacionSecciones}>
       <ul>
         {#each pestanas as p (p.id)}
@@ -139,6 +141,16 @@
       border-top: 1px solid var(--c-borde);
     }
     nav {
+      flex: 1 0 100%;
+    }
+  }
+  /* Con el nombre del conductor al lado, el selector necesita unos 33 rem: hasta 48 rem baja a su fila. */
+  @media (max-width: 47.99rem) {
+    .con-conductor .perfil {
+      flex: 1 0 100%;
+      border-top: 1px solid var(--c-borde);
+    }
+    .con-conductor nav {
       flex: 1 0 100%;
     }
   }

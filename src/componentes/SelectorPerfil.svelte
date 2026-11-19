@@ -4,7 +4,8 @@
   // golpe (WCAG 3.2.2). Con botones se cambia activando (Enter, Espacio o toque), y la leyenda se describe con un aviso previo.
   // Es solo un punto de vista de la demo (no hay usuarios ni contraseñas).
   // El componente no decide nada: avisa lo que se eligió y refleja el perfil que recibe (sin parpadeos: no hay estado propio).
-  // Con conductor elegido, debajo del selector va "Conductor: {nombre} (persona ficticia) · Cambiar conductor".
+  // Con conductor elegido, a continuación del selector va "{nombre} (ficticia)" y el botón-texto "Cambiar" (con poco ancho, en su propio renglón debajo). Van separados
+  // por un espacio (`gap`) y no por un "·" en el texto: un separador de texto queda colgando al final del renglón cuando la línea se parte.
   import Boton from "./Boton.svelte";
   import { TEXTO_MARCO } from "./textos-marco.ts";
 
@@ -49,20 +50,21 @@
   </div>
   {#if tipo === "conductor" && nombreConductor !== undefined}
     <p class="conductor">
-      <span>{TEXTO_MARCO.conductorElegido(nombreConductor)}</span>
+      <span><span class="solo-lectores">{TEXTO_MARCO.perfilConductor}: </span>{TEXTO_MARCO.conductorElegido(nombreConductor)}</span>
       {#if alCambiarConductor !== undefined}
-        <span aria-hidden="true">·</span>
-        <Boton variante="texto" onclick={alCambiarConductor}>{TEXTO_MARCO.cambiarConductor}</Boton>
+        <Boton variante="texto" aria-label={TEXTO_MARCO.cambiarConductor} onclick={alCambiarConductor}>{TEXTO_MARCO.cambiar}</Boton>
       {/if}
     </p>
   {/if}
 </div>
 
 <style>
+  /* El grupo y la línea del conductor van en una fila; si no entran, la línea baja a su renglón. */
   .selector {
     display: flex;
-    flex-direction: column;
-    gap: var(--e-1);
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--e-4);
     min-width: 0;
   }
   .grupo {
@@ -119,7 +121,6 @@
 
   .conductor {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 0 var(--e-1);
     min-width: 0;
@@ -130,6 +131,9 @@
   .conductor > span:first-child {
     min-width: 0;
     overflow-wrap: anywhere;
+  }
+  .conductor :global(.boton) {
+    flex: none;
   }
 
   @media (forced-colors: active) {

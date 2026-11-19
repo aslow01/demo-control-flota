@@ -23,10 +23,13 @@ export const TEXTO_MARCO = {
   verComo: "Ver como",
   perfilEncargado: "Encargado",
   perfilConductor: "Conductor",
-  conductorElegido: (nombre: string) => `Conductor: ${nombre} (persona ficticia)`,
+  /** Junto al selector: «Tamara Olivera (ficticia)»; el lector de pantalla antepone «Conductor: ». */
+  conductorElegido: (nombre: string) => `${nombre} (ficticia)`,
   /** Aviso previo (descripción del grupo "Ver como"): elegir Conductor abre un diálogo (WCAG 3.2.2). */
   ayudaPerfilConductor: "Al elegir «Conductor» se abre una lista para elegir quién completa el parte.",
+  /** Nombre accesible del botón «Cambiar» (el texto visible es más corto). */
   cambiarConductor: "Cambiar conductor",
+  cambiar: "Cambiar",
   cerrarAviso: "Cerrar aviso",
   actualizar: "Actualizar",
   recargar: "Recargar la página",
