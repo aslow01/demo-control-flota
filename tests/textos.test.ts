@@ -62,6 +62,18 @@ describe("textoVencimiento (V1 a V6)", () => {
     expect(textoVencimiento(30, "2026-12-18")).toBe("Vence en 30 días");
     expect(textoVencimiento(31, "2026-12-19")).toBe("Vigente hasta 19/12/2026");
   });
+
+  it("concuerda en género con el documento (QA M-2): «Revisión técnica vencida», «Seguro vencido»", () => {
+    const masculinos = ["seguro"] as const;
+    const femeninos = ["revision-tecnica", "matafuego", "habilitacion-proyecto", "licencia", "habilitacion-manejo"] as const;
+    for (const tipo of masculinos) expect(textoVencimiento(-1, "2026-11-17", tipo)).toBe("Vencido hace 1 día");
+    for (const tipo of femeninos) {
+      expect(textoVencimiento(-1, "2026-11-17", tipo)).toBe("Vencida hace 1 día");
+      expect(textoVencimiento(-3, "2026-11-15", tipo)).toBe("Vencida hace 3 días");
+      expect(textoVencimiento(0, "2026-11-18", tipo)).toBe("Vence hoy");
+      expect(textoVencimiento(31, "2026-12-19", tipo)).toBe("Vigente hasta 19/12/2026");
+    }
+  });
 });
 
 describe("protagonista y disponibles (A8)", () => {

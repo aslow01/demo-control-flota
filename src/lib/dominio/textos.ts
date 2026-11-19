@@ -19,9 +19,12 @@ export function pluralizar(n: number, singular: string, plural: string): string 
   return `${n} ${n === 1 ? singular : plural}`;
 }
 
-/** V1 a V6: texto del estado de un vencimiento. `d` = días desde hoy hasta el vencimiento. */
-export function textoVencimiento(d: number, vence: FechaCivil): string {
-  if (d < 0) return `Vencido hace ${pluralizar(-d, "día", "días")}`;
+/**
+ * V1 a V6: texto del estado de un vencimiento. `d` = días desde hoy hasta el vencimiento. Con `tipo`, «vencido» concuerda con el documento
+ * («Seguro vencido», «Revisión técnica vencida»); sin tipo, masculino.
+ */
+export function textoVencimiento(d: number, vence: FechaCivil, tipo?: TipoDocumento): string {
+  if (d < 0) return `${tipo === undefined ? "Vencido" : concordar(tipo, "Vencido", "Vencida")} hace ${pluralizar(-d, "día", "días")}`;
   if (d === 0) return "Vence hoy";
   if (d === 1) return "Vence mañana";
   if (d <= 30) return `Vence en ${d} días`;

@@ -21,6 +21,15 @@ describe("V1: vencido", () => {
   });
 });
 
+describe("V1: concordancia de género con el documento (QA M-2)", () => {
+  it("«Vencida» para la revisión técnica y la licencia, «Vencido» para el seguro; sin tipo, masculino", () => {
+    expect(clasificar("2026-11-17", H, "revision-tecnica").texto).toBe("Vencida hace 1 día");
+    expect(clasificar("2026-11-15", H, "licencia").texto).toBe("Vencida hace 3 días");
+    expect(clasificar("2026-11-17", H, "seguro").texto).toBe("Vencido hace 1 día");
+    expect(clasificar("2026-11-17", H).texto).toBe("Vencido hace 1 día");
+  });
+});
+
 describe("V2: vence hoy", () => {
   it("V2: d = 0 sigue valiendo, grupo 7 y texto 'Vence hoy'", () => {
     const c = clasificar(H, H);

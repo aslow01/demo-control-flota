@@ -326,6 +326,12 @@ describe("pantalla del parte, edición (6.5)", () => {
     const v = ver(e, COND);
     expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: "ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla." });
   });
+  it("el aviso de aptitud no le dice «avise al encargado» al propio encargado, y concuerda en género (QA M-2)", () => {
+    const e = flotaDePrueba();
+    e.documentos = e.documentos.map((d) => (d.id === "u1-revision-tecnica" ? { ...d, vence: "2026-11-17" } : d));
+    const v = ver(e, ENC);
+    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: "ZK 214 BD no puede salir: Revisión técnica vencida hace 1 día." });
+  });
 
   it("una patente que no existe: «No se encontró la unidad»", () => {
     expect(ver(flotaDePrueba(), COND, "ZZ999ZZ")).toEqual({

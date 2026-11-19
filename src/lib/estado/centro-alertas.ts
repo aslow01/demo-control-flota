@@ -351,7 +351,7 @@ function filaDeVencimiento(estado: Estado, a: Alerta): FilaVencimiento | null {
     tipo: a.tipo,
     grupo,
     gravedad: a.gravedad,
-    estado: falta || a.d === null ? TEXTO_FALTA_CARGAR : textoVencimiento(a.d, documento.vence),
+    estado: falta || a.d === null ? TEXTO_FALTA_CARGAR : textoVencimiento(a.d, documento.vence, tipoDocumento),
     documento: NOMBRES_DOCUMENTO[tipoDocumento],
     numero: documento?.numero ?? null,
     titular,

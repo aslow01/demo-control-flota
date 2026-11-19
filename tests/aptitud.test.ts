@@ -34,6 +34,17 @@ describe("A1: puede salir", () => {
     expect(a.motivos.map((m) => m.texto)).toEqual(["Seguro vencido hace 3 días"]);
   });
 
+  it("QA M-2: el motivo concuerda en género con el documento (revisión técnica vencida, seguro vencido)", () => {
+    const u = unidad();
+    const docs = documentosAlDia("u1", { "revision-tecnica": "2026-11-17", seguro: "2026-11-17", matafuego: "2026-11-15", "habilitacion-proyecto": "2026-11-17" });
+    expect(aptitud(u, estadoCon(u, docs), H).motivos.map((m) => m.texto)).toEqual([
+      "Seguro vencido hace 1 día",
+      "Revisión técnica vencida hace 1 día",
+      "Carga del matafuego vencida hace 3 días",
+      "Habilitación de ingreso al proyecto vencida hace 1 día",
+    ]);
+  });
+
   it("A1: documento obligatorio faltante -> no puede salir (V12)", () => {
     const u = unidad();
     const docs = documentosAlDia("u1").filter((d) => d.tipo !== "habilitacion-proyecto");

@@ -37,6 +37,12 @@ function porTipo(alertas: Alerta[], tipo: string): Alerta[] {
 }
 
 describe("alertas de documentos", () => {
+  it("QA M-2: la alerta de una revisión técnica vencida dice «Vencida» y la del seguro, «Vencido»", () => {
+    const e = base({ documentos: docsUnidad("u1", { "revision-tecnica": en(-1), seguro: en(-1) }) });
+    const textos = calcularAlertas(e, H).alertas.map((a) => a.texto).sort();
+    expect(textos).toEqual(["Vencida hace 1 día · Revisión técnica", "Vencido hace 1 día · Seguro"]);
+  });
+
   it("V1: documento vencido -> alerta crítica del grupo vencidos con su texto", () => {
     const e = base({ documentos: docsUnidad("u1", { seguro: en(-3) }) });
     const { alertas } = calcularAlertas(e, H);
@@ -82,7 +88,7 @@ describe("alertas de documentos", () => {
         tipo: "documento-vencido",
         gravedad: "baja",
         grupo: "vencidos",
-        texto: "Vencido hace 3 días · Habilitación de ingreso al proyecto",
+        texto: "Vencida hace 3 días · Habilitación de ingreso al proyecto",
       });
       expect(r.resumen.criticas).toBe(0);
       expect(r.resumen.porGrupo.vencidos).toBe(1);

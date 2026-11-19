@@ -467,7 +467,7 @@ function panelDeDocumentos(estado: Estado, alertas: Pick<ResultadoAlertas, "aler
       });
       continue;
     }
-    const c = clasificar(vigente.vence, hoy);
+    const c = clasificar(vigente.vence, hoy, vigente.tipo);
     const anteriores = estado.documentos
       .filter((d) => d.id !== vigente.id && d.tipo === r.tipo && d.titular.tipo === "unidad" && d.titular.id === unidad.id)
       .sort((x, y) => (x.vence !== y.vence ? (x.vence < y.vence ? 1 : -1) : x.cargado < y.cargado ? 1 : -1))
@@ -483,7 +483,7 @@ function panelDeDocumentos(estado: Estado, alertas: Pick<ResultadoAlertas, "aler
       vence: formatearFecha(vigente.vence),
       estado: {
         tipo: c.estado === "vence-hoy" ? "por-vencer" : c.estado,
-        texto: textoVencimiento(c.d, vigente.vence),
+        texto: textoVencimiento(c.d, vigente.vence, vigente.tipo),
         tono: c.grupo === null ? "vigente" : TONO_DE_GRUPO[c.grupo],
       },
       anteriores,
