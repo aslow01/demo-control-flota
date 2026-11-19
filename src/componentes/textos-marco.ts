@@ -30,7 +30,9 @@ export const TEXTO_MARCO = {
   cerrarAviso: "Cerrar aviso",
   actualizar: "Actualizar",
   recargar: "Recargar la página",
-  pantallaEnPreparacion: "Esta pantalla todavía no está disponible.",
+  /** Una dirección que no corresponde a ninguna pantalla («Página no encontrada»). */
+  paginaNoEncontrada: "La dirección que abrió no corresponde a ninguna pantalla de la demo.",
+  irA: (pantalla: string) => `Ir a ${pantalla}`,
   /** Se anuncia a los lectores de pantalla si el arranque llegó a mostrar "Preparando la flota de ejemplo…". */
   listo: "Flota de ejemplo lista.",
 } as const;
@@ -271,5 +273,53 @@ export const TEXTO_DIALOGOS_FICHA_VISTA = {
   cargarOtro: {
     tipo: "Tipo de documento",
     elegirTipo: "Elija el tipo de documento",
+  },
+} as const;
+
+/** Inicio del conductor (6.4): rótulos de la pantalla que no salen del dominio. Los textos del panel «Hoy», de los pendientes, de la licencia y de los últimos partes vienen de `estado/parte.ts`. */
+export const TEXTO_CONDUCTOR_VISTA = {
+  pendientes: "Pendientes",
+  /** Nombre accesible de «Continuarlo» / «Cargarlo»: empieza por el texto visible y suma la frase del pendiente (con la patente y la fecha). */
+  accionPendiente: (accion: string, texto: string) => `${accion}. ${texto}`,
+  /** Sin unidad asignada (o en baja): el `select` va solo, hasta que elija una. */
+  sinUnidad: "No tiene una unidad asignada. Elija la que va a usar hoy.",
+  /** Primera opción del `select` cuando la unidad de hoy no se puede usar (fuera de servicio). */
+  elegirOtra: "Elija otra unidad",
+  confirmarDescartar: "Confirmar: descartar",
+  /** Texto oculto delante de cada fila de «Mis últimos partes» (el enlace dice «Parte del 17/11/2026 ZK 214 BD 132 km»). */
+  parteDel: "Parte del ",
+} as const;
+
+/** Parte diario (6.5): rótulos del formulario, de la barra de envío, del diálogo «Antes de enviar» y del parte en lectura. Los textos de ayuda, de errores y del panel «Parte enviado» vienen de `textos.ts`. */
+export const TEXTO_PARTE_VISTA = {
+  conductorLinea: (nombre: string) => `Conductor: ${nombre}`,
+  opcionConductor: (nombre: string, patente: string) => `${nombre} (${patente})`,
+  secciones: { km: "1. Kilometraje", revision: "2. Revisión de la unidad", combustible: "3. Combustible", otra: "4. Otra novedad" },
+  kmInicio: "Al iniciar",
+  kmFin: "Al terminar",
+  recorrido: "Recorrido",
+  respondidos: (n: number, total: number) => `Respondidos: ${n} de ${total}`,
+  puntoCritico: "Punto crítico",
+  enOrden: "En orden",
+  conNovedad: "Con novedad",
+  queEncontro: "¿Qué encontró?",
+  nivelCombustible: "Nivel de combustible al terminar",
+  litros: "Combustible cargado hoy",
+  enviar: "Enviar parte",
+  enviando: "Enviando…",
+  descartar: "Descartar borrador",
+  confirmarDescartar: "Confirmar: descartar",
+  /** Diálogo «Antes de enviar» (K6, K7, P9): lo que explica cada aviso viene de `textoAdvertencia` (dominio). */
+  antesDeEnviar: {
+    titulo: "Antes de enviar",
+    intro: "El parte está completo, pero hay avisos que conviene leer antes de enviarlo.",
+    enviarIgual: "Enviar igual",
+    volver: "Volver al parte",
+  },
+  enviado: { avisosAceptados: "Avisos aceptados al enviar" },
+  lectura: {
+    revision: "Revisión de la unidad",
+    sinConductor: "Sin conductor",
+    critica: "crítica",
   },
 } as const;
