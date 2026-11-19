@@ -85,6 +85,11 @@
     line-height: 1.4;
   }
 
+  /* «Qué pasó» (centro de alertas) lleva el texto de una novedad, que lo escribe la persona: sin espacios, no tiene que ensanchar la tabla. */
+  table :global(td[data-col="que"]) {
+    overflow-wrap: anywhere;
+  }
+
   /* ---------- Tabla completa ---------- */
   th[scope="col"] {
     padding: var(--e-2) var(--e-3);

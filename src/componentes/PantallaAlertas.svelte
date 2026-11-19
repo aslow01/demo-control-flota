@@ -517,6 +517,7 @@
     flex: 1;
     min-width: 0;
     line-height: 1.35;
+    overflow-wrap: anywhere;
   }
   .cifra-fila {
     margin-right: 0.25em;
