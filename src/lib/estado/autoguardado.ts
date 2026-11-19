@@ -8,7 +8,7 @@
 // - El indicador tiene dos textos: `visible` (cambia en cada guardado: la hora) y `anuncio` (para la región `role="status"`: cambia solo al cambiar de
 //   estado, no en cada guardado; sección 10 de diseno-ui.md: «no anunciar cada autoguardado»).
 
-import { mismosValores, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
+import { errorGeneralParte, mismosValores, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { TEXTO_GUARDADO } from "../dominio/textos.ts";
 
 /**
@@ -77,6 +77,7 @@ export function crearAutoguardado(deps: DependenciasAutoguardado): Autoguardado 
   let temporizador: unknown = null;
   let enCurso: Promise<ResultadoDeBorrador | null> | null = null;
   let repetir = false;
+  let pedidoExplicito = false; // lo pidió una acción de la persona (salir del campo, enviar, irse), no el plazo de 500 ms
   let generacion = 0; // sube con `reiniciar` y `cerrar`: un resultado de una generación vieja se ignora
   let cerrado = false;
 
@@ -108,9 +109,17 @@ export function crearAutoguardado(deps: DependenciasAutoguardado): Autoguardado 
     fijar({ estado: "guardado", visible: TEXTO_GUARDADO.guardado(r.hora), anuncio, hora: r.hora });
   }
 
-  function resultadoError(r: Extract<ResultadoDeBorrador, { ok: false }>): void {
+  /**
+   * `explicito`: el guardado lo pidió una acción de la persona (salir del campo, enviar, irse): la vista marca el campo con el error y recién ahí el indicador
+   * dice «corrija los campos marcados» y lo anuncia. Mientras escribe (el plazo de 500 ms) no hay campo marcado: no se anuncia nada ni se manda a mirar uno (N1).
+   */
+  function resultadoError(r: Extract<ResultadoDeBorrador, { ok: false }>, explicito: boolean): void {
     if (r.tipo === "campos") {
-      const anuncio = estable.estado === "campos" ? estable.anuncio : TEXTO_GUARDADO.anuncioConErroresDeCampo;
+      if (!explicito) {
+        fijar({ estado: "campos", visible: TEXTO_GUARDADO.sinValidar, anuncio: "", hora: null });
+        return;
+      }
+      const anuncio = estable.estado === "campos" && estable.anuncio !== "" ? estable.anuncio : TEXTO_GUARDADO.anuncioConErroresDeCampo;
       fijar({ estado: "campos", visible: TEXTO_GUARDADO.conErroresDeCampo, anuncio, hora: null });
       return;
     }
@@ -119,8 +128,9 @@ export function crearAutoguardado(deps: DependenciasAutoguardado): Autoguardado 
     fijar({ estado: "error", visible: texto, anuncio: texto, hora: null });
   }
 
-  function ejecutar(): Promise<ResultadoDeBorrador | null> {
+  function ejecutar(explicito: boolean): Promise<ResultadoDeBorrador | null> {
     limpiarTemporizador();
+    if (explicito) pedidoExplicito = true;
     if (enCurso !== null) {
       repetir = true; // el que está en curso, al terminar, guarda lo último que haya
       return enCurso;
@@ -139,8 +149,16 @@ export function crearAutoguardado(deps: DependenciasAutoguardado): Autoguardado 
         }
         pendiente = null;
         mostrar({ ...estable, estado: "guardando", visible: TEXTO_GUARDADO.guardando });
-        const r = await deps.guardar(valores);
+        let r: ResultadoDeBorrador;
+        try {
+          r = await deps.guardar(valores);
+        } catch {
+          // Un guardado que rechaza (un dato inesperado, un fallo del almacenamiento) es un error de escritura más: sin esto el indicador quedaba en «Guardando…».
+          r = { ok: false, tipo: "escritura", errores: errorGeneralParte(TEXTO_GUARDADO.error) };
+        }
         if (miGeneracion !== generacion) return null; // se descartó o se cerró mientras se guardaba
+        const explicito = pedidoExplicito;
+        pedidoExplicito = false;
         ultimo = r;
         if (r.ok) {
           base = valores;
@@ -148,10 +166,11 @@ export function crearAutoguardado(deps: DependenciasAutoguardado): Autoguardado 
           if (pendiente !== null && !mismosValores(pendiente, base)) repetir = true;
         } else {
           pendiente ??= valores; // lo que falló sigue pendiente
-          resultadoError(r);
+          resultadoError(r, explicito);
           break;
         }
       } while (repetir);
+      pedidoExplicito = false;
       return ultimo;
     })();
     enCurso = trabajo;
@@ -174,20 +193,20 @@ export function crearAutoguardado(deps: DependenciasAutoguardado): Autoguardado 
       limpiarTemporizador();
       temporizador = programar(() => {
         temporizador = null;
-        void ejecutar();
+        void ejecutar(false);
       }, espera);
     },
     alSalirDelCampo(valores) {
       if (cerrado) return Promise.resolve(null);
       if (enCurso === null && pendiente === null && mismosValores(valores, base)) return Promise.resolve(null);
       pendiente = valores;
-      return ejecutar();
+      return ejecutar(true);
     },
     async vaciar(valores) {
       if (cerrado) return null;
       if (valores !== undefined && (enCurso !== null || pendiente !== null || !mismosValores(valores, base))) pendiente = valores;
       if (pendiente === null) return enCurso;
-      return ejecutar();
+      return ejecutar(true);
     },
     reiniciar(valores) {
       generacion += 1;
@@ -196,6 +215,7 @@ export function crearAutoguardado(deps: DependenciasAutoguardado): Autoguardado 
       pendiente = null;
       enCurso = null;
       repetir = false;
+      pedidoExplicito = false;
       cerrado = false;
       fijar(INDICADOR_INICIAL);
     },
