@@ -83,6 +83,8 @@
     flex: 1 1 12rem;
     min-width: 0;
     line-height: 1.5;
+    /* Lo que escribe la persona (un motivo, una marca) puede no tener espacios: no tiene que ensanchar la página. */
+    overflow-wrap: anywhere;
   }
   .texto :global(p + p) {
     margin-top: var(--e-1);

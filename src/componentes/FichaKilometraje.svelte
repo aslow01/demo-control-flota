@@ -101,6 +101,8 @@
   }
   .registro {
     min-width: 0;
+    /* El motivo de una corrección lo escribe la persona: sin espacios, no tiene que ensanchar la tabla ni la página. */
+    overflow-wrap: anywhere;
   }
   .texto {
     display: inline-flex;

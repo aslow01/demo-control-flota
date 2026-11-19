@@ -413,6 +413,9 @@
     align-items: flex-start;
     gap: var(--e-1);
   }
+  .apilado {
+    min-width: 0;
+  }
   .apilado .nota {
     line-height: 1.3;
   }
@@ -434,6 +437,8 @@
   }
   .nota {
     color: var(--c-texto-2);
+    /* El motivo de «fuera de servicio» lo escribe la persona: un texto sin espacios no tiene que ensanchar la página. */
+    overflow-wrap: anywhere;
   }
   .novedad-critica {
     --icono-tam: 1rem;

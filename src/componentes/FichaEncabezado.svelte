@@ -163,8 +163,11 @@
     min-width: 0;
   }
   .linea-aptitud {
+    min-width: 0;
     font-weight: 600;
     color: var(--c-texto);
+    /* El motivo lo escribe la persona: un texto sin espacios no tiene que ensanchar la página. */
+    overflow-wrap: anywhere;
   }
   .motivos {
     display: flex;
@@ -173,6 +176,7 @@
     padding-left: var(--e-5);
     list-style: disc;
     color: var(--c-texto);
+    overflow-wrap: anywhere;
   }
   .motivos li::marker {
     color: var(--c-texto-3);
@@ -183,7 +187,12 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--e-1) 0;
+    min-width: 0;
     color: var(--c-texto-2);
+    overflow-wrap: anywhere; /* marca y modelo los escribe la persona */
+  }
+  .identidad span {
+    min-width: 0;
   }
   .identidad span + span::before {
     content: "";
