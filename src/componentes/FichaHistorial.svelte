@@ -66,7 +66,7 @@
           <ul>
             {#each g.eventos as e (e.eventoId)}
               {@const d = e.detalle}
-              <li class="evento" id={idDeEvento(e.eventoId)} tabindex="-1">
+              <li class="evento" class:con-resumen-largo={d !== null && d.tipo === "parte"} id={idDeEvento(e.eventoId)} tabindex="-1">
                 <span class="hora num">{e.hora}</span>
                 <span class="icono-evento"><Icono nombre={e.icono} /></span>
                 <div class="cuerpo">
@@ -131,8 +131,8 @@
                       </table>
                     {/if}
                   {/if}
-                  <p class="autor">{e.autor}</p>
                 </div>
+                <p class="autor">{e.autor}</p>
               </li>
             {/each}
           </ul>
@@ -168,13 +168,16 @@
     line-height: 1.4;
     color: var(--c-texto-2);
   }
-  /* Grilla de 5.16: hora · ícono · resumen. En teléfono la hora va encima del resumen. */
+  /* Grilla de 5.16. Con poco ancho: ícono · (hora y autor en un renglón, el resumen debajo); desde 40 rem: hora · ícono · resumen · autor, todo en un renglón (un evento
+     cerrado mide unos 60 px). La hora, el ícono y el autor se alinean con el centro del resumen: el de un `details` mide 44 px (su blanco
+     táctil); el de un texto suelto, 24. */
   .evento {
     display: grid;
-    grid-template-columns: 1.25rem minmax(0, 1fr);
+    grid-template-columns: 1.25rem auto minmax(0, 1fr);
     grid-template-areas:
-      "icono hora"
-      "icono cuerpo";
+      "icono hora autor"
+      "icono cuerpo cuerpo";
+    align-items: start;
     column-gap: var(--e-3);
     padding-block: var(--e-2);
     border-bottom: 1px solid var(--c-borde);
@@ -184,8 +187,8 @@
   }
   @media (min-width: 40rem) {
     .evento {
-      grid-template-columns: 4rem 1.25rem minmax(0, 1fr);
-      grid-template-areas: "hora icono cuerpo";
+      grid-template-columns: 4rem 1.25rem minmax(0, 1fr) auto;
+      grid-template-areas: "hora icono cuerpo autor";
     }
   }
   .hora {
@@ -217,9 +220,25 @@
     overflow-wrap: anywhere;
   }
   .autor {
+    grid-area: autor;
+    min-width: 0;
     font-size: var(--t-chico);
-    line-height: 1.4;
+    line-height: 1.5rem;
     color: var(--c-texto-3);
+    overflow-wrap: anywhere;
+  }
+  @media (min-width: 40rem) {
+    .autor {
+      justify-self: end;
+      max-width: 14rem;
+      text-align: right;
+    }
+    .evento.con-resumen-largo :is(.hora, .autor) {
+      line-height: var(--alto-tactil);
+    }
+    .evento.con-resumen-largo .icono-evento {
+      height: var(--alto-tactil);
+    }
   }
   .detalle {
     display: flex;

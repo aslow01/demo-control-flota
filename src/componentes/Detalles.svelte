@@ -16,7 +16,7 @@
 </script>
 
 <details class:suave>
-  <summary>{resumen}</summary>
+  <summary><span class="texto">{resumen}</span></summary>
   <div class="contenido">{@render children()}</div>
 </details>
 
@@ -24,7 +24,6 @@
   summary {
     display: flex;
     align-items: center;
-    gap: var(--e-2);
     min-height: var(--alto-tactil);
     list-style: none;
     cursor: pointer;
@@ -39,19 +38,30 @@
   summary::-webkit-details-marker {
     display: none;
   }
-  /* La flecha: dos bordes de un cuadrado girado (no hay un ícono de flecha hacia abajo en el sprite). */
-  summary::before {
+  /* El texto lleva la flecha al principio de su primer renglón (sangría francesa): con el resumen partido en dos renglones la flecha queda en el primero y no entre los dos,
+     y el bloque entero sigue centrado en los 44 px. */
+  .texto {
+    display: block;
+    min-width: 0;
+    padding-left: 1.5rem;
+    text-indent: -1.5rem;
+  }
+  /* La flecha: dos bordes de un cuadrado girado (no hay un ícono de flecha hacia abajo en el sprite). Mide 0,5 rem y ocupa 1,5 rem con sus márgenes. */
+  .texto::before {
     content: "";
-    flex: none;
+    display: inline-block;
     width: 0.5rem;
     height: 0.5rem;
-    margin-inline: 0.25rem;
+    margin-left: 0.25rem;
+    margin-right: 0.75rem;
     border-right: 2px solid currentColor;
     border-bottom: 2px solid currentColor;
     rotate: -45deg;
+    text-indent: 0;
+    vertical-align: 0.05em;
     transition: rotate var(--m-rapido) var(--m-curva);
   }
-  details[open] > summary::before {
+  details[open] > summary .texto::before {
     rotate: 45deg;
   }
   @media (hover: hover) {
@@ -63,7 +73,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--e-2);
-    padding: 0 0 var(--e-2) calc(0.5rem + 0.5rem + var(--e-2));
+    padding: 0 0 var(--e-2) 1.5rem;
     font-size: var(--t-tabla);
     line-height: 1.4;
   }
