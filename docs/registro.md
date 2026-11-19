@@ -1050,3 +1050,32 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 **No hecho / decisiones propias.** D1 a D4 (decide Matías) y C3, C14, C15, C17 (redactor). La parte de C1 que dice «línea de la barra en un solo renglón» queda en dos renglones a menos de 48 rem (selector y, debajo, el nombre con «Cambiar»: el botón mide 44 px). El nombre del conductor va a la derecha del selector y no a la izquierda (C2 pedía la izquierda): con la izquierda el orden visual no coincidiría con el orden de foco. Se pasaron a la vista dos cosas que conviene que el programador entregue ya partidas: el aviso «… no puede salir: … Avise al encargado antes de usarla.» (hoy se parte en la última frase) y la descripción de la unidad sin el tipo (hoy se recorta en « · »).
 
 **Verificación.** `npm test` 1354, `npm run check` 0 errores y 0 avisos, `npm run contraste` 158 mediciones (0 fallan, 9 justas, igual que antes), `npm run buscar` sin hallazgos, `npm run build`. Playwright (Chromium) contra el build servido con `public/_headers`: 21 pantallas y estados (alertas con y sin filtro, «Cómo funciona», flota completa, vacía y filtrada, ficha de ZK 214 BD con historial y «Anteriores» abiertos, ficha de ZU 899 QE, unidad inexistente, ruta desconocida, parte del encargado, inicio del conductor, «¿Quién completa el parte?», parte vacío, con errores, con novedad crítica, con borrador, «Antes de enviar», «Parte enviado» y en lectura) × 320, 360, 768 y 1280 × claro y oscuro = 168 combinaciones, **0 con problemas**: sin desborde horizontal, todo lo pulsable de 44 px o más, 0 mensajes de consola, 0 violaciones de CSP, axe-core (WCAG 2.0 a 2.2 A y AA y buenas prácticas) con 0 violaciones. Un barrido anterior encontró un desborde de 14 px a 320 en la tarjeta de operación (estado largo + fecha); se corrigió pasando esa fila a `flex-wrap`. **No se probó:** lector de pantalla real, Firefox, Safari, pantalla táctil real.
+
+## 19/11/2026 (rama `interfaz-etapa-0`) — Especificación: parte previo al uso, licencia que bloquea y decisiones D1 a D4 (disenador-ui)
+
+**Qué se hizo.** Solo documentación; no se tocó código. Matías decidió el 19/11/2026: (1) el checklist del parte es
+**previo al uso**; (2) la **licencia vencida o faltante bloquea** la revisión; (3) opción (b) en D1 a D4 de la revisión
+visual del paso 5.3. Se escribió la especificación para que `programador` y `maquetador` la implementen sin adivinar.
+
+| Documento | Qué cambió |
+| --- | --- |
+| `docs/diseno.md` | Usuarios, glosario y modelo (`Parte.estado` con `en-uso`, `revisado`, `sinSalida`); reglas P3 a P9, P12 y P13 reescritas, P14 a P17 nuevas; K8, K9 y K10; sección 6.10 nueva (L1 a L7, licencia); alertas (sección 7), comandos (sección 8: `enviarRevision`, `guardarCierre`, `enviarCierre`), casos C11 y C21 y números esperados del ejemplo (9.2); límites (14); notas en la sección 16 (P9 y 4.5 (3), (6), (7), (9)); **sección 17 nueva**: contrato de los comandos, funciones, estado, casos borde, 60 tests a escribir, tareas del programador y preguntas Q1 a Q5. |
+| `docs/diseno-ui.md` | 6.4 y 6.5 reescritas (inicio con 7 estados en orden; parte en pantallas A revisión, B cierre, C1 a C3 resultados, D lectura, E no disponible); bloque «Conductores que no pueden manejar hoy» en el protagonista (6.1); etiquetas nuevas (5.7); textos exactos (sección 7); D1 a D4 aplicados (5, 5.7, 5.16, 6.1) y registrados (13); S1 a S9 escritos en su sección (4.2, 5.2, 5.4, 5.8, 5.9, 5.10, 5.16, 5.17, 5.19, 6.3); **sección 14 nueva** con el resumen y las tareas del maquetador. |
+
+**Decisiones propias (a confirmar si no convencen):** dos envíos sobre el mismo registro de parte (no dos registros: P1
+sigue); una novedad crítica en la revisión cierra el parte «sin salida» (recorrido 0, sin combustible); el cierre no
+tiene límite de fecha ni mira la licencia; K3 y K4 cuentan el `kmInicio` de un parte en uso; la licencia se evalúa a la
+fecha del parte con el criterio de M1 y bloquea también partes de días pasados; el error de licencia va antes que los
+faltantes; `versionEsquema` pasa a 2 (D7 regenera el ejemplo); caso nuevo C21 (conductor con licencia vencida en H − 3)
+para que el bloqueo se vea, que cambia los números del ejemplo (3 vencidos y faltantes, 12 vencimientos, 5 críticas).
+
+**Preguntas para Matías** (sección 17.10 de `diseno.md`): Q1 novedad durante el uso en el cierre; Q2 si la documentación
+de la unidad también bloquea; Q3 habilitación de manejo obligatoria; Q4 aceptar los números nuevos del ejemplo; Q5
+bloqueo de partes de días pasados.
+
+**Pendiente fuera de esta tanda:** el README todavía lista como límites «checklist de fin de jornada» y «licencia vencida
+no impide salir» y cita los números viejos del ejemplo: se actualiza cuando el código esté hecho (`redactor-ux`).
+Contrastes nuevos medidos con la fórmula de WCAG (variante texto de «Puede salir»: 6,62 y 9,91 sobre superficie);
+falta sumarlos a `scripts/contraste.mjs` (tarea 1 del maquetador).
+
+**Verificación.** `npm run buscar` sin hallazgos.
