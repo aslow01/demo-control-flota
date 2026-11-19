@@ -105,7 +105,7 @@
                         <p class="advertencia"><Icono nombre="alerta" />{advertencia}</p>
                       {/each}
                       {#if d.fueraDeTermino}<p>{T.historial.fueraDeTermino}</p>{/if}
-                      <p><a class="enlace-parte" href={d.href}>{TEXTO_FICHA.historial.verParte}</a></p>
+                      <p><a class="enlace-parte" href={d.href} aria-label={T.historial.verParteEnviado(TEXTO_FICHA.historial.verParte, e.instante)}>{TEXTO_FICHA.historial.verParte}</a></p>
                     </Detalles>
                   {:else}
                     <p class="resumen">{e.resumen}</p>

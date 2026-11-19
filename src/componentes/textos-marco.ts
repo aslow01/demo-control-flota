@@ -234,6 +234,11 @@ export const TEXTO_FICHA_VISTA = {
     critica: "crítica",
     fueraDeTermino: "Enviado fuera de término.",
     campo: "Campo",
+    /** Nombre accesible de «Ver el parte completo» (hay uno por parte enviado): el texto visible, y cuándo se envió. `instante` es `dd/mm/aaaa hh:mm`. */
+    verParteEnviado: (visible: string, instante: string) => {
+      const [fecha = "", hora = ""] = instante.split(" ");
+      return `${visible} enviado el ${fecha} a las ${hora}`;
+    },
   },
 } as const;
 
