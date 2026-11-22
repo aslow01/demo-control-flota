@@ -5,7 +5,7 @@ reglas de negocio están en `docs/diseno.md` (identificadores T, V, A, P, K, N, 
 ninguna regla**, solo cómo se ve, cómo se ordena y cómo se usa. Textos de interfaz en **español neutro** (se trata al
 lector de usted o en forma impersonal; sin voseo). Todo dato es ficticio.
 
-Base: el sistema visual de la Demo 1 (`D:\demo-lector-facturas\docs\diseno-ui.md`, secciones 3 y 13.3). Acá se
+Base: el sistema visual de la Demo 1 (`docs/diseno-ui.md` de su repositorio, secciones 3 y 13.3). Acá se
 **repiten los valores** que hacen falta para que nadie tenga que abrir el otro documento.
 
 Si algo de acá no alcanza para implementar sin adivinar, es un defecto de este documento: preguntar antes de inventar.
@@ -304,7 +304,7 @@ Fondo `--c-escritorio`, borde superior `--c-borde`, `--t-chico`, `--c-texto-2`. 
 2. "Diseño, reglas y verificación: Matías Ariel Ormeño. El código lo escribió una IA bajo su dirección." · enlaces
    "Código fuente" (oculto mientras el repositorio sea privado) · "Volver al portafolio".
 
-**Prohibido** en el pie y en cualquier texto: decir que la demo reproduce el sistema de una empresa, nombrar empleadores
+**Prohibido** en el pie y en cualquier texto: presentar la demo como copia de un sistema existente, nombrar empleadores
 o clientes.
 
 ---
@@ -1560,7 +1560,7 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 - Información solo en `title` o solo al pasar el mouse (el horizonte no tiene *tooltips*).
 - Atributo `style` en el marcado, `{@html}`, fuentes, íconos o scripts de un CDN.
 - Calcular "hoy" con la hora del equipo o con un desfase fijo.
-- Decir que la demo reproduce el sistema de una empresa, nombrar empleadores o clientes, usar nombres de proyectos
+- Presentar la demo como copia de un sistema existente, nombrar empleadores o clientes, usar nombres de proyectos
   mineros reales.
 - Botones visibles que no hacen nada o que no aplican (si no aplica, no se muestra).
 - **Parte (19/11/2026):** mostrarle al conductor sin licencia vigente el formulario de la revisión (llenaría diez puntos

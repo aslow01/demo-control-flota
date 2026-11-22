@@ -11,9 +11,8 @@ la recomendación.
 - **CSP estricta** como la Demo 1: `default-src 'none'`, todo en `'self'`, sin `'unsafe-inline'` ni `'unsafe-eval'`.
 - **TypeScript** de punta a punta y **lógica pura testeable** (las reglas son el corazón de la demo).
 - **Pocas dependencias**, con versión exacta y más de 14 días publicadas.
-- Regla común de las demos: **stack distinto al del sistema de la empresa cuando sea razonable**. La ficha propone
-  SvelteKit o Astro con islas. (Por la regla de sala limpia no se consultó qué usa la empresa: se toma la indicación de
-  la ficha, que escribió Matías, y él lo confirma en S1.)
+- Punto de partida: la ficha de la demo (en el portafolio) propone SvelteKit o Astro con islas. Es una indicación de
+  Matías, no una restricción; la decisión final es S1 (sección 9).
 
 ## 2. Alternativas
 
@@ -24,7 +23,6 @@ la recomendación.
 | Estado compartido entre pantallas | A mano: cada cambio repinta el DOM a mano. En la Demo 1 eso trajo bugs de foco y de filas reconstruidas. | Reactivo (*runes*: `$state`, `$derived`), sin DOM virtual. | Igual que B. | Cada isla aislada; compartir estado entre islas es incómodo. | Reactivo (*hooks* o señales). |
 | CSP estricta | Sin fricción. | Sin fricción si se cumplen dos reglas (sección 4). | Fricción: el arranque usa un script en línea; hay que generar *hashes* por compilación y llevarlos a `_headers`. | Fricción: las islas se hidratan con scripts en línea; hay soporte de CSP con *hashes*, pero es otra pieza a mantener. | Sin fricción. |
 | Encaje con el problema | Bueno para una pantalla (Demo 1); costoso para cuatro con formularios. | Muy bueno: aplicación de cliente con formularios y estado. | Pensado para sitios con rutas de servidor y prerenderizado: acá sobra casi todo. | Pensado para sitios de contenido con poca interactividad: acá **todo** es interactivo. | Bueno; JSX y *hooks* tienen más trampas (dependencias de efectos) para alguien que está aprendiendo. |
-| Distinto al sistema de la empresa (según la ficha) | No lo dice la ficha. | Sí (misma familia que lo propuesto). | Sí (propuesto). | Sí (propuesto). | No lo dice la ficha. |
 | Para Matías (nivel inicial, quiere aprender) | Conocido (Demo 1). | Nuevo, pero los componentes son HTML + CSS + TS en un archivo; se lee casi como la Demo 1. | Nuevo y más conceptos (cargas, servidor, prerender). | Conocido por la web (Astro), pero las islas agregan otro framework adentro. | Nuevo; modelo mental de React. |
 | Señal para un líder técnico | "Sabe sin framework." (ya lo muestra la Demo 1) | "Elige la herramienta según el problema", y el portafolio muestra dos enfoques. | Puede leerse como sobredimensionado para una SPA local. | Puede leerse como herramienta equivocada para una app. | Neutro. |
 

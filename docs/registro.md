@@ -303,7 +303,7 @@ vacío" para D11; `resolverNovedad` con `volverAServicio` reutilizando A4; guard
 - `verificador` (independiente): 695/695 tests (también en UTC, Tokio y Los Ángeles), check 0, buscar sin hallazgos, contraste 158/0, `npm audit` 0, build sin `muestras.html`. Confirmados con Playwright los altos y medios corregidos (toque, Esc, bloqueo durante el reinicio, anuncio repetido, orden de foco, plazo de 8 s, listas dañadas → D7). Sin regresiones.
 - `d85e3a3`: la concordancia de género del parte en "Cómo funciona" quedó corregida ("Está pensado").
 - Docs: fila 3.4 de `plan.md` sin "pantalla de error" (se quitó en `8f38ed9`), 158 mediciones, README al día, ruta local quitada del informe de QA.
-- **Antes de publicar el repo:** `scripts/buscar-prohibidos.mjs` contiene literalmente los patrones prohibidos (nombra a la empresa): moverlos a un archivo no versionado o a una variable de entorno de CI. Historial nuevo (B11) por el correo de autor.
+- **Antes de publicar el repo:** `scripts/buscar-prohibidos.mjs` contiene literalmente los patrones prohibidos (nombra a terceros): moverlos a un archivo no versionado o a una variable de entorno de CI. Historial nuevo (B11) por el correo de autor.
 - Pendiente: humo de interfaz con Playwright en CI (no hay tests de componentes; la vista se verificó a mano); probar Firefox, Safari real y un lector de pantalla; Esc no cierra si el foco quedó en `body` dentro del diálogo (caso forzado, sin impacto práctico); fechas inválidas en datos guardados pasan sin aviso D7 (las pantallas 4.x deben tolerarlas).
 
 ## 18/11/2026 (noche, 8) — Paso 4.1 (lógica): Horizonte, tres variantes
@@ -986,7 +986,7 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 **Sin hacer.** N1 (lógica). Accesibilidad B8 (token `--c-neutro-r`). Código M1 a M4 y B1 a B5, B8 y B9 (lógica, pruebas y README). QA M-1, M-2, B1, B2, B7, B9 y D1 a D5 (lógica o contenido).
 ## 18/11/2026 (noche, 18 · rama `logica-4-5c`) — Correcciones de lógica de la revisión del paso 4.5 (programador)
 
-**Qué se hizo.** La lógica que marcaron los informes de código, QA y accesibilidad del 4.5 (`docs/revisiones/demo2-etapa45-*.md` del portafolio, fuera del repo), con el test que falla primero. Un commit por tema, sin push. Rama aparte (`git worktree` en `D:\demo-control-flota-logica`, desde `interfaz-etapa-0`) para no pisar al maquetador.
+**Qué se hizo.** La lógica que marcaron los informes de código, QA y accesibilidad del 4.5 (`docs/revisiones/demo2-etapa45-*.md` del portafolio, fuera del repo), con el test que falla primero. Un commit por tema, sin push. Rama aparte (un `git worktree` aparte, creado desde `interfaz-etapa-0`) para no pisar al maquetador.
 
 | Hallazgo | Arreglo |
 | --- | --- |
