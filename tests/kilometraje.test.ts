@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-  advertenciasDeKm,
+  advertenciasDeRecorrido,
+  advertenciasDeSalida,
+  describirRegistro,
   kmActual,
+  kmDeRegistro,
   parsearKm,
   reformatearKm,
+  registrosDeKm,
   textoRecorrido,
-  validarKilometraje,
+  validarKmDeCierre,
+  validarKmDeSalida,
   validarRecorrido,
 } from "../src/lib/dominio/kilometraje.ts";
 import { formatearKm } from "../src/lib/dominio/textos.ts";
@@ -16,6 +21,11 @@ const U = unidad({ id: "u1", patente: "ZK214BD" });
 
 function enviado(fecha: string, kmInicio: number, kmFin: number, instante = `${fecha}T18:00:00.000Z`) {
   return parte({ unidadId: "u1", fecha, kmInicio, kmFin, estado: "enviado", enviado: instante });
+}
+
+/** Un parte en uso: la revisión ya se envió (a las 09:00 de su fecha, salvo que se diga otra cosa) y falta el cierre. */
+function enSalida(fecha: string, kmInicio: number, revisado = `${fecha}T09:00:00.000Z`) {
+  return parte({ unidadId: "u1", fecha, kmInicio, kmFin: null, combustible: null, estado: "en-uso", revisado, enviado: null });
 }
 
 function correccion(desde: string, kmBase: number, instante = `${desde}T20:00:00.000Z`): CorreccionKm {
@@ -145,11 +155,11 @@ describe("K8 y K9: kilometraje actual", () => {
   });
 });
 
-describe("K3: el kilometraje no retrocede", () => {
+describe("K3: el kilometraje no retrocede (la salida)", () => {
   const partes = [enviado("2026-11-17", 84000, 84320)];
 
   it("K3: inicio 84.319 con último registro 84.320 -> error con la patente y la fecha", () => {
-    const r = validarKilometraje({ unidad: U, fecha: "2026-11-18", kmInicio: 84319, kmFin: 84400, partes, correcciones: [] });
+    const r = validarKmDeSalida({ unidad: U, fecha: "2026-11-18", kmInicio: 84319, partes, correcciones: [] });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error.mensaje).toBe(
@@ -161,47 +171,41 @@ describe("K3: el kilometraje no retrocede", () => {
   });
 
   it("K3: inicio igual al último fin es válido", () => {
-    const r = validarKilometraje({ unidad: U, fecha: "2026-11-18", kmInicio: 84320, kmFin: 84400, partes, correcciones: [] });
-    expect(r.ok).toBe(true);
+    expect(validarKmDeSalida({ unidad: U, fecha: "2026-11-18", kmInicio: 84320, partes, correcciones: [] }).ok).toBe(true);
   });
 
-  it("K3: compara con el último parte de fecha ANTERIOR, no con partes posteriores ni del mismo día", () => {
+  it("K3: compara con el último registro de fecha ANTERIOR, no con partes posteriores ni del mismo día", () => {
     const todos = [...partes, enviado("2026-11-19", 90000, 90100), enviado("2026-11-18", 1, 2)];
-    const r = validarKilometraje({ unidad: U, fecha: "2026-11-18", kmInicio: 84320, kmFin: 84400, partes: todos, correcciones: [] });
-    // un parte del mismo día no cuenta como anterior (P1 impide que exista), y el del 19 solo limita el fin (K4)
-    expect(r.ok).toBe(true);
+    expect(validarKmDeSalida({ unidad: U, fecha: "2026-11-18", kmInicio: 84320, partes: todos, correcciones: [] }).ok).toBe(true);
   });
 
   it("K3: sin registros anteriores no hay nada que comparar", () => {
-    const r = validarKilometraje({ unidad: U, fecha: "2026-11-18", kmInicio: 5, kmFin: 10, partes: [], correcciones: [] });
-    expect(r.ok).toBe(true);
+    expect(validarKmDeSalida({ unidad: U, fecha: "2026-11-18", kmInicio: 5, partes: [], correcciones: [] }).ok).toBe(true);
   });
 
-  it("K3: no cuentan los borradores", () => {
-    const borrador = parte({ unidadId: "u1", fecha: "2026-11-17", estado: "borrador", kmFin: 99999, enviado: null });
-    const r = validarKilometraje({ unidad: U, fecha: "2026-11-18", kmInicio: 100, kmFin: 200, partes: [borrador], correcciones: [] });
-    expect(r.ok).toBe(true);
+  it("K3, K9: no cuentan los borradores", () => {
+    const borrador = parte({ unidadId: "u1", fecha: "2026-11-17", estado: "borrador", kmFin: 99999, enviado: null, revisado: null });
+    expect(validarKmDeSalida({ unidad: U, fecha: "2026-11-18", kmInicio: 100, partes: [borrador], correcciones: [] }).ok).toBe(true);
+  });
+
+  it("K3, K10: el kmInicio de un parte en uso del día anterior es el último registro", () => {
+    const r = validarKmDeSalida({ unidad: U, fecha: "2026-11-18", kmInicio: 84350, partes: [enSalida("2026-11-17", 84400)], correcciones: [] });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.mensaje).toContain("revisión del 17/11/2026");
   });
 
   it("K3: si el último registro es una corrección, el error lo dice", () => {
-    const r = validarKilometraje({
-      unidad: U,
-      fecha: "2026-11-18",
-      kmInicio: 100,
-      kmFin: 200,
-      partes,
-      correcciones: [correccion("2026-11-17", 120, "2026-11-17T22:00:00.000Z")],
-    });
+    const r = validarKmDeSalida({ unidad: U, fecha: "2026-11-18", kmInicio: 100, partes, correcciones: [correccion("2026-11-17", 120, "2026-11-17T22:00:00.000Z")] });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.mensaje).toContain("corrección de kilometraje del 17/11/2026");
   });
 });
 
-describe("K4: partes fuera de orden", () => {
+describe("K4 y K10: partes fuera de orden", () => {
   const partes = [enviado("2026-11-15", 79000, 80000), enviado("2026-11-17", 80500, 81000)];
 
-  it("K4: el parte del 16 con fin 80.600 supera el inicio del 17 (80.500)", () => {
-    const r = validarKilometraje({ unidad: U, fecha: "2026-11-16", kmInicio: 80000, kmFin: 80600, partes, correcciones: [] });
+  it("K4: el cierre del parte del 16 con fin 80.600 supera el inicio del 17 (80.500)", () => {
+    const r = validarKmDeCierre({ unidad: U, fecha: "2026-11-16", kmInicio: 80000, kmFin: 80600, partes, correcciones: [] });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error.mensaje).toBe("El kilometraje supera el del inicio del parte del 17/11/2026 (80.500 km). Revise el número.");
@@ -211,77 +215,120 @@ describe("K4: partes fuera de orden", () => {
   });
 
   it("K4: con fin 80.500 (igual al inicio del siguiente) es válido", () => {
-    const r = validarKilometraje({ unidad: U, fecha: "2026-11-16", kmInicio: 80000, kmFin: 80500, partes, correcciones: [] });
-    expect(r.ok).toBe(true);
+    expect(validarKmDeCierre({ unidad: U, fecha: "2026-11-16", kmInicio: 80000, kmFin: 80500, partes, correcciones: [] }).ok).toBe(true);
+  });
+
+  it("K10: el siguiente puede ser un parte en uso: cuenta su kmInicio", () => {
+    const conUso = [enviado("2026-11-15", 79000, 80000), enSalida("2026-11-17", 80500)];
+    const r = validarKmDeCierre({ unidad: U, fecha: "2026-11-16", kmInicio: 80000, kmFin: 80600, partes: conUso, correcciones: [] });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.codigo).toBe("km-supera-siguiente");
+  });
+
+  it("K10: la revisión de una fecha intermedia con inicio mayor que el inicio del siguiente -> km-supera-siguiente en kmInicio", () => {
+    const r = validarKmDeSalida({ unidad: U, fecha: "2026-11-16", kmInicio: 80600, partes, correcciones: [] });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.codigo).toBe("km-supera-siguiente");
+      expect(r.error.campo).toBe("kmInicio");
+      expect(r.error.mensaje).toBe("El kilometraje supera el del inicio del parte del 17/11/2026 (80.500 km). Revise el número.");
+    }
+    expect(validarKmDeSalida({ unidad: U, fecha: "2026-11-16", kmInicio: 80500, partes, correcciones: [] }).ok).toBe(true);
+  });
+
+  it("K2: el fin menor que el inicio es error en kmFin", () => {
+    const r = validarKmDeCierre({ unidad: U, fecha: "2026-11-18", kmInicio: 84320, kmFin: 84319, partes: [], correcciones: [] });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.codigo).toBe("km-fin-menor");
+      expect(r.error.mensaje).toBe("El kilometraje al terminar (84.319 km) es menor que al iniciar (84.320 km). Revise los dos números.");
+    }
   });
 
   it("K4: una corrección entre medio corta la comparación (K5)", () => {
     const conHueco = [enviado("2026-11-15", 79000, 80000), enviado("2026-11-18", 80500, 81000)];
-    const r = validarKilometraje({
-      unidad: U,
-      fecha: "2026-11-16",
-      kmInicio: 80000,
-      kmFin: 80600,
-      partes: conHueco,
-      correcciones: [correccion("2026-11-17", 50)],
-    });
+    const r = validarKmDeCierre({ unidad: U, fecha: "2026-11-16", kmInicio: 80000, kmFin: 80600, partes: conHueco, correcciones: [correccion("2026-11-17", 50)] });
     expect(r.ok).toBe(true);
   });
 });
 
 describe("K5: la corrección fija la base", () => {
-  it("K5: corrección a 120 desde H-2 tras 84.320 -> el parte de H-1 con inicio 130 es válido", () => {
+  it("K5: corrección a 120 desde H-2 tras 84.320 -> la salida de H-1 con inicio 130 es válida", () => {
     const partes = [enviado("2026-11-15", 84000, 84320)];
-    const r = validarKilometraje({
-      unidad: U,
-      fecha: "2026-11-17",
-      kmInicio: 130,
-      kmFin: 200,
-      partes,
-      correcciones: [correccion("2026-11-16", 120)],
-    });
-    expect(r.ok).toBe(true);
+    expect(validarKmDeSalida({ unidad: U, fecha: "2026-11-17", kmInicio: 130, partes, correcciones: [correccion("2026-11-16", 120)] }).ok).toBe(true);
   });
 
   it("K5: pero inicio 100 (menor que la base 120) sigue siendo error", () => {
     const partes = [enviado("2026-11-15", 84000, 84320)];
-    const r = validarKilometraje({
-      unidad: U,
-      fecha: "2026-11-17",
-      kmInicio: 100,
-      kmFin: 200,
-      partes,
-      correcciones: [correccion("2026-11-16", 120)],
-    });
-    expect(r.ok).toBe(false);
+    expect(validarKmDeSalida({ unidad: U, fecha: "2026-11-17", kmInicio: 100, partes, correcciones: [correccion("2026-11-16", 120)] }).ok).toBe(false);
   });
 });
 
 describe("K6 y K7: advertencias", () => {
   it("K6: diferencia 1.001 -> advertencia de salto; 1.000 -> nada", () => {
-    expect(advertenciasDeKm({ kmAnterior: 1000, kmInicio: 2001, kmFin: 2100 })).toEqual([{ tipo: "salto-km", km: 1001 }]);
-    expect(advertenciasDeKm({ kmAnterior: 1000, kmInicio: 2000, kmFin: 2100 })).toEqual([]);
+    expect(advertenciasDeSalida({ kmAnterior: 1000, kmInicio: 2001 })).toEqual([{ tipo: "salto-km", km: 1001 }]);
+    expect(advertenciasDeSalida({ kmAnterior: 1000, kmInicio: 2000 })).toEqual([]);
   });
 
   it("K6: sin registro anterior no hay salto", () => {
-    expect(advertenciasDeKm({ kmAnterior: null, kmInicio: 50000, kmFin: 50100 })).toEqual([]);
+    expect(advertenciasDeSalida({ kmAnterior: null, kmInicio: 50000 })).toEqual([]);
   });
 
   it("K7: recorrido de 1.201 km -> advertencia; 1.200 -> nada", () => {
-    expect(advertenciasDeKm({ kmAnterior: 0, kmInicio: 0, kmFin: 1201 })).toEqual([{ tipo: "recorrido-largo", km: 1201 }]);
-    expect(advertenciasDeKm({ kmAnterior: 0, kmInicio: 0, kmFin: 1200 })).toEqual([]);
+    expect(advertenciasDeRecorrido({ kmInicio: 0, kmFin: 1201 })).toEqual([{ tipo: "recorrido-largo", km: 1201 }]);
+    expect(advertenciasDeRecorrido({ kmInicio: 0, kmFin: 1200 })).toEqual([]);
   });
 
-  it("K6 + K7 juntas, salto primero", () => {
-    const a = advertenciasDeKm({ kmAnterior: 0, kmInicio: 1250, kmFin: 2600 });
-    expect(a.map((x) => x.tipo)).toEqual(["salto-km", "recorrido-largo"]);
-  });
-
-  it("validarKilometraje entrega las advertencias del caso C15 (salto de 1.250 km)", () => {
+  it("validarKmDeSalida entrega las advertencias del caso C15 (salto de 1.250 km) y el kilometraje anterior", () => {
     const partes = [enviado("2026-11-13", 40000, 40100)];
-    const r = validarKilometraje({ unidad: U, fecha: "2026-11-14", kmInicio: 41350, kmFin: 41500, partes, correcciones: [] });
+    const r = validarKmDeSalida({ unidad: U, fecha: "2026-11-14", kmInicio: 41350, partes, correcciones: [] });
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.valor.advertencias).toEqual([{ tipo: "salto-km", km: 1250 }]);
+    if (r.ok) expect(r.valor).toEqual({ kmAnterior: 40100, advertencias: [{ tipo: "salto-km", km: 1250 }] });
+  });
+
+  it("K7: validarKmDeCierre entrega la advertencia del recorrido largo", () => {
+    const r = validarKmDeCierre({ unidad: U, fecha: "2026-11-14", kmInicio: 1000, kmFin: 2201, partes: [], correcciones: [] });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.valor.advertencias).toEqual([{ tipo: "recorrido-largo", km: 1201 }]);
+  });
+});
+
+describe("K8, K10: un parte en uso es un registro de kilometraje (la salida)", () => {
+  it("K8, K10: con un parte en uso, kmActual es su kmInicio", () => {
+    const partes = [enviado("2026-11-17", 84000, 84320), enSalida("2026-11-18", 84330)];
+    expect(kmActual("u1", partes, [])).toBe(84330);
+  });
+
+  it("K10: un parte en uso sin revisado legible (o sin kmInicio) no cuenta", () => {
+    const partes = [enviado("2026-11-17", 84000, 84320), enSalida("2026-11-18", 84330, "no es un instante"), parte({ unidadId: "u1", fecha: "2026-11-19", estado: "en-uso", kmInicio: null, revisado: "2026-11-19T09:00:00.000Z", enviado: null })];
+    expect(kmActual("u1", partes, [])).toBe(84320);
+  });
+
+  it("K9: los datos de cierre de un parte en uso sin cerrar no cambian kmActual", () => {
+    const uso = parte({ unidadId: "u1", fecha: "2026-11-18", estado: "en-uso", kmInicio: 84330, kmFin: 84999, revisado: "2026-11-18T09:00:00.000Z", enviado: null });
+    expect(kmActual("u1", [uso], [])).toBe(84330);
+  });
+
+  it("K8: un parte cerrado sin salida es un registro con recorrido 0", () => {
+    const sinSalida = parte({ unidadId: "u1", fecha: "2026-11-18", estado: "enviado", sinSalida: true, kmInicio: 84330, kmFin: 84330 });
+    const regs = registrosDeKm("u1", [sinSalida], []);
+    expect(regs).toHaveLength(1);
+    expect(regs[0]).toMatchObject({ tipo: "parte", kmInicio: 84330, kmFin: 84330 });
+  });
+
+  it("K8: a igual fecha y a igual instante, la corrección va después del parte", () => {
+    const instante = "2026-11-18T20:00:00.000Z";
+    const regs = registrosDeKm("u1", [enviado("2026-11-18", 1, 2, instante)], [correccion("2026-11-18", 50, instante)]);
+    expect(regs.map((r) => r.tipo)).toEqual(["parte", "correccion"]);
+  });
+
+  it("describirRegistro de una salida dice «revisión del 18/11/2026» y kmDeRegistro es el kmInicio", () => {
+    const [r] = registrosDeKm("u1", [enSalida("2026-11-18", 84330)], []);
+    expect(r).toBeDefined();
+    if (r === undefined) return;
+    expect(r.tipo).toBe("salida");
+    expect(describirRegistro(r)).toBe("revisión del 18/11/2026");
+    expect(kmDeRegistro(r)).toBe(84330);
   });
 });
 
