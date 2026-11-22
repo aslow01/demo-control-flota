@@ -111,6 +111,10 @@ a {
 [tabindex="-1"]:focus:not(:focus-visible) {
   outline: none;
 }
+/* D3 (19/11/2026): el h1 al que se lleva el foco tras navegar no lleva anillo ni con teclado (el cambio de pantalla se anuncia aparte). */
+h1[tabindex="-1"]:focus {
+  outline: none;
+}
 
 progress {
   accent-color: var(--c-acento);

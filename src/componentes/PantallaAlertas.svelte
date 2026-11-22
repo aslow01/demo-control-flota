@@ -455,7 +455,7 @@
     min-width: 0;
     font-size: var(--t-tabla);
     font-weight: 600;
-    color: var(--tono-t, var(--c-texto));
+    color: var(--c-texto);
   }
   .siguiente {
     position: absolute;

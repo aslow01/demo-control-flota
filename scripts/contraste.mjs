@@ -8,7 +8,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), "..");
-const css = readFileSync(join(raiz, "src", "estilos", "tokens.css"), "utf8");
+// Con fin de línea CRLF (checkout de Windows) no se encontraban los cortes de bloque: se normaliza.
+const css = readFileSync(join(raiz, "src", "estilos", "tokens.css"), "utf8").replaceAll("\r\n", "\n");
 
 // ---------- Lectura de tokens ----------
 // Primer bloque `:root { ... }` = claro; bloque `:root` dentro de `@media (prefers-color-scheme: dark)` = oscuro (pisa al claro).
@@ -107,6 +108,10 @@ par("Patente: banda (decorativa) / fondo", "patente-banda", "patente-fondo", 3);
 
 for (const t of tonos) par("Foco (acento) sobre fondos de tono (3:1)", "foco", `${t}-f`, 3);
 for (const t of tonos) par("Texto / fondos de tono (segmento elegido)", "texto", `${t}-f`, 4.5);
+// D1 (variante texto de «Puede salir», sin fondo): texto 600 de 13 px sobre los tres fondos donde aparece.
+for (const f of ["superficie", "superficie-2", "fondo"]) par("Puede salir (variante texto, D1)", "vigente-t", f, 4.5);
+// D4 (motivos del protagonista en texto normal) y el texto sobre el fondo crítico del aviso de bloqueo.
+par("Texto / fondo crítico (D4, avisos)", "texto", "critico-f", 4.5);
 par("Foco / superficie", "foco", "superficie", 3);
 par("Foco / escritorio", "foco", "escritorio", 3);
 
