@@ -7,8 +7,8 @@
   //    cambia el ancho de la ventana no se esconde nada de lo que ya se ve. «Ver N más»: el foco va al primer evento nuevo (`ids[límiteAnterior]`). Cambiar el filtro vuelve al primer tramo.
   //  - La barra de estado del panel dice «Mostrando 30 de 128 eventos.» y es la región viva: se actualiza al elegir un filtro y al pedir más.
   import { tick } from "svelte";
-  import { vistaDeHistorial, type IdFiltroHistorial, type PanelHistorial } from "../lib/estado/ficha.ts";
-  import { TEXTO_FICHA, textoVerMasEventos } from "../lib/dominio/textos.ts";
+  import { PASO_HISTORIAL_ANCHO, PASO_HISTORIAL_ANGOSTO, vistaDeHistorial, type IdFiltroHistorial, type PanelHistorial } from "../lib/estado/ficha.ts";
+  import { TEXTO_FICHA } from "../lib/dominio/textos.ts";
   import { textoAnunciado } from "./anuncio.svelte.ts";
   import Boton from "./Boton.svelte";
   import Detalles from "./Detalles.svelte";
@@ -20,13 +20,12 @@
   let { historial, idTitulo }: { historial: PanelHistorial; idTitulo: string } = $props();
 
   // 5.16 / D2: 10 eventos por tramo en pantallas angostas (< 40rem), 30 desde 40rem. Se mide una vez, al abrir la ficha.
-  const PASO = typeof matchMedia === "function" && matchMedia("(min-width: 40rem)").matches ? 30 : 10;
+  const PASO = typeof matchMedia === "function" && matchMedia("(min-width: 40rem)").matches ? PASO_HISTORIAL_ANCHO : PASO_HISTORIAL_ANGOSTO;
 
   let filtro = $state<IdFiltroHistorial>("todo");
   let limite = $state(PASO);
-  const vista = $derived(vistaDeHistorial(historial, filtro, limite));
-  // `vistaDeHistorial` arma el texto del botón con su paso fijo (30): acá se rehace con el paso de este panel («Ver 10 más», o «Ver 4 más» si quedan menos).
-  const textoVerMas = $derived(vista.hayMas ? textoVerMasEventos(Math.min(PASO, vista.total - vista.mostrados)) : null);
+  // El paso se le pasa a `vistaDeHistorial`, que arma el texto del botón («Ver 10 más», o «Ver 4 más» si quedan menos).
+  const vista = $derived(vistaDeHistorial(historial, filtro, limite, PASO));
 
   // La barra de estado muestra siempre el conteo de ahora (texto simple, sin `role="status"`: cuando cambian los datos por una acción de otro panel no se anuncia, para no
   // pisar el mensaje de esa acción). Lo que sí se dice es lo que hace la persona en este panel (elegir un filtro, pedir más), en una región aparte que existe desde el principio.
@@ -36,7 +35,7 @@
   function elegirFiltro(id: IdFiltroHistorial): void {
     filtro = id;
     limite = PASO;
-    accion = { texto: vistaDeHistorial(historial, id, PASO).anuncio };
+    accion = { texto: vistaDeHistorial(historial, id, PASO, PASO).anuncio };
   }
 
   async function verMas(): Promise<void> {
@@ -145,8 +144,8 @@
         </div>
       {/each}
     </div>
-    {#if textoVerMas !== null}
-      <div class="mas"><Boton variante="secundario" onclick={verMas}>{textoVerMas}</Boton></div>
+    {#if vista.botonVerMas !== null}
+      <div class="mas"><Boton variante="secundario" onclick={verMas}>{vista.botonVerMas}</Boton></div>
     {/if}
   {/if}
 </Panel>

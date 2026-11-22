@@ -631,8 +631,6 @@ function panelDeKilometraje(estado: Estado, unidad: Unidad, km: FichaDeUnidad["d
 /** Cuántos eventos suma cada «Ver más» (5.16; D2): 10 con poco ancho y 30 desde 40rem. La vista elige uno al abrir la ficha y se lo pasa a `vistaDeHistorial`. */
 export const PASO_HISTORIAL_ANGOSTO = 10;
 export const PASO_HISTORIAL_ANCHO = 30;
-/** El nombre de antes (el paso ancho). Sobra apenas la vista lo deje de importar: la conciliación con la rama de la vista lo retira. */
-export const PASO_HISTORIAL = PASO_HISTORIAL_ANCHO;
 
 const FORMA_DEL_EVENTO: Record<TipoEvento, { icono: IconoDeEvento; categoria: CategoriaDeEvento }> = {
   "revision-enviada": { icono: "parte", categoria: "partes" },
