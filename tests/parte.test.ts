@@ -1,18 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
   ITEMS_CHECKLIST,
-  advertenciasDeEnvio,
+  advertenciasDeCierre,
+  advertenciasDeRevision,
   conductorParaParte,
   documentacionVencidaEn,
   esBorradorVacio,
-  faltantesParaEnviar,
+  faltantesDeCierre,
+  faltantesDeRevision,
   novedadesDelParte,
   nuevoBorrador,
   parsearLitros,
+  parteLegible,
   validarFechaParte,
 } from "../src/lib/dominio/parte.ts";
 import { textoFaltantes } from "../src/lib/dominio/textos.ts";
-import type { Parte, RespuestaItem } from "../src/lib/dominio/tipos.ts";
+import type { Documento, Parte, RespuestaItem } from "../src/lib/dominio/tipos.ts";
 import { PROYECTO_BASE, PROYECTO_PIEDRA, checklistEnOrden, checklistVacio, conductor, documento, parte, unidad } from "./ayuda.ts";
 
 const H = "2026-11-18";
@@ -130,52 +133,61 @@ describe("P10: litros cargados", () => {
   });
 });
 
-describe("P4: lo que falta para enviar, en el orden del formulario", () => {
-  it("P4: falta kmFin, combustible y el ítem luces -> ['kmFin', 'luces', 'combustible']", () => {
+describe("P4: lo que falta para enviar la revisión, en el orden del formulario", () => {
+  it("P4: a la revisión le faltan kmInicio y el ítem luces -> ['kmInicio', 'luces'] (no pide kmFin ni combustible)", () => {
     const p = completo({
+      kmInicio: null,
       kmFin: null,
       combustible: null,
       checklist: con(checklistEnOrden(), { luces: { estado: "sin-responder" } }),
     });
-    expect(faltantesParaEnviar(p)).toEqual(["kmFin", "luces", "combustible"]);
-    expect(textoFaltantes(3)).toBe("Faltan 3 datos");
+    expect(faltantesDeRevision(p)).toEqual(["kmInicio", "luces"]);
+    expect(textoFaltantes(2)).toBe("Faltan 2 datos");
     expect(textoFaltantes(1)).toBe("Falta 1 dato");
   });
 
-  it("P4: un parte completo no tiene faltantes", () => {
-    expect(faltantesParaEnviar(completo())).toEqual([]);
+  it("P4: una revisión completa no tiene faltantes, aunque no haya datos de cierre", () => {
+    expect(faltantesDeRevision(completo({ kmFin: null, combustible: null }))).toEqual([]);
   });
 
   it("P4: un borrador recién empezado falta de todo, en orden", () => {
-    const p = completo({ conductorId: null, kmInicio: null, kmFin: null, combustible: null, checklist: checklistVacio() });
-    expect(faltantesParaEnviar(p)).toEqual([
-      "conductor",
-      "kmInicio",
-      "kmFin",
-      ...ITEMS_CHECKLIST.map((i) => i.id),
-      "combustible",
-    ]);
+    const p = completo({ conductorId: null, kmInicio: null, checklist: checklistVacio() });
+    expect(faltantesDeRevision(p)).toEqual(["conductor", "kmInicio", ...ITEMS_CHECKLIST.map((i) => i.id)]);
   });
 
   it("P4: un ítem 'con novedad' necesita descripción de 3 a 500 caracteres (sin contar espacios de los extremos)", () => {
     const conDesc = (descripcion: string): Parte["checklist"] =>
       con(checklistEnOrden(), { frenos: { estado: "con-novedad", descripcion, impideUso: false } });
-    expect(faltantesParaEnviar(completo({ checklist: conDesc("") }))).toEqual(["frenos"]);
-    expect(faltantesParaEnviar(completo({ checklist: conDesc("  ab  ") }))).toEqual(["frenos"]);
-    expect(faltantesParaEnviar(completo({ checklist: conDesc("abc") }))).toEqual([]);
-    expect(faltantesParaEnviar(completo({ checklist: conDesc(`  ${"x".repeat(500)}  `) }))).toEqual([]);
-    expect(faltantesParaEnviar(completo({ checklist: conDesc("x".repeat(501)) }))).toEqual(["frenos"]);
+    expect(faltantesDeRevision(completo({ checklist: conDesc("") }))).toEqual(["frenos"]);
+    expect(faltantesDeRevision(completo({ checklist: conDesc("  ab  ") }))).toEqual(["frenos"]);
+    expect(faltantesDeRevision(completo({ checklist: conDesc("abc") }))).toEqual([]);
+    expect(faltantesDeRevision(completo({ checklist: conDesc(`  ${"x".repeat(500)}  `) }))).toEqual([]);
+    expect(faltantesDeRevision(completo({ checklist: conDesc("x".repeat(501)) }))).toEqual(["frenos"]);
   });
 
   it("P4: 'Otra novedad' marcada sin descripción válida falta; sin marcar no cuenta", () => {
-    expect(faltantesParaEnviar(completo({ otraNovedad: { descripcion: "", impideUso: false } }))).toEqual(["otraNovedad"]);
-    expect(faltantesParaEnviar(completo({ otraNovedad: { descripcion: "Vidrio rayado", impideUso: false } }))).toEqual([]);
-    expect(faltantesParaEnviar(completo({ otraNovedad: null }))).toEqual([]);
+    expect(faltantesDeRevision(completo({ otraNovedad: { descripcion: "", impideUso: false } }))).toEqual(["otraNovedad"]);
+    expect(faltantesDeRevision(completo({ otraNovedad: { descripcion: "Vidrio rayado", impideUso: false } }))).toEqual([]);
+    expect(faltantesDeRevision(completo({ otraNovedad: null }))).toEqual([]);
   });
 
   it("P4: 'Otra novedad' va al final del orden", () => {
-    const p = completo({ combustible: null, otraNovedad: { descripcion: "", impideUso: false } });
-    expect(faltantesParaEnviar(p)).toEqual(["combustible", "otraNovedad"]);
+    const p = completo({ kmInicio: null, otraNovedad: { descripcion: "", impideUso: false } });
+    expect(faltantesDeRevision(p)).toEqual(["kmInicio", "otraNovedad"]);
+  });
+});
+
+describe("P4: lo que falta para cerrar el parte", () => {
+  it("P4: un cierre sin nada -> ['kmFin', 'combustible']", () => {
+    expect(faltantesDeCierre(completo({ kmFin: null, combustible: null }))).toEqual(["kmFin", "combustible"]);
+  });
+
+  it("P4: con el fin y el combustible no falta nada (los litros son opcionales y la revisión no se vuelve a mirar)", () => {
+    expect(faltantesDeCierre(completo({ kmFin: 1100, combustible: "medio", litrosCargados: null, checklist: checklistVacio(), kmInicio: null }))).toEqual([]);
+  });
+
+  it("P4: un solo faltante", () => {
+    expect(faltantesDeCierre(completo({ kmFin: 1100, combustible: null }))).toEqual(["combustible"]);
   });
 });
 
@@ -215,9 +227,8 @@ describe("P11: novedades que genera un parte", () => {
   });
 });
 
-describe("P9: documentación vencida a la fecha del parte", () => {
+describe("P9: documentación de la unidad vencida a la fecha del parte", () => {
   const U = unidad({ id: "u1", proyectoId: PROYECTO_PIEDRA.id });
-  const C = conductor({ id: "c1" });
   const vigentes = [
     documento({ tipo: "seguro", vence: "2027-01-01" }),
     documento({ tipo: "revision-tecnica", vence: "2027-01-01" }),
@@ -229,123 +240,90 @@ describe("P9: documentación vencida a la fecha del parte", () => {
   const cambiar = (tipo: string, vence: string) => vigentes.map((d) => (d.tipo === tipo ? { ...d, vence } : d));
 
   it("P9: todo vigente -> nada", () => {
-    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: vigentes })).toEqual([]);
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, documentos: vigentes })).toEqual([]);
   });
 
   it("P9: seguro vencido hace 3 días -> ['seguro']", () => {
     const docs = cambiar("seguro", "2026-11-15");
-    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual(["seguro"]);
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, documentos: docs })).toEqual(["seguro"]);
   });
 
   it("P9: el documento que vence ese mismo día todavía vale (C01)", () => {
     const docs = cambiar("seguro", H);
-    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual([]);
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, documentos: docs })).toEqual([]);
   });
 
   it("P9: un obligatorio faltante cuenta (habilitación del proyecto)", () => {
-    expect(
-      documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: sin("habilitacion-proyecto") }),
-    ).toEqual(["habilitacion-proyecto"]);
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, documentos: sin("habilitacion-proyecto") })).toEqual(["habilitacion-proyecto"]);
   });
 
   it("P9 + V13: en la base no se exige la habilitación", () => {
-    expect(
-      documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_BASE, conductor: C, documentos: sin("habilitacion-proyecto") }),
-    ).toEqual([]);
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_BASE, documentos: sin("habilitacion-proyecto") })).toEqual([]);
   });
 
-  it("P9: licencia del conductor vencida o faltante cuenta", () => {
-    const vencida = cambiar("licencia", "2026-11-01");
-    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: vencida })).toEqual(["licencia"]);
-    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: sin("licencia") })).toEqual(["licencia"]);
+  it("P9, L1: nunca devuelve 'licencia': la licencia del conductor bloquea la revisión y no entra acá (vencida o faltante)", () => {
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, documentos: cambiar("licencia", "2026-11-01") })).toEqual([]);
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, documentos: sin("licencia") })).toEqual([]);
+    const todo = vigentes.map((d) => ({ ...d, vence: "2026-01-01" }));
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, documentos: todo })).not.toContain("licencia");
   });
 
-  it("P9: sin conductor (borrador) no se evalúa la licencia, y el orden es el de REQUISITOS", () => {
+  it("P9: el orden es el de REQUISITOS", () => {
     const docs = cambiar("matafuego", "2026-01-01").map((d) => (d.tipo === "seguro" ? { ...d, vence: "2026-01-01" } : d));
-    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: null, documentos: docs })).toEqual(["seguro", "matafuego"]);
-  });
-
-  it("P9/B2: la licencia que vence el mismo día del parte todavía vale; un día antes ya no", () => {
-    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: cambiar("licencia", H) })).toEqual([]);
-    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: cambiar("licencia", "2026-11-17") })).toEqual(["licencia"]);
-  });
-
-  describe("M1: con el documento como estaba en la fecha del parte (una renovación tardía no borra el hecho)", () => {
-    const F = "2026-11-15"; // el parte es de hace 3 días
-    const seguroViejo = documento({ id: "seguro-viejo", tipo: "seguro", vence: "2026-11-13", emitido: "2025-11-13", cargado: "2025-11-10T12:00:00.000Z" });
-    const resto = vigentes.filter((d) => d.tipo !== "seguro");
-    const evaluar = (renovacion: ReturnType<typeof documento> | null, fecha = F) =>
-      documentacionVencidaEn({
-        fecha,
-        unidad: U,
-        proyecto: PROYECTO_PIEDRA,
-        conductor: C,
-        documentos: [...resto, seguroViejo, ...(renovacion === null ? [] : [renovacion])],
-      });
-    const renovacion = (parcial: Partial<ReturnType<typeof documento>>) =>
-      documento({ id: "seguro-nuevo", tipo: "seguro", vence: "2027-11-13", reemplazaA: "seguro-viejo", ...parcial });
-
-    it("sin renovación: el seguro venció hace 2 días en la fecha del parte", () => {
-      expect(evaluar(null)).toEqual(["seguro"]);
-    });
-
-    it("renovación cargada hoy, sin fecha de emisión: no cubre un parte de hace 3 días", () => {
-      expect(evaluar(renovacion({ cargado: "2026-11-18T12:00:00.000Z", emitido: null }))).toEqual(["seguro"]);
-    });
-
-    it("renovación emitida después de la fecha del parte: no la cubre", () => {
-      expect(evaluar(renovacion({ cargado: "2026-11-18T12:00:00.000Z", emitido: "2026-11-17" }))).toEqual(["seguro"]);
-    });
-
-    it("renovación emitida antes de la fecha del parte (cargada tarde): sí la cubre, porque el vehículo ya tenía seguro", () => {
-      expect(evaluar(renovacion({ cargado: "2026-11-18T12:00:00.000Z", emitido: "2026-11-14" }))).toEqual([]);
-      expect(evaluar(renovacion({ cargado: "2026-11-18T12:00:00.000Z", emitido: F }))).toEqual([]); // el mismo día cubre
-    });
-
-    it("renovación cargada antes de la fecha del parte, sin emisión: la cubre", () => {
-      expect(evaluar(renovacion({ cargado: "2026-11-14T12:00:00.000Z", emitido: null }))).toEqual([]);
-      // 15:00 de Argentina del mismo día (18:00Z): el mismo día civil cubre
-      expect(evaluar(renovacion({ cargado: "2026-11-15T18:00:00.000Z", emitido: null }))).toEqual([]);
-      // 00:30 de Argentina del día siguiente (03:30Z): ya es otro día civil
-      expect(evaluar(renovacion({ cargado: "2026-11-16T03:30:00.000Z", emitido: null }))).toEqual(["seguro"]);
-    });
-
-    it("un documento anterior que cubría la fecha sigue cubriéndola aunque exista una renovación posterior", () => {
-      // el viejo vence el 20; el parte es del 15; la renovación (cargada hoy) no lo pisa
-      const viejo = documento({ id: "seguro-viejo", tipo: "seguro", vence: "2026-11-20", emitido: "2025-11-20", cargado: "2025-11-10T12:00:00.000Z" });
-      const nuevo = renovacion({ cargado: "2026-11-18T12:00:00.000Z", emitido: "2026-11-18" });
-      const docs = [...resto, viejo, nuevo];
-      expect(documentacionVencidaEn({ fecha: F, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual([]);
-    });
-
-    it("la licencia usa la misma regla", () => {
-      const licenciaVieja = documento({ id: "lic-vieja", titular: { tipo: "conductor", id: "c1" }, tipo: "licencia", vence: "2026-11-10", emitido: null, cargado: "2025-01-01T12:00:00.000Z" });
-      const licenciaNueva = documento({ id: "lic-nueva", titular: { tipo: "conductor", id: "c1" }, tipo: "licencia", vence: "2031-11-10", emitido: null, cargado: "2026-11-18T12:00:00.000Z", reemplazaA: "lic-vieja" });
-      const docs = [...vigentes.filter((d) => d.tipo !== "licencia"), licenciaVieja, licenciaNueva];
-      expect(documentacionVencidaEn({ fecha: F, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual(["licencia"]);
-      expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual([]);
-    });
+    expect(documentacionVencidaEn({ fecha: H, unidad: U, proyecto: PROYECTO_PIEDRA, documentos: docs })).toEqual(["seguro", "matafuego"]);
   });
 
   it("P9: se evalúa a la fecha del parte, no a hoy (parte de ayer con seguro que venció ayer)", () => {
     const docs = cambiar("seguro", "2026-11-17");
-    expect(documentacionVencidaEn({ fecha: "2026-11-17", unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual([]);
-    expect(documentacionVencidaEn({ fecha: "2026-11-18", unidad: U, proyecto: PROYECTO_PIEDRA, conductor: C, documentos: docs })).toEqual(["seguro"]);
+    expect(documentacionVencidaEn({ fecha: "2026-11-17", unidad: U, proyecto: PROYECTO_PIEDRA, documentos: docs })).toEqual([]);
+    expect(documentacionVencidaEn({ fecha: "2026-11-18", unidad: U, proyecto: PROYECTO_PIEDRA, documentos: docs })).toEqual(["seguro"]);
+  });
+
+  describe("M1: con el documento como estaba en la fecha del parte (una renovación tardía no borra el hecho)", () => {
+    const seguroVencido = (parcial: Partial<Documento>): Documento[] => [
+      documento({ id: "s-viejo", tipo: "seguro", vence: "2026-11-15", emitido: "2025-11-15" }),
+      ...vigentes.filter((d) => d.tipo !== "seguro"),
+      documento({ id: "s-nuevo", tipo: "seguro", vence: "2027-11-15", reemplazaA: "s-viejo", ...parcial }),
+    ];
+    const en = (fecha: string, docs: Documento[]) => documentacionVencidaEn({ fecha, unidad: U, proyecto: PROYECTO_PIEDRA, documentos: docs });
+
+    it("sin renovación: el seguro venció hace 2 días en la fecha del parte", () => {
+      const docs = [documento({ tipo: "seguro", vence: "2026-11-16", emitido: "2025-11-16" }), ...vigentes.filter((d) => d.tipo !== "seguro")];
+      expect(en(H, docs)).toEqual(["seguro"]);
+    });
+
+    it("renovación cargada hoy, sin fecha de emisión: no cubre un parte de hace 3 días", () => {
+      expect(en("2026-11-15", seguroVencido({ emitido: null, cargado: "2026-11-18T15:00:00.000Z" }))).toEqual([]);
+      expect(en("2026-11-16", seguroVencido({ emitido: null, cargado: "2026-11-18T15:00:00.000Z" }))).toEqual(["seguro"]);
+    });
+
+    it("renovación emitida después de la fecha del parte: no la cubre", () => {
+      expect(en("2026-11-16", seguroVencido({ emitido: "2026-11-17" }))).toEqual(["seguro"]);
+    });
+
+    it("renovación emitida antes de la fecha del parte (cargada tarde): sí la cubre, porque el vehículo ya tenía seguro", () => {
+      expect(en("2026-11-16", seguroVencido({ emitido: "2026-11-15", cargado: "2026-11-18T15:00:00.000Z" }))).toEqual([]);
+    });
+
+    it("un documento anterior que cubría la fecha sigue cubriéndola aunque exista una renovación posterior", () => {
+      expect(en("2026-11-14", seguroVencido({ emitido: "2026-11-17" }))).toEqual([]);
+    });
   });
 });
 
-describe("advertencias de envío (K6, K7, P9)", () => {
-  it("junta las de kilometraje y la de documentación, en ese orden", () => {
-    const a = advertenciasDeEnvio({ kmAnterior: 0, kmInicio: 1250, kmFin: 2600, documentacionVencida: ["seguro"] });
-    expect(a).toEqual([
-      { tipo: "salto-km", km: 1250 },
-      { tipo: "recorrido-largo", km: 1350 },
-      { tipo: "documentacion-vencida", documentos: ["seguro"] },
-    ]);
+describe("advertencias de la revisión (K6, P9) y del cierre (K7)", () => {
+  it("la revisión junta la de kilometraje y la de documentación, en ese orden", () => {
+    const a = advertenciasDeRevision({ kmAnterior: 0, kmInicio: 1250, documentacionVencida: ["seguro"] });
+    expect(a).toEqual([{ tipo: "salto-km", km: 1250 }, { tipo: "documentacion-vencida", documentos: ["seguro"] }]);
   });
 
-  it("sin nada para avisar no devuelve nada", () => {
-    expect(advertenciasDeEnvio({ kmAnterior: 100, kmInicio: 100, kmFin: 200, documentacionVencida: [] })).toEqual([]);
+  it("la revisión sin nada para avisar no devuelve nada", () => {
+    expect(advertenciasDeRevision({ kmAnterior: 100, kmInicio: 100, documentacionVencida: [] })).toEqual([]);
+  });
+
+  it("el cierre avisa solo del recorrido largo (K7)", () => {
+    expect(advertenciasDeCierre({ kmInicio: 0, kmFin: 1201 })).toEqual([{ tipo: "recorrido-largo", km: 1201 }]);
+    expect(advertenciasDeCierre({ kmInicio: 0, kmFin: 1200 })).toEqual([]);
   });
 });
 
@@ -356,6 +334,8 @@ describe("P13: borrador nuevo", () => {
     expect(p.kmInicio).toBe(84320);
     expect(p.conductorId).toBe("c-asignado");
     expect(p.estado).toBe("borrador");
+    expect(p.revisado).toBeNull();
+    expect(p.sinSalida).toBe(false);
     expect(p.kmFin).toBeNull();
     expect(p.combustible).toBeNull();
     expect(p.enviado).toBeNull();
@@ -369,12 +349,58 @@ describe("P13: borrador nuevo", () => {
     expect(p.kmInicio).toBeNull();
     expect(p.conductorId).toBeNull();
   });
+});
 
-  it("P13: perfil conductor manda sobre el asignado; el encargado usa el asignado", () => {
-    const u = unidad({ conductorId: "c-asignado" });
-    expect(conductorParaParte({ tipo: "conductor", conductorId: "c-otro" }, u)).toBe("c-otro");
-    expect(conductorParaParte({ tipo: "encargado" }, u)).toBe("c-asignado");
-    expect(conductorParaParte({ tipo: "encargado" }, unidad({ conductorId: null }))).toBeNull();
+describe("P13, L1: conductorParaParte", () => {
+  const U = unidad({ id: "u1", conductorId: "c-asignado" });
+  const licencia = (id: string, vence: string): Documento => documento({ titular: { tipo: "conductor", id }, tipo: "licencia", vence, emitido: "2020-01-01" });
+
+  it("perfil Conductor: siempre el del perfil, tenga o no licencia (el bloqueo se muestra aparte)", () => {
+    expect(conductorParaParte({ tipo: "conductor", conductorId: "c-otro" }, U, [], H)).toBe("c-otro");
+    expect(conductorParaParte({ tipo: "conductor", conductorId: "c-otro" }, U, [licencia("c-otro", "2026-11-01")], H)).toBe("c-otro");
+  });
+
+  it("perfil Encargado: el asignado solo si su licencia ampara la fecha", () => {
+    expect(conductorParaParte({ tipo: "encargado" }, U, [licencia("c-asignado", "2027-01-01")], H)).toBe("c-asignado");
+    expect(conductorParaParte({ tipo: "encargado" }, U, [licencia("c-asignado", H)], H)).toBe("c-asignado");
+  });
+
+  it("perfil Encargado: el asignado con licencia vencida (o sin ninguna) no se precarga", () => {
+    expect(conductorParaParte({ tipo: "encargado" }, U, [licencia("c-asignado", "2026-11-17")], H)).toBeNull();
+    expect(conductorParaParte({ tipo: "encargado" }, U, [], H)).toBeNull();
+  });
+
+  it("perfil Encargado: sin conductor asignado -> null", () => {
+    expect(conductorParaParte({ tipo: "encargado" }, unidad({ conductorId: null }), [], H)).toBeNull();
+  });
+});
+
+describe("parteLegible: los estados nuevos (P7, P16)", () => {
+  const crudo = (extra: Record<string, unknown> = {}): unknown => ({ ...parte({ estado: "en-uso", enviado: null }), ...extra });
+
+  it("un parte en uso se lee, con su revisado y sinSalida en false", () => {
+    const p = parteLegible(crudo({ revisado: "2026-11-18T09:10:00.000Z" }));
+    expect(p).toMatchObject({ estado: "en-uso", revisado: "2026-11-18T09:10:00.000Z", sinSalida: false });
+  });
+
+  it("un estado desconocido no es un parte", () => {
+    expect(parteLegible(crudo({ estado: "revisado" }))).toBeNull();
+    expect(parteLegible(crudo({ estado: "pendiente" }))).toBeNull();
+  });
+
+  it("un revisado ilegible queda null, y el parte en uso se sigue leyendo como en uso (no se inventa la hora)", () => {
+    for (const malo of ["ayer", 12, null, undefined, ""]) {
+      const p = parteLegible(crudo({ revisado: malo }));
+      expect(p?.estado).toBe("en-uso");
+      expect(p?.revisado).toBeNull();
+    }
+  });
+
+  it("sinSalida solo vale con true: «sí» o 1 es false", () => {
+    expect(parteLegible(crudo({ estado: "enviado", sinSalida: true }))?.sinSalida).toBe(true);
+    expect(parteLegible(crudo({ sinSalida: "sí" }))?.sinSalida).toBe(false);
+    expect(parteLegible(crudo({ sinSalida: 1 }))?.sinSalida).toBe(false);
+    expect(parteLegible(crudo({ sinSalida: undefined }))?.sinSalida).toBe(false);
   });
 });
 

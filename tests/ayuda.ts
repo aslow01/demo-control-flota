@@ -108,6 +108,8 @@ export function parte(parcial: Partial<Parte> = {}): Parte {
     fecha: "2026-11-18",
     conductorId: "c1",
     estado: "enviado",
+    revisado: "2026-11-18T09:00:00.000Z",
+    sinSalida: false,
     kmInicio: 1000,
     kmFin: 1100,
     combustible: "medio",

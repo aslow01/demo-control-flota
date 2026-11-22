@@ -105,7 +105,15 @@ export interface Parte {
   fecha: FechaCivil;
   /** `null` solo en borrador. */
   conductorId: string | null;
-  estado: "borrador" | "enviado";
+  /**
+   * 'borrador' = revisión sin enviar; 'en-uso' = revisión enviada, cierre pendiente; 'enviado' = cerrado (sección 17).
+   * En pantalla, 'enviado' se llama «Cerrado».
+   */
+  estado: "borrador" | "en-uso" | "enviado";
+  /** Cuándo se envió la revisión antes de salir; `null` en un borrador. */
+  revisado: Instante | null;
+  /** `true` = la revisión informó una novedad crítica y el parte se cerró ahí (P16). */
+  sinSalida: boolean;
   kmInicio: number | null;
   kmFin: number | null;
   combustible: NivelCombustible | null;
@@ -114,12 +122,13 @@ export interface Parte {
   checklist: Record<ItemChecklist, RespuestaItem>;
   otraNovedad: { descripcion: string; impideUso: boolean } | null;
   advertenciasAceptadas: Advertencia[];
-  /** Calculado al enviar (P9). */
+  /** Calculado al enviar la revisión (P9); solo documentos de la unidad. */
   documentacionVencida: TipoDocumento[];
   creado: Instante;
   actualizado: Instante;
+  /** Cuándo se cerró el parte; en un parte sin salida es igual a `revisado`. */
   enviado: Instante | null;
-  /** Nombre del perfil que lo envió. */
+  /** Nombre del perfil que envió la revisión. */
   autor: string;
 }
 
@@ -151,6 +160,7 @@ export type TipoEvento =
   | "documento-cargado"
   | "documento-renovado"
   | "documento-corregido"
+  | "revision-enviada"
   | "parte-enviado"
   | "novedad-abierta"
   | "novedad-resuelta"

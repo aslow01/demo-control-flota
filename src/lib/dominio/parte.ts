@@ -1,14 +1,13 @@
-// Parte diario (P2, P4, P5, P9 a P11, P13) y advertencias de envío (K6, K7, P9).
+// Parte diario en dos pasos (P2 a P4, P9 a P11, P13, P16; sección 17): revisión antes de salir y cierre; advertencias (K6, K7, P9).
 
 import { diasEntre, parsearFechaCivil, parsearInstante } from "./fechas.ts";
-import { KM_MAXIMO, advertenciasDeKm, type EntradaKm } from "./kilometraje.ts";
+import { KM_MAXIMO, advertenciasDeRecorrido, advertenciasDeSalida } from "./kilometraje.ts";
 import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos } from "./textos.ts";
-import { hayDocumentoQueAmpare, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
+import { estadoDeLicencia, hayDocumentoQueAmpare, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 import {
   fallo,
   ok,
   type Advertencia,
-  type Conductor,
   type Documento,
   type FechaCivil,
   type Instante,
@@ -93,30 +92,42 @@ export function validarLitros(litros: number): Resultado<number> {
   return valido ? ok(litros) : fallo("litros-invalidos", errLitrosInvalidos(LITROS_MAXIMO), { campo: "litrosCargados" });
 }
 
-/** Campos que pueden faltar para enviar, con el nombre que usa el formulario. */
-export type CampoFaltante = "conductor" | "kmInicio" | "kmFin" | ItemChecklist | "combustible" | "otraNovedad";
+/** Campos de la revisión antes de salir (paso 1) que pueden faltar, con el nombre que usa el formulario. */
+export type CampoDeRevision = "conductor" | "kmInicio" | ItemChecklist | "otraNovedad";
+/** Campos del cierre (paso 2) que pueden faltar. */
+export type CampoDeCierre = "kmFin" | "combustible";
+/** Campos que pueden faltar en alguno de los dos pasos. */
+export type CampoFaltante = CampoDeRevision | CampoDeCierre;
 
 function descripcionValida(texto: string): boolean {
   const largo = texto.trim().length;
   return largo >= DESCRIPCION_MINIMO && largo <= DESCRIPCION_MAXIMO;
 }
 
-/** Lo que P4 mira de un parte: sirve igual para un `Parte` guardado y para los valores de un formulario ya convertidos. */
-export type DatosParaEnviar = Pick<Parte, "conductorId" | "kmInicio" | "kmFin" | "checklist" | "combustible" | "otraNovedad">;
+/** Lo que P4 mira de la revisión: sirve igual para un `Parte` guardado y para los valores de un formulario ya convertidos. */
+export type DatosDeRevision = Pick<Parte, "conductorId" | "kmInicio" | "checklist" | "otraNovedad">;
+/** Lo que P4 mira del cierre. */
+export type DatosDeCierre = Pick<Parte, "kmFin" | "combustible">;
 
-/** P4: lo que falta para poder enviar el parte, en el orden del formulario. Vacío = se puede enviar. */
-export function faltantesParaEnviar(parte: DatosParaEnviar): CampoFaltante[] {
-  const faltan: CampoFaltante[] = [];
+/** P4 (revisión): lo que falta para enviar la revisión antes de salir, en el orden del formulario. Vacío = se puede enviar. */
+export function faltantesDeRevision(parte: DatosDeRevision): CampoDeRevision[] {
+  const faltan: CampoDeRevision[] = [];
   if (parte.conductorId === null) faltan.push("conductor");
   if (parte.kmInicio === null) faltan.push("kmInicio");
-  if (parte.kmFin === null) faltan.push("kmFin");
   for (const item of ITEMS_CHECKLIST) {
     const r: RespuestaItem = parte.checklist[item.id];
     if (r.estado === "sin-responder") faltan.push(item.id);
     else if (r.estado === "con-novedad" && !descripcionValida(r.descripcion)) faltan.push(item.id);
   }
-  if (parte.combustible === null) faltan.push("combustible");
   if (parte.otraNovedad !== null && !descripcionValida(parte.otraNovedad.descripcion)) faltan.push("otraNovedad");
+  return faltan;
+}
+
+/** P4 (cierre): lo que falta para cerrar el parte, en el orden del formulario. */
+export function faltantesDeCierre(parte: DatosDeCierre): CampoDeCierre[] {
+  const faltan: CampoDeCierre[] = [];
+  if (parte.kmFin === null) faltan.push("kmFin");
+  if (parte.combustible === null) faltan.push("combustible");
   return faltan;
 }
 
@@ -152,43 +163,40 @@ export interface EntradaDocumentacion {
   fecha: FechaCivil;
   unidad: Unidad;
   proyecto: Proyecto;
-  conductor: Conductor | null;
   documentos: readonly Documento[];
 }
 
 /**
- * P9: documentos obligatorios que no amparaban la fecha del parte (los de la unidad y la licencia del conductor): vencidos
- * o faltantes **como estaban ese día** (M1), no según el documento vigente de hoy. Un documento que vence ese mismo día
- * todavía vale (V2). Si no hay conductor (borrador) no se mira la licencia.
+ * P9: documentos obligatorios **de la unidad** que no amparaban la fecha del parte: vencidos o faltantes **como estaban ese día** (M1), no según el
+ * documento vigente de hoy. Un documento que vence ese mismo día todavía vale (V2). La licencia del conductor ya no entra acá: bloquea la revisión (L1).
  */
 export function documentacionVencidaEn(entrada: EntradaDocumentacion): TipoDocumento[] {
-  const { fecha, unidad, proyecto, conductor, documentos } = entrada;
-  const problemas: TipoDocumento[] = [];
-  for (const tipo of tiposObligatoriosDeUnidad(proyecto)) {
-    if (!hayDocumentoQueAmpare(documentos, { tipo: "unidad", id: unidad.id }, tipo, fecha)) problemas.push(tipo);
-  }
-  if (conductor !== null && !hayDocumentoQueAmpare(documentos, { tipo: "conductor", id: conductor.id }, "licencia", fecha)) {
-    problemas.push("licencia");
-  }
-  return problemas;
+  const { fecha, unidad, proyecto, documentos } = entrada;
+  return tiposObligatoriosDeUnidad(proyecto).filter((tipo) => !hayDocumentoQueAmpare(documentos, { tipo: "unidad", id: unidad.id }, tipo, fecha));
 }
 
-export interface EntradaAdvertencias extends EntradaKm {
-  documentacionVencida: TipoDocumento[];
-}
-
-/** K6, K7 y P9: todo lo que hay que aceptar antes de enviar. */
-export function advertenciasDeEnvio(entrada: EntradaAdvertencias): Advertencia[] {
-  const advertencias = advertenciasDeKm(entrada);
+/** K6 y P9: lo que hay que aceptar antes de enviar la revisión. */
+export function advertenciasDeRevision(entrada: { kmAnterior: number | null; kmInicio: number; documentacionVencida: TipoDocumento[] }): Advertencia[] {
+  const advertencias = advertenciasDeSalida(entrada);
   if (entrada.documentacionVencida.length > 0) {
     advertencias.push({ tipo: "documentacion-vencida", documentos: [...entrada.documentacionVencida] });
   }
   return advertencias;
 }
 
-/** P13: el conductor del parte es el del perfil elegido o, si es el encargado, el asignado a la unidad. */
-export function conductorParaParte(perfil: Perfil, unidad: Unidad): string | null {
-  return perfil.tipo === "conductor" ? perfil.conductorId : unidad.conductorId;
+/** K7: lo que hay que aceptar antes de cerrar el parte. */
+export function advertenciasDeCierre(entrada: { kmInicio: number; kmFin: number }): Advertencia[] {
+  return advertenciasDeRecorrido(entrada);
+}
+
+/**
+ * P13, L1: el conductor del parte. Perfil Conductor: el del perfil, siempre (el bloqueo de la licencia se muestra aparte). Perfil Encargado: el asignado a
+ * la unidad solo si su licencia ampara la fecha del parte; si no, `null` («Elija quién conduce»).
+ */
+export function conductorParaParte(perfil: Perfil, unidad: Unidad, documentos: readonly Documento[], fecha: FechaCivil): string | null {
+  if (perfil.tipo === "conductor") return perfil.conductorId;
+  if (unidad.conductorId === null) return null;
+  return estadoDeLicencia(documentos, unidad.conductorId, fecha).vigente ? unidad.conductorId : null;
 }
 
 export interface EntradaBorrador {
@@ -210,6 +218,8 @@ export function nuevoBorrador(entrada: EntradaBorrador): Parte {
     fecha: entrada.fecha,
     conductorId: entrada.conductorId,
     estado: "borrador",
+    revisado: null,
+    sinSalida: false,
     kmInicio: entrada.kmActual,
     kmFin: null,
     combustible: null,
@@ -318,7 +328,7 @@ export function parteLegible(crudo: unknown): Parte | null {
   if (!esObjeto(crudo)) return null;
   const { id, unidadId, fecha, estado } = crudo;
   if (typeof id !== "string" || id === "" || typeof unidadId !== "string" || typeof fecha !== "string" || parsearFechaCivil(fecha) === null) return null;
-  if (estado !== "borrador" && estado !== "enviado") return null;
+  if (estado !== "borrador" && estado !== "en-uso" && estado !== "enviado") return null;
 
   const lista = esObjeto(crudo["checklist"]) ? crudo["checklist"] : {};
   const checklist = {} as Parte["checklist"];
@@ -335,6 +345,9 @@ export function parteLegible(crudo: unknown): Parte | null {
     fecha,
     conductorId: typeof crudo["conductorId"] === "string" ? crudo["conductorId"] : null,
     estado,
+    // Un parte en uso sin `revisado` legible se sigue leyendo como en uso: no se inventa la hora.
+    revisado: instanteLegible(crudo["revisado"]),
+    sinSalida: crudo["sinSalida"] === true,
     kmInicio,
     // Un recorrido negativo no existe (K3): si el final es menor que el inicial no se lee, para no dibujar «-20 km».
     kmFin: kmFin !== null && kmInicio !== null && kmFin < kmInicio ? null : kmFin,
