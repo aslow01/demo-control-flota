@@ -610,8 +610,11 @@ function panelDeKilometraje(estado: Estado, unidad: Unidad, km: FichaDeUnidad["d
 
 // --- Historial -----------------------------------------------------------------------------------
 
-/** Cuántos eventos se muestran de a una vez y cuántos suma «Ver 30 más» (5.16). */
-export const PASO_HISTORIAL = 30;
+/** Cuántos eventos suma cada «Ver más» (5.16; D2): 10 con poco ancho y 30 desde 40rem. La vista elige uno al abrir la ficha y se lo pasa a `vistaDeHistorial`. */
+export const PASO_HISTORIAL_ANGOSTO = 10;
+export const PASO_HISTORIAL_ANCHO = 30;
+/** El nombre de antes (el paso ancho). Sobra apenas la vista lo deje de importar: la conciliación con la rama de la vista lo retira. */
+export const PASO_HISTORIAL = PASO_HISTORIAL_ANCHO;
 
 const FORMA_DEL_EVENTO: Record<TipoEvento, { icono: IconoDeEvento; categoria: CategoriaDeEvento }> = {
   "parte-enviado": { icono: "parte", categoria: "partes" },
@@ -730,7 +733,7 @@ export interface VistaHistorial {
   /** Los del filtro elegido. */
   total: number;
   hayMas: boolean;
-  /** «Ver 30 más» (o menos, si queda poco); `null` si ya se ven todos. */
+  /** «Ver 10 más» o «Ver 30 más» según el paso (o menos, si queda poco); `null` si ya se ven todos. */
   botonVerMas: string | null;
   /** «Mostrando 30 de 128 eventos.» para la región `role="status"`. */
   anuncio: string;
@@ -740,8 +743,11 @@ export interface VistaHistorial {
   vacio: string | null;
 }
 
-/** El historial filtrado, recortado a `limite` eventos y agrupado por día (el más nuevo arriba). Filtro y límite son estado de la vista. */
-export function vistaDeHistorial(h: PanelHistorial, filtro: IdFiltroHistorial, limite: number): VistaHistorial {
+/**
+ * El historial filtrado, recortado a `limite` eventos y agrupado por día (el más nuevo arriba). Filtro y límite son estado de la vista; `paso` es lo que suma cada
+ * «Ver más» (`PASO_HISTORIAL_ANGOSTO` o `PASO_HISTORIAL_ANCHO`) y solo cambia el texto de `botonVerMas`. Sin `paso`, el ancho.
+ */
+export function vistaDeHistorial(h: PanelHistorial, filtro: IdFiltroHistorial, limite: number, paso: number = PASO_HISTORIAL_ANCHO): VistaHistorial {
   const lista = filtro === "todo" ? h.eventos : h.eventos.filter((e) => e.categoria === filtro);
   const visibles = lista.slice(0, Math.max(0, limite));
   const grupos: GrupoDeDia[] = [];
@@ -756,7 +762,7 @@ export function vistaDeHistorial(h: PanelHistorial, filtro: IdFiltroHistorial, l
     mostrados: visibles.length,
     total: lista.length,
     hayMas: resto > 0,
-    botonVerMas: resto > 0 ? textoVerMasEventos(Math.min(PASO_HISTORIAL, resto)) : null,
+    botonVerMas: resto > 0 ? textoVerMasEventos(Math.min(paso, resto)) : null,
     anuncio: textoMostrandoEventos(visibles.length, lista.length),
     ids: visibles.map((e) => e.eventoId),
     vacio: lista.length === 0 ? TEXTO_FICHA.historial.vacio : null,

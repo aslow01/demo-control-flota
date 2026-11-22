@@ -9,6 +9,8 @@ import { textoAdvertencia } from "../src/lib/dominio/textos.ts";
 import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
 import {
   PASO_HISTORIAL,
+  PASO_HISTORIAL_ANCHO,
+  PASO_HISTORIAL_ANGOSTO,
   fichaDeUnidad,
   vistaDeHistorial,
   type FichaDeUnidad,
@@ -473,6 +475,16 @@ describe("vistaDeHistorial: filtro, páginas de 30 y días", () => {
     expect(v.anuncio).toBe("Mostrando 30 de 130 eventos.");
     expect(v.ids).toHaveLength(30);
     expect(v.grupos.flatMap((g) => g.eventos)).toHaveLength(30);
+  });
+
+  it("D2: el paso es un parámetro: 10 con poco ancho y 30 desde 40rem; el botón dice cuántos suma y, al final, cuántos quedan", () => {
+    expect(PASO_HISTORIAL_ANGOSTO).toBe(10);
+    expect(PASO_HISTORIAL_ANCHO).toBe(30);
+    expect(PASO_HISTORIAL).toBe(PASO_HISTORIAL_ANCHO); // el nombre de antes sigue valiendo hasta que la vista deje de usarlo
+    expect(vistaDeHistorial(grande, "todo", 10, PASO_HISTORIAL_ANGOSTO).botonVerMas).toBe("Ver 10 más");
+    expect(vistaDeHistorial(grande, "todo", 125, PASO_HISTORIAL_ANGOSTO).botonVerMas).toBe("Ver 5 más");
+    expect(vistaDeHistorial(grande, "todo", 10, PASO_HISTORIAL_ANCHO).botonVerMas).toBe("Ver 30 más");
+    expect(vistaDeHistorial(grande, "todo", 10).botonVerMas).toBe("Ver 30 más"); // sin paso, el ancho
   });
 
   it("agrupa por día con el título del día; el primer grupo es el del evento más nuevo", () => {
