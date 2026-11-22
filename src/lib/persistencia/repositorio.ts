@@ -10,7 +10,9 @@ export type CodigoErrorRepositorio =
   /** Se intentó escribir un evento con un id que ya existe: el historial solo se agrega (H2). */
   | "evento-repetido"
   /** La escritura falló (cuota, transacción abortada...): no se aplicó nada (D10). */
-  | "escritura-fallida";
+  | "escritura-fallida"
+  /** La conexión con la base está cerrada (se borró o se actualizó desde otra pestaña, o el navegador la cerró): ningún reintento puede funcionar sobre este repositorio. */
+  | "conexion-cerrada";
 
 export class ErrorDeRepositorio extends Error {
   readonly codigo: CodigoErrorRepositorio;

@@ -1,7 +1,7 @@
 // Aptitud de una unidad para salir hoy (A1, A2, A8). Se calcula, no se guarda.
 
 import { novedadesCriticasAbiertas, rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
-import { parteSinSalidaDeHoy } from "./parte.ts";
+import { unidadSinSalidaHoy } from "./parte.ts";
 import { MOTIVO_APTITUD } from "./textos.ts";
 import type { Estado, FechaCivil, TipoDocumento, Unidad } from "./tipos.ts";
 import { NOMBRES_DOCUMENTO, documentoVigente, evaluarObligatorio, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
@@ -22,8 +22,8 @@ export interface Aptitud {
 type DatosDeAptitud = Pick<Estado, "documentos" | "novedades" | "partes" | "proyectos">;
 
 /**
- * A1: puede salir = en servicio, sin obligatorios vencidos o faltantes, sin novedades críticas abiertas y (P19) sin un parte de hoy cerrado sin salida: aunque la novedad se resuelva y la
- * unidad vuelva a servicio, ese día no sale.
+ * A1: puede salir = en servicio, sin obligatorios vencidos o faltantes, sin novedades críticas abiertas y (P19) sin una novedad crítica de hoy (la de un parte cerrado sin salida o una
+ * cargada a mano): aunque se resuelva y la unidad vuelva a servicio, ese día no sale.
  */
 export function aptitud(unidad: Unidad, estado: DatosDeAptitud, hoy: FechaCivil): Aptitud {
   const e = unidad.estado;
@@ -63,7 +63,7 @@ export function aptitud(unidad: Unidad, estado: DatosDeAptitud, hoy: FechaCivil)
     });
   }
 
-  if (parteSinSalidaDeHoy(estado.partes, unidad.id, hoy) !== undefined) motivos.push({ tipo: "sin-salida-hoy", texto: MOTIVO_APTITUD.sinSalidaHoy });
+  if (unidadSinSalidaHoy(estado, unidad.id, hoy)) motivos.push({ tipo: "sin-salida-hoy", texto: MOTIVO_APTITUD.sinSalidaHoy });
 
   const puedeSalir = motivos.length === 0;
   return { categoria: puedeSalir ? "puede-salir" : "no-puede-salir", puedeSalir, motivos };

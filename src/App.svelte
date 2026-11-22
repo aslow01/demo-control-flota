@@ -263,6 +263,8 @@
           {#each app.avisos as aviso (aviso.tipo)}
             {#if aviso.tipo === "sin-almacenamiento"}
               <Aviso tono="semana" icono="alerta">{TEXTO_AVISO.sinAlmacenamiento}</Aviso>
+            {:else if aviso.tipo === "almacenamiento-perdido"}
+              <Aviso tono="semana" icono="alerta">{TEXTO_AVISO.almacenamientoPerdido}</Aviso>
             {:else if aviso.tipo === "datos-de-otra-fecha"}
               <Aviso tono="semana" icono="calendario" alCerrar={() => app.descartarAviso("datos-de-otra-fecha")}>
                 {textoDatosDeOtraFecha(aviso.fechaBase)}

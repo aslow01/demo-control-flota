@@ -7,7 +7,7 @@ import { aptitud, resumenDeAptitud } from "../src/lib/dominio/aptitud.ts";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
 import { contextoDeVolverAServicio } from "../src/lib/dominio/formulario-ficha.ts";
 import { contextoDeResolver } from "../src/lib/dominio/formulario-novedad.ts";
-import { parteSinSalidaDeHoy } from "../src/lib/dominio/parte.ts";
+import { parteSinSalidaDeHoy, unidadSinSalidaHoy } from "../src/lib/dominio/parte.ts";
 import { MOTIVO_APTITUD, textoNovedadResuelta } from "../src/lib/dominio/textos.ts";
 import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
 import { centroDeAlertas } from "../src/lib/estado/centro-alertas.ts";
@@ -20,7 +20,7 @@ const H = "2026-11-18";
 const MANANA = "2026-11-19";
 const COND: Perfil = { tipo: "conductor", conductorId: "c1" };
 const ENC: Perfil = { tipo: "encargado" };
-const MOTIVO = "Sin salida hasta mañana (novedad crítica en la revisión de hoy)";
+const MOTIVO = "Sin salida hasta mañana (novedad crítica de hoy)";
 
 type Borrador = Extract<Comando, { tipo: "guardarBorrador" }>;
 
@@ -58,6 +58,58 @@ describe("parteSinSalidaDeHoy: el único lugar donde se decide P19", () => {
 
   it("un registro roto no lo rompe", () => {
     expect(parteSinSalidaDeHoy([null as never, { id: 5 } as never, sin(H)], "u1", H)?.id).toBe("ss");
+  });
+});
+
+/** QA D2 (decisión de Matías del 22/11/2026): P19 cubre toda novedad crítica, también la que el encargado carga a mano con «Impide usar la unidad». */
+function criticaALManoReparada(): Estado {
+  const g = ejecutarOk(flotaDePrueba(), { tipo: "cargarNovedad", unidadId: "u1", descripcion: "Pierde aceite fuerte", impideUso: true });
+  return ejecutarOk(g.estado, { tipo: "resolverNovedad", novedadId: g.estado.novedades[0]!.id, texto: "Se cambió el cárter", volverAServicio: true }).estado;
+}
+
+describe("P19 ampliada: una crítica cargada a mano y reparada el mismo día también deja a la unidad sin salir hasta mañana", () => {
+  it("el lugar único la reconoce, con o sin parte", () => {
+    const e = criticaALManoReparada();
+    expect(e.partes.some((p) => p.unidadId === "u1" && p.fecha === H)).toBe(false);
+    expect(unidadSinSalidaHoy(e, "u1", H)).toBe(true);
+    expect(unidadSinSalidaHoy(e, "u2", H)).toBe(false);
+    expect(unidadSinSalidaHoy(e, "u1", MANANA)).toBe(false);
+    expect(unidadSinSalidaHoy(resueltoYDevuelto(), "u1", H)).toBe(true);
+  });
+
+  it("la aptitud dice «no puede salir» con el motivo, y mañana «puede salir»", () => {
+    const e = criticaALManoReparada();
+    expect(e.unidades[0]?.estado.tipo).toBe("en-servicio");
+    expect(aptitud(e.unidades[0]!, e, H)).toMatchObject({ categoria: "no-puede-salir", motivos: [{ tipo: "sin-salida-hoy", texto: MOTIVO }] });
+    expect(aptitud(e.unidades[0]!, e, MANANA).categoria).toBe("puede-salir");
+  });
+
+  it("la ficha, la flota y el centro de alertas dicen lo mismo", () => {
+    const e = criticaALManoReparada();
+    const r = calcularAlertas(e, H);
+    const f = fichaDeUnidad(e, r, H, "ZK214BD", ENC);
+    if (!f.encontrada) throw new Error("sin ficha");
+    expect(f.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir", motivos: [MOTIVO] });
+    expect(panelDeFlota(e, r, H).filas.find((x) => x.patente === "ZK214BD")?.estado).toMatchObject({ categoria: "no-puede-salir" });
+    expect(centroDeAlertas(e, r, H, "Empresa de ejemplo").protagonista.items.find((x) => x.patente === "ZK214BD")).toMatchObject({ categoria: "no-puede-salir", motivo: MOTIVO });
+  });
+
+  it("el diálogo de resolver no promete que sale ese día (la crítica es de hoy)", () => {
+    const g = ejecutarOk(flotaDePrueba(), { tipo: "cargarNovedad", unidadId: "u1", descripcion: "Pierde aceite fuerte", impideUso: true });
+    const c = contextoDeResolver(g.estado, g.estado.novedades[0]!.id, H);
+    expect(c?.etiquetaVolverAServicio).toBe("Volver a servicio (sale recién mañana)");
+    expect(c?.notaVolverAServicio).toContain("vuelve a salir recién mañana");
+  });
+
+  it("una crítica de un día anterior reparada hoy no cierra el día de hoy", () => {
+    const e = criticaALManoReparada();
+    expect(unidadSinSalidaHoy(e, "u1", "2026-11-20")).toBe(false);
+  });
+
+  it("una novedad normal cargada hoy no cierra el día", () => {
+    const g = ejecutarOk(flotaDePrueba(), { tipo: "cargarNovedad", unidadId: "u1", descripcion: "Luz de patente quemada", impideUso: false });
+    expect(unidadSinSalidaHoy(g.estado, "u1", H)).toBe(false);
+    expect(aptitud(g.estado.unidades[0]!, g.estado, H).categoria).toBe("puede-salir");
   });
 });
 
@@ -147,9 +199,9 @@ describe("el diálogo de resolver no promete que la unidad vuelve ese día", () 
     expect(c?.etiquetaVolverAServicio).toBe("Volver a servicio ahora");
   });
 
-  it("una novedad cargada a mano en una unidad sin parte sin salida: sin cambios (D2 queda para Matías)", () => {
+  it("una novedad crítica cargada a mano de un día anterior (sin parte sin salida hoy): dice lo de siempre", () => {
     const g = ejecutarOk(flotaDePrueba(), { tipo: "cargarNovedad", unidadId: "u1", descripcion: "Pierde aceite fuerte", impideUso: true });
-    const c = contextoDeResolver(g.estado, g.estado.novedades[0]!.id, H);
+    const c = contextoDeResolver(g.estado, g.estado.novedades[0]!.id, MANANA);
     expect(c?.notaVolverAServicio).toBe("ZK 214 BD está fuera de servicio por esta novedad. Con la casilla marcada, vuelve a servicio al resolverla.");
     expect(c?.etiquetaVolverAServicio).toBe("Volver a servicio ahora");
   });
@@ -165,7 +217,7 @@ describe("el diálogo «Volver a servicio» también lo avisa", () => {
     const e = sinSalidaHoy();
     // la novedad ya se resolvió, pero la unidad sigue fuera de servicio: solo falta devolverla
     const resuelta = { ...e, novedades: e.novedades.map((n) => ({ ...n, estado: "resuelta" as const })) };
-    expect(contextoDeVolverAServicio(resuelta, "u1", H)?.aviso).toBe("La unidad vuelve a servicio, pero no vuelve a salir hasta mañana: la revisión de hoy encontró una novedad crítica.");
+    expect(contextoDeVolverAServicio(resuelta, "u1", H)?.aviso).toBe("La unidad vuelve a servicio, pero no vuelve a salir hasta mañana: hoy tuvo una novedad crítica.");
     expect(contextoDeVolverAServicio(resuelta, "u1", MANANA)?.aviso).toBeNull();
   });
 });

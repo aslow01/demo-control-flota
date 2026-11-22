@@ -6,6 +6,7 @@ import type { Comando } from "../src/lib/dominio/comandos.ts";
 import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
 import { opcionesDeConductor } from "../src/lib/dominio/formulario.ts";
 import { inicioDelConductor, opcionesParaElegirConductor, panelDeParteEnviado, panelDeRevisionEnviada, panelDeSinSalida, vistaDeParte } from "../src/lib/estado/parte.ts";
+import { SEMILLA_POR_DEFECTO, generar } from "../src/lib/datos/generador.ts";
 import { checklistEnOrden, checklistVacio, documento, ejecutarOk, flotaDePrueba, parte, unidad } from "./ayuda.ts";
 
 const H = "2026-11-18";
@@ -946,11 +947,21 @@ describe("pantalla del parte y licencia (L1, P13; 17.5)", () => {
     expect(vistaDeParte(flotaDePrueba(), H, ENC, "ZK214BD", H)).toMatchObject({ valoresIniciales: { conductorId: "c1" } });
   });
 
-  it("C13: la opción del `select` dice el dato primero y la patente al final: «{Nombre} (sin licencia vigente) · {P}»", () => {
+  it("C13 y QA B5: la opción del `select` dice el dato primero: «{Nombre} · {P}», o «{Nombre} (sin licencia)» sin patente; ninguna del ejemplo pasa de 30 caracteres (entra a 360 px)", () => {
     const v = vistaDeParte(sinLicencia(flotaDePrueba()), H, ENC, "ZK214BD", H);
     expect(v.tipo).toBe("edicion");
     if (v.tipo !== "edicion" || v.conductor.tipo !== "elegir") return;
-    expect(v.conductor.opciones.map((o) => o.textoDeOpcion)).toEqual(["Elija quién conduce", "Luis Ferreyra (sin licencia vigente) · ZK 214 BD", "Rosa Quiroga · ZKB 482"]);
+    expect(v.conductor.opciones.map((o) => o.textoDeOpcion)).toEqual(["Elija quién conduce", "Luis Ferreyra (sin licencia)", "Rosa Quiroga · ZKB 482"]);
+  });
+
+  it("QA B5: con el ejemplo del generador, ninguna opción del select de conductor pasa de 30 caracteres, y la que no tiene licencia lo dice", () => {
+    const e = generar(SEMILLA_POR_DEFECTO, H);
+    const v = vistaDeParte(e, H, ENC, "ZPA505", H);
+    expect(v.tipo).toBe("edicion");
+    if (v.tipo !== "edicion" || v.conductor.tipo !== "elegir") return;
+    const textos = v.conductor.opciones.map((o) => o.textoDeOpcion);
+    for (const t of textos) expect(t.length, t).toBeLessThanOrEqual(30);
+    expect(textos).toContain("Ivana Aguirre (sin licencia)");
   });
 
   it("B5: las opciones de conductor evalúan la licencia solo con la fecha y los documentos juntos; sin ellos no se evalúa (todas vigentes)", () => {

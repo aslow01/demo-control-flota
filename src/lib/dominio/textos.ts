@@ -87,6 +87,9 @@ export const ERRORES = {
   noPudoReiniciar: "No se pudo reiniciar la demo. Se conservaron los datos que tenía. Intente de nuevo.",
   noPudoCambiarVista: "No se pudo cambiar la vista. Intente de nuevo.",
   /** `cambiarPerfil` mientras hay cambios de otra pestaña sin actualizar (D9): guardaría el `meta` viejo de esta pestaña sobre el nuevo. */
+  /** QA B2: la base se borró o se cambió desde otra pestaña con la demo abierta; la demo sigue en memoria. */
+  almacenamientoPerdido:
+    "Los datos guardados de la demo ya no están disponibles: se borraron o se cambiaron desde otra pestaña. Puede seguir usándola, pero los cambios se pierden al cerrar o recargar la página.",
   cambiosEnOtraPestana: "Hay cambios hechos en otra pestaña. Pulse «Actualizar» en el aviso y vuelva a cambiar la vista.",
   sinPermiso: "Esta acción es solo del encargado. En «Ver como», elija «Encargado».",
   sinDatos: "La demo todavía no terminó de cargar. Espere un momento e intente de nuevo.",
@@ -171,8 +174,8 @@ export const MOTIVO_APTITUD = {
   fueraDeServicio: (desde: FechaCivil, motivo: string) => `Desde el ${formatearFecha(desde)}: ${minuscula(motivo)}`,
   documentoFaltante: (nombre: string) => `${TEXTO_FALTA_CARGAR}: ${nombre}`,
   novedadCritica: (rotulo: string, origen: string) => `Novedad crítica abierta: ${rotulo} (${origen})`,
-  /** P19: el parte de hoy quedó cerrado sin salida; aunque se resuelva la novedad, la unidad sale recién mañana. */
-  sinSalidaHoy: "Sin salida hasta mañana (novedad crítica en la revisión de hoy)",
+  /** P19: hoy hubo una novedad crítica (en la revisión o cargada a mano); aunque se resuelva, la unidad sale recién mañana. */
+  sinSalidaHoy: "Sin salida hasta mañana (novedad crítica de hoy)",
 } as const;
 
 /** Textos de las alertas de operación (sección 7). */
@@ -503,6 +506,9 @@ export const TEXTO_AVISO = {
   preparando: "Preparando la flota de ejemplo…",
   esquemaActualizado: "La demo se actualizó. Se cargó de nuevo la flota de ejemplo y no se conservaron los datos anteriores.",
   sinAlmacenamiento: "Este navegador no permite guardar datos. Puede usar la demo, pero los cambios se pierden al cerrar o recargar la página.",
+  /** QA B2: la base se borró o se cambió desde otra pestaña con la demo abierta; la demo sigue en memoria. */
+  almacenamientoPerdido:
+    "Los datos guardados de la demo ya no están disponibles: se borraron o se cambiaron desde otra pestaña. Puede seguir usándola, pero los cambios se pierden al cerrar o recargar la página.",
   cambiosEnOtraPestana: "Se hicieron cambios en otra pestaña. Esta pantalla sigue mostrando los datos anteriores hasta que actualice.",
 } as const;
 
@@ -1021,7 +1027,7 @@ export const TEXTO_DIALOGOS_FICHA = {
     primario: "Marcar como resuelta",
     volverEtiqueta: "Volver a servicio ahora",
     volverNota: (patente: string) => `${patente} está fuera de servicio por esta novedad. Con la casilla marcada, vuelve a servicio al resolverla.`,
-    /** P19: el parte de hoy quedó sin salida; el diálogo no promete que la unidad vuelve a salir ese día. */
+    /** P19: hoy hubo una novedad crítica; el diálogo no promete que la unidad vuelve a salir ese día. */
     volverEtiquetaHastaManana: "Volver a servicio (sale recién mañana)",
     volverNotaHastaManana: (patente: string) =>
       `${patente} está fuera de servicio por esta novedad. Con la casilla marcada, queda en servicio, pero no sale hoy: vuelve a salir recién mañana.`,
@@ -1048,8 +1054,8 @@ export const TEXTO_DIALOGOS_FICHA = {
       return `La unidad vuelve a servicio, pero no puede salir hasta ${accion}: ${[...aRenovar, ...aCargar].join(", ")}.`;
     },
     /** P19: la unidad vuelve, pero el parte de hoy quedó sin salida. Solo, y sumado a lo de los documentos. */
-    hastaManana: "La unidad vuelve a servicio, pero no vuelve a salir hasta mañana: la revisión de hoy encontró una novedad crítica.",
-    ademasHastaManana: "Además, no vuelve a salir hasta mañana: la revisión de hoy encontró una novedad crítica.",
+    hastaManana: "La unidad vuelve a servicio, pero no vuelve a salir hasta mañana: hoy tuvo una novedad crítica.",
+    ademasHastaManana: "Además, no vuelve a salir hasta mañana: hoy tuvo una novedad crítica.",
   },
   baja: {
     titulo: (patente: string) => `Dar de baja: ${patente}`,
@@ -1235,12 +1241,13 @@ export function textoCerrarElParteDel(fecha: FechaCivil): string {
 }
 
 /**
- * La opción del `select` Conductor del encargado en el parte (C13): el dato primero y la patente al final, porque en el celular lo que se corta es el final.
- * «Tamara Olivera · ZK 214 BD», «Ivana Aguirre (sin licencia vigente) · ZPA 505»; sin unidad asignada, solo el nombre.
+ * La opción del `select` Conductor del encargado en el parte (C13, QA B5): el dato primero y la patente al final, porque en el celular lo que se corta es el final.
+ * «Tamara Olivera · ZK 214 BD»; sin unidad asignada, solo el nombre. Sin licencia vigente: «Ivana Aguirre (sin licencia)», sin la patente, para que entre en el campo a 360 px
+ * (unos 240 px, 30 caracteres); a quien no tiene licencia no se le puede asignar el parte (L1), así que la patente ahí no ayuda a elegir, y el motivo lo explica el error al elegirla.
  */
 export function textoOpcionDeConductor(nombre: string, patente: string | null, sinLicencia: boolean): string {
-  const quien = sinLicencia ? `${nombre} (sin licencia vigente)` : nombre;
-  return patente === null ? quien : `${quien} · ${patente}`;
+  if (sinLicencia) return `${nombre} (sin licencia)`;
+  return patente === null ? nombre : `${nombre} · ${patente}`;
 }
 
 /** «Hoy, miércoles 18/11/2026». */

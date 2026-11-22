@@ -429,7 +429,7 @@ export interface PanelParteEnviado {
   volverAlInicio: EnlaceDeParte;
 }
 
-/** Una opción del `select` Conductor del parte: `textoDeOpcion` es lo que se escribe en la opción (C13): «{Nombre} (sin licencia vigente) · {P}». */
+/** Una opción del `select` Conductor del parte: `textoDeOpcion` es lo que se escribe en la opción (C13): «{Nombre} · {P}» o, sin licencia vigente, «{Nombre} (sin licencia)». */
 export interface OpcionDeConductorDelParte extends OpcionDeConductor {
   textoDeOpcion: string;
 }

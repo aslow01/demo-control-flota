@@ -504,7 +504,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const r = await app.resolverNovedad(novedadId, { texto: "Se cambiaron las pastillas", volverAServicio: true }, "ficha");
     expect(r).toMatchObject({ ok: true, mensaje: "Novedad resuelta: Frenos. ZYN 469 vuelve a servicio, pero no sale hasta mañana." });
 
-    const motivo = "Sin salida hasta mañana (novedad crítica en la revisión de hoy)";
+    const motivo = "Sin salida hasta mañana (novedad crítica de hoy)";
     app.irA({ tipo: "unidad", patente: "ZYN469" });
     const ficha = app.fichaDeUnidad;
     expect(ficha && ficha.encontrada && ficha.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir", motivos: [motivo] });

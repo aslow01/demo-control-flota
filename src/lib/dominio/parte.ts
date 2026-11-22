@@ -241,6 +241,17 @@ export function parteSinSalidaDeHoy(partes: readonly Parte[], unidadId: string, 
 }
 
 /**
+ * P19 ampliada (QA D2, decisión de Matías del 22/11/2026): ¿la unidad no sale hoy porque hoy tuvo una novedad crítica? Vale para toda crítica, venga de la revisión del conductor (el
+ * parte cerrado sin salida) o la cargue el encargado a mano con «Impide usar la unidad»: aunque se repare ese mismo día, la unidad vuelve a salir recién mañana. Una crítica abierta
+ * ya impide salir por sí sola (A1); esto agrega lo que queda después de repararla. Es el lugar único que decide el estado: la aptitud lo lee (y con ella la ficha, la flota y el
+ * centro de alertas) y los diálogos de resolver y de volver a servicio también.
+ */
+export function unidadSinSalidaHoy(estado: Pick<Estado, "partes" | "novedades">, unidadId: string, hoy: FechaCivil): boolean {
+  if (parteSinSalidaDeHoy(estado.partes, unidadId, hoy) !== undefined) return true;
+  return estado.novedades.some((n) => n.unidadId === unidadId && n.gravedad === "critica" && n.fecha === hoy);
+}
+
+/**
  * Los avisos que se aceptaron al enviar un parte, ya en renglones con su tono (C6, M2): un renglón por documento vencido y uno por cada aviso de kilómetros. Los de documentación
  * dicen cómo estaba cada documento de la unidad el día del parte.
  */

@@ -19,7 +19,7 @@ import {
 import { aptitud } from "./aptitud.ts";
 import { describirRegistro, kmActual, parsearKm, registrosDeKm } from "./kilometraje.ts";
 import { criticasAbiertasDeUnidad, type CriticaAbierta } from "./novedades.ts";
-import { parteSinSalidaDeHoy } from "./parte.ts";
+import { unidadSinSalidaHoy } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
 import { TEXTO_AGREGAR, TEXTO_DIALOGOS_FICHA, errNovedadesCriticasAbiertas, textoUltimoRegistro, NOMBRES_DOCUMENTO } from "./textos.ts";
 import type { ErrorDeNegocio, Estado, FechaCivil, Unidad } from "./tipos.ts";
@@ -59,9 +59,9 @@ export function avisoDeVueltaSinPoderSalir(estado: Estado, unidad: Unidad, hoy: 
   return aRenovar.length + aCargar.length === 0 ? null : TEXTO_DIALOGOS_FICHA.volver.sinPoderSalir(aRenovar, aCargar);
 }
 
-/** P19: hoy el parte de la unidad quedó cerrado sin salida, así que aunque vuelva a servicio no sale hasta mañana. */
+/** P19: hoy la unidad tuvo una novedad crítica (parte sin salida o cargada a mano), así que aunque vuelva a servicio no sale hasta mañana. */
 export function vuelveSinSalirHastaManana(estado: Estado, unidad: Unidad, hoy: FechaCivil): boolean {
-  return parteSinSalidaDeHoy(estado.partes, unidad.id, hoy) !== undefined;
+  return unidadSinSalidaHoy(estado, unidad.id, hoy);
 }
 
 /** El aviso del diálogo «Volver a servicio»: A5 (documentos) y P19 (sin salida hasta mañana), juntos si pasan las dos; `null` si no hay nada que avisar. */
