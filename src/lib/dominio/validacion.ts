@@ -3,6 +3,7 @@
 import { diasEntre, parsearFechaCivil, sumarAnios } from "./fechas.ts";
 import { KM_MAXIMO } from "./kilometraje.ts";
 import { formatearPatente, validarPatente } from "./patente.ts";
+import { largoEnCaracteres, limpiarTexto, normalizarTexto } from "./texto.ts";
 import {
   ERRORES,
   TEXTOS_DE_CAMPO,
@@ -28,21 +29,25 @@ export interface ReglaTexto {
   corto?: string;
 }
 
-/** U7: recorta los espacios de los extremos y controla el largo. Nunca interpreta el texto como HTML. */
+/**
+ * U7: saca los caracteres de control y de control bidireccional, recorta los espacios de los extremos y controla el largo, que se cuenta en caracteres (un emoji es
+ * uno). Nunca interpreta el texto como HTML.
+ */
 export function validarTexto(valor: string, regla: ReglaTexto): Resultado<string> {
-  const texto = valor.trim();
-  if (texto.length === 0) {
+  const texto = normalizarTexto(valor);
+  const largo = largoEnCaracteres(texto);
+  if (largo === 0) {
     if (regla.min === 0) return ok("");
     return fallo(`${regla.campo}-vacio`, regla.vacio, { campo: regla.campo });
   }
-  if (texto.length < regla.min) {
+  if (largo < regla.min) {
     return fallo(
       "texto-corto",
       regla.corto ?? errTextoCorto(regla.nombre, regla.min),
       { campo: regla.campo },
     );
   }
-  if (texto.length > regla.max) {
+  if (largo > regla.max) {
     return fallo("texto-largo", errTextoLargo(regla.nombre, regla.max), { campo: regla.campo });
   }
   return ok(texto);
@@ -61,12 +66,13 @@ export const REGLAS = {
   modelo: { campo: "modelo", min: 1, max: 40, ...TEXTOS_DE_CAMPO.modelo },
 } satisfies Record<string, ReglaTexto>;
 
-/** Texto de un ítem del parte mientras es borrador: se guarda como se escribió, solo se controla el tope (500). */
+/** Texto de un ítem del parte mientras es borrador: se guarda como se escribió (sin recortar), pero sin caracteres de control; solo se controla el tope (500 caracteres). */
 export function validarTextoDeBorrador(valor: string, campo: string): Resultado<string> {
-  if (valor.length > REGLAS.novedad.max) {
+  const texto = limpiarTexto(valor);
+  if (largoEnCaracteres(texto) > REGLAS.novedad.max) {
     return fallo("texto-largo", errTextoLargo(REGLAS.novedad.nombre, REGLAS.novedad.max), { campo });
   }
-  return ok(valor);
+  return ok(texto);
 }
 
 export function validarEntero(valor: number, min: number, max: number, campo: string, codigo: string, mensaje: string): Resultado<number> {

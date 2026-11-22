@@ -19,6 +19,7 @@ import {
   validarFechaParte,
 } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
+import { limpiarTexto, normalizarTexto } from "./texto.ts";
 import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errKmCorreccionParteEnUso, errLicenciaNoVigente, errNovedadesCriticasAbiertas, errParteAnteriorSinCerrar, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadConParteEnUso, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
 import {
   fallo,
@@ -960,7 +961,7 @@ function copiarChecklist(origen: Parte["checklist"]): Parte["checklist"] {
     const r = origen[item.id];
     copia[item.id] =
       r.estado === "con-novedad"
-        ? { estado: "con-novedad", descripcion: r.descripcion, impideUso: r.impideUso }
+        ? { estado: "con-novedad", descripcion: limpiarTexto(r.descripcion), impideUso: r.impideUso }
         : { estado: r.estado };
   }
   return copia;
@@ -1013,7 +1014,7 @@ function guardarBorrador(
     combustible: c.combustible,
     litrosCargados: c.litrosCargados,
     checklist: copiarChecklist(c.checklist),
-    otraNovedad: c.otraNovedad === null ? null : { descripcion: c.otraNovedad.descripcion, impideUso: c.otraNovedad.impideUso },
+    otraNovedad: c.otraNovedad === null ? null : { descripcion: limpiarTexto(c.otraNovedad.descripcion), impideUso: c.otraNovedad.impideUso },
     advertenciasAceptadas: [],
     documentacionVencida: [],
     creado: existente?.creado ?? ctx.ahora,
@@ -1038,13 +1039,13 @@ function recortarRespuestas(checklist: Parte["checklist"]): Parte["checklist"] {
   const resultado = { ...checklist };
   for (const item of ITEMS_CHECKLIST) {
     const r = checklist[item.id];
-    if (r.estado === "con-novedad") resultado[item.id] = { ...r, descripcion: r.descripcion.trim() };
+    if (r.estado === "con-novedad") resultado[item.id] = { ...r, descripcion: normalizarTexto(r.descripcion) };
   }
   return resultado;
 }
 
 function trimOtraNovedad(o: Parte["otraNovedad"]): Parte["otraNovedad"] {
-  return o === null ? null : { ...o, descripcion: o.descripcion.trim() };
+  return o === null ? null : { ...o, descripcion: normalizarTexto(o.descripcion) };
 }
 
 /** Un parte que se puede cerrar o completar: existe y no es un borrador (`parte-sin-revision`) ni está cerrado (`parte-enviado-inmutable`). */

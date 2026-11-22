@@ -341,7 +341,7 @@ identificador en su nombre (`it('V4: d = 8 cae en el grupo de 15 días')`), así
 | U4 | Año: de 1980 a año de hoy + 1. | 2028 con H en 2026 → error · 2027 → ok. |
 | U5 | Una unidad nueva nace en servicio y sin documentos: aparece al instante en el centro de alertas con sus faltantes y "No puede salir". | Alta → 3 o 4 alertas "Falta cargar" según su proyecto. |
 | U6 | Cambiar el proyecto o el conductor asignado genera un evento con antes y después; cambiar a un proyecto que requiere habilitación puede crear una alerta de faltante en el acto. | Base → Proyecto Piedra Lunar sin habilitación → alerta faltante. |
-| U7 | Textos libres: se recortan los espacios de los extremos; topes de largo (motivos 200, novedades 500, número de documento 40, emisor 80). Nunca se insertan como HTML. | Novedad de 501 caracteres → error con el tope. `<b>x</b>` se muestra literal. |
+| U7 | Textos libres: se les sacan los caracteres de control (C0 salvo tabulación y salto de línea, DEL y C1) y los de control bidireccional (U+202A a U+202E y U+2066 a U+2069), y se recortan los espacios de los extremos; topes de largo (motivos 200, novedades 500, número de documento 40, emisor 80) **contados en caracteres (puntos de código), no en unidades UTF-16**: un emoji cuenta 1. Un borrador del parte guarda el texto sin caracteres de control pero sin recortar. Lo que queda vacío después de limpiar cuenta como vacío. Nunca se insertan como HTML (`src/lib/dominio/texto.ts`). | Novedad de 501 caracteres → error con el tope; 300 emojis → se acepta. «Ruido», U+202E y « al frenar» juntos se guardan como `Ruido al frenar`. `<b>x</b>` se muestra literal. |
 
 ### 6.8 Historial (H)
 
@@ -1231,6 +1231,7 @@ Cada nombre lleva el identificador de la regla. Archivos probables entre parént
 62. P18 en el estado: inicio `cierre-pendiente` (con y sin borrador, el más antiguo, con el orden de 17.5) y pantalla del parte `no-disponible` con el enlace al cierre, para los dos perfiles (`tests/parte-vista.test.ts`).
 63. K5: una corrección desde la fecha de un parte en uso → `km-correccion-parte-en-uso`; desde una fecha anterior sigue valiendo `km-correccion-anterior` (`tests/comandos-unidades.test.ts`).
 64. A7: dar de baja una unidad con un parte en uso → `unidad-con-parte-en-uso` (`tests/comandos-unidades.test.ts`).
+65. U7: `limpiarTexto`, `normalizarTexto` y `largoEnCaracteres`; el tope de 500 cuenta caracteres (300 emojis pasan, 501 no) y los textos de novedades, motivos y borradores se guardan sin caracteres de control ni de dirección (`tests/texto.test.ts`).
 
 ### 17.9 Tareas del programador (en orden)
 

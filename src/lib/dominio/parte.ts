@@ -2,6 +2,7 @@
 
 import { diasEntre, parsearFechaCivil, parsearInstante } from "./fechas.ts";
 import { KM_MAXIMO, advertenciasDeRecorrido, advertenciasDeSalida } from "./kilometraje.ts";
+import { largoEnCaracteres, normalizarTexto } from "./texto.ts";
 import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos } from "./textos.ts";
 import { estadoDeLicencia, hayDocumentoQueAmpare, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 import {
@@ -100,7 +101,7 @@ export type CampoDeCierre = "kmFin" | "combustible";
 export type CampoFaltante = CampoDeRevision | CampoDeCierre;
 
 function descripcionValida(texto: string): boolean {
-  const largo = texto.trim().length;
+  const largo = largoEnCaracteres(normalizarTexto(texto));
   return largo >= DESCRIPCION_MINIMO && largo <= DESCRIPCION_MAXIMO;
 }
 
@@ -145,14 +146,14 @@ export function novedadesDelParte(parte: Parte): NovedadDelParte[] {
     if (r.estado !== "con-novedad") continue;
     novedades.push({
       item: item.id,
-      descripcion: r.descripcion.trim(),
+      descripcion: normalizarTexto(r.descripcion),
       gravedad: item.critico || r.impideUso ? "critica" : "normal",
     });
   }
   if (parte.otraNovedad !== null) {
     novedades.push({
       item: "otra",
-      descripcion: parte.otraNovedad.descripcion.trim(),
+      descripcion: normalizarTexto(parte.otraNovedad.descripcion),
       gravedad: parte.otraNovedad.impideUso ? "critica" : "normal",
     });
   }

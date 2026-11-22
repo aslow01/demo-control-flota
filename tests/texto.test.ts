@@ -1,0 +1,115 @@
+// Normalización de los textos libres (U7): sin caracteres de control ni de control bidireccional, y el largo se cuenta en caracteres (puntos de código).
+import { describe, expect, it } from "vitest";
+import type { Comando } from "../src/lib/dominio/comandos.ts";
+import { largoEnCaracteres, limpiarTexto, normalizarTexto } from "../src/lib/dominio/texto.ts";
+import { checklistEnOrden, checklistVacio, ejecutarError, ejecutarOk, flotaDePrueba } from "./ayuda.ts";
+
+const BIDI = ["‪", "‫", "‬", "‭", "‮", "⁦", "⁧", "⁨", "⁩"];
+
+describe("limpiarTexto (U7)", () => {
+  it("saca los caracteres de control (C0 salvo tabulación y salto de línea, DEL y C1)", () => {
+    expect(limpiarTexto("a\u0000b\u0007c\u001Bd\u007Fe\u0085f\u009Fg")).toBe("abcdefg");
+    expect(limpiarTexto("uno\ndos\ttres\r\ncuatro")).toBe("uno\ndos\ttres\r\ncuatro");
+  });
+
+  it("saca los de control bidireccional (U+202A a U+202E y U+2066 a U+2069), uno por uno", () => {
+    for (const c of BIDI) expect(limpiarTexto(`ab${c}cd`), c.codePointAt(0)?.toString(16)).toBe("abcd");
+    expect(limpiarTexto("ficha ‮odnuf‬")).toBe("ficha odnuf");
+  });
+
+  it("no toca lo que sí es texto: tildes, eñes, emojis (con su unión de ancho cero) y las marcas de dirección de un solo carácter", () => {
+    expect(limpiarTexto("Ñandú, línea 3 😀 👨‍👩‍👧")).toBe("Ñandú, línea 3 😀 👨‍👩‍👧");
+    expect(limpiarTexto("‎abc‏")).toBe("‎abc‏");
+  });
+
+  it("normalizarTexto limpia y recorta los extremos", () => {
+    expect(normalizarTexto("  \u0000 hola‮ \n")).toBe("hola");
+  });
+});
+
+describe("largoEnCaracteres (U7)", () => {
+  it("cuenta puntos de código, no unidades UTF-16", () => {
+    expect(largoEnCaracteres("abc")).toBe(3);
+    expect(largoEnCaracteres("😀".repeat(300))).toBe(300);
+    expect("😀".repeat(300).length).toBe(600);
+    expect(largoEnCaracteres("")).toBe(0);
+  });
+});
+
+describe("U7 en los comandos: el tope de 500 se cuenta en caracteres y los textos se guardan limpios", () => {
+  const nueva = (descripcion: string): Comando => ({ tipo: "cargarNovedad", unidadId: "u1", descripcion, impideUso: false });
+  type Borrador = Extract<Comando, { tipo: "guardarBorrador" }>;
+  const borrador = (parcial: Partial<Borrador> = {}): Borrador => ({
+    tipo: "guardarBorrador",
+    parteId: null,
+    unidadId: "u1",
+    fecha: "2026-11-18",
+    conductorId: "c1",
+    kmInicio: 84320,
+    kmFin: null,
+    combustible: null,
+    litrosCargados: null,
+    checklist: checklistVacio(),
+    otraNovedad: null,
+    ...parcial,
+  });
+
+  it("300 emojis son 300 caracteres: pasan; 501 no", () => {
+    const e = flotaDePrueba();
+    expect(ejecutarOk(e, nueva("😀".repeat(300))).estado.novedades[0]?.descripcion).toBe("😀".repeat(300));
+    expect(ejecutarOk(e, nueva("😀".repeat(500))).estado.novedades).toHaveLength(1);
+    expect(ejecutarError(e, nueva("😀".repeat(501))).mensaje).toBe("La descripción no puede superar 500 caracteres.");
+  });
+
+  it("una novedad con caracteres de control y de dirección se guarda sin ellos", () => {
+    const r = ejecutarOk(flotaDePrueba(), nueva("  Ruido\u0000 al frenar‮, mucho\u0007  "));
+    expect(r.estado.novedades[0]?.descripcion).toBe("Ruido al frenar, mucho");
+    expect(r.eventos[0]?.resumen).not.toMatch(/[\u0000-\u0008‪-‮]/);
+  });
+
+  it("lo que queda vacío después de limpiar cuenta como vacío", () => {
+    const err = ejecutarError(flotaDePrueba(), nueva("\u0000‮ \u0007"));
+    expect(err.codigo).toBe("descripcion-vacio");
+    expect(err.campo).toBe("descripcion");
+  });
+
+  it("el largo mínimo se cuenta después de limpiar", () => {
+    expect(ejecutarError(flotaDePrueba(), nueva("a\u0000b")).codigo).toBe("texto-corto");
+  });
+
+  it("los otros textos libres también: motivo de fuera de servicio, de baja y de corrección", () => {
+    const e = flotaDePrueba();
+    const f = ejecutarOk(e, { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "En taller‮: embrague" });
+    const u = f.estado.unidades.find((x) => x.id === "u1")?.estado;
+    expect(u?.tipo === "fuera-de-servicio" && u.motivo).toBe("En taller: embrague");
+    const b = ejecutarOk(e, { tipo: "darDeBaja", unidadId: "u2", motivo: "Venta\u0000 de la unidad" });
+    expect(b.eventos[0]?.resumen).toBe("ZKB 482 dada de baja: Venta de la unidad");
+    const k = ejecutarOk(e, { tipo: "corregirKilometraje", unidadId: "u1", desde: "2026-11-18", kmBase: 120, motivo: "Cambio⁧ de tablero" });
+    expect(k.estado.correccionesKm[0]?.motivo).toBe("Cambio de tablero");
+  });
+
+  it("un borrador guarda los textos sin caracteres de control ni de dirección y sin recortar; el tope es de 500 caracteres", () => {
+    const e = flotaDePrueba();
+    const checklist = { ...checklistVacio(), frenos: { estado: "con-novedad" as const, descripcion: " ruido\u0000‮ ", impideUso: false } };
+    const r = ejecutarOk(e, borrador({ checklist, otraNovedad: { descripcion: "vidrio⁦ rayado", impideUso: false } }));
+    const p = r.estado.partes.at(-1);
+    expect(p?.checklist.frenos).toEqual({ estado: "con-novedad", descripcion: " ruido ", impideUso: false });
+    expect(p?.otraNovedad?.descripcion).toBe("vidrio rayado");
+    const emojis = { ...checklistVacio(), frenos: { estado: "con-novedad" as const, descripcion: "😀".repeat(500), impideUso: false } };
+    expect(ejecutarOk(e, borrador({ checklist: emojis })).estado.partes.at(-1)?.checklist.frenos).toMatchObject({ descripcion: "😀".repeat(500) });
+    const largo = { ...checklistVacio(), frenos: { estado: "con-novedad" as const, descripcion: "😀".repeat(501), impideUso: false } };
+    expect(ejecutarError(e, borrador({ checklist: largo })).codigo).toBe("texto-largo");
+  });
+
+  it("la revisión enviada guarda las descripciones limpias y recortadas, y las abre como novedades", () => {
+    const e = flotaDePrueba();
+    const checklist = { ...checklistEnOrden(), niveles: { estado: "con-novedad" as const, descripcion: "  pierde aceite\u0000‮  ", impideUso: false } };
+    const g = ejecutarOk(e, borrador({ checklist }));
+    const id = g.cambios.partes[0]?.id ?? "";
+    // aunque un borrador viejo tuviera caracteres de control guardados, la revisión los saca
+    const sucio = { ...g.estado, partes: g.estado.partes.map((p) => (p.id === id ? { ...p, checklist: { ...p.checklist, niveles: { estado: "con-novedad" as const, descripcion: "  pierde aceite\u0000‮  ", impideUso: false } } } : p)) };
+    const r = ejecutarOk(sucio, { tipo: "enviarRevision", parteId: id, advertenciasAceptadas: [] });
+    expect(r.estado.novedades[0]?.descripcion).toBe("pierde aceite");
+    expect(r.estado.partes.find((p) => p.id === id)?.checklist.niveles).toEqual({ estado: "con-novedad", descripcion: "pierde aceite", impideUso: false });
+  });
+});
