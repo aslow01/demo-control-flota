@@ -795,6 +795,9 @@ export const TEXTO_FICHA = {
   noEncontrada: { titulo: "No se encontró la unidad", enlace: "Ir a la flota" },
   acciones: {
     cargarParte: "Cargar parte",
+    /** C16: el primer botón según el parte (con el de hoy en uso, cerrado, o con uno anterior sin cerrar). */
+    cerrarParte: "Cerrar el parte",
+    verParte: "Ver el parte",
     ponerFueraDeServicio: "Poner fuera de servicio",
     volverAServicio: "Volver a servicio",
     masAcciones: "Más acciones",

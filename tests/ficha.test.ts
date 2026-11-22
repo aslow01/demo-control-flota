@@ -541,3 +541,30 @@ describe("ficha: conductor sin licencia y kilometraje con la salida (L1, K10, 17
     expect(fichaDe({ ...base, partes: [...base.partes, sin] }, "ZK214BD").kilometraje.filas[0]).toMatchObject({ tipo: "parte", recorrido: "Sin uso" });
   });
 });
+
+describe("ficha: el primer botón sale del parte (C16, P18, P19)", () => {
+  const base = flotaDePrueba();
+  const primero = (partes: Estado["partes"]) => fichaDe({ ...base, partes }, "ZK214BD").acciones.encabezado[0];
+  const ayer = base.partes.filter((p) => p.unidadId === "u1"); // el parte cerrado de ayer
+  const enUso = (fecha: string) => parte({ id: `uso-${fecha}`, unidadId: "u1", fecha, estado: "en-uso", kmInicio: 84452, kmFin: null, combustible: null, enviado: null, revisado: `${fecha}T12:00:00.000Z` });
+
+  it("sin parte de hoy: «Cargar parte»; con un borrador de hoy, también", () => {
+    expect(primero(ayer)).toEqual({ id: "cargar-parte", etiqueta: "Cargar parte", href: "#/parte/ZK214BD/2026-11-18", bloqueo: null });
+    expect(primero([...ayer, parte({ id: "b", unidadId: "u1", fecha: H, estado: "borrador", enviado: null, revisado: null })])?.etiqueta).toBe("Cargar parte");
+  });
+
+  it("con el parte de hoy en uso: «Cerrar el parte», al mismo enlace", () => {
+    expect(primero([...ayer, enUso(H)])).toEqual({ id: "cargar-parte", etiqueta: "Cerrar el parte", href: "#/parte/ZK214BD/2026-11-18", bloqueo: null });
+  });
+
+  it("con un parte anterior en uso (cerrar antes): «Cerrar el parte del 17/11/2026», que lleva a ese parte", () => {
+    expect(primero([enUso("2026-11-17")])).toEqual({ id: "cargar-parte", etiqueta: "Cerrar el parte del 17/11/2026", href: "#/parte/ZK214BD/2026-11-17", bloqueo: null });
+  });
+
+  it("con el parte de hoy cerrado: «Ver el parte»; también sin salida y con la unidad ya devuelta a servicio (hasta mañana)", () => {
+    const cerrado = parte({ id: "c", unidadId: "u1", fecha: H, kmInicio: 84320, kmFin: 84452 });
+    expect(primero([...ayer, cerrado])).toEqual({ id: "cargar-parte", etiqueta: "Ver el parte", href: "#/parte/ZK214BD/2026-11-18", bloqueo: null });
+    const sin = parte({ id: "ss", unidadId: "u1", fecha: H, sinSalida: true, kmInicio: 84320, kmFin: 84320 });
+    expect(primero([...ayer, sin])?.etiqueta).toBe("Ver el parte");
+  });
+});

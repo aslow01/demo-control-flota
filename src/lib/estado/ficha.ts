@@ -15,7 +15,7 @@ import { historialDeUnidad } from "../dominio/historial.ts";
 import { horizonteDeUnidad, type Horizonte } from "../dominio/horizonte.ts";
 import { kmActual, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
 import { rotuloNovedad, criticasAbiertasDeUnidad, type CriticaAbierta } from "../dominio/novedades.ts";
-import { ITEMS_CHECKLIST, novedadesDelParte } from "../dominio/parte.ts";
+import { ITEMS_CHECKLIST, novedadesDelParte, parteLegible, partePendienteDeCierre } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import {
   NOMBRES_COMBUSTIBLE,
@@ -29,6 +29,7 @@ import {
   textoAccionDocumento,
   textoAdvertencia,
   textoAdvertenciaAceptada,
+  textoCerrarElParteDel,
   textoAnteriores,
   textoCorreccionKm,
   textoDadaDeBaja,
@@ -85,7 +86,11 @@ export type IdAccionDeFicha =
 export interface AccionDeFicha {
   id: IdAccionDeFicha;
   etiqueta: string;
-  /** Solo «Cargar parte» es un enlace (al parte de hoy); las demás abren un diálogo. */
+  /**
+   * Solo el primer botón (`cargar-parte`) es un enlace; las demás abren un diálogo. Su texto y su destino salen del parte (C16, P18, P19): «Cargar parte» (sin parte de hoy o con
+   * un borrador), «Cerrar el parte» (el de hoy en uso), «Cerrar el parte del 17/11/2026» (uno anterior en uso: va a ese parte) o «Ver el parte» (el de hoy cerrado, también
+   * sin salida aunque la unidad ya esté de vuelta en servicio: hasta mañana).
+   */
   href: string | null;
   /** Solo «Volver a servicio» con críticas abiertas (A4): el texto del motivo, para mostrarlo junto al botón. El diálogo lo explica igual. */
   bloqueo: string | null;
@@ -393,7 +398,7 @@ export function fichaDeUnidad(
       novedadesQueImpiden: fuera ? criticas : [],
     },
     puedeEditar,
-    acciones: accionesDe(unidad, hoy, puedeEditar, fuera && criticas.length > 0 ? errNovedadesCriticasAbiertas(criticas.map((c) => c.texto)) : null),
+    acciones: accionesDe(unidad, hoy, puedeEditar, fuera && criticas.length > 0 ? errNovedadesCriticasAbiertas(criticas.map((c) => c.texto)) : null, estado.partes),
     documentos: panelDeDocumentos(estado, alertas, unidad, hoy, puedeEditar && !baja),
     novedades: panelDeNovedades(estado, unidad, puedeEditar, !baja),
     kilometraje: panelDeKilometraje(estado, unidad, km, puedeEditar && !baja),
@@ -408,14 +413,27 @@ function kmDeLaUnidad(estado: Estado, unidad: Unidad): FichaDeUnidad["datos"]["k
   return { valor, texto: `${formatearKm(valor)} km`, fecha: formatearFecha(ultimo.fecha), textoConFecha: textoKmConFecha(valor, ultimo.fecha) };
 }
 
-function accionesDe(unidad: Unidad, hoy: FechaCivil, puedeEditar: boolean, bloqueo: string | null): FichaDeUnidad["acciones"] {
+/** C16: el texto y el destino del primer botón según el parte de la unidad. */
+function accionDelParte(unidad: Unidad, hoy: FechaCivil, partes: readonly Parte[]): { etiqueta: string; fecha: FechaCivil } {
+  const t = TEXTO_FICHA.acciones;
+  const legibles = partes.flatMap((p) => parteLegible(p) ?? []);
+  const deHoy = legibles.find((p) => p.unidadId === unidad.id && p.fecha === hoy);
+  if (deHoy?.estado === "enviado") return { etiqueta: t.verParte, fecha: hoy };
+  if (deHoy?.estado === "en-uso") return { etiqueta: t.cerrarParte, fecha: hoy };
+  const anterior = partePendienteDeCierre(legibles, unidad.id, hoy);
+  if (anterior !== undefined) return { etiqueta: textoCerrarElParteDel(anterior.fecha), fecha: anterior.fecha };
+  return { etiqueta: t.cargarParte, fecha: hoy };
+}
+
+function accionesDe(unidad: Unidad, hoy: FechaCivil, puedeEditar: boolean, bloqueo: string | null, partes: readonly Parte[]): FichaDeUnidad["acciones"] {
   const t = TEXTO_FICHA.acciones;
   const accion = (id: IdAccionDeFicha, etiqueta: string, href: string | null = null, motivo: string | null = null): AccionDeFicha => ({ id, etiqueta, href, bloqueo: motivo });
   if (!puedeEditar || unidad.estado.tipo === "baja") return { encabezado: [], masAcciones: [] };
   const encabezado: AccionDeFicha[] = [];
   if (unidad.estado.tipo === "en-servicio") {
     // P8: solo una unidad en servicio recibe partes.
-    encabezado.push(accion("cargar-parte", t.cargarParte, aHash({ tipo: "parte", patente: unidad.patente, fecha: hoy })));
+    const parte = accionDelParte(unidad, hoy, partes);
+    encabezado.push(accion("cargar-parte", parte.etiqueta, aHash({ tipo: "parte", patente: unidad.patente, fecha: parte.fecha })));
     encabezado.push(accion("poner-fuera-de-servicio", t.ponerFueraDeServicio));
   } else {
     encabezado.push(accion("volver-a-servicio", t.volverAServicio, null, bloqueo));
