@@ -53,12 +53,6 @@ export interface ValoresParte {
 export type ErroresDeParte = ErroresDeFormularioDe<CampoParte> & {
   /** El `h2` del resumen de errores: «Faltan 3 datos para enviar el parte». */
   titulo: string;
-  /**
-   * Lo que lista el resumen de errores (5.15): `lista` con los puntos sin completar agrupados (D1). Con más de 3, un solo enlace «Faltan 10 puntos de la revisión» que lleva
-   * al primero; con 3 o menos, uno por campo. `lista` sigue siendo uno por campo: es lo que dice el mensaje sobre cada campo. Mientras se completan los puntos la vista
-   * vuelve a agrupar lo que sigue vigente con `agruparResumen`.
-   */
-  resumen: { campo: CampoParte; mensaje: string }[];
 };
 
 export type ComandoDeBorrador = Extract<Comando, { tipo: "guardarBorrador" }>;
@@ -240,7 +234,7 @@ function conTitulo(lista: { campo: CampoParte; mensaje: string }[], general: str
   if (lista.length === 0) titulo = tituloGeneral;
   else if (faltan === lista.length) titulo = T.tituloFaltan(faltan, paso);
   else titulo = T.tituloRevise(lista.length, paso);
-  return { ...base, titulo, resumen: agruparResumen(lista) };
+  return { ...base, titulo };
 }
 
 /**
