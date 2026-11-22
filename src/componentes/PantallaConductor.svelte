@@ -1,10 +1,11 @@
 <script lang="ts">
   // Inicio del conductor (6.4, `#/conductor`): 1) qué unidad es y qué hay que hacer hoy con el parte, 2) lo pendiente de otros días, 3) su licencia, 4) sus últimos
   // partes. No tiene reglas de negocio: todo lo arma `app.inicioDelConductor(unidadElegida)` (lib/estado/parte.ts).
-  //  - Panel «Hoy», en siete estados (el primero que aplica gana; los decide `inicioDelConductor`): sin unidad (solo el `select`), cerrado («Cerrado a las 18:42» o, si no salió, el
-  //    aviso crítico de la revisión; «Ver el parte»), en uso («En uso desde las 06:52» y «Cerrar el parte»), unidad fuera de servicio (aviso: no hace falta parte), licencia que no
-  //    ampara hoy (aviso de bloqueo, sin primario y sin «Usar otra unidad»: no cambia nada), borrador («Continuar la revisión» y «Descartar borrador», de dos pasos) y sin parte
-  //    («Empezar la revisión»). El aviso de «no puede salir» va arriba del botón y el botón sigue (P9).
+  //  - Panel «Hoy», en ocho estados (el primero que aplica gana; los decide `inicioDelConductor`): sin unidad (solo el `select`), cerrado («Cerrado a las 18:42» o, si no salió, el
+  //    aviso crítico de la revisión con «recién mañana»; «Ver el parte»), en uso («En uso desde las 06:52» y «Cerrar el parte»), unidad fuera de servicio (aviso: no hace falta parte),
+  //    licencia que no ampara hoy (aviso de bloqueo, sin primario y sin «Usar otra unidad»: no cambia nada), «Cerrar antes» (estado 5 bis: aviso semana y «Cerrar el parte anterior»),
+  //    borrador («Continuar la revisión» y «Descartar borrador», de dos pasos) y sin parte («Empezar la revisión»). El aviso de «no puede salir» va arriba del botón y el botón sigue (P9).
+  //  - Los avisos de dos renglones son el compacto de `Aviso.svelte` (5.18): el hecho en firme y debajo lo que hay que hacer.
   //  - «Usar otra unidad» abre un `select` de las unidades en servicio; elegir una cambia a qué parte lleva el botón (la unidad elegida es estado de esta pantalla).
   //  - «Descartar borrador» no deja otro botón en su lugar: el foco va al título del panel y la barra de estado dice «Borrador descartado.».
   //  - Los paneles «Pendientes» y «Su licencia» existen solo si hay algo que decir.
@@ -13,7 +14,7 @@
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import Boton from "./Boton.svelte";
   import Campo from "./Campo.svelte";
-  import Aviso from "./Aviso.svelte";
+  import Aviso, { partirAviso } from "./Aviso.svelte";
   import EnlaceAccion from "./EnlaceAccion.svelte";
   import EtiquetaParte from "./EtiquetaParte.svelte";
   import EtiquetaDemo from "./EtiquetaDemo.svelte";
@@ -31,6 +32,12 @@
   let seleccion = $state("");
   let mostrandoSelect = $state(false);
   const inicio = $derived(app.inicioDelConductor(seleccion === "" ? null : seleccion));
+  // Con «Cerrar antes» (estado 5 bis) el aviso ya lleva a ese parte: «Pendientes» no lo repite (los demás siguen).
+  const pendientes = $derived.by(() => {
+    if (inicio === null) return [];
+    const e = inicio.hoyEstado;
+    return e.tipo === "cierre-pendiente" ? inicio.pendientes.filter((p) => p.accion.href !== e.primario.href) : inicio.pendientes;
+  });
 
   // La barra de estado del panel «Hoy» (hoy: «Borrador descartado.»); `n` hace que dos mensajes iguales seguidos se vuelvan a anunciar.
   let mensaje = $state({ texto: "", n: 0 });
@@ -89,17 +96,20 @@
       {/if}
 
       {#if inicio.avisoAptitud !== null}
-        <Aviso tono="critico" icono="vencido">{inicio.avisoAptitud}</Aviso>
+        {@const a = partirAviso(inicio.avisoAptitud)}
+        <Aviso tono="critico" icono="vencido" accion={a.accion}>{a.titular}</Aviso>
       {/if}
 
       {#if inicio.hoyEstado.tipo === "sin-parte"}
+        <!-- Estado 7 (C3): la frase de lo que hay que hacer va arriba del primario. -->
+        <p class="nota-estado">{inicio.hoyEstado.texto}</p>
         <div class="accion-principal"><EnlaceAccion href={inicio.hoyEstado.primario.href} variante="primario" tamano="grande">{inicio.hoyEstado.primario.texto}</EnlaceAccion></div>
       {:else if inicio.hoyEstado.tipo === "borrador"}
         {@const b = inicio.hoyEstado}
         <p class="estado-dia">{b.texto}</p>
         <div class="accion-principal"><EnlaceAccion href={b.primario.href} variante="primario" tamano="grande">{b.primario.texto}</EnlaceAccion></div>
         <div class="secundaria">
-          <BotonConfirmar texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
+          <BotonConfirmar variante="texto" texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
         </div>
       {:else if inicio.hoyEstado.tipo === "en-uso"}
         {@const u = inicio.hoyEstado}
@@ -113,32 +123,31 @@
         {:else}
           <p class="enviado"><EtiquetaParte tipo="cerrado" texto={e.etiqueta} /></p>
         {/if}
+        {#if e.hastaManana !== null}<p class="nota-estado">{e.hastaManana}</p>{/if}
         <div class="secundaria"><EnlaceAccion href={e.enlace.href}>{e.enlace.texto}</EnlaceAccion></div>
       {:else if inicio.hoyEstado.tipo === "fuera-de-servicio"}
         <Aviso tono="semana" icono="llave"><span class="largo">{inicio.hoyEstado.aviso}</span></Aviso>
       {:else if inicio.hoyEstado.tipo === "licencia-no-vigente"}
         <!-- Estado 5 (L1): el bloqueo se dice sin rol de alerta (el foco ya fue al h1 y esto es lo primero que se lee en el panel) y sin primario: no se deshabilita nada, se explica. -->
         {@const l = inicio.hoyEstado}
-        <Aviso tono="critico" icono="vencido">
-          <p class="bloqueo-1 largo">{l.renglon1}</p>
-          <p class="bloqueo-2 largo">{l.renglon2}</p>
-        </Aviso>
+        <Aviso tono="critico" icono="vencido" accion={l.renglon2}>{l.renglon1}</Aviso>
         {#if l.borrador !== null}
           {@const b = l.borrador}
           <p class="estado-dia">{b.texto}</p>
           <div class="secundaria">
-            <BotonConfirmar texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
+            <BotonConfirmar variante="texto" texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
           </div>
         {/if}
       {:else if inicio.hoyEstado.tipo === "cierre-pendiente"}
-        <!-- Estado 5b (A1), ajuste mínimo de la lógica: el maquetador le da su forma final. -->
+        <!-- Estado 5 bis, «Cerrar antes» (A1, P20): una tarea pendiente (tono semana, `i-lapiz`), no una prohibición; por eso hay primario. Tampoco es `role="alert"`. -->
         {@const c = inicio.hoyEstado}
-        <p class="estado-dia">{c.renglon1} {c.renglon2}</p>
+        <Aviso tono="semana" icono="lapiz" accion={c.renglon2}>{c.renglon1}</Aviso>
         <div class="accion-principal"><EnlaceAccion href={c.primario.href} variante="primario" tamano="grande">{c.primario.texto}</EnlaceAccion></div>
         {#if c.borrador !== null}
           {@const b = c.borrador}
+          <p class="nota-estado">{b.texto}</p>
           <div class="secundaria">
-            <BotonConfirmar texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
+            <BotonConfirmar variante="texto" texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
           </div>
         {/if}
       {:else}
@@ -150,7 +159,7 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div onchange={alElegirUnidad}>
             <Campo etiqueta={inicio.elegirUnidad.etiqueta} tipo="select" id={idSelect} grande bind:valor={seleccion}>
-              <option value="">{inicio.unidad === null || inicio.hoyEstado.tipo === "fuera-de-servicio" ? T.elegirOtra : inicio.elegirUnidad.etiqueta}</option>
+              <option value="">{inicio.unidad === null ? T.elegirUna : T.elegirOtra}</option>
               {#each inicio.elegirUnidad.opciones as o (o.valor)}
                 <option value={o.valor}>{o.etiqueta}</option>
               {/each}
@@ -162,10 +171,10 @@
       {/if}
     </Panel>
 
-    {#if inicio.pendientes.length > 0}
+    {#if pendientes.length > 0}
       <Panel titulo={T.pendientes} icono="alerta">
         <ul class="pendientes">
-          {#each inicio.pendientes as p (p.clave)}
+          {#each pendientes as p (p.clave)}
             <li class="pendiente">
               <span class="icono-pendiente"><Icono nombre={p.tipo === "sin-parte" ? "guion" : "lapiz"} /></span>
               <p class="texto-pendiente">{p.texto}</p>
@@ -251,14 +260,7 @@
     font-size: var(--t-chico);
     color: var(--c-texto-2);
   }
-  /* Estado 5 (L1): renglón 1 firme, renglón 2 más chico. Sobre el fondo crítico, el texto va en `--c-texto` (13,68 en claro, 12,99 en oscuro). */
-  .bloqueo-1 {
-    font-weight: 600;
-  }
-  .bloqueo-2 {
-    font-size: var(--t-chico);
-    line-height: 1.4;
-  }
+  /* Estados 5 y 5 bis: los avisos de dos renglones son el compacto de `Aviso.svelte`; sobre el fondo crítico el texto va en `--c-texto` (13,68 en claro, 12,99 en oscuro). */
   .largo {
     overflow-wrap: anywhere;
   }
@@ -330,6 +332,8 @@
   }
 
   .ultimos {
+    /* M1 (texto al 200 %): la fila mira el ancho de la lista y no el de la pantalla; con 17 rem o menos pasa a dos renglones. */
+    container: partes / inline-size;
     display: flex;
     flex-direction: column;
     margin: calc(-1 * var(--e-2)) 0;
@@ -339,23 +343,43 @@
   }
   .fila-parte {
     display: grid;
-    grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas: "fecha patente recorrido";
     align-items: center;
-    gap: var(--e-3);
+    column-gap: var(--e-3);
     min-height: var(--alto-tactil);
     padding-block: var(--e-1);
     color: var(--c-texto);
     text-decoration: none;
   }
   .fila-parte .fecha {
+    grid-area: fecha;
     font-weight: 600;
     color: var(--c-acento);
     text-decoration: underline;
     text-underline-offset: 3px;
   }
+  .fila-parte .patente-fila {
+    grid-area: patente;
+    white-space: nowrap;
+  }
   .fila-parte .recorrido {
+    grid-area: recorrido;
     color: var(--c-texto-2);
     text-align: right;
+  }
+  /* El umbral va en rem a propósito: en una consulta de contenedor el rem sigue al tamaño de letra de la raíz. A 360 px con texto normal la lista mide unos 296 px (más que 17 rem = 272 px) y la fila queda en un renglón; con el texto al 200 % se apila. */
+  @container partes (max-width: 17rem) {
+    .fila-parte {
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas:
+        "fecha patente"
+        "recorrido recorrido";
+      row-gap: var(--e-1);
+    }
+    .fila-parte .recorrido {
+      text-align: left;
+    }
   }
   @media (hover: hover) {
     .fila-parte:hover .fecha {
