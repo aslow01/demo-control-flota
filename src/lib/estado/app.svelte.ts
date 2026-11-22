@@ -34,7 +34,7 @@ import { formatearHora } from "../dominio/fechas.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
 import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { kmDeRegistro, registroAnterior } from "../dominio/kilometraje.ts";
-import { advertenciasLegibles, contextoDeDocumentacion, esBorradorVacio } from "../dominio/parte.ts";
+import { advertenciasLegibles, contextoDeDocumentacion, esBorradorVacio, parteSinSalidaDeHoy } from "../dominio/parte.ts";
 import {
   comandoDeAsignacion,
   comandoDeBaja,
@@ -570,8 +570,10 @@ export class EstadoApp {
         const n = e.estado.novedades.find((x) => x.id === novedadId);
         const patente = n === undefined ? "" : this.patenteDe(e.estado, n.unidadId);
         const volvio = e.eventos.some((ev) => ev.tipo === "vuelta-a-servicio");
+        // P19: si el parte de hoy quedó sin salida, vuelve a servicio pero no sale hasta mañana.
+        const hastaManana = volvio && n !== undefined && parteSinSalidaDeHoy(e.estado.partes, n.unidadId, this.hoy) !== undefined;
         return {
-          mensaje: textoNovedadResuelta(n === undefined ? "" : rotuloNovedad(n), patente, volvio, donde === "centro"),
+          mensaje: textoNovedadResuelta(n === undefined ? "" : rotuloNovedad(n), patente, volvio, donde === "centro", hastaManana),
           foco: donde === "centro" ? "titulo-del-panel" : "titulo-de-novedades",
         };
       },

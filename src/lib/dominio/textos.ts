@@ -171,6 +171,8 @@ export const MOTIVO_APTITUD = {
   fueraDeServicio: (desde: FechaCivil, motivo: string) => `Desde el ${formatearFecha(desde)}: ${minuscula(motivo)}`,
   documentoFaltante: (nombre: string) => `${TEXTO_FALTA_CARGAR}: ${nombre}`,
   novedadCritica: (rotulo: string, origen: string) => `Novedad crítica abierta: ${rotulo} (${origen})`,
+  /** P19: el parte de hoy quedó cerrado sin salida; aunque se resuelva la novedad, la unidad sale recién mañana. */
+  sinSalidaHoy: "Sin salida hasta mañana (novedad crítica en la revisión de hoy)",
 } as const;
 
 /** Textos de las alertas de operación (sección 7). */
@@ -1009,6 +1011,10 @@ export const TEXTO_DIALOGOS_FICHA = {
     primario: "Marcar como resuelta",
     volverEtiqueta: "Volver a servicio ahora",
     volverNota: (patente: string) => `${patente} está fuera de servicio por esta novedad. Con la casilla marcada, vuelve a servicio al resolverla.`,
+    /** P19: el parte de hoy quedó sin salida; el diálogo no promete que la unidad vuelve a salir ese día. */
+    volverEtiquetaHastaManana: "Volver a servicio (sale recién mañana)",
+    volverNotaHastaManana: (patente: string) =>
+      `${patente} está fuera de servicio por esta novedad. Con la casilla marcada, queda en servicio, pero no sale hoy: vuelve a salir recién mañana.`,
   },
   cargarNovedad: {
     titulo: (patente: string) => `Cargar novedad de ${patente}`,
@@ -1031,6 +1037,9 @@ export const TEXTO_DIALOGOS_FICHA = {
       const accion = aRenovar.length > 0 && aCargar.length > 0 ? "renovar o cargar" : aCargar.length > 0 ? "cargar" : "renovar";
       return `La unidad vuelve a servicio, pero no puede salir hasta ${accion}: ${[...aRenovar, ...aCargar].join(", ")}.`;
     },
+    /** P19: la unidad vuelve, pero el parte de hoy quedó sin salida. Solo, y sumado a lo de los documentos. */
+    hastaManana: "La unidad vuelve a servicio, pero no vuelve a salir hasta mañana: la revisión de hoy encontró una novedad crítica.",
+    ademasHastaManana: "Además, no vuelve a salir hasta mañana: la revisión de hoy encontró una novedad crítica.",
   },
   baja: {
     titulo: (patente: string) => `Dar de baja: ${patente}`,
@@ -1075,8 +1084,9 @@ export function textoDocumentoRenovadoEnFicha(tipo: TipoDocumento, titular: stri
  * Después de resolver una novedad: «Novedad resuelta: Frenos.», y si la unidad volvió, lo dice. Desde el centro de alertas (donde hay
  * muchas unidades) también nombra la unidad: «Novedad resuelta: Frenos (ZU 899 QE).»
  */
-export function textoNovedadResuelta(rotulo: string, patente: string, volvio: boolean, nombraLaUnidad = false): string {
-  return `Novedad resuelta: ${rotulo}${nombraLaUnidad ? ` (${patente})` : ""}.${volvio ? ` ${patente} vuelve a servicio.` : ""}`;
+export function textoNovedadResuelta(rotulo: string, patente: string, volvio: boolean, nombraLaUnidad = false, hastaManana = false): string {
+  const vuelta = volvio ? ` ${patente} vuelve a servicio${hastaManana ? ", pero no sale hasta mañana" : ""}.` : "";
+  return `Novedad resuelta: ${rotulo}${nombraLaUnidad ? ` (${patente})` : ""}.${vuelta}`;
 }
 
 /** Después de cargar una novedad a mano. */

@@ -19,6 +19,7 @@ import {
 import { aptitud } from "./aptitud.ts";
 import { describirRegistro, kmActual, parsearKm, registrosDeKm } from "./kilometraje.ts";
 import { criticasAbiertasDeUnidad, type CriticaAbierta } from "./novedades.ts";
+import { parteSinSalidaDeHoy } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
 import { TEXTO_AGREGAR, TEXTO_DIALOGOS_FICHA, errNovedadesCriticasAbiertas, textoUltimoRegistro, NOMBRES_DOCUMENTO } from "./textos.ts";
 import type { ErrorDeNegocio, Estado, FechaCivil, Unidad } from "./tipos.ts";
@@ -52,10 +53,23 @@ export function documentosPendientes(estado: Estado, unidad: Unidad, hoy: FechaC
   return { aRenovar: nombres("documento-vencido"), aCargar: nombres("documento-faltante") };
 }
 
-/** El aviso de A5 («vuelve a servicio, pero no puede salir hasta renovar: Seguro.») o `null` si no hay nada pendiente. */
+/** El aviso de A5 («vuelve a servicio, pero no puede salir hasta renovar: Seguro.») o `null` si no hay nada pendiente. Solo los documentos: lo de P19 lo dice `avisoDeVuelta`. */
 export function avisoDeVueltaSinPoderSalir(estado: Estado, unidad: Unidad, hoy: FechaCivil): string | null {
   const { aRenovar, aCargar } = documentosPendientes(estado, unidad, hoy);
   return aRenovar.length + aCargar.length === 0 ? null : TEXTO_DIALOGOS_FICHA.volver.sinPoderSalir(aRenovar, aCargar);
+}
+
+/** P19: hoy el parte de la unidad quedó cerrado sin salida, así que aunque vuelva a servicio no sale hasta mañana. */
+export function vuelveSinSalirHastaManana(estado: Estado, unidad: Unidad, hoy: FechaCivil): boolean {
+  return parteSinSalidaDeHoy(estado.partes, unidad.id, hoy) !== undefined;
+}
+
+/** El aviso del diálogo «Volver a servicio»: A5 (documentos) y P19 (sin salida hasta mañana), juntos si pasan las dos; `null` si no hay nada que avisar. */
+export function avisoDeVuelta(estado: Estado, unidad: Unidad, hoy: FechaCivil): string | null {
+  const documentos = avisoDeVueltaSinPoderSalir(estado, unidad, hoy);
+  if (!vuelveSinSalirHastaManana(estado, unidad, hoy)) return documentos;
+  const t = TEXTO_DIALOGOS_FICHA.volver;
+  return documentos === null ? t.hastaManana : `${documentos} ${t.ademasHastaManana}`;
 }
 
 // --- Poner fuera de servicio ---------------------------------------------------------------------
@@ -135,7 +149,7 @@ export function contextoDeVolverAServicio(estado: Estado, unidadId: string, hoy:
     titulo: t.titulo(formatearPatente(u.patente)),
     situacion: t.situacion(u.estado.desde, u.estado.motivo),
     bloqueo,
-    aviso: bloqueo === null ? avisoDeVueltaSinPoderSalir(estado, u, hoy) : null,
+    aviso: bloqueo === null ? avisoDeVuelta(estado, u, hoy) : null,
     primario: bloqueo === null ? t.primario : null,
   };
 }

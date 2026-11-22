@@ -226,6 +226,21 @@ export function contextoDeDocumentacion(documentos: readonly Documento[], unidad
 }
 
 /**
+ * P19: el parte de hoy de la unidad si quedó cerrado sin salida (novedad crítica en la revisión). Ese parte cierra el día de la unidad: aunque el encargado resuelva la novedad y la
+ * devuelva a servicio, no sale hasta mañana. Es el ÚNICO lugar que lo decide: la aptitud lo lee (y con ella la ficha, la flota y el centro de alertas), igual que el inicio del
+ * conductor y los diálogos de resolver y de volver a servicio. Los registros rotos se ignoran.
+ */
+export function parteSinSalidaDeHoy(partes: readonly Parte[], unidadId: string, hoy: FechaCivil): Parte | undefined {
+  for (const cruda of partes) {
+    // Primero lo barato, con el registro como llegó: son cientos de partes y esto corre por cada unidad en cada cálculo.
+    if (!esObjeto(cruda) || cruda["unidadId"] !== unidadId || cruda["fecha"] !== hoy) continue;
+    const p = parteLegible(cruda);
+    if (p !== null && p.estado === "enviado" && p.sinSalida) return p;
+  }
+  return undefined;
+}
+
+/**
  * Los avisos que se aceptaron al enviar un parte, ya en renglones con su tono (C6, M2): un renglón por documento vencido y uno por cada aviso de kilómetros. Los de documentación
  * dicen cómo estaba cada documento de la unidad el día del parte.
  */

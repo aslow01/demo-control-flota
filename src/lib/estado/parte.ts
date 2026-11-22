@@ -11,7 +11,7 @@ import { diaDeLaSemana, diasEntre, fechaEnArgentina, formatearFecha, formatearHo
 import { opcionesDeConductor, type OpcionDeConductor } from "../dominio/formulario.ts";
 import { OPCIONES_COMBUSTIBLE, faltantesDeValores, valoresDeParte, valoresIniciales, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { describirRegistro, kmDeRegistro, registroAnterior, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
-import { ITEMS_CHECKLIST, conductorParaParte, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, renglonesDeAvisosAceptados, validarFechaParte } from "../dominio/parte.ts";
+import { ITEMS_CHECKLIST, conductorParaParte, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, parteSinSalidaDeHoy, renglonesDeAvisosAceptados, validarFechaParte } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import {
   NOMBRES_COMBUSTIBLE,
@@ -254,7 +254,8 @@ export function inicioDelConductor(
         tipo: "enviado",
         etiqueta: hora === null ? TI.enviado : textoEnviadoALas(hora),
         sinSalida: delDia.sinSalida ? textoSinSalidaDelConductor(horaDe(delDia.revisado), criticas) : null,
-        hastaManana: delDia.sinSalida ? TI.sinSalidaHastaManana : null,
+        // P19: lo decide `parteSinSalidaDeHoy`, el mismo que lee la aptitud (ficha, flota y centro de alertas).
+        hastaManana: parteSinSalidaDeHoy(estado.partes, unidad.id, hoy) !== undefined ? TI.sinSalidaHastaManana : null,
         enlace: { texto: TI.verParte, href },
       };
     } else if (delDia?.estado === "en-uso") {

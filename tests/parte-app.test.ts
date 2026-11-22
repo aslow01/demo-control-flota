@@ -493,6 +493,27 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(app.parteDeLaRuta).toMatchObject({ tipo: "lectura", sinSalida: true });
   });
 
+  it("P19 en todas las vistas: el encargado resuelve la novedad y devuelve la unidad el mismo día, y la ficha, la flota y el centro de alertas siguen diciendo que no sale hoy", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    const v = completo(edicion(app).valoresIniciales);
+    v.checklist.frenos = { respuesta: "con-novedad", descripcion: "Pedal blando y ruido al frenar", impideUso: false };
+    await app.enviarRevisionDeParte(idDe(app, "ZYN469"), H, v);
+    await app.cambiarPerfil({ tipo: "encargado" });
+    const novedadId = estadoDe(app).novedades.find((n) => n.estado === "abierta" && n.gravedad === "critica" && n.unidadId === idDe(app, "ZYN469"))!.id;
+
+    const r = await app.resolverNovedad(novedadId, { texto: "Se cambiaron las pastillas", volverAServicio: true }, "ficha");
+    expect(r).toMatchObject({ ok: true, mensaje: "Novedad resuelta: Frenos. ZYN 469 vuelve a servicio, pero no sale hasta mañana." });
+
+    const motivo = "Sin salida hasta mañana (novedad crítica en la revisión de hoy)";
+    app.irA({ tipo: "unidad", patente: "ZYN469" });
+    const ficha = app.fichaDeUnidad;
+    expect(ficha && ficha.encontrada && ficha.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir", motivos: [motivo] });
+    expect(app.panelDeFlota?.filas.find((f) => f.patente === "ZYN469")?.estado).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir" });
+    expect(app.centroDeAlertas?.protagonista.items.find((i) => i.patente === "ZYN469")).toMatchObject({ categoria: "no-puede-salir", motivo });
+    await app.cambiarPerfil(C01);
+    expect(app.inicioDelConductor()?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: expect.stringContaining("recién mañana") });
+  });
+
   it("un punto no crítico con «Impide usar la unidad» también deja la unidad fuera de servicio y el parte sin salida (P11)", async () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
     const v = completo(edicion(app).valoresIniciales);

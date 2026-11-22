@@ -4,7 +4,7 @@
 
 import type { Comando } from "./comandos.ts";
 import { armarErrores, erroresDeNegocioEn, errorGeneralEn, type ErroresDeFormularioDe } from "./formulario.ts";
-import { avisoDeVueltaSinPoderSalir } from "./formulario-ficha.ts";
+import { avisoDeVueltaSinPoderSalir, vuelveSinSalirHastaManana } from "./formulario-ficha.ts";
 import { formatearFecha } from "./fechas.ts";
 import { criticasAbiertasDeUnidad, rotuloNovedad } from "./novedades.ts";
 import { formatearPatente } from "./patente.ts";
@@ -76,6 +76,8 @@ export function contextoDeResolver(estado: Estado, novedadId: string, hoy: Fecha
   if (u === undefined) return null;
   const patente = formatearPatente(u.patente);
   const ofrece = ofreceVolverAServicio(estado, u, n);
+  // P19: con el parte de hoy cerrado sin salida, volver a servicio no hace que la unidad salga hoy: el diálogo no lo promete.
+  const hastaManana = ofrece && vuelveSinSalirHastaManana(estado, u, hoy);
   const t = TEXTO_DIALOGOS_FICHA.resolver;
   return {
     novedadId: n.id,
@@ -90,8 +92,8 @@ export function contextoDeResolver(estado: Estado, novedadId: string, hoy: Fecha
       etiqueta: n.gravedad === "critica" ? TEXTO_FICHA.novedades.etiquetaCritica : TEXTO_FICHA.novedades.etiquetaAbierta,
     },
     ofreceVolverAServicio: ofrece,
-    etiquetaVolverAServicio: t.volverEtiqueta,
-    notaVolverAServicio: ofrece ? t.volverNota(patente) : null,
+    etiquetaVolverAServicio: hastaManana ? t.volverEtiquetaHastaManana : t.volverEtiqueta,
+    notaVolverAServicio: !ofrece ? null : hastaManana ? t.volverNotaHastaManana(patente) : t.volverNota(patente),
     avisoDocumentos: ofrece ? avisoDeVueltaSinPoderSalir(estado, u, hoy) : null,
     valoresIniciales: { texto: "", volverAServicio: ofrece },
     primario: t.primario,
