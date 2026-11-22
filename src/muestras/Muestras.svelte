@@ -110,6 +110,7 @@
       tipoDocumento: "seguro",
       d,
       fecha: null,
+      etapaParte: null,
     };
   }
   const deEjemplo = (unidadId: string, dias: number[]): { alertas: Alerta[] } => ({

@@ -78,7 +78,7 @@ describe("reactividad del estado de la aplicación", () => {
     await tick();
     limpiar();
     expect(r.ok).toBe(true);
-    expect(vistas).toEqual(["4|11", "3|10"]);
+    expect(vistas).toEqual(["4|12", "3|11"]);
   });
   it("la ficha se recalcula sola con cada comando y el mensaje de llegada se va al salir de ella (paso 4.4)", async () => {
     const ubicacion = ubicacionEnMemoria("#/flota");

@@ -172,8 +172,8 @@ describe("Agregar unidad: se guarda y aparece con sus faltantes (U5)", () => {
     const c = centroDe(app);
     expect(c.protagonista.cifra).toBe(5);
     expect(c.protagonista.items.some((i) => i.patente === "ZK999AA")).toBe(true);
-    expect(c.vencimientos.grupos.map((g) => g.cantidad)).toEqual([6, 4, 3, 2]);
-    expect(c.vencimientos.total).toBe(15);
+    expect(c.vencimientos.grupos.map((g) => g.cantidad)).toEqual([7, 4, 3, 2]);
+    expect(c.vencimientos.total).toBe(16);
     expect(c.protagonista.disponibles).toBe("Disponibles hoy: 19 de 24 unidades activas.");
   });
 

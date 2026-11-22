@@ -237,7 +237,7 @@ describe("panel Novedades", () => {
     const g = fichaDe(e, patente).novedades;
     expect(g.rotuloCantidad).toBe("1 abierta");
     expect(g.abiertas[0]).toMatchObject({
-      novedadId: "n-007",
+      novedadId: "n-009",
       gravedad: "normal",
       estado: "Abierta",
       texto: "Luz de patente quemada",
@@ -245,7 +245,7 @@ describe("panel Novedades", () => {
       fecha: "09/11/2026",
       impideVolver: false,
       ofreceVolverAServicio: false,
-      accion: { tipo: "resolver", etiqueta: "Resolver", nombreAccesible: expect.stringMatching(/^Resolver novedad de .+: Otra novedad$/), novedadId: "n-007" },
+      accion: { tipo: "resolver", etiqueta: "Resolver", nombreAccesible: expect.stringMatching(/^Resolver novedad de .+: Otra novedad$/), novedadId: "n-009" },
     });
   });
 
@@ -270,7 +270,7 @@ describe("C11 (ZU 899 QE): A4 y N2 a la vista", () => {
 
   it("A4: el estado operativo lista las críticas que impiden volver, y la acción «Volver a servicio» trae el motivo del bloqueo", () => {
     expect(f.estadoOperativo.novedadesQueImpiden).toEqual([
-      { novedadId: "n-003", rotulo: "Frenos", origen: "parte del 16/11/2026", texto: "Frenos (parte del 16/11/2026)" },
+      { novedadId: "n-005", rotulo: "Frenos", origen: "parte del 16/11/2026", texto: "Frenos (parte del 16/11/2026)" },
     ]);
     expect(f.acciones.encabezado).toEqual([
       { id: "volver-a-servicio", etiqueta: "Volver a servicio", href: null, bloqueo: "Antes de volver a servicio, resuelva: Frenos (parte del 16/11/2026)." },
@@ -280,13 +280,13 @@ describe("C11 (ZU 899 QE): A4 y N2 a la vista", () => {
   it("N2: la novedad crítica abierta es «Crítica», impide volver y ofrece volver a servicio al resolverla", () => {
     expect(f.novedades.rotuloCantidad).toBe("1 abierta");
     expect(f.novedades.abiertas[0]).toMatchObject({
-      novedadId: "n-003",
+      novedadId: "n-005",
       gravedad: "critica",
       estado: "Crítica",
       impideVolver: true,
       ofreceVolverAServicio: true,
       origen: "Parte del 16/11/2026, punto Frenos",
-      accion: { tipo: "resolver", etiqueta: "Resolver", nombreAccesible: "Resolver novedad de ZU 899 QE: Frenos", novedadId: "n-003" },
+      accion: { tipo: "resolver", etiqueta: "Resolver", nombreAccesible: "Resolver novedad de ZU 899 QE: Frenos", novedadId: "n-005" },
     });
   });
 
@@ -398,7 +398,7 @@ describe("panel Historial (5.16, H3, H4)", () => {
     expect(ev?.dia).toBe("2026-11-17");
     expect(ev?.tituloDia).toBe("Martes 17/11/2026");
     expect(ev).toMatchObject({ icono: "parte", categoria: "partes" });
-    expect(ev?.resumen).toMatch(/^Parte del 17\/11\/2026 de ZK 214 BD enviado/);
+    expect(ev?.resumen).toMatch(/^Parte cerrado · ([\d.]+ km|sin uso) \([\d.]+ → [\d.]+\) · combustible /);
     expect(ev?.autor.length).toBeGreaterThan(0);
   });
 
@@ -407,7 +407,7 @@ describe("panel Historial (5.16, H3, H4)", () => {
     expect(h.filtros.map((x) => x.etiqueta)).toEqual(["Todo", "Partes", "Documentos", "Novedades", "Estado y kilometraje"]);
     expect(h.filtros[0]?.cantidad).toBe(h.total);
     const porTipo = (tipos: string[]) => h.eventos.filter((x) => tipos.includes(x.tipo)).length;
-    expect(h.filtros[1]?.cantidad).toBe(porTipo(["parte-enviado"]));
+    expect(h.filtros[1]?.cantidad).toBe(porTipo(["revision-enviada", "parte-enviado"]));
     expect(h.filtros[2]?.cantidad).toBe(porTipo(["documento-cargado", "documento-renovado", "documento-corregido"]));
     expect(h.filtros[3]?.cantidad).toBe(porTipo(["novedad-abierta", "novedad-resuelta"]));
     expect(h.filtros[4]?.cantidad).toBe(porTipo(["fuera-de-servicio", "vuelta-a-servicio", "km-corregido", "unidad-baja"]));
@@ -422,18 +422,21 @@ describe("panel Historial (5.16, H3, H4)", () => {
       advertencias: [],
     });
     if (ev?.detalle?.tipo !== "parte") throw new Error("falta el detalle del parte");
-    expect(ev.detalle.resumenCorto).toMatch(/^Parte enviado · ([\d.]+ km|sin uso) \([\d.]+ → [\d.]+\) · combustible (reserva|1\/4|1\/2|3\/4|lleno) · sin novedades$/);
+    expect(ev.detalle.resumenCorto).toMatch(/^Parte cerrado · ([\d.]+ km|sin uso) \([\d.]+ → [\d.]+\) · combustible (reserva|1\/4|1\/2|3\/4|lleno) · sin novedades$/);
     expect(ev.detalle.puntosEnOrden).toMatch(/^\d+ puntos en orden$/);
     expect(ev.detalle.novedades).toEqual([]);
     expect(ev.detalle.litros).toMatch(/^Sin carga$|^[\d,]+ litros?$/);
   });
 
-  it("un parte con novedad lista sus puntos con el texto completo", () => {
-    const frenos = fichaDe(e, "ZU899QE").historial.eventos.find((x) => x.tipo === "parte-enviado" && x.detalle?.tipo === "parte" && x.detalle.novedades.length > 0);
-    if (frenos?.detalle?.tipo !== "parte") throw new Error("falta el parte con novedad");
-    expect(frenos.detalle.novedades).toEqual([{ rotulo: "Frenos", texto: "ruido al frenar en bajada", critica: true }]);
-    expect(frenos.detalle.resumenCorto).toMatch(/ · 1 novedad$/);
-    expect(frenos.detalle.puntosEnOrden).toBe("9 puntos en orden");
+  it("la revisión enviada va en una línea, sin detalle, y dice las novedades; con una crítica, que la unidad no salió", () => {
+    const eventos = fichaDe(e, "ZU899QE").historial.eventos;
+    const frenos = eventos.find((x) => x.tipo === "revision-enviada" && x.resumen.includes("novedad crítica"));
+    expect(frenos).toMatchObject({ icono: "parte", categoria: "partes", detalle: null });
+    expect(frenos?.resumen).toMatch(/^Revisión antes de salir · [\d.]+ km · novedad crítica en Frenos: la unidad no salió$/);
+    // sin salida no hay un «parte cerrado» aparte (P16)
+    expect(eventos.filter((x) => x.dia === frenos?.dia && x.tipo === "parte-enviado")).toEqual([]);
+    const normal = h.eventos.find((x) => x.tipo === "revision-enviada");
+    expect(normal?.resumen).toMatch(/^Revisión antes de salir · [\d.]+ km · sin novedades$/);
   });
 
   it("un documento corregido trae «Antes / Después» por campo cambiado", () => {
@@ -462,7 +465,7 @@ describe("panel Historial (5.16, H3, H4)", () => {
 
 describe("vistaDeHistorial: filtro, páginas de 30 y días", () => {
   const h = fichaDe(e, "ZK214BD").historial;
-  // El de ZK 214 BD tiene 50 eventos: para probar las páginas de 30 se arma uno de 130 repitiendo los suyos con otros ids.
+  // El de ZK 214 BD tiene 90 eventos: para probar las páginas de 30 se arma uno de 130 repitiendo los suyos con otros ids.
   const grande = { ...h, total: 130, eventos: Array.from({ length: 130 }, (_, i) => ({ ...(h.eventos[i % h.eventos.length] as (typeof h.eventos)[number]), eventoId: `x${i}` })) };
 
   it("los primeros 30, agrupados por día (el más nuevo arriba), con el botón «Ver 30 más» y el anuncio", () => {
@@ -493,7 +496,7 @@ describe("vistaDeHistorial: filtro, páginas de 30 y días", () => {
     expect(new Set(dias).size).toBe(dias.length);
     expect([...dias].sort().reverse()).toEqual(dias);
     expect(v.grupos[0]).toMatchObject({ dia: "2026-11-17", titulo: "Martes 17/11/2026" });
-    expect(v.botonVerMas).toBe("Ver 20 más");
+    expect(v.botonVerMas).toBe("Ver 30 más");
   });
 
   it("«Ver 30 más»: el primer evento nuevo es el que sigue (para llevarle el foco); al final, el botón dice cuántos quedan y después desaparece", () => {
@@ -511,7 +514,7 @@ describe("vistaDeHistorial: filtro, páginas de 30 y días", () => {
   it("el filtro «Partes» deja solo los partes; el total del anuncio es el del filtro", () => {
     const v = vistaDeHistorial(h, "partes", 30);
     const partes = h.eventos.filter((x) => x.categoria === "partes").length;
-    expect(v.grupos.flatMap((g) => g.eventos).every((x) => x.tipo === "parte-enviado")).toBe(true);
+    expect(v.grupos.flatMap((g) => g.eventos).every((x) => x.tipo === "parte-enviado" || x.tipo === "revision-enviada")).toBe(true);
     expect(v.total).toBe(partes);
     expect(v.anuncio).toBe(`Mostrando ${Math.min(30, partes)} de ${partes} eventos.`);
   });

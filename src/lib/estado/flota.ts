@@ -16,6 +16,8 @@ import {
   NOMBRES_DOCUMENTO,
   NOMBRES_TIPO_UNIDAD,
   TEXTO_ESTADO_OPERACION,
+  TEXTO_ESTADO_PARTE_EN_USO,
+  TEXTO_ESTADO_PARTE_INCOMPLETO,
   TEXTO_FALTA_CARGAR,
   TEXTO_FLOTA,
   abreviar,
@@ -32,7 +34,7 @@ import {
   textoVencimiento,
 } from "../dominio/textos.ts";
 import type { Estado, FechaCivil, Unidad } from "../dominio/tipos.ts";
-import { REQUISITOS, documentoVigente } from "../dominio/vencimientos.ts";
+import { REQUISITOS, documentoVigente, estadoDeLicencia } from "../dominio/vencimientos.ts";
 import { horizonteMinimo, type Horizonte } from "../dominio/horizonte.ts";
 import { aHash, type FiltroDeFlotaEnRuta, type Ruta } from "./enrutador.ts";
 
@@ -121,9 +123,14 @@ export interface FilaFlota {
     fecha: FechaCivil | null;
     /** `dd/mm/aaaa` o «Sin partes». */
     texto: string;
-    /** «Sin enviar» (hay un borrador de un día anterior) o «Sin parte» (ayer no hubo ninguno), de las alertas de operación. */
-    etiqueta: "Sin enviar" | "Sin parte" | null;
+    /**
+     * «Sin enviar» (hay un borrador de un día anterior), «Sin cerrar» (hay un parte en uso de un día anterior), «En uso» (la unidad salió hoy y falta el cierre) o «Sin parte» (ayer no
+     * hubo ninguno), de las alertas de operación y de los partes de hoy.
+     */
+    etiqueta: "Sin enviar" | "Sin cerrar" | "En uso" | "Sin parte" | null;
   };
+  /** L1: el conductor asignado no tiene licencia que ampare hoy (la unidad puede salir con otro conductor: A1). La vista agrega «sin licencia vigente» junto al nombre. */
+  conductorSinLicencia: boolean;
   novedades: { abiertas: number; criticas: number; texto: string };
   proyecto: string | null;
   conductor: string | null;
@@ -235,7 +242,10 @@ function armarFila(
   const delVencimiento = u.estado.tipo === "baja" ? undefined : alertasDeLaUnidad.find((x) => x.categoria === "vencimientos");
   const proximo =
     u.estado.tipo === "baja" ? sinVencimientos() : delVencimiento !== undefined ? proximoDeAlerta(delVencimiento, r, u.id) : proximoVigente(estado, u, hoy);
-  const sinEnviar = alertasDeLaUnidad.some((x) => x.tipo === "parte-sin-enviar");
+  const incompletos = alertasDeLaUnidad.filter((x) => x.tipo === "parte-sin-enviar");
+  const sinEnviar = incompletos.some((x) => x.etapaParte !== "en-uso");
+  const sinCerrar = incompletos.some((x) => x.etapaParte === "en-uso");
+  const enUsoHoy = estado.partes.some((p) => p.unidadId === u.id && p.estado === "en-uso" && p.fecha === hoy);
   const sinParte = alertasDeLaUnidad.some((x) => x.tipo === "sin-parte");
   const descripcion = textoDescripcionUnidad(u.marca, u.modelo, u.anio, u.tipo);
   return {
@@ -261,8 +271,17 @@ function armarFila(
     ultimoParte: {
       fecha: ultima,
       texto: ultima === null ? TEXTO_FLOTA.sinPartes : formatearFecha(ultima),
-      etiqueta: sinEnviar ? TEXTO_ESTADO_OPERACION["parte-sin-enviar"] : sinParte ? TEXTO_ESTADO_OPERACION["sin-parte"] : null,
+      etiqueta: sinEnviar
+        ? TEXTO_ESTADO_PARTE_INCOMPLETO.borrador
+        : sinCerrar
+          ? TEXTO_ESTADO_PARTE_INCOMPLETO["en-uso"]
+          : enUsoHoy
+            ? TEXTO_ESTADO_PARTE_EN_USO
+            : sinParte
+              ? TEXTO_ESTADO_OPERACION["sin-parte"]
+              : null,
     },
+    conductorSinLicencia: u.conductorId !== null && !estadoDeLicencia(estado.documentos, u.conductorId, hoy).vigente,
     novedades: { abiertas: abiertas.length, criticas, texto: textoNovedadesDeUnidad(abiertas.length, criticas) },
     proyecto,
     conductor,

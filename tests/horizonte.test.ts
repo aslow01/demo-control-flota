@@ -89,19 +89,19 @@ describe("variante completa con el ejemplo del generador (semilla 20261118, 2026
     expect(columnasConMarcas(h).map((m) => m.alertaId).sort()).toEqual([...porVencer].sort());
   });
 
-  it("la caja de vencidos y faltantes dice 2", () => {
-    expect(h.vencidos).toBe(2);
-    expect(h.cajaVencidos).toEqual({ rotulo: "Vencidos y faltantes", cifra: 2, conAlerta: true });
+  it("la caja de vencidos y faltantes dice 3", () => {
+    expect(h.vencidos).toBe(3);
+    expect(h.cajaVencidos).toEqual({ rotulo: "Vencidos y faltantes", cifra: 3, conAlerta: true });
   });
 
   it("los conteos coinciden con el resumen de alertas", () => {
     expect(h.porGrupo).toEqual(resultado.resumen.porGrupo);
-    expect(h.porGrupo).toEqual({ vencidos: 2, "7": 4, "15": 3, "30": 2 });
+    expect(h.porGrupo).toEqual({ vencidos: 3, "7": 4, "15": 3, "30": 2 });
   });
 
   it("aria-label exacto de la especificación", () => {
     expect(h.etiquetaAria).toBe(
-      "Vencimientos de los próximos 30 días: 4 en 7 días o menos, 3 entre 8 y 15 días, 2 entre 16 y 30 días. 2 documentos vencidos o faltantes.",
+      "Vencimientos de los próximos 30 días: 4 en 7 días o menos, 3 entre 8 y 15 días, 2 entre 16 y 30 días. 3 documentos vencidos o faltantes.",
     );
     expect(h.etiquetaAria).toBe(textoHorizonte(resultado.resumen.porGrupo));
     expect(h.ocultoAAyudas).toBe(false);
@@ -125,7 +125,7 @@ describe("las marcas caen en el día correcto con otras fechas base (también en
         expect(doc.vence).toBe(sumarDias(base, m.dia));
         expect(m.columna).toBe(m.dia + 1);
       }
-      expect(h.etiquetaAria).toContain("4 en 7 días o menos, 3 entre 8 y 15 días, 2 entre 16 y 30 días. 2 documentos vencidos o faltantes.");
+      expect(h.etiquetaAria).toContain("4 en 7 días o menos, 3 entre 8 y 15 días, 2 entre 16 y 30 días. 3 documentos vencidos o faltantes.");
     });
   }
 });

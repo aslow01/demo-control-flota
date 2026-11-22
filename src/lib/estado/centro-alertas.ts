@@ -15,13 +15,18 @@ import {
   TEXTO_CENTRO,
   TEXTO_ESTADO_OPERACION,
   TEXTO_FALTA_CARGAR,
+  TEXTO_CONDUCTORES_SIN_LICENCIA as TCL,
   TEXTO_GRUPO_OPERACION,
+  TEXTO_ESTADO_PARTE_INCOMPLETO,
   TEXTO_GRUPO_VENCIMIENTOS,
   palabraUnidades,
   pluralizar,
   textoAccionDocumento,
   textoDisponibles,
   textoFilaOperacion,
+  textoFilaPartesIncompletos,
+  textoMotivoSinLicencia,
+  tituloGrupoPartesIncompletos,
   textoGrupoConCantidad,
   textoHoy,
   textoInterno,
@@ -88,6 +93,23 @@ export interface Protagonista {
   masEnLaFlota: { texto: string; href: string } | null;
   /** Barra de estado: «Disponibles hoy: 19 de 23 unidades activas.» */
   disponibles: string;
+  /** L6: conductores activos que hoy no pueden manejar (por nombre); vacía si no hay. No cambia la cifra (A8). */
+  conductores: FilaDeConductorSinLicencia[];
+  /** Para lectores, después de la cifra: «1 conductor no puede manejar hoy.»; `null` si no hay. */
+  textoLectorConductores: string | null;
+  /** `h3` «Conductores que no pueden manejar hoy (1)». */
+  tituloConductores: string;
+}
+
+/** Un conductor que no puede manejar hoy (L6). `accion` abre el diálogo de la alerta de vencimiento de su licencia («Renovar» si tiene una cargada, «Cargar» si no); `null` si esa alerta no existe. */
+export interface FilaDeConductorSinLicencia {
+  conductorId: string;
+  nombre: string;
+  /** «Licencia vencida hace 3 días» · «Falta cargar la licencia» · «Licencia válida desde el 20/11/2026». */
+  motivo: string;
+  /** Su unidad asignada (no de baja), con el enlace a su ficha. */
+  unidad: { patenteTexto: string; href: string } | null;
+  accion: { tipo: "renovar" | "cargar"; alertaId: string; etiqueta: string; nombreAccesible: string } | null;
 }
 
 export interface FilaOperacionDiaria {
@@ -272,7 +294,31 @@ function armarProtagonista(estado: Estado, r: ResultadoAlertas, hoy: FechaCivil)
     items: todas.slice(0, MAX_PROTAGONISTA),
     masEnLaFlota: todas.length > MAX_PROTAGONISTA ? { texto: textoVerTodasEnLaFlota(todas.length), href: aHash({ tipo: "flota", filtro: "no-disponibles" }) } : null,
     disponibles: textoDisponibles(disponibles, activas),
+    conductores: armarConductoresSinLicencia(estado, r, hoy),
+    textoLectorConductores: r.resumen.conductoresSinLicencia.length === 0 ? null : TCL.lector(r.resumen.conductoresSinLicencia.length),
+    tituloConductores: TCL.titulo(r.resumen.conductoresSinLicencia.length),
   };
+}
+
+/** L6: una fila por conductor activo cuya licencia no ampara hoy. */
+function armarConductoresSinLicencia(estado: Estado, r: ResultadoAlertas, hoy: FechaCivil): FilaDeConductorSinLicencia[] {
+  return r.resumen.conductoresSinLicencia.map((c) => {
+    const unidad = estado.unidades.find((u) => u.conductorId === c.conductorId && u.estado.tipo !== "baja");
+    const m = c.motivo;
+    const accion = c.alertaId === null ? null : m.motivo === "faltante" ? "cargar" : "renovar";
+    return {
+      conductorId: c.conductorId,
+      nombre: c.nombre,
+      motivo: textoMotivoSinLicencia(m.motivo === "vencida" ? { motivo: "vencida", diasVencida: diasEntre(m.vence, hoy) } : m),
+      unidad: unidad === undefined ? null : { patenteTexto: formatearPatente(unidad.patente), href: href(unidad.patente) },
+      accion:
+        c.alertaId === null || accion === null
+          ? null
+          : accion === "cargar"
+            ? { tipo: "cargar", alertaId: c.alertaId, etiqueta: TCL.cargar, nombreAccesible: TCL.nombreAccesible("Cargar", c.nombre) }
+            : { tipo: "renovar", alertaId: c.alertaId, etiqueta: TCL.renovar, nombreAccesible: TCL.nombreAccesible("Renovar", c.nombre) },
+    };
+  });
 }
 
 function idGrupoDeOperacion(tipo: TipoAlertaOperacion): string {
@@ -287,10 +333,15 @@ function armarOperacion(r: ResultadoAlertas, hoy: FechaCivil): PanelOperacion {
     const delTipo = r.alertas.filter((a) => a.tipo === tipo);
     // Solo las novedades abiertas dicen su antigüedad: la de la más antigua (las alertas ya vienen de la más antigua a la más nueva).
     const masAntigua = tipo === "novedad-abierta" ? (delTipo[0]?.fecha ?? null) : null;
+    // P5: los partes incompletos dicen si son borradores («sin enviar»), partes en uso («sin cerrar») o ambos.
+    const texto =
+      tipo === "parte-sin-enviar"
+        ? textoFilaPartesIncompletos(delTipo.filter((a) => a.etapaParte !== "en-uso").length, delTipo.filter((a) => a.etapaParte === "en-uso").length)
+        : textoFilaOperacion(tipo, cifra, masAntigua === null ? null : diasEntre(masAntigua, hoy));
     filas.push({
       tipo,
       cifra,
-      texto: textoFilaOperacion(tipo, cifra, masAntigua === null ? null : diasEntre(masAntigua, hoy)),
+      texto,
       gravedad: delTipo[0]?.gravedad ?? "media",
       idGrupo: idGrupoDeOperacion(tipo),
     });
@@ -457,7 +508,7 @@ function armarDetalle(estado: Estado, r: ResultadoAlertas): PanelDetalle {
     return {
       alertaId: a.id,
       gravedad: a.gravedad,
-      estado: TEXTO_ESTADO_OPERACION[tipo],
+      estado: a.etapaParte === "en-uso" ? TEXTO_ESTADO_PARTE_INCOMPLETO["en-uso"] : TEXTO_ESTADO_OPERACION[tipo],
       texto: a.texto,
       unidad,
       fecha: a.fecha === null ? TEXTO_CENTRO.sinFecha : formatearFecha(a.fecha),
@@ -470,11 +521,18 @@ function armarDetalle(estado: Estado, r: ResultadoAlertas): PanelDetalle {
   for (const tipo of TIPOS_OPERACION) {
     const filas = r.alertas.filter((a) => a.tipo === tipo).flatMap((a) => fila(a, tipo) ?? []);
     if (filas.length === 0) continue;
+    const titulo =
+      tipo === "parte-sin-enviar"
+        ? tituloGrupoPartesIncompletos(
+            r.alertas.filter((a) => a.tipo === tipo && a.etapaParte !== "en-uso").length,
+            r.alertas.filter((a) => a.tipo === tipo && a.etapaParte === "en-uso").length,
+          )
+        : TEXTO_GRUPO_OPERACION[tipo];
     grupos.push({
       tipo,
       idGrupo: idGrupoDeOperacion(tipo),
-      titulo: TEXTO_GRUPO_OPERACION[tipo],
-      tituloConCantidad: textoGrupoConCantidad(TEXTO_GRUPO_OPERACION[tipo], filas.length),
+      titulo,
+      tituloConCantidad: textoGrupoConCantidad(titulo, filas.length),
       cantidad: filas.length,
       filas,
     });

@@ -51,7 +51,7 @@ function seguroDeC01(app: EstadoApp) {
 }
 
 describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", () => {
-  it("antes de iniciar no hay centro; después, el ejemplo: 4 unidades, 11 vencimientos, 6 pendientes", async () => {
+  it("antes de iniciar no hay centro; después, el ejemplo: 4 unidades, 12 vencimientos, 6 pendientes", async () => {
     const t = new EstadoApp({
       reloj: crearReloj(() => new Date(Date.parse(MEDIODIA))),
       abrirAlmacenamiento: async () => new RepositorioMemoria(),
@@ -63,8 +63,8 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
     const c = centroDe(t);
     expect(c.protagonista.cifra).toBe(4);
     expect(c.protagonista.textoLector).toBe("4 unidades no pueden salir hoy.");
-    expect(c.vencimientos.total).toBe(11);
-    expect(c.vencimientos.grupos.map((g) => g.cantidad)).toEqual([2, 4, 3, 2]);
+    expect(c.vencimientos.total).toBe(12);
+    expect(c.vencimientos.grupos.map((g) => g.cantidad)).toEqual([3, 4, 3, 2]);
     expect(c.operacion.total).toBe(6);
     expect(c.encabezado.linea).toContain("Logística Andina Demo S.A.");
     expect(estadoDe(t)).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
@@ -78,16 +78,16 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
 
     const r = await app.renovarDocumento(viejo.id, NUEVO);
 
-    expect(r).toEqual({ ok: true, mensaje: "Seguro de ZK 214 BD renovado. Quedan 10 vencimientos.", foco: "titulo-del-panel" });
+    expect(r).toEqual({ ok: true, mensaje: "Seguro de ZK 214 BD renovado. Quedan 11 vencimientos.", foco: "titulo-del-panel" });
     const c = centroDe(app);
     expect(c.protagonista.cifra).toBe(3);
     expect(c.protagonista.textoLector).toBe("3 unidades no pueden salir hoy.");
     expect(c.protagonista.items.some((i) => i.patente === "ZK214BD")).toBe(false);
     expect(c.protagonista.disponibles).toBe("Disponibles hoy: 20 de 23 unidades activas.");
-    expect(c.vencimientos.total).toBe(10);
-    expect(c.vencimientos.grupos.map((g) => g.cantidad)).toEqual([1, 4, 3, 2]);
+    expect(c.vencimientos.total).toBe(11);
+    expect(c.vencimientos.grupos.map((g) => g.cantidad)).toEqual([2, 4, 3, 2]);
     expect(c.vencimientos.grupos.flatMap((g) => g.filas).some((f) => f.alertaId === `doc:${viejo.id}`)).toBe(false);
-    expect(app.alertas?.resumen.criticas).toBe(3);
+    expect(app.alertas?.resumen.criticas).toBe(4);
     // la fila que abrió el diálogo ya no existe (su alerta se resolvió): por eso el foco va al título del panel (5.17)
     expect(app.alertas?.alertas.some((a) => a.id === `doc:${viejo.id}`)).toBe(false);
   });
@@ -113,12 +113,12 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
     const hoyVence = e.documentos.find((d) => d.tipo === "revision-tecnica" && d.vence === HOY);
     if (hoyVence === undefined) throw new Error("falta el caso C02");
     const antes = centroDe(app).vencimientos.grupos.map((g) => g.cantidad);
-    expect(antes).toEqual([2, 4, 3, 2]);
+    expect(antes).toEqual([3, 4, 3, 2]);
 
     const r = await app.renovarDocumento(hoyVence.id, { ...NUEVO, vence: sumarDias(HOY, 20) });
 
-    expect(r.ok && r.mensaje).toMatch(/^Revisión técnica de .+ renovada\. Quedan 11 vencimientos\.$/);
-    expect(centroDe(app).vencimientos.grupos.map((g) => g.cantidad)).toEqual([2, 3, 3, 3]);
+    expect(r.ok && r.mensaje).toMatch(/^Revisión técnica de .+ renovada\. Quedan 12 vencimientos\.$/);
+    expect(centroDe(app).vencimientos.grupos.map((g) => g.cantidad)).toEqual([3, 3, 3, 3]);
     expect(r.ok && r.foco).toBe("titulo-del-panel");
   });
 
@@ -133,13 +133,13 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
 
     expect(r).toEqual({
       ok: true,
-      mensaje: `Habilitación de ingreso al proyecto de ${patenteTexto} cargada. Quedan 10 vencimientos.`,
+      mensaje: `Habilitación de ingreso al proyecto de ${patenteTexto} cargada. Quedan 11 vencimientos.`,
       foco: "titulo-del-panel",
     });
     const c = centroDe(app);
     expect(c.protagonista.items.some((i) => i.patente === patente)).toBe(false);
     expect(c.protagonista.cifra).toBe(3);
-    expect(c.vencimientos.grupos[0]?.cantidad).toBe(1);
+    expect(c.vencimientos.grupos[0]?.cantidad).toBe(2);
     expect(estadoDe(app).eventos.at(-1)?.tipo).toBe("documento-cargado");
   });
 });

@@ -63,10 +63,10 @@ describe("paneles", () => {
 describe("historial", () => {
   it("el resumen del parte enviado: recorrido, combustible y novedades (con singular y «sin uso»)", () => {
     const base = { kmInicio: 84320, kmFin: 84452, combustible: "3/4", novedades: 1 };
-    expect(textoResumenParteEnviado(base)).toBe("Parte enviado · 132 km (84.320 → 84.452) · combustible 3/4 · 1 novedad");
-    expect(textoResumenParteEnviado({ ...base, novedades: 0 })).toBe("Parte enviado · 132 km (84.320 → 84.452) · combustible 3/4 · sin novedades");
-    expect(textoResumenParteEnviado({ ...base, novedades: 2, combustible: null })).toBe("Parte enviado · 132 km (84.320 → 84.452) · 2 novedades");
-    expect(textoResumenParteEnviado({ ...base, kmFin: 84320 })).toBe("Parte enviado · sin uso (84.320 → 84.320) · combustible 3/4 · 1 novedad");
+    expect(textoResumenParteEnviado(base)).toBe("Parte cerrado · 132 km (84.320 → 84.452) · combustible 3/4 · 1 novedad");
+    expect(textoResumenParteEnviado({ ...base, novedades: 0 })).toBe("Parte cerrado · 132 km (84.320 → 84.452) · combustible 3/4 · sin novedades");
+    expect(textoResumenParteEnviado({ ...base, novedades: 2, combustible: null })).toBe("Parte cerrado · 132 km (84.320 → 84.452) · 2 novedades");
+    expect(textoResumenParteEnviado({ ...base, kmFin: 84320 })).toBe("Parte cerrado · sin uso (84.320 → 84.320) · combustible 3/4 · 1 novedad");
   });
 
   it("litros con coma decimal, o «Sin carga»; puntos en orden", () => {

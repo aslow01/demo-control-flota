@@ -63,7 +63,7 @@ describe("A3: invariante 'nunca en servicio con una novedad crítica abierta'", 
       checklist: { ...checklistEnOrden(), frenos: { estado: "con-novedad", descripcion: "Pedal blando", impideUso: false } }, litrosCargados: null, otraNovedad: null,
     });
     const parteId = guardado.cambios.partes[0]!.id;
-    const r = ejecutarOk(guardado.estado, { tipo: "enviarParte", parteId, advertenciasAceptadas: [] });
+    const r = ejecutarOk(guardado.estado, { tipo: "enviarRevision", parteId, advertenciasAceptadas: [] });
     expect(unidadesEnServicioConNovedadCritica(r.estado)).toEqual([]);
   });
 });

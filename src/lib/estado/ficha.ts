@@ -35,7 +35,10 @@ import {
   textoDescripcionUnidad,
   textoEventos,
   textoInterno,
+  textoCierreEnHistorial,
   textoKmConFecha,
+  textoKmEnUso,
+  textoRevisionEnHistorial,
   textoLineaAptitud,
   textoLitros,
   textoMostrandoEventos,
@@ -48,8 +51,8 @@ import {
   textoVerMasEventos,
   textoVencimiento,
 } from "../dominio/textos.ts";
-import type { Documento, Estado, Evento, FechaCivil, Novedad, Parte, Perfil, TipoDocumento, TipoEvento, Unidad } from "../dominio/tipos.ts";
-import { REQUISITOS, clasificar, documentoVigente, tiposObligatoriosDeUnidad, type Grupo } from "../dominio/vencimientos.ts";
+import type { Documento, Estado, Evento, FechaCivil, ItemChecklist, Novedad, Parte, Perfil, TipoDocumento, TipoEvento, Unidad } from "../dominio/tipos.ts";
+import { REQUISITOS, clasificar, documentoVigente, estadoDeLicencia, tiposObligatoriosDeUnidad, type Grupo } from "../dominio/vencimientos.ts";
 import { aHash } from "./enrutador.ts";
 
 // --- Tipos ---------------------------------------------------------------------------------------
@@ -195,18 +198,18 @@ export interface PanelNovedades {
 export interface FilaKilometraje {
   /** Clave del `each`: el id del parte; las correcciones, su fecha e instante. */
   clave: string;
-  tipo: "parte" | "correccion";
+  tipo: "parte" | "salida" | "correccion";
   /** `dd/mm/aaaa`. */
   fecha: string;
-  /** «84.188 → 84.320» o «Corrección: 120 km». */
+  /** «84.188 → 84.320», «84.452 → en uso» (un parte en uso: solo se sabe el inicio) o «Corrección: 120 km». */
   texto: string;
-  /** «132 km» o «Sin uso»; `null` en las correcciones. */
+  /** «132 km» o «Sin uso» (también un parte cerrado sin salida); `null` en las salidas y las correcciones. */
   recorrido: string | null;
   /** Saltos y recorridos largos aceptados al enviar (K6, K7): llevan `i-alerta` tono semana. */
   advertencias: string[];
   /** El motivo de una corrección. */
   motivo: string | null;
-  /** Solo los partes: enlace al parte completo. */
+  /** Los partes y las salidas: enlace al parte completo. */
   href: string | null;
 }
 
@@ -312,6 +315,8 @@ export interface FichaDeUnidad {
   datos: {
     proyecto: string | null;
     conductor: string | null;
+    /** L1: el conductor asignado no tiene licencia que ampare hoy. El encabezado agrega «Sin licencia vigente» junto a su nombre. */
+    conductorSinLicencia: boolean;
     km: { valor: number | null; texto: string; /** `dd/mm/aaaa` del último registro. */ fecha: string | null; textoConFecha: string };
   };
   /** Solo una unidad de baja: «Dada de baja el 21/10/2026: Venta. Se conserva su historial.» */
@@ -376,6 +381,7 @@ export function fichaDeUnidad(
     datos: {
       proyecto: estado.proyectos.find((p) => p.id === unidad.proyectoId)?.nombre ?? null,
       conductor: unidad.conductorId === null ? null : (estado.conductores.find((c) => c.id === unidad.conductorId)?.nombre ?? null),
+      conductorSinLicencia: unidad.conductorId !== null && !estadoDeLicencia(estado.documentos, unidad.conductorId, hoy).vigente,
       km,
     },
     aviso: unidad.estado.tipo === "baja" ? textoDadaDeBaja(unidad.estado.desde, unidad.estado.motivo) : null,
@@ -572,6 +578,18 @@ function panelDeKilometraje(estado: Estado, unidad: Unidad, km: FichaDeUnidad["d
     .slice(-FILAS_DE_KILOMETRAJE)
     .reverse()
     .map((r): FilaKilometraje => {
+      if (r.tipo === "salida") {
+        return {
+          clave: r.parteId,
+          tipo: "salida",
+          fecha: formatearFecha(r.fecha),
+          texto: textoKmEnUso(r.kmInicio),
+          recorrido: null,
+          advertencias: [],
+          motivo: null,
+          href: aHash({ tipo: "parte", patente: unidad.patente, fecha: r.fecha }),
+        };
+      }
       if (r.tipo === "parte") {
         const parte = estado.partes.find((p) => p.id === r.parteId);
         const delKm = (parte?.advertenciasAceptadas ?? []).filter((a) => a.tipo === "salto-km" || a.tipo === "recorrido-largo");
@@ -617,6 +635,7 @@ export const PASO_HISTORIAL_ANCHO = 30;
 export const PASO_HISTORIAL = PASO_HISTORIAL_ANCHO;
 
 const FORMA_DEL_EVENTO: Record<TipoEvento, { icono: IconoDeEvento; categoria: CategoriaDeEvento }> = {
+  "revision-enviada": { icono: "parte", categoria: "partes" },
   "parte-enviado": { icono: "parte", categoria: "partes" },
   "documento-cargado": { icono: "documento", categoria: "documentos" },
   "documento-renovado": { icono: "documento", categoria: "documentos" },
@@ -697,10 +716,31 @@ function detalleDeParte(estado: Estado, unidad: Unidad, datos: Record<string, un
   };
 }
 
+/** El resumen de los eventos del parte, armado con el parte (docs/diseno-ui.md, sección 7: «Revisión antes de salir · 84.320 km · sin novedades»); si no se puede leer, el que se guardó. */
+function resumenDeParteEnHistorial(estado: Estado, e: Evento): string {
+  const parteId = e.datos["parteId"];
+  const parte: Parte | undefined = esTexto(parteId) ? estado.partes.find((p) => p.id === parteId) : undefined;
+  const kmInicio = e.datos["kmInicio"];
+  if (typeof kmInicio !== "number") return e.resumen;
+  if (e.tipo === "revision-enviada") {
+    const novedades = parte === undefined ? [] : novedadesDelParte(parte);
+    const nombre = (n: { item: ItemChecklist | "otra" }): string => (n.item === "otra" ? "Otra novedad" : (ITEMS_CHECKLIST.find((i) => i.id === n.item)?.texto ?? n.item));
+    return textoRevisionEnHistorial({
+      kmInicio,
+      normales: novedades.filter((n) => n.gravedad === "normal").map(nombre),
+      criticas: novedades.filter((n) => n.gravedad === "critica").map(nombre),
+      fueraDeTermino: e.datos["fueraDeTermino"] === true,
+    });
+  }
+  const kmFin = e.datos["kmFin"];
+  if (typeof kmFin !== "number") return e.resumen;
+  return textoCierreEnHistorial({ kmInicio, kmFin, combustible: parte?.combustible === undefined || parte.combustible === null ? null : NOMBRES_COMBUSTIBLE[parte.combustible] });
+}
+
 function filaDeEvento(estado: Estado, unidad: Unidad, e: Evento): FilaEvento {
   const forma = FORMA_DEL_EVENTO[e.tipo];
   const detalle = e.tipo === "parte-enviado" ? detalleDeParte(estado, unidad, e.datos) : e.tipo === "documento-corregido" ? detalleDeCorreccion(e.datos) : null;
-  return { eventoId: e.id, secuencia: e.secuencia, tipo: e.tipo, icono: forma.icono, categoria: forma.categoria, ...momentoDelEvento(e.instante), resumen: e.resumen, autor: e.autor, detalle };
+  return { eventoId: e.id, secuencia: e.secuencia, tipo: e.tipo, icono: forma.icono, categoria: forma.categoria, ...momentoDelEvento(e.instante), resumen: e.tipo === "revision-enviada" || e.tipo === "parte-enviado" ? resumenDeParteEnHistorial(estado, e) : e.resumen, autor: e.autor, detalle };
 }
 
 function panelDeHistorial(estado: Estado, unidad: Unidad): PanelHistorial {

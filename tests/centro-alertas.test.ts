@@ -165,41 +165,43 @@ describe("operación diaria con el ejemplo: 6 pendientes", () => {
   });
 });
 
-describe("vencimientos con el ejemplo: 11 en los grupos esperados", () => {
+describe("vencimientos con el ejemplo: 12 en los grupos esperados", () => {
   const v = c.vencimientos;
 
-  it("total 11 y rótulo del panel", () => {
-    expect(v.total).toBe(11);
-    expect(v.rotuloCantidad).toBe("próximos 30 días · 11");
+  it("total 12 y rótulo del panel", () => {
+    expect(v.total).toBe(12);
+    expect(v.rotuloCantidad).toBe("próximos 30 días · 12");
   });
 
-  it("grupos: 2 vencidos y faltantes, 4 en 7 días o menos, 3 entre 8 y 15, 2 entre 16 y 30", () => {
+  it("grupos: 3 vencidos y faltantes, 4 en 7 días o menos, 3 entre 8 y 15, 2 entre 16 y 30", () => {
     expect(v.grupos.map((g) => [g.id, g.cantidad, g.filas.length, g.tituloConCantidad])).toEqual([
-      ["vencidos", 2, 2, "Vencidos y faltantes (2)"],
+      ["vencidos", 3, 3, "Vencidos y faltantes (3)"],
       ["7", 4, 4, "Vencen en 7 días o menos (4)"],
       ["15", 3, 3, "Vencen entre 8 y 15 días (3)"],
       ["30", 2, 2, "Vencen entre 16 y 30 días (2)"],
     ]);
   });
 
-  it("filtros con conteo: Todos 11, Vencidos y faltantes 2, 7 días o menos 4, 8 a 15 días 3, 16 a 30 días 2", () => {
+  it("filtros con conteo: Todos 12, Vencidos y faltantes 3, 7 días o menos 4, 8 a 15 días 3, 16 a 30 días 2", () => {
     expect(v.filtros.map((f) => [f.id, f.etiqueta, f.cantidad])).toEqual([
-      ["todos", "Todos", 11],
-      ["vencidos", "Vencidos y faltantes", 2],
+      ["todos", "Todos", 12],
+      ["vencidos", "Vencidos y faltantes", 3],
       ["7", "7 días o menos", 4],
       ["15", "8 a 15 días", 3],
       ["30", "16 a 30 días", 2],
     ]);
   });
 
-  it("el horizonte sale de las mismas alertas que la lista (9 marcas, 2 vencidos en la caja)", () => {
+  it("el horizonte sale de las mismas alertas que la lista (9 marcas, 3 vencidos en la caja)", () => {
     expect(v.horizonte.variante).toBe("completa");
-    expect(v.horizonte.vencidos).toBe(2);
+    expect(v.horizonte.vencidos).toBe(3);
     expect(v.horizonte.columnas.flatMap((col) => col.marcas)).toHaveLength(9);
   });
 
-  it("el grupo de vencidos: faltante primero (C10) y después el seguro vencido de C01", () => {
-    const [falta, vencido] = v.grupos[0]!.filas;
+  it("el grupo de vencidos: faltante primero (C10), después la licencia vencida de C21 (hace 3 días) y por último el seguro vencido de C01 (hace 1 día)", () => {
+    const [falta, licencia, vencido] = v.grupos[0]!.filas;
+    expect(licencia).toMatchObject({ tipo: "documento-vencido", estado: "Vencida hace 3 días", documento: "Licencia de conducir", gravedad: "critica" });
+    expect(licencia?.titular.tipo).toBe("conductor");
     expect(falta).toMatchObject({
       tipo: "documento-faltante",
       estado: "Falta cargar",
@@ -262,17 +264,17 @@ describe("vencimientos con el ejemplo: 11 en los grupos esperados", () => {
 describe("filtro de la lista (5.8 y 5.9)", () => {
   const v = c.vencimientos;
 
-  it("«Todos» muestra los grupos con filas y anuncia «Mostrando 11 de 11 vencimientos.»", () => {
+  it("«Todos» muestra los grupos con filas y anuncia «Mostrando 12 de 12 vencimientos.»", () => {
     const r = vencimientosVisibles(v, "todos");
     expect(r.grupos.map((g) => g.id)).toEqual(["vencidos", "7", "15", "30"]);
-    expect(r.anuncio).toBe("Mostrando 11 de 11 vencimientos.");
+    expect(r.anuncio).toBe("Mostrando 12 de 12 vencimientos.");
     expect(r.textoVacio).toBeNull();
   });
 
-  it("un grupo concreto muestra solo ese y anuncia «Mostrando 4 de 11 vencimientos.»", () => {
+  it("un grupo concreto muestra solo ese y anuncia «Mostrando 4 de 12 vencimientos.»", () => {
     const r = vencimientosVisibles(v, "7");
     expect(r.grupos.map((g) => g.id)).toEqual(["7"]);
-    expect(r.anuncio).toBe("Mostrando 4 de 11 vencimientos.");
+    expect(r.anuncio).toBe("Mostrando 4 de 12 vencimientos.");
   });
 
   it("un grupo vacío elegido se muestra con «No hay documentos en este grupo.»", () => {

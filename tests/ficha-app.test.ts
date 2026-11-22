@@ -91,7 +91,7 @@ describe("documentos desde la ficha", () => {
   it("sin el tercer parámetro sigue siendo el de la alerta (paso 4.2): mensaje con los vencimientos que quedan y foco al panel", async () => {
     const { app } = await iniciada();
     const r = await app.renovarDocumento("d-0031", { numero: "DEMO-88-5000", emisor: "", vence: "2027-11-15", emitido: "" });
-    expect(r).toEqual({ ok: true, mensaje: "Seguro de ZK 214 BD renovado. Quedan 10 vencimientos.", foco: "titulo-del-panel" });
+    expect(r).toEqual({ ok: true, mensaje: "Seguro de ZK 214 BD renovado. Quedan 11 vencimientos.", foco: "titulo-del-panel" });
   });
 
   it("cargar la habilitación que falta (C10, ZZD 563): el documento aparece vigente y el evento es el primero", async () => {
@@ -166,19 +166,19 @@ describe("novedades: resolver (N1, N2) y cargar (N3)", () => {
     expect(antes.novedades.abiertas[0]).toMatchObject({ impideVolver: true, ofreceVolverAServicio: true });
     expect(antes.acciones.encabezado[0]?.bloqueo).toBe("Antes de volver a servicio, resuelva: Frenos (parte del 16/11/2026).");
 
-    const r = await app.resolverNovedad("n-003", { texto: "Se cambiaron las pastillas de freno", volverAServicio: true }, "ficha");
+    const r = await app.resolverNovedad("n-005", { texto: "Se cambiaron las pastillas de freno", volverAServicio: true }, "ficha");
     expect(r).toEqual({ ok: true, mensaje: "Novedad resuelta: Frenos. ZU 899 QE vuelve a servicio.", foco: "titulo-de-novedades" });
     const f = fichaDe(app);
     expect(primeros(app, 2)).toEqual(["vuelta-a-servicio", "novedad-resuelta"]);
     expect(f.aptitud.categoria).toBe("puede-salir");
     expect(f.novedades.rotuloCantidad).toBe("0 abiertas");
-    expect(f.novedades.resueltas[0]).toMatchObject({ novedadId: "n-003", resolucion: { texto: "Se cambiaron las pastillas de freno", autor: "Rocío Medina" } });
+    expect(f.novedades.resueltas[0]).toMatchObject({ novedadId: "n-005", resolucion: { texto: "Se cambiaron las pastillas de freno", autor: "Rocío Medina" } });
     expect(f.acciones.encabezado.map((a) => a.id)).toEqual(["cargar-parte", "poner-fuera-de-servicio"]);
   });
 
   it("N2 desmarcado: solo novedad-resuelta y la unidad sigue fuera de servicio, ahora sin bloqueo para volver", async () => {
     const { app } = await iniciada("#/unidad/ZU899QE");
-    const r = await app.resolverNovedad("n-003", { texto: "Se cambiaron las pastillas", volverAServicio: false }, "ficha");
+    const r = await app.resolverNovedad("n-005", { texto: "Se cambiaron las pastillas", volverAServicio: false }, "ficha");
     expect(r).toEqual({ ok: true, mensaje: "Novedad resuelta: Frenos.", foco: "titulo-de-novedades" });
     expect(primeros(app)).toEqual(["novedad-resuelta"]);
     const f = fichaDe(app);
@@ -189,7 +189,7 @@ describe("novedades: resolver (N1, N2) y cargar (N3)", () => {
   it("desde el centro de alertas: el mensaje nombra la unidad, el foco va al título del panel y la operación diaria baja un pendiente", async () => {
     const { app } = await iniciada("#/alertas");
     expect(app.centroDeAlertas?.operacion.total).toBe(6);
-    const r = await app.resolverNovedad("n-003", { texto: "Se cambiaron las pastillas", volverAServicio: false });
+    const r = await app.resolverNovedad("n-005", { texto: "Se cambiaron las pastillas", volverAServicio: false });
     expect(r).toEqual({ ok: true, mensaje: "Novedad resuelta: Frenos (ZU 899 QE).", foco: "titulo-del-panel" });
     expect(app.centroDeAlertas?.operacion.total).toBe(5);
   });
@@ -197,15 +197,15 @@ describe("novedades: resolver (N1, N2) y cargar (N3)", () => {
   it("un texto de menos de 5 caracteres no resuelve nada: error en el campo y el estado no cambia (N1)", async () => {
     const { app } = await iniciada("#/unidad/ZU899QE");
     const antes = estadoDe(app);
-    const r = await app.resolverNovedad("n-003", { texto: "ok", volverAServicio: false }, "ficha");
+    const r = await app.resolverNovedad("n-005", { texto: "ok", volverAServicio: false }, "ficha");
     expect(r).toMatchObject({ ok: false, errores: { porCampo: { texto: "Cuente en pocas palabras qué se hizo (al menos 5 caracteres)." } } });
     expect(app.estado).toBe(antes);
   });
 
   it("resolver una novedad que ya se resolvió (otra pestaña) es un error general, no un campo", async () => {
     const { app } = await iniciada("#/unidad/ZU899QE");
-    await app.resolverNovedad("n-003", { texto: "Se cambiaron las pastillas", volverAServicio: false }, "ficha");
-    const r = await app.resolverNovedad("n-003", { texto: "Se cambiaron las pastillas", volverAServicio: false }, "ficha");
+    await app.resolverNovedad("n-005", { texto: "Se cambiaron las pastillas", volverAServicio: false }, "ficha");
+    const r = await app.resolverNovedad("n-005", { texto: "Se cambiaron las pastillas", volverAServicio: false }, "ficha");
     expect(r).toEqual({ ok: false, errores: { porCampo: {}, lista: [], general: "La novedad ya está resuelta." } });
   });
 
@@ -332,10 +332,10 @@ describe("kilometraje (K5) y asignación (U6)", () => {
     const { app } = await iniciada();
     const base = estadoDe(app).unidades.find((u) => u.proyectoId === "proy-base" && u.estado.tipo === "en-servicio");
     if (base === undefined) throw new Error("falta una unidad en servicio de la base");
-    expect(app.centroDeAlertas?.vencimientos.grupos[0]?.cantidad).toBe(2);
+    expect(app.centroDeAlertas?.vencimientos.grupos[0]?.cantidad).toBe(3);
     const r = await app.cambiarAsignacion(base.id, { proyectoId: "proy-piedra-lunar", conductorId: base.conductorId ?? "" });
     expect(r).toEqual({ ok: true, mensaje: "Proyecto actualizado. Falta cargar la habilitación de ingreso al proyecto.", foco: "titulo-de-la-ficha" });
-    expect(app.centroDeAlertas?.vencimientos.grupos[0]?.cantidad).toBe(3);
+    expect(app.centroDeAlertas?.vencimientos.grupos[0]?.cantidad).toBe(4);
     expect(estadoDe(app).eventos.at(-1)).toMatchObject({ tipo: "asignacion-cambiada", unidadId: base.id });
   });
 
@@ -375,7 +375,7 @@ describe("permiso y guardado", () => {
     expect(await app.ponerFueraDeServicio(id, { motivo: "En taller: revisión" })).toEqual(sinPermiso);
     expect(await app.darDeBaja(id, { motivo: "Venta de la unidad" })).toEqual(sinPermiso);
     expect(await app.cargarNovedad(id, { descripcion: "Algo roto", impideUso: false })).toEqual(sinPermiso);
-    expect(await app.resolverNovedad("n-003", { texto: "Se arregló", volverAServicio: false }, "ficha")).toEqual(sinPermiso);
+    expect(await app.resolverNovedad("n-005", { texto: "Se arregló", volverAServicio: false }, "ficha")).toEqual(sinPermiso);
     expect(app.estado).toBe(antes);
   });
 

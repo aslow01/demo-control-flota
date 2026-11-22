@@ -75,7 +75,7 @@ describe("arranque del estado de la aplicación", () => {
     expect(app.avisos).toEqual([]);
     expect(app.enMemoria).toBe(false);
     expect(app.alertas?.resumen.protagonista).toBe(4);
-    expect(app.alertas?.resumen.criticas).toBe(4);
+    expect(app.alertas?.resumen.criticas).toBe(5);
   });
 
   it("D8: si el almacenamiento falla arranca en memoria y deja el aviso fijo", async () => {
