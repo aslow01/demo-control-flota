@@ -15,10 +15,11 @@ import {
   faltantesDeRevision,
   validarLitros,
   novedadesDelParte,
+  partePendienteDeCierre,
   validarFechaParte,
 } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
-import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errLicenciaNoVigente, errNovedadesCriticasAbiertas, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
+import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errKmCorreccionParteEnUso, errLicenciaNoVigente, errNovedadesCriticasAbiertas, errParteAnteriorSinCerrar, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadConParteEnUso, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
 import {
   fallo,
   ok,
@@ -414,6 +415,9 @@ function darDeBaja(estado: Estado, c: Extract<Comando, { tipo: "darDeBaja" }>, c
   const motivo = validarTexto(c.motivo, REGLAS.motivoBaja);
   if (!motivo.ok) return motivo;
   const u = unidad.valor;
+  // El cierre de un parte en uso se rechaza para una unidad de baja (A7): el parte quedaría huérfano. Primero hay que cerrarlo.
+  const sinCerrar = partePendienteDeCierre(estado.partes, u.id);
+  if (sinCerrar !== undefined) return fallo("unidad-con-parte-en-uso", errUnidadConParteEnUso(pat(u), sinCerrar.fecha), { detalle: { parteId: sinCerrar.id, fecha: sinCerrar.fecha } });
   return ok({
     cambios: { unidades: [{ ...u, estado: { tipo: "baja", desde: ctx.hoy, motivo: motivo.valor } }] },
     eventos: [
@@ -514,6 +518,9 @@ function corregirKilometraje(
   if (posterior !== undefined) {
     return fallo("km-correccion-anterior", errKmCorreccionAnterior(posterior.tipo === "correccion" ? "correccion" : "parte", posterior.fecha), { campo: "desde" });
   }
+  // La salida de un parte en uso fija su kilometraje inicial (P7): una corrección desde ese mismo día dejaría su cierre sin salida posible.
+  const enUso = estado.partes.find((p) => p.unidadId === u.id && p.estado === "en-uso" && p.fecha >= desde.valor);
+  if (enUso !== undefined) return fallo("km-correccion-parte-en-uso", errKmCorreccionParteEnUso(enUso.fecha), { campo: "desde", detalle: { parteId: enUso.id } });
   const anterior = kmActual(u.id, estado.partes, estado.correccionesKm);
   const correccion = {
     id: ctx.nuevoId(),
@@ -1067,6 +1074,12 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
   // P2: la fecha se controla otra vez al enviar.
   const fecha = validarFechaParte(borrador.fecha, ctx.hoy);
   if (!fecha.ok) return fecha;
+
+  // A1: con un parte en uso anterior de la misma unidad, primero hay que cerrarlo (si no, la revisión de hoy arrancaría con el kilometraje de salida de ayer).
+  const sinCerrar = partePendienteDeCierre(estado.partes, u.id, borrador.fecha);
+  if (sinCerrar !== undefined) {
+    return fallo("parte-anterior-sin-cerrar", errParteAnteriorSinCerrar(pat(u), sinCerrar.fecha), { detalle: { parteId: sinCerrar.id, fecha: sinCerrar.fecha } });
+  }
 
   const conductor = buscarConductorActivo(estado, borrador.conductorId, "conductorId");
   if (!conductor.ok) return conductor;

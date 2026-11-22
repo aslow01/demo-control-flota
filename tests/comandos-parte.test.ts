@@ -195,6 +195,11 @@ function conRevision(e: Estado, cmd: Borrador = listo(), aceptadas: Revision["ad
   return { ...r, parteId };
 }
 
+/** La unidad en baja, sin pasar por el comando (que no lo permite con un parte en uso): así llegan los datos viejos. */
+function deBaja(e: Estado, unidadId: string): Estado {
+  return { ...e, unidades: e.unidades.map((u) => (u.id === unidadId ? { ...u, estado: { tipo: "baja" as const, desde: H, motivo: "Venta de la unidad" } } : u)) };
+}
+
 function parteDe(e: Estado, id: string) {
   const p = e.partes.find((x) => x.id === id);
   if (p === undefined) throw new Error(`no hay parte ${id}`);
@@ -385,6 +390,69 @@ describe("enviarRevision: kilometraje (K3, K4, K6, K10)", () => {
   it("K7 no se mira en la revisión: un kmFin viejo del borrador no pide advertencia", () => {
     const { estado, parteId } = conBorrador(flotaDePrueba(), listo({ kmFin: 99999 }));
     expect(ejecutarOk(estado, revision(parteId)).estado.partes.find((p) => p.id === parteId)?.estado).toBe("en-uso");
+  });
+});
+
+describe("enviarRevision: cerrar antes (A1)", () => {
+  /** u1 con el parte de ayer EN USO (revisión enviada, sin cerrar) en lugar del cerrado. */
+  function conParteDeAyerEnUso(): Estado {
+    const base = flotaDePrueba();
+    return {
+      ...base,
+      partes: [
+        parte({ id: "uso-ayer", unidadId: "u1", fecha: "2026-11-17", estado: "en-uso", kmInicio: 84320, kmFin: null, combustible: null, revisado: "2026-11-17T09:00:00.000Z", enviado: null }),
+        ...base.partes.filter((p) => p.unidadId !== "u1"),
+      ],
+    };
+  }
+
+  it("A1: con un parte en uso anterior de la misma unidad no se envía la revisión de una fecha posterior, y el error dice cuál cerrar", () => {
+    const { estado, parteId } = conBorrador(conParteDeAyerEnUso(), listo());
+    const err = ejecutarError(estado, revision(parteId));
+    expect(err.codigo).toBe("parte-anterior-sin-cerrar");
+    expect(err.mensaje).toBe("El parte del 17/11/2026 de ZK 214 BD quedó sin cerrar. Ciérrelo antes de empezar la revisión de una fecha posterior.");
+    expect(err.detalle).toEqual({ parteId: "uso-ayer", fecha: "2026-11-17" });
+    expect(parteDe(estado, parteId).estado).toBe("borrador");
+  });
+
+  it("A1: con varios sin cerrar, el error nombra el más antiguo", () => {
+    const e = conParteDeAyerEnUso();
+    const mas = parte({ id: "uso-antes", unidadId: "u1", fecha: "2026-11-15", estado: "en-uso", kmInicio: 84000, kmFin: null, combustible: null, enviado: null });
+    const { estado, parteId } = conBorrador({ ...e, partes: [...e.partes, mas] }, listo());
+    expect(ejecutarError(estado, revision(parteId)).detalle).toEqual({ parteId: "uso-antes", fecha: "2026-11-15" });
+  });
+
+  it("A1: el bloqueo es solo de esa unidad", () => {
+    const { estado, parteId } = conBorrador(conParteDeAyerEnUso(), listo({ unidadId: "u2", conductorId: "c2", kmInicio: 5100 }));
+    expect(parteDe(ejecutarOk(estado, revision(parteId)).estado, parteId).estado).toBe("en-uso");
+  });
+
+  it("A1: un parte en uso de una fecha posterior no bloquea (la revisión de un día anterior la limita K4, no A1)", () => {
+    const e = flotaDePrueba();
+    const despues = parte({ id: "uso-hoy", unidadId: "u1", fecha: H, estado: "en-uso", kmInicio: 84400, kmFin: null, combustible: null, enviado: null });
+    const { estado, parteId } = conBorrador({ ...e, partes: [...e.partes, despues] }, listo({ fecha: "2026-11-16", kmInicio: 84000 }), contexto());
+    expect(parteDe(ejecutarOk(estado, revision(parteId)).estado, parteId).estado).toBe("en-uso");
+  });
+
+  it("A1: cerrado el parte de ayer, la revisión de hoy se envía", () => {
+    const e = conParteDeAyerEnUso();
+    const cerrado = ejecutarOk({ ...e, partes: e.partes.map((p) => (p.id === "uso-ayer" ? { ...p, kmFin: 84400, combustible: "medio" as const } : p)) }, { tipo: "enviarCierre", parteId: "uso-ayer", advertenciasAceptadas: [] }).estado;
+    const { estado, parteId } = conBorrador(cerrado, listo({ kmInicio: 84400 }));
+    expect(parteDe(ejecutarOk(estado, revision(parteId)).estado, parteId).estado).toBe("en-uso");
+  });
+
+  it("A1 va después de P8 y P2 y antes de L1: una licencia vencida con el parte anterior sin cerrar dice primero lo del cierre", () => {
+    const e = conParteDeAyerEnUso();
+    const sinLicencia: Estado = { ...e, documentos: e.documentos.filter((d) => d.tipo !== "licencia" || d.titular.id !== "c1") };
+    const { estado, parteId } = conBorrador(sinLicencia, listo());
+    expect(ejecutarError(estado, revision(parteId)).codigo).toBe("parte-anterior-sin-cerrar");
+  });
+
+  it("A1 (QA, A1 de código): la revisión con el número precargado no se puede enviar, así que el cierre del parte anterior sigue siendo posible con el kilometraje real", () => {
+    const { estado, parteId } = conBorrador(conParteDeAyerEnUso(), listo({ kmInicio: 84320 }));
+    expect(ejecutarError(estado, revision(parteId)).codigo).toBe("parte-anterior-sin-cerrar");
+    const cierre = ejecutarOk(estado, { tipo: "guardarCierre", parteId: "uso-ayer", kmFin: 84452, combustible: "medio", litrosCargados: null }).estado;
+    expect(ejecutarOk(cierre, { tipo: "enviarCierre", parteId: "uso-ayer", advertenciasAceptadas: [] }).estado.partes.find((p) => p.id === "uso-ayer")?.kmFin).toBe(84452);
   });
 });
 
@@ -635,7 +703,7 @@ describe("guardarCierre (P3, K9)", () => {
     const { estado, parteId } = conRevision(flotaDePrueba());
     const fuera = ejecutarOk(estado, { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "En taller" }).estado;
     expect(ejecutarOk(fuera, cierreCmd(parteId)).estado.partes.find((p) => p.id === parteId)?.kmFin).toBe(84450);
-    const baja = ejecutarOk(estado, { tipo: "darDeBaja", unidadId: "u1", motivo: "Venta de la unidad" }).estado;
+    const baja = deBaja(estado, "u1"); // datos viejos: el comando ya no da de baja una unidad con un parte en uso
     expect(ejecutarError(baja, cierreCmd(parteId)).codigo).toBe("unidad-de-baja");
   });
 });
@@ -723,7 +791,7 @@ describe("enviarCierre (P15)", () => {
 
   it("A7: la unidad de baja -> unidad-de-baja en el cierre", () => {
     const { estado, parteId } = conCierre(84450, "medio");
-    const baja = ejecutarOk(estado, { tipo: "darDeBaja", unidadId: "u1", motivo: "Venta de la unidad" }).estado;
+    const baja = deBaja(estado, "u1"); // datos viejos: el comando ya no da de baja una unidad con un parte en uso
     expect(ejecutarError(baja, cerrar(parteId), tarde).codigo).toBe("unidad-de-baja");
   });
 

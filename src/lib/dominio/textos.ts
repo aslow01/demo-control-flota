@@ -265,6 +265,21 @@ export function errKmCorreccionAnterior(registro: "parte" | "correccion", fecha:
   return `Ya hay ${que}, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha ${cual} o una posterior.`;
 }
 
+/** A1: la unidad tiene un parte en uso de una fecha anterior: hay que cerrarlo antes de empezar la revisión de una fecha posterior. */
+export function errParteAnteriorSinCerrar(patente: string, fecha: FechaCivil): string {
+  return `El parte del ${formatearFecha(fecha)} de ${patente} quedó sin cerrar. Ciérrelo antes de empezar la revisión de una fecha posterior.`;
+}
+
+/** M1 (revisión de código): no se corrige el kilometraje desde la fecha de un parte en uso; su cierre quedaría imposible. */
+export function errKmCorreccionParteEnUso(fecha: FechaCivil): string {
+  return `El parte del ${formatearFecha(fecha)} está en uso. Ciérrelo antes de corregir el kilometraje desde esa fecha.`;
+}
+
+/** A7: una unidad con un parte en uso no se da de baja (el cierre se rechaza para una unidad de baja y el parte quedaría huérfano). */
+export function errUnidadConParteEnUso(patente: string, fecha: FechaCivil): string {
+  return `El parte del ${formatearFecha(fecha)} de ${patente} está en uso. Ciérrelo antes de dar de baja la unidad.`;
+}
+
 export function errUnidadFueraDeServicio(desde: FechaCivil, motivo: string): string {
   return `La unidad está fuera de servicio desde el ${formatearFecha(desde)} (${motivo}). Pida al encargado que la ponga de nuevo en servicio.`;
 }

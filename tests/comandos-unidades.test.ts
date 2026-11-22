@@ -4,7 +4,7 @@ import { aptitud } from "../src/lib/dominio/aptitud.ts";
 import { kmActual } from "../src/lib/dominio/kilometraje.ts";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
 import type { Novedad } from "../src/lib/dominio/tipos.ts";
-import { PROYECTO_BASE, PROYECTO_PIEDRA, checklistVacio, conductor, contexto, ejecutarError, ejecutarOk, flotaDePrueba, novedad } from "./ayuda.ts";
+import { PROYECTO_BASE, PROYECTO_PIEDRA, checklistVacio, conductor, contexto, ejecutarError, ejecutarOk, flotaDePrueba, novedad, parte } from "./ayuda.ts";
 
 const H = "2026-11-18";
 
@@ -192,6 +192,16 @@ describe("darDeBaja (A7)", () => {
     expect(ejecutarError(baja, { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "Taller de nuevo" }).codigo).toBe("unidad-de-baja");
   });
 
+  it("A7 (QA): una unidad con un parte en uso no se da de baja: primero hay que cerrarlo", () => {
+    const e = flotaDePrueba();
+    const conUso = { ...e, partes: [...e.partes, parte({ id: "uso", unidadId: "u1", fecha: H, estado: "en-uso", kmInicio: 84400, kmFin: null, combustible: null, enviado: null })] };
+    const err = ejecutarError(conUso, { tipo: "darDeBaja", unidadId: "u1", motivo: "Venta de la unidad" });
+    expect(err.codigo).toBe("unidad-con-parte-en-uso");
+    expect(err.mensaje).toBe("El parte del 18/11/2026 de ZK 214 BD está en uso. Ciérrelo antes de dar de baja la unidad.");
+    // otra unidad: sí
+    expect(ejecutarOk(conUso, { tipo: "darDeBaja", unidadId: "u2", motivo: "Venta de la unidad" }).estado.unidades.find((u) => u.id === "u2")?.estado.tipo).toBe("baja");
+  });
+
   it("una unidad fuera de servicio también se puede dar de baja", () => {
     const fuera = ejecutarOk(flotaDePrueba(), { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "En taller" }).estado;
     expect(ejecutarOk(fuera, { tipo: "darDeBaja", unidadId: "u1", motivo: "No se repara" }).estado.unidades[0]?.estado.tipo).toBe("baja");
@@ -312,6 +322,38 @@ describe("corregirKilometraje (K5)", () => {
     expect(ejecutarError(e, { ...base, desde: "2026-11-19" }).mensaje).toBe("La fecha no puede ser posterior a hoy.");
     expect(ejecutarError(e, { ...base, desde: "2026-02-30" }).codigo).toBe("fecha-invalida");
     expect(ejecutarOk(e, { ...base, desde: "2026-11-17" }).estado.correccionesKm).toHaveLength(1);
+  });
+
+  describe("M1 (código): no se corrige desde la fecha de un parte en uso", () => {
+    const enUso = (fecha: string) =>
+      parte({ id: "uso", unidadId: "u1", fecha, estado: "en-uso", kmInicio: 84400, kmFin: null, combustible: null, revisado: `${fecha}T09:00:00.000Z`, enviado: null });
+    const conUso = (fecha: string) => {
+      const e = flotaDePrueba();
+      return { ...e, partes: [...e.partes, enUso(fecha)] };
+    };
+
+    it("desde igual a la fecha de un parte en uso: error claro en el campo desde, sin corrección ni evento", () => {
+      const err = ejecutarError(conUso(H), base);
+      expect(err.codigo).toBe("km-correccion-parte-en-uso");
+      expect(err.campo).toBe("desde");
+      expect(err.mensaje).toBe("El parte del 18/11/2026 está en uso. Ciérrelo antes de corregir el kilometraje desde esa fecha.");
+    });
+
+    it("desde anterior a ese parte: sigue valiendo el rechazo de M3", () => {
+      expect(ejecutarError(conUso(H), { ...base, desde: "2026-11-17" }).codigo).toBe("km-correccion-anterior");
+    });
+
+    it("con el parte ya cerrado, la corrección se acepta", () => {
+      const e = conUso(H);
+      const cerrado = { ...e, partes: e.partes.map((p) => (p.id === "uso" ? { ...p, estado: "enviado" as const, kmFin: 84452, combustible: "medio" as const, enviado: `${H}T18:00:00.000Z` } : p)) };
+      expect(ejecutarOk(cerrado, base).estado.correccionesKm).toHaveLength(1);
+    });
+
+    it("un parte en uso de otra unidad no molesta", () => {
+      const e = flotaDePrueba();
+      const otra = { ...e, partes: [...e.partes, { ...enUso(H), unidadId: "u2" }] };
+      expect(ejecutarOk(otra, base).estado.correccionesKm).toHaveLength(1);
+    });
   });
 
   describe("M3 (a confirmar): una corrección con fecha anterior a registros ya cargados se rechaza", () => {
