@@ -1,7 +1,7 @@
 # CLAUDE.md — Demo 2: Control de flota
 
-Demo propia del portafolio de Matías Ariel Ormeño (`D:\Matias Ariel Ormeño web Portafolio`, ficha en su
-`docs/09-demos.md`). Diseño: `docs/diseno.md` y `docs/diseno-ui.md`. Tecnología: `docs/stack.md`. Pasos: `docs/plan.md`.
+Demo propia del portafolio de Matías Ariel Ormeño (la ficha vive en el repositorio privado del portafolio).
+Diseño: `docs/diseno.md` y `docs/diseno-ui.md`. Tecnología: `docs/stack.md`. Pasos: `docs/plan.md`.
 
 ## Objetivo
 
@@ -15,9 +15,9 @@ En vivo, cuando esté, en `flota.matiasormeno.com.ar`.
 - No usa código, datos, documentos ni repositorios de terceros. **Sala limpia:** mientras se trabaja acá no se abren
   ni se le pasan a la IA repositorios, documentos ni material de terceros, ni los casos de estudio del portafolio.
   Fuentes permitidas: estos documentos, la ficha de la demo y el código
-  propio de la Demo 1 (`D:\demo-lector-facturas`).
+  propio de la Demo 1 (Lector de facturas, otro repositorio propio).
 - No usa datos reales (empresas, patentes, personas, proyectos mineros). Todo sale del generador con semilla.
-- No dice en ningún texto que reproduce el sistema de una empresa.
+- No se presenta, en ningún texto, como copia o adaptación de un sistema existente: es un proyecto propio.
 
 ## Entorno
 
@@ -28,8 +28,9 @@ En vivo, cuando esté, en `flota.matiasormeno.com.ar`.
 
 ## Respaldo
 
-Repositorio git local (rama `main`). El remoto (privado hasta publicar) lo crea el hilo principal con Matías. Antes de
-hacerlo público: revisar todo el historial (checklist `docs/13-publicacion-y-seguridad.md` del portafolio).
+El repositorio remoto es privado y sigue así hasta que se cumplan dos condiciones: revisar todo el historial (nombres de
+terceros y correos de autor, no solo los archivos actuales) y que `main` tenga la versión final. Recién entonces se pasa a
+público, con la aprobación de Matías (es irreversible).
 
 ## Cómo se verifica
 
@@ -39,5 +40,4 @@ nombres reales.
 
 ## Cómo se retoma
 
-Leer este archivo, el `README.md`, `docs/plan.md` y la última entrada de `docs/registro.md` (se crea con el primer paso
-de código). Conversación en rioplatense; **textos de la interfaz y README en español neutro**.
+Leer este archivo, el `README.md`, `docs/plan.md` y la última entrada de `docs/registro.md`. Conversación en rioplatense; **textos de la interfaz y README en español neutro**.

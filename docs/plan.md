@@ -5,8 +5,8 @@ de la regla en el nombre), después el código mínimo, después limpiar. Los id
 son los de `docs/diseno.md`. Antes del paso 0: Matías decide S1 (stack) y S2 (`fake-indexeddb`); si no contesta, vale
 la recomendación.
 
-Regla de sala limpia durante todo el plan: **no se abren** repositorios ni documentos de la empresa, ni se le pasan a
-la IA. Fuentes permitidas: estos documentos, la ficha de la demo y el código propio de la Demo 1.
+Regla de sala limpia durante todo el plan: **no se abren** repositorios, documentos ni material de terceros, ni se le pasan a
+la IA. Fuentes permitidas: estos documentos, la ficha de la demo (en el portafolio) y el código propio de la Demo 1.
 
 Agentes del portafolio sugeridos: `programador` (lógica, TDD), `maquetador` (presentación), `revisor-codigo`,
 `qa-destructor`, `auditor-accesibilidad`, `disenador-ui` (revisión contra `diseno-ui.md`), `critico-reclutador`.

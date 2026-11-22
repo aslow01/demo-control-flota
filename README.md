@@ -6,6 +6,7 @@ y ¿qué documentos vencen pronto?** Además, el conductor completa su parte dia
 Funciona entera en el navegador: sin servidor, sin cuenta y sin conexiones externas. Los datos son ficticios y se guardan
 solo en el navegador de quien la abre. Forma parte del portafolio de Matías Ariel Ormeño.
 
+<!-- captura: después de la etapa 7 -->
 <!-- URL de la demo en vivo: pendiente -->
 **Demo en vivo:** todavía no está publicada. Cuando lo esté, el enlace va aquí.
 
@@ -146,17 +147,25 @@ renovación de la licencia como encargado) y el encargado con el selector de con
 claro y oscuro: sin desbordes, sin controles pulsables de menos de 44 px, sin mensajes en la consola y sin violaciones de
 CSP. Los guiones de Playwright no están en este repositorio: estas comprobaciones salen del registro y no se pueden
 reproducir con un comando del repositorio.
-<!-- revisar: las cifras del barrido anterior (24 pantallas y estados, 192 combinaciones, 0 violaciones de axe-core, zoom al 200 % y 400 % en el parte) eran de la versión de un solo envío y se retiraron. El registro del 22/11/2026 dice que axe-core y el zoom no se volvieron a medir con los dos pasos. Si Matías o `qa-destructor` los repiten, sumar las cifras nuevas aquí. -->
+**Accesibilidad medida con axe-core** (auditoría del 22/11/2026 sobre el parte en dos pasos, el inicio del conductor y
+las pantallas nuevas): 28 pantallas o estados en 1280 y 360 px, en modo claro y oscuro, 112 escaneos, 0 violaciones.
+También se midieron los contrastes de texto (0 fallas), el tamaño de los controles (todos de 44 px o más) y el parte con
+zoom del navegador al 200 % y al 400 % (640×400 y 320×200 px): el foco nunca queda tapado por la barra de envío. Con el
+texto agrandado al 200 % la auditoría registró dos defectos de maquetación que no estaban corregidos al medir (en «Mis
+últimos partes» el kilometraje se superpone con la patente; hay desplazamiento horizontal). El informe de esa auditoría
+no está en este repositorio, igual que los guiones de Playwright: no se puede reproducir con un comando.
 
 **No se probó:**
 
-- axe-core ni el zoom al 200 % y al 400 % sobre los dos pasos del parte nuevos (no se repitieron tras el cambio);
+- axe-core y el zoom se midieron una sola vez, el 22/11/2026: no se repiten con cada cambio de interfaz;
 - un lector de pantalla real (los avisos llevan su rol, pero el anuncio real no se escuchó);
 - Firefox ni Safari;
 - una pantalla táctil real (solo emulación y clics de mouse);
 - el modo de contraste alto de Windows (solo colores forzados emulados).
 
-El flujo de integración continua (`.github/workflows/ci.yml`) está escrito pero no se ejecutó todavía.
+La integración continua (`.github/workflows/ci.yml`) está escrita pero no se ejecutó nunca, así que no respalda ninguna
+de las cifras de arriba: salen de las corridas locales. Hoy GitHub Actions no corre en la cuenta del autor por un bloqueo
+de facturación; cuando corra, se sumará aquí su resultado.
 
 ## Límites conocidos
 
