@@ -1079,3 +1079,26 @@ Contrastes nuevos medidos con la fórmula de WCAG (variante texto de «Puede sal
 falta sumarlos a `scripts/contraste.mjs` (tarea 1 del maquetador).
 
 **Verificación.** `npm run buscar` sin hallazgos.
+
+## 22/11/2026 (rama `interfaz-etapa-0`) — Parte previo al uso y licencia que bloquea: lógica de la sección 17 (programador)
+
+**Qué se hizo.** Toda la lógica de `docs/diseno.md`, sección 17, con TDD (cada comportamiento se vio fallar antes del código). Un commit por tema, sin push.
+
+| Capa | Qué cambió |
+| --- | --- |
+| Dominio | `Parte.estado` con `en-uso`, `revisado` y `sinSalida`; `estadoDeLicencia` (L1, L2, L5); kilometraje con salidas (`validarKmDeSalida`, `validarKmDeCierre`; se borra `validarKilometraje`); `faltantesDeRevision` y `faltantesDeCierre`; `documentacionVencidaEn` sin licencia; `conductorParaParte` con licencia; comandos `enviarRevision`, `guardarCierre` y `enviarCierre` (se borra `enviarParte`); rechazos `revision-ya-enviada`, `parte-sin-revision` y `licencia-no-vigente`; alertas P5, P17 y `conductoresSinLicencia` (L6). |
+| Datos | Generador con revisión (06:00 a 07:29) y cierre (18:00 a 19:29) en cada parte pasado y sus dos eventos; C11 sin salida; caso C21; `versionEsquema` 2 (D7 regenera con aviso). Cambió el hash de D1 a propósito: `f8b3d6ad` → `43e7d988`. |
+| Estado | Inicio del conductor con los siete estados, pendientes «sin cerrar»; pantalla del parte por modos (revisión, cierre, lectura, no disponible); `EstadoApp.enviarRevisionDeParte`, `guardarCierreDeParte`, `enviarCierreDeParte`, `autoguardadoDeCierre` y `opcionesDeConductor`; centro de alertas (conductores sin licencia, filas y grupos de partes incompletos), flota (`conductorSinLicencia`, «En uso» y «Sin cerrar») y ficha (`conductorSinLicencia`, salidas en el kilometraje, historial de la revisión y paso 10 o 30). |
+| Vista (mínimo para compilar) | `ParteFormulario.svelte` (nombre del método), `PantallaParte.svelte` (la rama de error ya no incluye el cierre), `App.svelte` (las opciones del diálogo de conductor salen de `app.opcionesDeConductor()`) y `Muestras.svelte` (`etapaParte: null` en una alerta de ejemplo). `src/componentes/tipos.ts` suma `ETIQUETAS_DE_PARTE`, `OpcionConductor.licenciaVigente` y reexporta los tipos del estado. |
+
+**Decisiones propias.** En `docs/diseno.md`, sección 17.11: datos de cierre de un borrador viejo, la unidad de C21 (Int. 16) y el relevo, `Alerta.etapaParte`, resúmenes de eventos, un solo
+panel de resultado con `variante`, orden de errores del envío en la aplicación, `avisoAptitud` solo en borrador y sin parte, `PASO_HISTORIAL` como alias del paso ancho.
+Preguntas: Q1 no, Q2 no, Q3 fuera de esta tanda, Q4 sí, Q5 bloquear.
+
+**Verificación.** `npm test` 1489 (1354 antes), también con `npm run test:tz` (UTC, Tokio y Los Ángeles); `npm run check` 0 errores y 0 avisos; `npm run buscar` sin hallazgos;
+`npm run build` y JS de 111,7 KB gzip (tope 120). **Sin verificar:** nada en el navegador (la vista todavía no tiene los dos pasos: con el formulario viejo, «Enviar» manda la revisión y los
+campos del cierre se ven pero no se piden); `npm audit` no se corrió (sin dependencias nuevas).
+
+**Para el maquetador.** La vista consume los tipos de `src/componentes/tipos.ts` (reexportan `lib/estado/parte.ts`, `centro-alertas.ts` y `formulario-parte.ts`). Lo nuevo: `VistaDeParte` con
+`ParteEnEdicion` (paso 1), `ParteEnCierre` (paso 2), `ParteEnLectura`, `ParteNoDisponible` (con `nota`); `PanelParteEnviado.variante`; `EstadoDelDia` con `en-uso` y `licencia-no-vigente`;
+`FilaDeConductorSinLicencia` en `protagonista.conductores`; `FilaFlota.conductorSinLicencia` y `ultimoParte.etiqueta` con «Sin cerrar» y «En uso».

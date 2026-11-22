@@ -185,7 +185,7 @@ interface Evento {               // historial: solo se agrega, nunca se edita ni
 }
 
 interface Meta {                  // un solo registro, clave 'estado'
-  versionEsquema: number;         // 1
+  versionEsquema: number;         // 2 (sección 17.6)
   semilla: number;                // 20261118
   fechaBase: FechaCivil;          // "hoy" del día en que se generó la flota
   modificada: boolean;            // true en cuanto el visitante cambia algo
@@ -1233,3 +1233,28 @@ Cada nombre lleva el identificador de la regla. Archivos probables entre parént
 | Q3 | ¿La habilitación de manejo del proyecto pasa a obligatoria cuando el proyecto exige habilitación de ingreso (la otra mitad de la crítica D2)? | Sí, en una tanda aparte: misma lógica que V13 y que L1, con su caso plantado. No entró en esta decisión. |
 | Q4 | C21 cambia los números del ejemplo (3 vencidos y faltantes, 12 vencimientos, 5 alertas críticas). ¿Se acepta? | Sí: sin un caso plantado el bloqueo no se ve en la demo. Hay que actualizar el README y la ficha de la web que citan «2 vencidos» y «4 + 3 + 2». |
 | Q5 | Un parte de un día pasado, con la licencia vencida ese día: ¿se bloquea (lo elegido) o se registra con aviso (como antes)? | Bloquear: una sola regla, fácil de explicar («sin licencia no se envía la revisión»). La falta queda a la vista igual, como «Sin parte de ayer» o «Parte sin enviar». |
+
+### 17.11 Decisiones de implementación (22/11/2026, programador)
+
+Respuestas a las preguntas: Q1 no (el cierre no tiene campo de novedad), Q2 no (la documentación de la unidad sigue siendo una advertencia, P9), Q3 fuera de esta tanda, Q4 sí
+(los números nuevos del ejemplo) y Q5 bloquear. Lo que la especificación no dice y se resolvió con lo más simple:
+
+- **Datos de cierre de un borrador (K9).** `enviarRevision` conserva `kmFin`, `combustible` y `litrosCargados` que traiga el borrador (de una versión vieja); al formulario del
+  cierre llegan como valores iniciales. El formulario de la revisión no los muestra y sus errores de formato no bloquean la revisión (`convertir` filtra por paso).
+- **Ejemplo (C21).** La unidad es la Int. 16 (`rol c21`), asignada al último conductor; C14 pasó a las unidades Int. 17 y Int. 20. En H - 2 y H - 1 firma el primer conductor
+  (relevo) y, para que ningún otro parte tenga un conductor sin licencia, un conductor elegido al azar que resulte ser el de C21 se cambia por el primero en esos días. Se agregó un
+  sorteo por parte (el minuto de la revisión): cambió el hash de D1 (`43e7d988`) y los kilometrajes del ejemplo (ZYN 469 termina el 17/11 en 141.711 km).
+- **`Alerta.etapaParte`.** `parte-sin-enviar` lleva `"borrador" | "en-uso"` (para «sin enviar» / «sin cerrar»); las demás, `null`. `ResumenAlertas.conductoresSinLicencia` trae
+  `{ conductorId, nombre, motivo: EstadoLicencia, alertaId }`; `alertaId` es `null` si no hay alerta de vencimiento de esa licencia (por ejemplo, una licencia nueva que todavía no vale).
+- **Resúmenes de los eventos.** El `resumen` guardado es el del dominio («Revisión del 18/11/2026 de ZK 214 BD enviada: sale con 84.320 km»); la ficha arma el texto de la sección 7 de
+  `diseno-ui.md` («Revisión antes de salir · 84.320 km · sin novedades») con el parte, y si no lo encuentra usa el guardado.
+- **Un solo panel de resultado.** `PanelParteEnviado` sirve para C1, C2 y C3 (y la lectura) con un campo `variante`; `ResultadoDeEnvio` mantiene `tipo: "enviado"` y suma `paso`
+  (`revision-enviada`, `sin-salida`, `cerrado`). Así la vista que ya existía sigue funcionando mientras se maqueta el resto.
+- **Orden de errores del envío (app).** Como en el comando, la licencia (L1) va antes que los faltantes: la aplicación guarda el borrador, intenta enviar y, si falla por licencia, ese es
+  el único error; si no, se muestran los faltantes juntos. L1 va al campo Conductor (`conductorId` → `conductor`).
+- **Inicio del conductor.** `avisoAptitud` solo se calcula en los estados `borrador` y `sin-parte`; «Su licencia» es `null` en `licencia-no-vigente`. Un parte cerrado sin salida trae
+  `sinSalida` (el texto del aviso crítico) además de `etiqueta`.
+- **Historial de la ficha.** `vistaDeHistorial(h, filtro, limite, paso = PASO_HISTORIAL_ANCHO)`; `PASO_HISTORIAL_ANGOSTO = 10` y `PASO_HISTORIAL_ANCHO = 30`. `PASO_HISTORIAL` queda como
+  alias del ancho hasta que la vista deje de importarlo. El kilometraje de la ficha suma filas `tipo: "salida"` («84.452 → en uso»).
+- **`parteLegible`.** Un `revisado` ilegible queda `null` y el parte en uso se sigue leyendo como en uso; `sinSalida` solo vale con `true`. En el arranque, `FORMA_DE_ELEMENTO` de los
+  partes pide `estado` en los tres valores.
