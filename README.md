@@ -16,7 +16,7 @@ En una operación con muchas camionetas se escapan los vencimientos (seguro, rev
 de conducir) y los partes diarios quedan en papel. A primera hora nadie sabe con certeza qué unidad no debería salir, qué
 vence esta semana ni qué novedad informó un conductor hace tres días.
 
-La demo muestra cómo se resuelve con tres ideas:
+La demo muestra cómo se resuelve con estas ideas:
 
 - **Vencimientos con fecha y regla:** cada documento tiene un vencimiento y la aplicación lo clasifica (vencido, vence en
   7, 15 o 30 días, vigente). Un documento renovado reemplaza al anterior, que queda en el historial.
@@ -26,9 +26,19 @@ La demo muestra cómo se resuelve con tres ideas:
 - **Licencia de conducir que bloquea:** sin una licencia vigente para la fecha del parte, el conductor no puede enviar la
   revisión. No hay un aviso que se pueda aceptar: el envío se rechaza hasta que el encargado cargue una licencia vigente
   o tome el parte otro conductor.
+- **Cerrar antes:** si la unidad tiene un parte anterior sin cerrar, no se empieza la revisión de hoy: primero se cierra
+  ese parte. Sin esta regla, la revisión de hoy arrancaría con el kilometraje de salida de ayer y el cierre de ayer ya no
+  podría registrar el recorrido real. Quien no tiene licencia vigente igual puede cerrar un parte anterior. Lo mismo vale
+  para el conductor: con un parte sin cerrar en otra unidad, no envía la revisión de una unidad nueva hasta cerrarlo (una
+  unidad por conductor).
+- **Hasta mañana:** si la revisión informa una novedad crítica, la unidad queda sin salida y no vuelve a salir ese día,
+  aunque el encargado resuelva la novedad y la devuelva a servicio: hay un solo parte por unidad y por día. Es una regla
+  conservadora, no un límite técnico.
 - **Aptitud para salir:** cada unidad aparece como «Puede salir» o «No puede salir» según sus documentos, sus novedades
   críticas y si está fuera de servicio. La aptitud se calcula siempre; no se guarda ni se edita a mano. La licencia es del
-  conductor, no de la unidad: la unidad de un conductor sin licencia puede salir con otro conductor.
+  conductor, no de la unidad: la unidad de un conductor sin licencia puede salir con otro conductor. «Puede salir» describe la aptitud de la unidad:
+  no asegura que hoy se pueda empezar su revisión (con un parte anterior sin cerrar, o con una novedad crítica ya informada
+  hoy, no se puede).
 
 ## Qué se puede hacer en la demo
 
@@ -96,8 +106,8 @@ npm run servir       # sirve dist/ con las mismas cabeceras de seguridad que se 
   `default-src 'none'`, todo lo demás limitado al propio origen y `connect-src 'none'`, es decir, la página no puede
   conectarse a ningún servidor. No se usa `{@html}`, `innerHTML` ni `eval`; el texto que escribe la persona se muestra
   siempre como texto.
-- **Tamaño medido (`npm run build`, 22/11/2026):** 394 KB de JavaScript (115 KB comprimido con gzip), 87 KB de CSS
-  (14 KB con gzip) y 6 KB de HTML.
+- **Tamaño medido (`npm run build`, 22/11/2026):** 117,03 KB de JavaScript comprimido con gzip (el tope fijado es de
+  120 KB). <!-- cifra E7 -->
 - **Accesibilidad:** pensada para el teclado, con foco visible, controles táctiles de 44 px como mínimo, modo claro y
   oscuro, colores forzados y anchos desde 320 px. Lo que se midió y lo que falta probar está más abajo.
 
@@ -129,15 +139,15 @@ Esta demo se hizo con IA y el repositorio lo muestra tal cual:
 
 ## Cómo se verificó
 
-Cifras medidas el 22/11/2026 sobre la rama `textos-etapa6` (a partir de `interfaz-etapa-0`):
+Cifras medidas el 22/11/2026:
 
 | Comprobación | Comando | Resultado |
 | --- | --- | --- |
-| Pruebas automáticas | `npm test` | 1.489 pruebas en 56 archivos, todas pasan |
-| Las mismas en tres zonas horarias | `npm run test:tz` | 1.489 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
-| Tipos | `npm run check` | 0 errores y 0 avisos en 335 archivos |
-| Contraste de la paleta | `npm run contraste` | 174 mediciones, 0 fallan, 9 pasan por poco margen |
-| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (8 reglas, 192 archivos): sin `{@html}`, sin `eval`, sin `Math.random` en `src/lib`, sin reloj del sistema fuera de `estado/reloj.ts` |
+| Pruebas automáticas | `npm test` | 1.555 pruebas en 57 archivos, todas pasan <!-- cifra E7 --> |
+| Las mismas en tres zonas horarias | `npm run test:tz` | 1.555 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan <!-- cifra E7 --> |
+| Tipos | `npm run check` | 0 errores y 0 avisos en 337 archivos <!-- cifra E7 --> |
+| Contraste de la paleta | `npm run contraste` | 178 mediciones, 0 fallan, 9 pasan por poco margen <!-- cifra E7 --> |
+| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (8 reglas, 194 archivos <!-- cifra E7 -->): sin `{@html}`, sin `eval`, sin `Math.random` en `src/lib`, sin reloj del sistema fuera de `estado/reloj.ts` |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
 **Probado en un navegador** (Chromium con Playwright, contra la compilación servida con la CSP real; detalle en
@@ -147,13 +157,14 @@ renovación de la licencia como encargado) y el encargado con el selector de con
 claro y oscuro: sin desbordes, sin controles pulsables de menos de 44 px, sin mensajes en la consola y sin violaciones de
 CSP. Los guiones de Playwright no están en este repositorio: estas comprobaciones salen del registro y no se pueden
 reproducir con un comando del repositorio.
-**Accesibilidad medida con axe-core** (auditoría del 22/11/2026 sobre el parte en dos pasos, el inicio del conductor y
-las pantallas nuevas): 28 pantallas o estados en 1280 y 360 px, en modo claro y oscuro, 112 escaneos, 0 violaciones.
-También se midieron los contrastes de texto (0 fallas), el tamaño de los controles (todos de 44 px o más) y el parte con
-zoom del navegador al 200 % y al 400 % (640×400 y 320×200 px): el foco nunca queda tapado por la barra de envío. Con el
-texto agrandado al 200 % la auditoría registró dos defectos de maquetación que no estaban corregidos al medir (en «Mis
-últimos partes» el kilometraje se superpone con la patente; hay desplazamiento horizontal). El informe de esa auditoría
-no está en este repositorio, igual que los guiones de Playwright: no se puede reproducir con un comando.
+**Accesibilidad medida con axe-core** (auditoría del 22/11/2026 de la etapa 7, sobre 36 pantallas o estados): 180
+escaneos, 0 violaciones (144 en 1280 y 360 px, en modo claro y oscuro, más 36 a 360 px con el texto al 200 %).
+También se midieron los contrastes de texto (0 fallas) y el tamaño de los controles (ninguno baja de 44 px). Con el texto
+al 200 % a 360 px, en «Mis últimos partes» la fecha, la patente y el kilometraje no se superponen (0 px) y ninguna de las
+36 pantallas se desplaza en horizontal (0 px). El informe de esa auditoría no está en este repositorio, igual que los
+guiones de Playwright: no se puede reproducir con un comando.
+**Límite conocido:** a 320 px con el texto al 200 % quedaba un desborde horizontal de 7 a 12 px (en el inicio del conductor y en el
+paso 1 con errores), que se está corrigiendo. <!-- revisar tras la tanda E7 -->
 
 **No se probó:**
 
@@ -182,6 +193,9 @@ de facturación; cuando corra, se sumará aquí su resultado.
 - **Un registro de parte por unidad y por día, con dos envíos:** la revisión y el cierre son dos envíos sobre el mismo
   registro. No hay turnos ni relevos de conductor dentro del mismo día. Una jornada que cruza la medianoche pertenece a la
   fecha de su revisión, y la licencia se mira para esa fecha.
+- **«Sin cerrar» desde las 00:00:** el modelo es por fecha y no tiene turnos ni relevos. Un parte en uso de una jornada que
+  cruza la medianoche figura como «sin cerrar» en las alertas desde las 00:00 del día siguiente, aunque su fecha siga siendo
+  la de la revisión; la demo no distingue una jornada en curso de un cierre olvidado.
 - **Una revisión o un cierre enviados no se editan ni se reabren:** la revisión de un parte en uso no se modifica y un parte
   cerrado queda en solo lectura. Un borrador de revisión sí se descarta.
 - **Sin pruebas automáticas de las pantallas:** las pruebas cubren las reglas, el generador, la persistencia y el estado;

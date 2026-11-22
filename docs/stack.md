@@ -46,10 +46,17 @@ manuales de foco. Viable, no recomendado.
 
 ## 4. Reglas para que Svelte cumpla la CSP
 
-1. **Nada de atributo `style` en el marcado** (medido el 18/11/2026 en Chrome con la CSP real: un `style="…"` estático **sí produce la violación `style-src-attr`**, aunque Chrome igual aplica el estilo porque Svelte clona la plantilla; Firefox y Safari pueden no hacerlo. La regla se mantiene) (`<div style="…">`): Svelte lo pone en la plantilla HTML y la CSP lo
-   bloquea. Para valores dinámicos (posición de las marcas del horizonte) se usa **la directiva `style:propiedad`**, que
-   asigna por CSSOM (`element.style.setProperty`), que la CSP permite. Se comprueba en el paso 0 del plan con un
-   componente de prueba y la CSP real.
+1. **Nada de atributo `style` en el marcado** (`<div style="…">`), por regla de la casa. Para valores dinámicos (posición
+   de las marcas del horizonte) se usa **la directiva `style:propiedad`**, que asigna por CSSOM
+   (`element.style.setProperty`), que la CSP permite. **Quién vigila la regla:** la revisión de código, no la CSP. El
+   18/11/2026 esta demo midió, en Chrome con la CSP real, que un `style="…"` estático producía la violación
+   `style-src-attr`; el 22/11/2026 la Demo 3 midió lo contrario en Svelte 5 con Chrome: un `style="…"` escrito en el marcado,
+   estático o con valores dinámicos, **no** da violación (Svelte lo clona desde una plantilla o lo asigna por CSSOM). Esta
+   demo no repitió esa medición, así que no se debe confiar en que la CSP detecte un `style` olvidado en el marcado
+   (Firefox y Safari no se probaron). Que la CSP **sí** está activa se comprueba con otras pruebas, que dan violación:
+   `setAttribute("style", …)` y `innerHTML` con un `style` (`style-src-attr`), un `<style>` inyectado (`style-src-elem`),
+   un `<script>` inyectado (`script-src-elem`) y un `fetch`, que falla por `connect-src`. Se comprueba en el paso 0 del
+   plan con un componente de prueba y la CSP real.
 2. **CSS de los componentes a archivo**: `vite-plugin-svelte` con `emitCss` (valor por defecto) para que la compilación
    de producción saque todo el CSS a `assets/*.css` (`style-src 'self'`). En desarrollo Vite inyecta estilos; no
    importa, la CSP de `_headers` aplica solo en producción y se verifica con `vite preview` + cabeceras.
