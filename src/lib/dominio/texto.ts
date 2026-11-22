@@ -1,14 +1,16 @@
 // Normalización de los textos libres (U7). Todo texto que escribe una persona (descripciones, motivos, números de documento) es entrada externa:
-// se le sacan los caracteres de control y los de control bidireccional, que no son texto y sirven para esconder o reordenar lo que se lee (un
-// `U+202E` invierte el orden visual del resto de la línea). El largo se cuenta en caracteres (puntos de código), no en unidades UTF-16: un emoji es uno.
+// se le sacan los caracteres de control y los invisibles o de formato, que no son texto y sirven para esconder o reordenar lo que se lee (un
+// `U+202E` invierte el orden visual del resto de la línea; un `U+200B` hace que dos textos iguales no lo parezcan). El largo se cuenta en caracteres
+// (puntos de código), no en unidades UTF-16: un emoji es uno.
 
 /**
- * Caracteres de control que no son texto: los C0 salvo tabulación, salto de línea y retorno de carro (U+0000 a U+0008, U+000B, U+000C, U+000E a U+001F), DEL (U+007F),
- * los C1 (U+0080 a U+009F) y los de control bidireccional (U+202A a U+202E y U+2066 a U+2069).
+ * Lo que no es texto, por categoría Unicode: los de control (`Cc`: C0, DEL y C1) y los de formato (`Cf`: U+00AD, U+061C, U+200B a U+200F, los bidireccionales
+ * U+202A a U+202E y U+2066 a U+2069, U+2060, U+FEFF, U+FFF9 a U+FFFB…). Se dejan pasar la tabulación, el salto de línea y el retorno de carro (un área de texto
+ * los admite) y la unión de ancho cero U+200D, que forma los emojis compuestos.
  */
-const NO_ES_TEXTO = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F‪-‮⁦-⁩]/g;
+const NO_ES_TEXTO = /(?![\t\n\r‍])[\p{Cc}\p{Cf}]/gu;
 
-/** El texto sin caracteres de control ni de control bidireccional. No recorta ni toca nada más. */
+/** El texto sin caracteres de control ni invisibles o de formato (salvo `\t`, `\n`, `\r` y U+200D). No recorta ni toca nada más. */
 export function limpiarTexto(texto: string): string {
   return texto.replace(NO_ES_TEXTO, "");
 }

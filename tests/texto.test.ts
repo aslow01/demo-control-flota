@@ -17,9 +17,19 @@ describe("limpiarTexto (U7)", () => {
     expect(limpiarTexto("ficha ‮odnuf‬")).toBe("ficha odnuf");
   });
 
-  it("no toca lo que sí es texto: tildes, eñes, emojis (con su unión de ancho cero) y las marcas de dirección de un solo carácter", () => {
+  it("saca también los invisibles y de formato (categoría Cf): U+200B a U+200F, U+2060, U+FEFF, U+00AD, U+061C y U+FFF9 a U+FFFB", () => {
+    const invisibles = ["​", "‌", "‎", "‏", "⁠", "﻿", "­", "؜", "￹", "￺", "￻"];
+    for (const c of invisibles) expect(limpiarTexto(`ab${c}cd`), c.codePointAt(0)?.toString(16)).toBe("abcd");
+    expect(limpiarTexto("﻿frenos​ blandos")).toBe("frenos blandos");
+  });
+
+  it("no toca lo que sí es texto: tildes, eñes y emojis, también los compuestos (la unión de ancho cero U+200D se conserva)", () => {
     expect(limpiarTexto("Ñandú, línea 3 😀 👨‍👩‍👧")).toBe("Ñandú, línea 3 😀 👨‍👩‍👧");
-    expect(limpiarTexto("‎abc‏")).toBe("‎abc‏");
+    expect(limpiarTexto("👨‍👩‍👧")).toBe("👨‍👩‍👧");
+  });
+
+  it("un texto que era solo invisibles queda vacío", () => {
+    expect(normalizarTexto("​﻿ ⁠")).toBe("");
   });
 
   it("normalizarTexto limpia y recorta los extremos", () => {
