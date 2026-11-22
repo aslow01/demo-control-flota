@@ -1,7 +1,9 @@
 <script lang="ts">
   // Panel de resultado de un parte (5.4, variante «panel de resultado»; 6.5, C y D): sin barra de título, con una franja izquierda de 4 px del tono del resultado (vigente si salió bien o se cerró,
-  // crítico si la unidad no puede salir), el título (el `h1` de la pantalla o un `h2`, con el ícono del tono: `i-check` o `i-octogono`), la línea del resultado, un `dl` con los datos, las notas y
-  // los avisos, y las acciones al final (el primario primero). Lo usan cuatro vistas: C1 «Revisión enviada», C2 «La unidad no puede salir», C3 «Parte cerrado» (el título es el `h1` y recibe
+  // semana si se envió con documentación vencida aceptada, crítico si la unidad no puede salir), el título (el `h1` de la pantalla o un `h2`, en `--c-texto`, con el ícono del tono a su izquierda:
+  // `i-check`, `i-alerta` o `i-octogono`; el color va en la franja y en el ícono, nunca en el título: C9), la línea del resultado, un `dl` con los datos, las notas y los avisos, y las acciones
+  // al final (el primario primero). El `h1` lleva `aria-describedby` hacia la línea, así el lector la oye junto al título cuando recibe el foco (m2). La lectura (D) no lleva ícono: la etiqueta
+  // «Cerrado» ya dice el estado, y un parte leído días después no tiene que parecer un «enviado con éxito». Lo usan cuatro vistas: C1 «Revisión enviada», C2 «La unidad no puede salir», C3 «Parte cerrado» (el título es el `h1` y recibe
   // el foco) y la lectura de un parte cerrado (D: el `h1` es «Parte del miércoles 18/11/2026», con la etiqueta «Cerrado», los momentos de la revisión y el cierre y la revisión de la unidad).
   // No tiene reglas: todo lo arma la lógica (`panelDeRevisionEnviada`, `panelDeSinSalida`, `panelDeParteEnviado`: lib/estado/parte.ts).
   //  - `titulo` reemplaza al del panel (la lectura usa el de la ruta); `etiqueta` agrega «Cerrado» al lado; `momentos` son las filas «Revisión» y «Cierre», antes de las del panel;
@@ -40,17 +42,22 @@
 
   const uid = $props.id();
   const idTitulo = $derived(`${uid}-titulo`);
+  const idLinea = $derived(`${uid}-linea`);
   const critico = $derived(panel.variante === "sin-salida");
+  // La lectura (D) se reconoce por su etiqueta «Cerrado»: no lleva ícono.
+  const lectura = $derived(etiqueta !== undefined);
+  const tono = $derived(critico ? "critico" : panel.conDocumentacionVencida && !lectura ? "semana" : "vigente");
+  const iconoDelTono = $derived(critico ? "octogono" : tono === "semana" ? "alerta" : "check");
   const filas = $derived([...momentos, ...panel.filas]);
 </script>
 
-<section class="resultado" aria-labelledby={idTitulo} data-tono={critico ? "critico" : "vigente"}>
+<section class="resultado" aria-labelledby={idTitulo} data-tono={tono}>
   <div class="cabeza">
-    <svelte:element this={nivel} class="titulo" id={idTitulo} tabindex="-1"><Icono nombre={critico ? "octogono" : "check"} />{titulo ?? panel.titulo}</svelte:element>
+    <svelte:element this={nivel} class="titulo" id={idTitulo} tabindex="-1" aria-describedby={sinLinea ? undefined : idLinea}>{#if !lectura}<Icono nombre={iconoDelTono} />{/if}{titulo ?? panel.titulo}</svelte:element>
     {#if etiqueta !== undefined}<EtiquetaParte tipo="cerrado" texto={etiqueta} />{/if}
   </div>
   {#if encabezado !== undefined}{@render encabezado()}{/if}
-  {#if !sinLinea}<p class="linea">{panel.linea}</p>{/if}
+  {#if !sinLinea}<p class="linea" id={idLinea}>{panel.linea}</p>{/if}
   {#if filas.length > 0}
     <dl class="datos">
       {#each filas as f (f.rotulo)}
@@ -67,7 +74,7 @@
       <p class="rotulo-chico">{T.enviado.avisosAceptados}</p>
       <ul>
         {#each panel.advertencias as a (a)}
-          <li><span class="icono-aviso"><Icono nombre="alerta" /></span><span>{a}</span></li>
+          <li><span class="icono-aviso"><Icono nombre="vencido" /></span><span>{a}</span></li>
         {/each}
       </ul>
     </div>
@@ -111,10 +118,11 @@
     min-width: 0;
     font-size: var(--t-h2);
     line-height: 1.25;
-    color: var(--tono-t);
+    color: var(--c-texto);
   }
   .titulo :global(.icono) {
     flex: none;
+    color: var(--tono-t);
   }
   .linea {
     font-weight: 600;
@@ -160,7 +168,7 @@
     display: inline-flex;
     flex: none;
     margin-top: 0.1rem;
-    color: var(--c-semana-t);
+    color: var(--c-critico-t);
   }
   .acciones {
     display: flex;
