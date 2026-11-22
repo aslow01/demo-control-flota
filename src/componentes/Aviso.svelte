@@ -30,6 +30,7 @@
     alCerrar,
     boton,
     accion = "",
+    idTexto,
     children,
   }: {
     tono: Tono;
@@ -38,6 +39,8 @@
     alCerrar?: () => void;
     boton?: Snippet;
     accion?: string;
+    /** `id` del texto del aviso, para que un título lo use en `aria-describedby` («Cerrar antes»: quien recibe el foco en el `h1` oye también la razón). */
+    idTexto?: string;
     children: Snippet;
   } = $props();
 
@@ -61,7 +64,7 @@
 
 <div class="aviso" role={rol} data-tono={tono} bind:this={raiz}>
   <span class="icono-aviso"><Icono nombre={icono} /></span>
-  <div class="texto">
+  <div class="texto" id={idTexto}>
     {#if accion !== ""}
       <span class="aviso-titular">{@render children()}</span>
       <span class="aviso-accion">{accion}</span>

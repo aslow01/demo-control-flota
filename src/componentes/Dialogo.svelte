@@ -409,6 +409,11 @@
       padding-inline: var(--e-2);
     }
   }
+  @container dialogo (max-width: 10.5rem) {
+    .cuerpo {
+      padding-inline: var(--e-1);
+    }
+  }
 
   /* Escritorio: centrado, con el pie a la izquierda y el primario primero. */
   @media (min-width: 40rem) {
