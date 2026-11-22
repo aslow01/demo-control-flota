@@ -621,6 +621,24 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(r.primerCampo).toBe("conductor");
   });
 
+  it("a11y m3: un kilometraje que retrocede se lista junto con los puntos sin responder, en el orden del formulario, no recién al corregir los otros", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    const uid = idDe(app, "ZYN469");
+    const v = completo(edicion(app).valoresIniciales, { kmInicio: "1" });
+    for (const punto of ["frenos", "luces"] as const) v.checklist[punto] = { respuesta: "", descripcion: "", impideUso: false };
+    const r = await app.enviarRevisionDeParte(uid, H, v);
+    expect(r.tipo).toBe("errores");
+    if (r.tipo !== "errores") return;
+    expect(r.errores.lista.map((x) => x.campo)).toEqual(["kmInicio", "frenos", "luces"]);
+    expect(r.errores.lista[0]?.mensaje).toMatch(/141\.711 km/);
+    expect(r.errores.titulo).toBe("Revise 3 datos para enviar la revisión");
+    expect(r.primerCampo).toBe("kmInicio");
+    // con el kilometraje bien, el resumen vuelve a decir solo lo que falta
+    const bien = await app.enviarRevisionDeParte(uid, H, { ...v, kmInicio: "141.800" });
+    expect(bien.tipo === "errores" && bien.errores.lista.map((x) => x.campo)).toEqual(["frenos", "luces"]);
+    expect(bien.tipo === "errores" && bien.errores.titulo).toBe("Faltan 2 datos para enviar la revisión");
+  });
+
   it("L1: un conductor sin licencia vigente no puede enviar la revisión (error en el campo Conductor del encargado); el borrador queda", async () => {
     const repo = await repoCon((e) => ({ ...e, documentos: e.documentos.map((d) => (d.tipo === "licencia" && d.titular.id === "c-02" ? { ...d, vence: "2026-11-15" } : d)) }));
     const { app } = await iniciada({ repo, patente: "ZW827VD" });

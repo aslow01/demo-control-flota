@@ -1198,3 +1198,23 @@ Medidas: «Al iniciar» (paso 1) a 360 × 780: 590 px; «Al terminar» (paso 2):
 - Filas de la flota con «sin licencia vigente» (ZPA 505) y motivos de cuatro renglones (ZU 899 QE) pasan de la meta de 64 y 88 px; el segundo depende del largo del texto del motivo.
 - `DialogoAntesDeEnviar` conserva la propiedad `alEnviarIgual` (nombre interno; el texto visible ya dice «de todos modos»).
 - Lo pedido a `qa-destructor`, `auditor-accesibilidad` (confirmar D3 y el 200 %), `disenador-ui` y `critico-reclutador` sigue sin hacerse.
+
+## Etapa 7: correcciones de lógica (programador, 22/11/2026)
+
+Rama `correcciones-logica-e7` (sale de `3fbe7d7`), TDD. Los informes están en el repositorio del portafolio (`docs/revisiones/demo2-etapa7-*.md`).
+
+| Hallazgo | Qué se hizo |
+| --- | --- |
+| Código M2 y B7 | `PanelParteEnviado.advertencias` pasa a `{ tono, texto }[]` (un renglón por documento, la cola una sola vez); `avisoAptitud` pasa a `{ titular, accion }`; `partirAviso` se elimina. `ParteEnviado.svelte` recorre la lista con el ícono según el tono (`data-tono` en el `li` y el ícono con `--tono-t`). |
+| Código B1, B2, B3 | Los invisibles de `texto.ts` y `tests/texto.test.ts` van como `\u…`; el contador usa `largoDeTexto`; `normalizarTexto` deja vacío lo que no tiene nada visible. De paso, `tests/textos.test.ts` tenía retrocesos (U+0008) escritos tal cual en lugar de `\b` en la prueba del voseo: ahora usa lookarounds Unicode. |
+| Código B4, B5, B6, B8, B9 | `alAceptarAvisos`; «fuera de plazo» en nombres y comentarios (la clave guardada `datos.fueraDeTermino` queda); `ErroresDeParte.resumen` eliminado; comentario de `PantallaAlertas`; sin `Math.max` en los comandos. |
+| Diseño C3, C4 | Motivo sin la fecha repetida (cambia el ejemplo: el hash de `tests/generador.test.ts` pasó a `df80c262`); texto de C1 de un día pasado. |
+| QA D1 y D2 | P19 en todas las vistas y ampliada a toda crítica (decisión de Matías del 22/11): `unidadSinSalidaHoy` (`dominio/parte.ts`) la decide y `aptitud` la lee; diálogos de resolver y volver a servicio no prometen que sale ese día. |
+| QA B1, B6, B5 | «El parte de hoy está en uso»; texto de corregir un vencimiento; opción del select de conductor sin patente si no tiene licencia. |
+| QA B2 | Conexión perdida: memoria con aviso y reintento que funciona (verificado en Chromium real: borrar la base y cambiar de vista). |
+| QA B8 | No reproducible: el plazo de 8 s ya existía; el QA esperó 1,5 s. Verificado en Chromium real. Sin cambios de código. |
+| a11y m3 | El error del kilometraje de salida aparece junto con los puntos sin responder. |
+
+**Para el maquetador.** Toqué solo marcado mínimo en `ParteEnviado.svelte` (lista con `data-tono`; el ícono de `.icono-aviso` pasó de `--c-critico-t` a `--tono-t`), renombres en `ParteEncabezado`, `ParteFormulario`, `DialogoAntesDeEnviar` y `FichaHistorial` (`fueraDePlazo`, `alAceptarAvisos`), `Aviso.svelte` (se quitó el `<script module>` de `partirAviso`), `PantallaConductor`/`ParteEncabezado` (el aviso llega partido), `Campo.svelte` (contador) y `App.svelte` (una rama para el aviso `almacenamiento-perdido`). Si su rama toca esos archivos, esperar conflictos triviales. `DetalleDeParte.advertencias` de la ficha sigue siendo `string[]` (ahora un renglón por documento); si se quiere ícono por tono en el historial, hay que pedir el cambio de tipo.
+
+**Para el redactor.** Textos nuevos o cambiados: motivo de aptitud «Sin salida hasta mañana (novedad crítica de hoy)»; resolver «Volver a servicio (sale recién mañana)» y su nota; diálogo de volver («…no vuelve a salir hasta mañana: hoy tuvo una novedad crítica.»); barra «…vuelve a servicio, pero no sale hasta mañana.»; «ZK 214 BD: el parte de hoy está en uso.»; «tiene en uso el parte de hoy de…»; «El vencimiento tiene que ser posterior al del documento anterior (…)»; «{Nombre} (sin licencia)»; aviso «Los datos guardados de la demo ya no están disponibles…»; «Falta cerrar este parte con el kilometraje y el combustible de esa jornada.».

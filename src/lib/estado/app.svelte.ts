@@ -32,8 +32,8 @@ import {
 } from "../dominio/formulario-documento.ts";
 import { formatearHora } from "../dominio/fechas.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
-import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
-import { kmDeRegistro, registroAnterior } from "../dominio/kilometraje.ts";
+import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, sumarErrorDeRegla, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
+import { kmDeRegistro, registroAnterior, validarKmDeSalida } from "../dominio/kilometraje.ts";
 import { advertenciasLegibles, contextoDeDocumentacion, esBorradorVacio, unidadSinSalidaHoy } from "../dominio/parte.ts";
 import {
   comandoDeAsignacion,
@@ -877,7 +877,7 @@ export class EstadoApp {
     const r = await this.ejecutarAhora({ tipo: "enviarRevision", parteId: borrador.id, advertenciasAceptadas: aceptadas }, perfil);
     if (!r.ok) {
       if (r.error.codigo === "licencia-no-vigente" || r.error.codigo === "parte-anterior-sin-cerrar" || r.error.codigo === "escritura-fallida") return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
-      if (previos !== null) return this.erroresDeEnvio(previos);
+      if (previos !== null) return this.erroresDeEnvio(this.conErrorDeKilometraje(previos, v, borrador));
       if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error, borrador);
       return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
     }
@@ -885,6 +885,15 @@ export class EstadoApp {
     if (enviado === undefined) return this.erroresDeEnvio(errorGeneralParte(ERRORES.parteInexistente)); // no pasa: el comando acaba de escribirlo
     const hecho = this.resultadoYaHecho(r.valor.estado, enviado, perfil);
     return hecho.tipo === "enviado" ? { ...hecho, yaEnviado: false } : hecho;
+  }
+
+  /** m3: lo que impide enviar más el kilometraje de salida si retrocede o pasa al parte siguiente (K3, K4), que el comando no llega a decir mientras falten datos. */
+  private conErrorDeKilometraje(previos: ErroresDeParte, valores: ValoresParte, borrador: Parte): ErroresDeParte {
+    const estado = this.estado;
+    const unidad = estado?.unidades.find((u) => u.id === borrador.unidadId);
+    if (estado === null || unidad === undefined || borrador.kmInicio === null) return previos;
+    const km = validarKmDeSalida({ unidad, fecha: borrador.fecha, kmInicio: borrador.kmInicio, partes: estado.partes, correcciones: estado.correccionesKm });
+    return km.ok ? previos : sumarErrorDeRegla(valores, previos, km.error);
   }
 
   /**

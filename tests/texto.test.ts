@@ -42,13 +42,13 @@ describe("limpiarTexto (U7)", () => {
 describe("B3: un texto sin nada visible no es una descripción", () => {
   // Braille en blanco, relleno hangul, unión de ancho cero sola, selector de variación y signo combinador de grafema: no son Cc ni Cf (salvo la unión), no se ven y no son texto.
   const huecos: [string, string][] = [
-    ["braille en blanco", "⠀"],
-    ["relleno hangul", "ㅤ"],
-    ["relleno hangul de media anchura", "ﾠ"],
-    ["relleno de jamo", "ᅟᅠ"],
-    ["unión de ancho cero", "‍"],
-    ["selector de variación", "️"],
-    ["combinador de grafema", "͏"],
+    ["braille en blanco", "\u2800"],
+    ["relleno hangul", "\u3164"],
+    ["relleno hangul de media anchura", "\uFFA0"],
+    ["relleno de jamo", "\u115F\u1160"],
+    ["unión de ancho cero", "\u200D"],
+    ["selector de variación", "\uFE0F"],
+    ["combinador de grafema", "\u034F"],
   ];
 
   it.each(huecos)("normalizarTexto: solo %s queda vacío", (_nombre, c) => {
@@ -62,33 +62,33 @@ describe("B3: un texto sin nada visible no es una descripción", () => {
       expect(r.ok, nombre).toBe(false);
       if (!r.ok) expect(r.error.codigo, nombre).toBe("descripcion-vacio");
     }
-    const emisor = validarTexto("⠀ㅤ", REGLAS.emisor);
+    const emisor = validarTexto("\u2800\u3164", REGLAS.emisor);
     expect(emisor.ok && emisor.valor).toBe("");
   });
 
   it("no toca lo que sí tiene algo visible: una letra con un relleno, un emoji compuesto, un emoji con selector, el braille con puntos", () => {
-    expect(normalizarTexto("a⠀")).toBe("a⠀");
-    expect(normalizarTexto("👨‍👩")).toBe("👨‍👩");
-    expect(normalizarTexto("❤️")).toBe("❤️");
+    expect(normalizarTexto("a\u2800")).toBe("a\u2800");
+    expect(normalizarTexto("👨\u200D👩")).toBe("👨\u200D👩");
+    expect(normalizarTexto("❤\uFE0F")).toBe("❤\uFE0F");
     expect(normalizarTexto("⠁")).toBe("⠁");
     expect(normalizarTexto("123")).toBe("123");
     expect(normalizarTexto("...")).toBe("...");
   });
 
   it("P4: una descripción de puro relleno no alcanza para enviar la revisión (el punto sigue faltando)", () => {
-    const parte = { conductorId: "c1", kmInicio: 1, checklist: { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "⠀".repeat(8), impideUso: false } }, otraNovedad: null };
+    const parte = { conductorId: "c1", kmInicio: 1, checklist: { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "\u2800".repeat(8), impideUso: false } }, otraNovedad: null };
     expect(faltantesDeRevision(parte)).toEqual(["frenos"]);
   });
 
   it("al cargar una novedad se rechaza igual", () => {
-    expect(ejecutarError(flotaDePrueba(), { tipo: "cargarNovedad", unidadId: "u1", descripcion: "ㅤㅤㅤㅤ", impideUso: false }).codigo).toBe("descripcion-vacio");
+    expect(ejecutarError(flotaDePrueba(), { tipo: "cargarNovedad", unidadId: "u1", descripcion: "\u3164\u3164\u3164\u3164", impideUso: false }).codigo).toBe("descripcion-vacio");
   });
 });
 
 describe("B2: el contador del área de texto cuenta lo mismo que la regla del tope", () => {
   it("largoDeTexto cuenta caracteres sin los de control ni los invisibles, y sin recortar", () => {
     expect(largoDeTexto("😀".repeat(300))).toBe(300);
-    expect(largoDeTexto("a\u0000b‮c​")).toBe(3);
+    expect(largoDeTexto("a\u0000b\u202Ec\u200B")).toBe(3);
     expect(largoDeTexto("  ab  ")).toBe(6);
   });
 

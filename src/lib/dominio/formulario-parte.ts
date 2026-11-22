@@ -317,6 +317,17 @@ export function erroresDeNegocioParte(error: ErrorDeNegocio, paso: PasoDelParte 
   return campo === undefined ? conTitulo([], error.mensaje, 0, tituloGeneral, paso) : conTitulo([{ campo, mensaje: error.mensaje }], null, 0, tituloGeneral, paso);
 }
 
+/**
+ * m3 (accesibilidad): un error de regla del kilometraje (K3, K4) que el comando todavía no llegó a decir porque faltan datos se suma al resumen de los faltantes, en su lugar del
+ * formulario, para que la persona vea todo junto y no de a uno al ir corrigiendo. Si ese campo ya tiene un error (formato o faltante), no se pisa.
+ */
+export function sumarErrorDeRegla(v: ValoresParte, previos: ErroresDeParte, regla: ErrorDeNegocio, paso: PasoDelParte = "revision"): ErroresDeParte {
+  const campo = CAMPOS_PARTE.find((c) => c === regla.campo);
+  if (campo === undefined || previos.lista.some((x) => x.campo === campo)) return previos;
+  const lista = [...previos.lista, { campo, mensaje: regla.mensaje }].sort((a, b) => CAMPOS_PARTE.indexOf(a.campo) - CAMPOS_PARTE.indexOf(b.campo));
+  return conTitulo(lista, previos.general, faltantesDeValores(v, paso).length, paso === "revision" ? T.tituloGeneral : T.tituloGeneralCierre, paso);
+}
+
 /** Solo un error general (sin datos, sin permiso, guardado fallido, algo que cambió en otra pestaña). El título por defecto es el del envío de la revisión; otras acciones pasan el suyo. */
 export function errorGeneralParte(mensaje: string, titulo: string = T.tituloGeneral): ErroresDeParte {
   return conTitulo([], mensaje, 0, titulo);

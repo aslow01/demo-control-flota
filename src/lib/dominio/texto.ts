@@ -19,7 +19,7 @@ export function limpiarTexto(texto: string): string {
  * Los caracteres que ocupan lugar pero no se ven y no son `Cc` ni `Cf`: el braille en blanco (U+2800) y los rellenos de hangul (U+115F, U+1160, U+3164, U+FFA0). Se cuentan
  * como `\p{L}` o `\p{S}`, así que hay que sacarlos aparte para saber si lo que queda tiene algo.
  */
-const RELLENOS = /[⠀ᅟᅠㅤﾠ]/g;
+const RELLENOS = /[\u2800\u115F\u1160\u3164\uFFA0]/g;
 
 /** Algo que se ve: una letra, un número, un signo de puntuación o un símbolo (un emoji es un símbolo). La unión de ancho cero, los selectores de variación y los rellenos no. */
 const ALGO_VISIBLE = /[\p{L}\p{N}\p{P}\p{S}]/u;
