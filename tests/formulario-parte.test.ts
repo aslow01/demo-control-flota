@@ -5,6 +5,7 @@ import {
   CAMPOS_PARTE,
   OPCIONES_COMBUSTIBLE,
   comandoDeBorrador,
+  comandoDeCierre,
   erroresDeNegocioParte,
   errorGeneralParte,
   faltantesDeValores,
@@ -23,6 +24,10 @@ import { parte } from "./ayuda.ts";
 
 function borrador(valores: ValoresParte, cambios: Partial<ValoresParte> = {}) {
   return comandoDeBorrador("u1", "2026-11-18", null, { ...valores, ...cambios });
+}
+
+function cierre(valores: ValoresParte, cambios: Partial<ValoresParte> = {}) {
+  return comandoDeCierre("pt1", { ...valores, ...cambios });
 }
 
 function completos(extra: Partial<ValoresParte> = {}): ValoresParte {
@@ -137,30 +142,24 @@ describe("P3: de los valores al comando de borrador", () => {
     expect(solo.ok && solo.comando.otraNovedad).toEqual({ descripcion: "", impideUso: true });
   });
 
-  it("P3: un kilometraje con letras no se guarda y se avisa en el campo; no se guarda nada del resto", () => {
-    const r = borrador(completos(), { kmFin: "84x" });
+  it("P3: un kilometraje de inicio con letras no se guarda y se avisa en el campo; no se guarda nada del resto", () => {
+    const r = borrador(completos(), { kmInicio: "84x" });
     expect(r.ok).toBe(false);
     if (r.ok) return;
-    expect(r.errores.porCampo.kmFin).toBe(ERRORES.kmNoNumerico);
-    expect(r.errores.lista).toEqual([{ campo: "kmFin", mensaje: ERRORES.kmNoNumerico }]);
+    expect(r.errores.porCampo.kmInicio).toBe(ERRORES.kmNoNumerico);
+    expect(r.errores.lista).toEqual([{ campo: "kmInicio", mensaje: ERRORES.kmNoNumerico }]);
     expect(r.errores.general).toBeNull();
   });
 
-  it("K1: decimales, negativos y pasarse del tope tienen su mensaje, en el campo que corresponde (inicio o fin)", () => {
-    const decimales = borrador(completos(), { kmInicio: "84,3" });
-    expect(!decimales.ok && decimales.errores.porCampo.kmInicio).toBe(ERRORES.kmDecimales);
-    const negativo = borrador(completos(), { kmFin: "-5" });
-    expect(!negativo.ok && negativo.errores.porCampo.kmFin).toBe(ERRORES.kmNegativo);
-    const tope = borrador(completos(), { kmFin: "2.000.001" });
-    expect(!tope.ok && tope.errores.porCampo.kmFin).toBe("El kilometraje no puede superar 2.000.000 km.");
+  it("P3: los datos del cierre (un kmFin de una versión vieja, mal escrito) no bloquean el borrador de la revisión", () => {
+    expect(borrador(completos(), { kmFin: "84x", litros: "abc" }).ok).toBe(true);
   });
 
-  it("P10: litros con 0, con dos decimales, con letras o por encima de 200 se avisan en el campo de litros", () => {
-    const mensajes = ["0", "12,25", "abc", "250"].map((t) => {
-      const r = borrador(completos(), { litros: t });
-      return r.ok ? null : r.errores.porCampo.litrosCargados;
-    });
-    expect(mensajes).toEqual([ERRORES.litrosCero, ERRORES.litrosDecimales, ERRORES.litrosNoNumerico, "Los litros no pueden superar 200."]);
+  it("K1: decimales y pasarse del tope tienen su mensaje en el kilometraje de inicio", () => {
+    const decimales = borrador(completos(), { kmInicio: "84,3" });
+    expect(!decimales.ok && decimales.errores.porCampo.kmInicio).toBe(ERRORES.kmDecimales);
+    const tope = borrador(completos(), { kmInicio: "2.000.001" });
+    expect(!tope.ok && tope.errores.porCampo.kmInicio).toBe("El kilometraje no puede superar 2.000.000 km.");
   });
 
   it("un texto de más de 500 caracteres se avisa en su punto (o en «Otra novedad»)", () => {
@@ -171,28 +170,57 @@ describe("P3: de los valores al comando de borrador", () => {
     if (r.ok) return;
     expect(r.errores.lista.map((e) => e.campo)).toEqual(["luces", "otraNovedad"]);
   });
+});
 
-  it("varios errores salen en el orden del formulario (inicio, fin, puntos, litros)", () => {
-    const r = borrador(completos(), { kmFin: "x", kmInicio: "y", litros: "z" });
-    expect(!r.ok && r.errores.lista.map((e) => e.campo)).toEqual(["kmInicio", "kmFin", "litrosCargados"]);
+describe("P3: de los valores al comando de cierre (guardarCierre)", () => {
+  it("el cierre se guarda con el fin, el combustible y los litros; los vacíos son null", () => {
+    const r = cierre(completos(), { litros: "45,5" });
+    expect(r).toEqual({ ok: true, comando: { tipo: "guardarCierre", parteId: "pt1", kmFin: 84452, combustible: "tres-cuartos", litrosCargados: 45.5 } });
+    expect(cierre(completos(), { kmFin: "", combustible: "" })).toEqual({ ok: true, comando: { tipo: "guardarCierre", parteId: "pt1", kmFin: null, combustible: null, litrosCargados: null } });
+  });
+
+  it("P3: un kilometraje con letras no se guarda y se avisa en «Al terminar»", () => {
+    const r = cierre(completos(), { kmFin: "84x" });
+    expect(!r.ok && r.errores.lista).toEqual([{ campo: "kmFin", mensaje: ERRORES.kmNoNumerico }]);
+    expect(!r.ok && r.errores.titulo).toBe("Revise 1 dato para cerrar el parte");
+  });
+
+  it("K1: negativos y pasarse del tope tienen su mensaje, en kmFin", () => {
+    const negativo = cierre(completos(), { kmFin: "-5" });
+    expect(!negativo.ok && negativo.errores.porCampo.kmFin).toBe(ERRORES.kmNegativo);
+    const tope = cierre(completos(), { kmFin: "2.000.001" });
+    expect(!tope.ok && tope.errores.porCampo.kmFin).toBe("El kilometraje no puede superar 2.000.000 km.");
+  });
+
+  it("P10: litros con 0, con dos decimales, con letras o por encima de 200 se avisan en el campo de litros", () => {
+    const mensajes = ["0", "12,25", "abc", "250"].map((t) => {
+      const r = cierre(completos(), { litros: t });
+      return r.ok ? null : r.errores.porCampo.litrosCargados;
+    });
+    expect(mensajes).toEqual([ERRORES.litrosCero, ERRORES.litrosDecimales, ERRORES.litrosNoNumerico, "Los litros no pueden superar 200."]);
+  });
+
+  it("varios errores salen en el orden del formulario (fin, litros); lo de la revisión no cuenta", () => {
+    const r = cierre(completos(), { kmFin: "x", kmInicio: "y", litros: "z" });
+    expect(!r.ok && r.errores.lista.map((e) => e.campo)).toEqual(["kmFin", "litrosCargados"]);
   });
 });
 
-describe("P4: qué falta para enviar, en el orden del formulario", () => {
-  it("P4: falta el fin, el combustible y «luces» → kmFin, luces, combustible; «Faltan 3 datos»", () => {
-    const v = completos({ kmFin: "", combustible: "" });
+describe("P4: qué falta para enviar la revisión, en el orden del formulario", () => {
+  it("P4: faltan el inicio y «luces» → kmInicio, luces; «Faltan 2 datos» (no pide el fin ni el combustible)", () => {
+    const v = completos({ kmInicio: "", kmFin: "", combustible: "" });
     v.checklist.luces = { respuesta: "", descripcion: "", impideUso: false };
-    expect(faltantesDeValores(v)).toEqual(["kmFin", "luces", "combustible"]);
-    expect(textoBarraDeEnvio(v)).toBe("Faltan 3 datos");
+    expect(faltantesDeValores(v)).toEqual(["kmInicio", "luces"]);
+    expect(textoBarraDeEnvio(v)).toBe("Faltan 2 datos");
   });
 
   it("completo: nada falta y la barra dice «Listo para enviar»", () => {
-    expect(faltantesDeValores(completos())).toEqual([]);
+    expect(faltantesDeValores(completos({ kmFin: "", combustible: "" }))).toEqual([]);
     expect(textoBarraDeEnvio(completos())).toBe("Listo para enviar");
   });
 
   it("falta 1 dato (singular)", () => {
-    expect(textoBarraDeEnvio(completos({ combustible: "" }))).toBe("Falta 1 dato");
+    expect(textoBarraDeEnvio(completos({ kmInicio: "" }))).toBe("Falta 1 dato");
   });
 
   it("sin conductor es lo primero que falta", () => {
@@ -214,7 +242,7 @@ describe("P4: qué falta para enviar, en el orden del formulario", () => {
   });
 
   it("un campo con un error de tipo no cuenta como faltante (es otro problema)", () => {
-    expect(faltantesDeValores(completos({ kmFin: "abc" }))).toEqual([]);
+    expect(faltantesDeValores(completos({ kmInicio: "abc" }))).toEqual([]);
   });
 
   it("respondidos: «3 de 10»", () => {
@@ -227,18 +255,45 @@ describe("P4: qué falta para enviar, en el orden del formulario", () => {
   });
 });
 
+describe("P4: qué falta para cerrar el parte", () => {
+  it("un cierre sin nada: kmFin y combustible; «Faltan 2 datos»", () => {
+    const v = valoresIniciales({ conductorId: "c1", kmInicio: 84320 });
+    expect(faltantesDeValores(v, "cierre")).toEqual(["kmFin", "combustible"]);
+    expect(textoBarraDeEnvio(v, "cierre")).toBe("Faltan 2 datos");
+  });
+
+  it("completo: «Listo para cerrar»; los litros son opcionales y la revisión no se vuelve a pedir", () => {
+    const v = completos();
+    v.checklist.frenos = { respuesta: "", descripcion: "", impideUso: false };
+    expect(faltantesDeValores(v, "cierre")).toEqual([]);
+    expect(textoBarraDeEnvio(v, "cierre")).toBe("Listo para cerrar");
+  });
+
+  it("un campo con un error de tipo no cuenta como faltante, pero sí en la barra", () => {
+    const v = completos({ kmFin: "abc" });
+    expect(faltantesDeValores(v, "cierre")).toEqual([]);
+    expect(textoBarraDeEnvio(v, "cierre")).toBe("Falta 1 dato");
+  });
+});
+
 describe("5.15: el resumen de errores al enviar", () => {
-  it("enviar vacío (solo con el inicio precargado y el conductor): faltan 12 datos, en el orden del formulario y con un mensaje por campo", () => {
+  it("enviar la revisión vacía (solo con el inicio precargado y el conductor): faltan 10 datos, en el orden del formulario y con un mensaje por campo", () => {
     const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
     expect(e).not.toBeNull();
     if (e === null) return;
-    expect(e.titulo).toBe("Faltan 12 datos para enviar el parte");
-    expect(e.lista.map((x) => x.campo)).toEqual(["kmFin", "frenos", "direccion", "neumaticos", "luces", "cinturones", "niveles", "matafuego", "botiquin", "documentacion", "cabina", "combustible"]);
-    expect(e.porCampo.kmFin).toBe("Escriba el kilometraje al terminar.");
+    expect(e.titulo).toBe("Faltan 10 datos para enviar la revisión");
+    expect(e.lista.map((x) => x.campo)).toEqual(["frenos", "direccion", "neumaticos", "luces", "cinturones", "niveles", "matafuego", "botiquin", "documentacion", "cabina"]);
     expect(e.porCampo.frenos).toBe("Elija una opción para Frenos.");
     expect(e.porCampo.neumaticos).toBe("Elija una opción para Neumáticos y rueda de auxilio.");
-    expect(e.porCampo.combustible).toBe("Elija el nivel de combustible.");
     expect(e.general).toBeNull();
+  });
+
+  it("cerrar vacío: faltan 2 datos, con su mensaje por campo", () => {
+    const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }), "cierre");
+    expect(e?.titulo).toBe("Faltan 2 datos para cerrar el parte");
+    expect(e?.lista.map((x) => x.campo)).toEqual(["kmFin", "combustible"]);
+    expect(e?.porCampo.kmFin).toBe("Escriba el kilometraje al terminar.");
+    expect(e?.porCampo.combustible).toBe("Elija el nivel de combustible.");
   });
 
   it("los mensajes de conductor, inicio, descripción corta y «Otra novedad»", () => {
@@ -255,20 +310,21 @@ describe("5.15: el resumen de errores al enviar", () => {
 
   it("completo no tiene errores", () => {
     expect(validarParaEnviar(completos())).toBeNull();
+    expect(validarParaEnviar(completos(), "cierre")).toBeNull();
   });
 
   it("un error de tipo aparece junto a los faltantes y el título cuenta todo como «Revise»", () => {
-    const e = validarParaEnviar(completos({ kmFin: "abc", combustible: "" }));
+    const e = validarParaEnviar(completos({ kmFin: "abc", combustible: "" }), "cierre");
     expect(e?.lista.map((x) => x.campo)).toEqual(["kmFin", "combustible"]);
-    expect(e?.titulo).toBe("Revise 2 datos para enviar el parte");
+    expect(e?.titulo).toBe("Revise 2 datos para cerrar el parte");
   });
 
   it("un solo problema: «Revise 1 dato»", () => {
-    expect(validarParaEnviar(completos({ kmFin: "abc" }))?.titulo).toBe("Revise 1 dato para enviar el parte");
+    expect(validarParaEnviar(completos({ kmInicio: "abc" }))?.titulo).toBe("Revise 1 dato para enviar la revisión");
   });
 
-  it("CAMPOS_PARTE es el orden del formulario", () => {
-    expect(CAMPOS_PARTE).toEqual(["conductor", "kmInicio", "kmFin", "frenos", "direccion", "neumaticos", "luces", "cinturones", "niveles", "matafuego", "botiquin", "documentacion", "cabina", "combustible", "litrosCargados", "otraNovedad"]);
+  it("CAMPOS_PARTE es el orden del formulario: la revisión y después el cierre", () => {
+    expect(CAMPOS_PARTE).toEqual(["conductor", "kmInicio", "frenos", "direccion", "neumaticos", "luces", "cinturones", "niveles", "matafuego", "botiquin", "documentacion", "cabina", "otraNovedad", "kmFin", "combustible", "litrosCargados"]);
   });
 });
 
@@ -277,16 +333,26 @@ describe("errores que devuelve el comando", () => {
     const e = erroresDeNegocioParte({ codigo: "km-retrocede", mensaje: "El último registro de ZK 214 BD es 84.320 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, hay que informarlo al encargado.", campo: "kmInicio" });
     expect(e.porCampo.kmInicio).toMatch(/^El último registro de ZK 214 BD es 84\.320 km/);
     expect(e.general).toBeNull();
-    expect(e.titulo).toBe("Revise 1 dato para enviar el parte");
+    expect(e.titulo).toBe("Revise 1 dato para enviar la revisión");
   });
 
-  it("K2 apunta a «Al terminar» (kmFin); K4, también", () => {
-    expect(erroresDeNegocioParte({ codigo: "km-fin-menor", mensaje: "m", campo: "kmFin" }).porCampo.kmFin).toBe("m");
+  it("L1: el error de licencia (campo conductorId) va al campo Conductor, primero de la lista", () => {
+    const e = erroresDeNegocioParte({ codigo: "licencia-no-vigente", mensaje: "Luis Ferreyra no tiene licencia de conducir cargada. Elija otro conductor.", campo: "conductorId" });
+    expect(e.porCampo.conductor).toBe("Luis Ferreyra no tiene licencia de conducir cargada. Elija otro conductor.");
+    expect(e.lista[0]?.campo).toBe("conductor");
+    expect(e.general).toBeNull();
   });
 
-  it("un error que no es de un campo (P8, P2, guardado) queda como general, con el título «No se pudo enviar el parte»", () => {
+  it("K2 apunta a «Al terminar» (kmFin); K4, también; con el título del cierre", () => {
+    const e = erroresDeNegocioParte({ codigo: "km-fin-menor", mensaje: "m", campo: "kmFin" }, "cierre");
+    expect(e.porCampo.kmFin).toBe("m");
+    expect(e.titulo).toBe("Revise 1 dato para cerrar el parte");
+  });
+
+  it("un error que no es de un campo (P8, P2, guardado) queda como general, con el título del paso", () => {
     const e = erroresDeNegocioParte({ codigo: "unidad-fuera-de-servicio", mensaje: "La unidad está fuera de servicio." });
-    expect(e).toMatchObject({ porCampo: {}, lista: [], general: "La unidad está fuera de servicio.", titulo: "No se pudo enviar el parte" });
+    expect(e).toMatchObject({ porCampo: {}, lista: [], general: "La unidad está fuera de servicio.", titulo: "No se pudo enviar la revisión" });
+    expect(erroresDeNegocioParte({ codigo: "x", mensaje: "m" }, "cierre").titulo).toBe("No se pudo cerrar el parte");
     expect(errorGeneralParte(ERRORES.noPudoGuardarElParte).general).toBe(ERRORES.noPudoGuardarElParte);
   });
 

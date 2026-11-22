@@ -3,7 +3,8 @@
 
 import { formatearPatente } from "./patente.ts";
 import { TEXTO_AGREGAR, TEXTO_DIALOGOS_FICHA } from "./textos.ts";
-import type { ErrorDeNegocio, Estado } from "./tipos.ts";
+import type { ErrorDeNegocio, Estado, FechaCivil } from "./tipos.ts";
+import { estadoDeLicencia } from "./vencimientos.ts";
 
 /** Lo que le toca mostrar al diálogo cuando algo salió mal. El texto escrito no se toca: se conserva (5.11). */
 export interface ErroresDeFormularioDe<Campo extends string> {
@@ -40,6 +41,8 @@ export interface OpcionDeLista {
 export interface OpcionDeConductor extends OpcionDeLista {
   /** `ZK 214 BD` si ya tiene una unidad asignada (puede asignarse igual; el dominio no lo impide): para avisarlo junto a la opción. */
   asignadoA: string | null;
+  /** L1: su licencia ampara la fecha del parte (`fecha` de `opcionesDeConductor`). La vista agrega el sufijo «(sin licencia vigente)». Sin fecha, siempre `true`. */
+  licenciaVigente: boolean;
 }
 
 export function opcionesDeProyecto(estado: Pick<Estado, "proyectos">): OpcionDeLista[] {
@@ -50,19 +53,22 @@ export function opcionesDeProyecto(estado: Pick<Estado, "proyectos">): OpcionDeL
  * «Sin conductor asignado» (valor vacío) y después los conductores activos, cada uno con la unidad que ya tiene (`asignadoA`).
  * `excluirUnidadId`: la unidad que se está editando no cuenta como «ya tiene una unidad». `conservarId`: el conductor que la unidad
  * tiene hoy, aunque haya quedado inactivo (si no, el `select` no podría mostrar el valor actual; al guardar el dominio lo rechaza).
+ * `fecha`: la fecha del parte; cada opción dice si la licencia de ese conductor la ampara (L1).
  */
 export function opcionesDeConductor(
-  estado: Pick<Estado, "conductores" | "unidades">,
-  opciones: { excluirUnidadId?: string; conservarId?: string | null } = {},
+  estado: Pick<Estado, "conductores" | "unidades"> & Partial<Pick<Estado, "documentos">>,
+  opciones: { excluirUnidadId?: string; conservarId?: string | null; fecha?: FechaCivil } = {},
 ): OpcionDeConductor[] {
   const asignada = (conductorId: string): string | null => {
     const u = estado.unidades.find((x) => x.conductorId === conductorId && x.estado.tipo !== "baja" && x.id !== opciones.excluirUnidadId);
     return u === undefined ? null : formatearPatente(u.patente);
   };
-  const lista: OpcionDeConductor[] = [{ valor: "", etiqueta: TEXTO_AGREGAR.sinConductor, asignadoA: null }];
+  const vigente = (conductorId: string): boolean =>
+    opciones.fecha === undefined || estado.documentos === undefined || estadoDeLicencia(estado.documentos, conductorId, opciones.fecha).vigente;
+  const lista: OpcionDeConductor[] = [{ valor: "", etiqueta: TEXTO_AGREGAR.sinConductor, asignadoA: null, licenciaVigente: true }];
   for (const c of estado.conductores) {
-    if (c.activo) lista.push({ valor: c.id, etiqueta: c.nombre, asignadoA: asignada(c.id) });
-    else if (c.id === opciones.conservarId) lista.push({ valor: c.id, etiqueta: TEXTO_DIALOGOS_FICHA.asignacion.inactivo(c.nombre), asignadoA: asignada(c.id) });
+    if (c.activo) lista.push({ valor: c.id, etiqueta: c.nombre, asignadoA: asignada(c.id), licenciaVigente: vigente(c.id) });
+    else if (c.id === opciones.conservarId) lista.push({ valor: c.id, etiqueta: TEXTO_DIALOGOS_FICHA.asignacion.inactivo(c.nombre), asignadoA: asignada(c.id), licenciaVigente: vigente(c.id) });
   }
   return lista;
 }

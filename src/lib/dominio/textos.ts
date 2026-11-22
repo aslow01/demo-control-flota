@@ -477,6 +477,50 @@ export const TEXTO_ESTADO_OPERACION = {
   "novedad-abierta": "Abierta",
 } as const;
 
+/** «En uso»: la unidad salió hoy y falta el cierre (etiqueta de «Último parte»). */
+export const TEXTO_ESTADO_PARTE_EN_USO = "En uso";
+
+/** Etiqueta de estado de un parte incompleto (P5): la revisión no se envió, o se envió y falta el cierre. */
+export const TEXTO_ESTADO_PARTE_INCOMPLETO = { borrador: "Sin enviar", "en-uso": "Sin cerrar" } as const;
+
+/** «1 parte sin enviar» · «1 parte sin cerrar» · «3 partes sin enviar o sin cerrar» (fila de «Operación diaria»). */
+export function textoFilaPartesIncompletos(borradores: number, enUso: number): string {
+  const n = borradores + enUso;
+  const partes = n === 1 ? "parte" : "partes";
+  if (enUso === 0) return `${n} ${partes} sin enviar`;
+  if (borradores === 0) return `${n} ${partes} sin cerrar`;
+  return `${n} ${partes} sin enviar o sin cerrar`;
+}
+
+/** Título del grupo del detalle: «Partes sin enviar» · «Partes sin cerrar» · «Partes sin enviar o sin cerrar». */
+export function tituloGrupoPartesIncompletos(borradores: number, enUso: number): string {
+  if (enUso === 0) return "Partes sin enviar";
+  if (borradores === 0) return "Partes sin cerrar";
+  return "Partes sin enviar o sin cerrar";
+}
+
+/** L6: bloque «Conductores que no pueden manejar hoy (N)» del protagonista. */
+export const TEXTO_CONDUCTORES_SIN_LICENCIA = {
+  titulo: (n: number) => `Conductores que no pueden manejar hoy (${n})`,
+  unidad: "Unidad",
+  renovar: "Renovar",
+  cargar: "Cargar",
+  /** Nombre accesible del botón: «Renovar licencia de Luis Ferreyra». */
+  nombreAccesible: (accion: "Renovar" | "Cargar", nombre: string) => `${accion} licencia de ${nombre}`,
+  /** Para lectores, después de la cifra del protagonista. */
+  lector: (n: number) => (n === 1 ? "1 conductor no puede manejar hoy." : `${n} conductores no pueden manejar hoy.`),
+  /** Barra de estado al guardar la licencia. */
+  licenciaRenovada: (nombre: string) => `Licencia de ${nombre} renovada.`,
+  licenciaCargada: (nombre: string) => `Licencia de ${nombre} cargada.`,
+} as const;
+
+/** L6: el motivo de una fila, según L5 («Licencia vencida hace 3 días», «Falta cargar la licencia», «Licencia válida desde el 20/11/2026»). */
+export function textoMotivoSinLicencia(m: { motivo: "faltante" } | { motivo: "vencida"; diasVencida: number } | { motivo: "posterior"; desde: FechaCivil }): string {
+  if (m.motivo === "faltante") return "Falta cargar la licencia";
+  if (m.motivo === "vencida") return `Licencia vencida hace ${pluralizar(m.diasVencida, "día", "días")}`;
+  return `Licencia válida desde el ${formatearFecha(m.desde)}`;
+}
+
 /** Título de cada grupo del detalle de operación, sin la cantidad. */
 export const TEXTO_GRUPO_OPERACION = {
   "novedad-critica": "Novedades críticas",
@@ -832,11 +876,37 @@ export function textoVerMasEventos(n: number): string {
   return `Ver ${n} más`;
 }
 
-/** Resumen de un parte enviado en el historial: «Parte enviado · 132 km (84.320 → 84.452) · combustible 3/4 · 1 novedad». */
+/** Un parte en uso en la lista de kilometraje de la ficha: «84.452 → en uso». */
+export function textoKmEnUso(km: number): string {
+  return `${formatearKm(km)} → en uso`;
+}
+
+/**
+ * Evento «revision-enviada» en el historial: «Revisión antes de salir · 84.320 km · sin novedades» · «… · 1 novedad: Niveles de aceite y agua» ·
+ * «… · novedad crítica en Frenos: la unidad no salió», y «(fuera de término)» al final.
+ */
+export function textoRevisionEnHistorial(r: { kmInicio: number; normales: readonly string[]; criticas: readonly string[]; fueraDeTermino: boolean }): string {
+  const partes = ["Revisión antes de salir", `${formatearKm(r.kmInicio)} km`];
+  if (r.criticas.length > 0) partes.push(`novedad crítica en ${r.criticas.join(", ")}: la unidad no salió`);
+  else if (r.normales.length === 0) partes.push("sin novedades");
+  else partes.push(`${pluralizar(r.normales.length, "novedad", "novedades")}: ${r.normales.join(", ")}`);
+  return `${partes.join(" · ")}${r.fueraDeTermino ? " (fuera de término)" : ""}`;
+}
+
+/** Evento «parte-enviado» (el cierre) en el historial: «Parte cerrado · 132 km (84.320 → 84.452) · combustible 3/4». */
+export function textoCierreEnHistorial(r: { kmInicio: number; kmFin: number; combustible: string | null }): string {
+  const recorrido = r.kmFin - r.kmInicio;
+  const uso = recorrido === 0 ? "sin uso" : `${formatearKm(recorrido)} km`;
+  const partes = ["Parte cerrado", `${uso} (${textoRangoKm(r.kmInicio, r.kmFin)})`];
+  if (r.combustible !== null) partes.push(`combustible ${r.combustible}`);
+  return partes.join(" · ");
+}
+
+/** Resumen de un parte cerrado en el historial: «Parte cerrado · 132 km (84.320 → 84.452) · combustible 3/4 · 1 novedad». */
 export function textoResumenParteEnviado(r: { kmInicio: number; kmFin: number; combustible: string | null; novedades: number }): string {
   const recorrido = r.kmFin - r.kmInicio;
   const uso = recorrido === 0 ? "sin uso" : `${formatearKm(recorrido)} km`;
-  const partes = ["Parte enviado", `${uso} (${textoRangoKm(r.kmInicio, r.kmFin)})`];
+  const partes = ["Parte cerrado", `${uso} (${textoRangoKm(r.kmInicio, r.kmFin)})`];
   if (r.combustible !== null) partes.push(`combustible ${r.combustible}`);
   partes.push(r.novedades === 0 ? "sin novedades" : pluralizar(r.novedades, "novedad", "novedades"));
   return partes.join(" · ");
@@ -977,19 +1047,22 @@ export const TEXTO_FORMULARIO_PARTE = {
   itemSinResponder: (punto: string) => `Elija una opción para ${punto}.`,
   itemSinDescripcion: (punto: string) => `Cuente qué encontró en ${punto} (al menos 3 caracteres).`,
   /** Título del resumen de errores: todo lo que hay son faltantes (P4), o hay también errores de reglas o de formato. */
-  tituloFaltan: (n: number) => `${textoFaltantes(n)} para enviar el parte`,
-  tituloRevise: (n: number) => `Revise ${pluralizar(n, "dato", "datos")} para enviar el parte`,
-  tituloGeneral: "No se pudo enviar el parte",
+  tituloFaltan: (n: number, paso: "revision" | "cierre" = "revision") => `${textoFaltantes(n)} para ${paso === "revision" ? "enviar la revisión" : "cerrar el parte"}`,
+  tituloRevise: (n: number, paso: "revision" | "cierre" = "revision") =>
+    `Revise ${pluralizar(n, "dato", "datos")} para ${paso === "revision" ? "enviar la revisión" : "cerrar el parte"}`,
+  tituloGeneral: "No se pudo enviar la revisión",
+  tituloGeneralCierre: "No se pudo cerrar el parte",
   /** El resumen cuando falla «Descartar borrador» (QA B2): no es un envío. */
   tituloNoSePudoDescartar: "No se pudo descartar el borrador",
   /** Barra de envío (5.14). */
   barraLista: "Listo para enviar",
+  barraListaCierre: "Listo para cerrar",
   sinRecorrido: "—",
   /** Ayudas de los campos (5.11). */
   ayudaPrimerRegistro: "Es el primer registro de esta unidad.",
-  ayudaKmFin: "Complételo al final del día.",
+  ayudaKmFin: "Lo que marca el tablero al terminar la jornada.",
   ayudaLitros: "Déjelo vacío si no cargó.",
-  fueraDeTermino: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: se va a enviar fuera de término.`,
+  fueraDeTermino: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: la revisión se va a enviar fuera de término.`,
   borradorDescartado: "Borrador descartado.",
 } as const;
 
@@ -1017,18 +1090,27 @@ export const TEXTO_GUARDADO = {
 // ---------------------------------------------------------------------------------------------
 
 export const TEXTO_INICIO_CONDUCTOR = {
-  empezar: "Empezar el parte",
-  continuar: "Continuar el parte",
+  /** Estado 7 del panel «Hoy» (6.4). */
+  antesDeSalir: "Antes de salir, revise la unidad y envíe la revisión.",
+  empezar: "Empezar la revisión",
+  continuar: "Continuar la revisión",
   descartar: "Descartar borrador",
   verParte: "Ver el parte",
-  enviado: "Enviado",
+  enviado: "Cerrado",
+  /** Estado 3: el parte está en uso. */
+  alTerminar: "Al terminar la jornada, cierre el parte con el kilometraje y el combustible.",
+  cerrar: "Cerrar el parte",
   usarOtra: "Usar otra unidad",
   elegirUnidad: "Elija la unidad",
   continuarPendiente: "Continuarlo",
   cargarPendiente: "Cargarlo",
+  cerrarPendiente: "Cerrarlo",
+  /** Estado 5: la licencia no ampara hoy (L1, segunda persona). */
+  licenciaAvise: "Avise al encargado: cuando cargue una licencia vigente, podrá empezar la revisión.",
+  revisionConservada: "Tiene una revisión empezada: se conserva.",
   licenciaTitulo: "Su licencia",
   ultimosTitulo: "Mis últimos partes",
-  ultimosVacio: "Todavía no envió partes. Los últimos cinco aparecerán aquí.",
+  ultimosVacio: "Todavía no cerró partes. Los últimos cinco aparecerán aquí.",
 } as const;
 
 /** «Hoy, miércoles 18/11/2026». */
@@ -1036,16 +1118,43 @@ export function textoHoyDelConductor(hoy: FechaCivil): string {
   return `Hoy, ${diaDeLaSemana(hoy)} ${formatearFecha(hoy)}`;
 }
 
-/** «Tiene un parte empezado: faltan 5 datos.» */
+/** «Tiene una revisión empezada: faltan 5 datos.» */
 export function textoBorradorDelConductor(faltan: number): string {
-  if (faltan === 0) return "Tiene un parte empezado y está listo para enviar.";
-  return `Tiene un parte empezado: ${textoFaltantes(faltan).toLowerCase()}.`;
+  if (faltan === 0) return "Tiene una revisión empezada y está lista para enviar.";
+  return `Tiene una revisión empezada: ${textoFaltantes(faltan).toLowerCase()}.`;
 }
 
-/** «Enviado a las 18:42». */
+/** «Cerrado a las 18:42». */
 export function textoEnviadoALas(hora: string): string {
-  return `Enviado a las ${hora}`;
+  return `Cerrado a las ${hora}`;
 }
+
+/** «En uso desde las 06:52». */
+export function textoEnUsoDesde(hora: string): string {
+  return `En uso desde las ${hora}`;
+}
+
+/** Parte cerrado sin salida (P16), en el inicio del conductor: «Revisión de las 06:52: novedad crítica en Frenos. La unidad no salió.» */
+export function textoSinSalidaDelConductor(hora: string | null, puntos: readonly string[]): string {
+  const cuando = hora === null ? "Revisión" : `Revisión de las ${hora}`;
+  const donde = puntos.length === 0 ? "novedad crítica" : `novedad crítica en ${puntos.join(", ")}`;
+  return `${cuando}: ${donde}. La unidad no salió.`;
+}
+
+/** Estado 5 del panel «Hoy», renglón 1 (L1, segunda persona). */
+export function textoNoPuedeManejarHoy(l: MotivoDeLicencia): string {
+  if (l.motivo === "faltante") return "No puede manejar hoy: no tiene una licencia de conducir cargada.";
+  if (l.motivo === "vencida") return `No puede manejar hoy: su licencia de conducir venció el ${formatearFecha(l.vence)}.`;
+  return `No puede manejar hoy: su licencia nueva vale desde el ${formatearFecha(l.desde)}.`;
+}
+
+/** Pantalla «No se puede cargar este parte» por la licencia (L1, segunda persona). */
+export function textoLicenciaDelConductorNoAmpara(fecha: FechaCivil, l: MotivoDeLicencia): string {
+  const detalle = l.motivo === "faltante" ? "no hay ninguna cargada" : l.motivo === "vencida" ? `venció el ${formatearFecha(l.vence)}` : `la nueva vale desde el ${formatearFecha(l.desde)}`;
+  return `Para el ${formatearFecha(fecha)} no tiene licencia de conducir vigente (${detalle}). Sin licencia vigente no se puede enviar la revisión ni salir con la unidad.`;
+}
+
+export const TEXTO_BORRADOR_CONSERVADO = "El borrador se conserva: cuando el encargado cargue una licencia vigente, podrá enviarlo.";
 
 /** Unidad fuera de servicio, vista del conductor: no tiene que hacer parte. */
 export function textoSinParteFueraDeServicio(patente: string, desde: FechaCivil, motivo: string): string {
@@ -1060,6 +1169,11 @@ export function textoUnidadNoPuedeSalir(patente: string, motivos: readonly strin
 
 export function textoPendienteBorrador(fecha: FechaCivil, patente: string): string {
   return `${patente}: el parte del ${formatearFecha(fecha)} está empezado y sin enviar.`;
+}
+
+/** Pendiente de un parte en uso de un día anterior (P5). */
+export function textoPendienteSinCerrar(fecha: FechaCivil, patente: string): string {
+  return `${patente}: el parte del ${formatearFecha(fecha)} quedó sin cerrar.`;
 }
 
 export function textoPendienteSinParte(ayer: FechaCivil, patente: string): string {
@@ -1085,13 +1199,65 @@ export const TEXTO_PANTALLA_PARTE = {
   vueltaFicha: (patente: string) => `Ficha de ${patente}`,
   impideUso: "Impide usar la unidad",
   otraNovedad: "Otra novedad (opcional)",
-  enviado: "Parte enviado",
+  enviado: "Parte cerrado",
+  /** Los `h1` de los dos pasos y el renglón de contexto (6.5). */
+  tituloRevision: "Revisión antes de salir",
+  tituloCierre: "Cierre de la jornada",
+  contexto: (diaConFecha: string, paso: 1 | 2) => `Parte del ${diaConFecha} · paso ${paso} de 2`,
+  /** Resultados C1 y C2. */
+  tituloRevisionEnviada: "Revisión enviada",
+  tituloSinSalida: "La unidad no puede salir",
   volverAlInicio: "Volver al inicio",
+  completarCierreAhora: "Completar el cierre ahora",
+  completarCierre: "Completar el cierre",
+  verLaRevision: "Ver la revisión",
+  encargadoLaVe: "El encargado la ve en el centro de alertas.",
+  alTerminarVuelva: "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible.",
+  siTieneQueSalir: "Si tiene que salir, elija otra unidad desde el inicio.",
+  sinLicenciaVigente: "sin licencia vigente",
+  sinUsoSinSalida: "Sin uso: la unidad no salió",
+  noSeRegistroSinSalida: "No se registró: la unidad no salió",
   sinNovedades: "Sin novedades",
   noCargo: "No cargó",
-  fueraDeTermino: "Enviado fuera de término.",
-  rotulos: { recorrido: "Recorrido", combustible: "Combustible", litros: "Combustible cargado", novedades: "Novedades" },
+  fueraDeTermino: "Revisión enviada fuera de término.",
+  rotulos: { alIniciar: "Al iniciar", recorrido: "Recorrido", combustible: "Combustible", litros: "Combustible cargado", novedades: "Novedades", avisos: "Avisos aceptados", revision: "Revisión", cierre: "Cierre" },
 } as const;
+
+/** C1: «ZK 214 BD puede salir. Revisión enviada a las 06:52.»; fuera de término: «Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de término).» */
+export function textoLineaRevisionEnviada(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil | null, hora: string | null): string {
+  if (diaDeEnvio === null || hora === null) return `${patente} puede salir. Revisión enviada.`;
+  if (fecha === diaDeEnvio) return `${patente} puede salir. Revisión enviada a las ${hora}.`;
+  return `Revisión del ${formatearFecha(fecha)} enviada el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de término).`;
+}
+
+/** C2: «Revisión enviada a las 06:52 con una novedad crítica: Frenos.» / «… con 2 novedades críticas: Frenos, Dirección.» */
+export function textoLineaSinSalida(hora: string | null, puntos: readonly string[]): string {
+  const cuando = hora === null ? "Revisión enviada" : `Revisión enviada a las ${hora}`;
+  const que = puntos.length === 1 ? "una novedad crítica" : `${puntos.length} novedades críticas`;
+  return `${cuando} con ${que}: ${puntos.join(", ")}.`;
+}
+
+/** C2: lo que pasó con la unidad. */
+export function textoUnidadQuedoFueraDeServicio(patente: string): string {
+  return `${patente} quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio. El parte quedó cerrado sin uso.`;
+}
+
+/** C3: «ZK 214 BD, 18/11/2026: revisión a las 06:52, cierre a las 18:42.» Sin hora legible no se inventa: se omite. */
+export function textoLineaParteCerrado(patente: string, fecha: FechaCivil, horaRevision: string | null, horaCierre: string | null): string {
+  const partes: string[] = [];
+  if (horaRevision !== null) partes.push(`revisión a las ${horaRevision}`);
+  if (horaCierre !== null) partes.push(`cierre a las ${horaCierre}`);
+  return partes.length === 0 ? `${patente}, ${formatearFecha(fecha)}: parte cerrado.` : `${patente}, ${formatearFecha(fecha)}: ${partes.join(", ")}.`;
+}
+
+/** Resumen del paso 2: «Revisión enviada a las 06:52 · Al iniciar: 84.320 km · Sin novedades». */
+export function textoResumenDeLaRevision(hora: string | null, kmInicio: number | null, novedades: readonly string[], conductor: string | null): string {
+  const partes = [hora === null ? "Revisión enviada" : `Revisión enviada a las ${hora}`];
+  partes.push(kmInicio === null ? "Al iniciar: —" : `Al iniciar: ${formatearKm(kmInicio)} km`);
+  partes.push(novedades.length === 0 ? TEXTO_PANTALLA_PARTE.sinNovedades : `${pluralizar(novedades.length, "novedad", "novedades")}: ${novedades.join(", ")}`);
+  if (conductor !== null) partes.push(`Conductor: ${conductor}`);
+  return partes.join(" · ");
+}
 
 /** Línea del panel «Parte enviado»: «ZK 214 BD, 18/11/2026, enviado a las 18:42.»; fuera de término, con el día del envío. Sin hora legible: «ZK 214 BD, 16/11/2026, enviado.» */
 export function textoLineaParteEnviado(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil | null, hora: string | null): string {

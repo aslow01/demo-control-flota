@@ -512,7 +512,7 @@ function corregirKilometraje(
   // el kilometraje actual ni K3/K4 aunque el historial dijera que sí. Se rechaza en vez de aceptar algo que no tiene efecto.
   const posterior = registrosDeKm(u.id, estado.partes, estado.correccionesKm).filter((r) => r.fecha > desde.valor).pop();
   if (posterior !== undefined) {
-    return fallo("km-correccion-anterior", errKmCorreccionAnterior(posterior.tipo, posterior.fecha), { campo: "desde" });
+    return fallo("km-correccion-anterior", errKmCorreccionAnterior(posterior.tipo === "correccion" ? "correccion" : "parte", posterior.fecha), { campo: "desde" });
   }
   const anterior = kmActual(u.id, estado.partes, estado.correccionesKm);
   const correccion = {

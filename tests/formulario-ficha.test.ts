@@ -231,9 +231,9 @@ describe("«Cambiar proyecto o conductor» (U6)", () => {
       { valor: PROYECTO_BASE.id, etiqueta: PROYECTO_BASE.nombre },
     ]);
     expect(c?.conductores).toEqual([
-      { valor: "", etiqueta: "Sin conductor asignado", asignadoA: null },
-      { valor: "c1", etiqueta: "Luis Ferreyra", asignadoA: null },
-      { valor: "c2", etiqueta: "Rosa Quiroga", asignadoA: "ZKB 482" },
+      { valor: "", etiqueta: "Sin conductor asignado", asignadoA: null, licenciaVigente: true },
+      { valor: "c1", etiqueta: "Luis Ferreyra", asignadoA: null, licenciaVigente: true },
+      { valor: "c2", etiqueta: "Rosa Quiroga", asignadoA: "ZKB 482", licenciaVigente: true },
     ]);
   });
 
@@ -242,7 +242,7 @@ describe("«Cambiar proyecto o conductor» (U6)", () => {
     const sin = { ...e, unidades: e.unidades.map((u) => (u.id === "u1" ? { ...u, conductorId: null } : u)) };
     expect(contextoDeAsignacion(sin, "u1")?.valoresIniciales.conductorId).toBe("");
     const inactivo = { ...e, conductores: e.conductores.map((c) => (c.id === "c1" ? { ...c, activo: false } : c)) };
-    expect(contextoDeAsignacion(inactivo, "u1")?.conductores.find((x) => x.valor === "c1")).toEqual({ valor: "c1", etiqueta: "Luis Ferreyra (inactivo)", asignadoA: null });
+    expect(contextoDeAsignacion(inactivo, "u1")?.conductores.find((x) => x.valor === "c1")).toEqual({ valor: "c1", etiqueta: "Luis Ferreyra (inactivo)", asignadoA: null, licenciaVigente: true });
     expect(contextoDeAsignacion(inactivo, "u2")?.conductores.some((x) => x.valor === "c1")).toBe(false);
   });
 

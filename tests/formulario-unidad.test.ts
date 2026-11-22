@@ -60,9 +60,9 @@ describe("contexto del diálogo", () => {
 
   it("conductores: «Sin conductor asignado» primero (valor vacío) y los activos, con la unidad que ya tienen", () => {
     expect(c.conductores).toEqual([
-      { valor: "", etiqueta: "Sin conductor asignado", asignadoA: null },
-      { valor: "c1", etiqueta: "Luis Ferreyra", asignadoA: "ZK 214 BD" },
-      { valor: "c2", etiqueta: "Rosa Quiroga", asignadoA: "ZKB 482" },
+      { valor: "", etiqueta: "Sin conductor asignado", asignadoA: null, licenciaVigente: true },
+      { valor: "c1", etiqueta: "Luis Ferreyra", asignadoA: "ZK 214 BD", licenciaVigente: true },
+      { valor: "c2", etiqueta: "Rosa Quiroga", asignadoA: "ZKB 482", licenciaVigente: true },
     ]);
     const mas: Estado = {
       ...e,

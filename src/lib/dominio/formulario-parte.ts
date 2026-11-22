@@ -6,7 +6,7 @@
 import type { Comando } from "./comandos.ts";
 import { armarErrores, type ErroresDeFormularioDe } from "./formulario.ts";
 import { parsearKm, textoRecorrido } from "./kilometraje.ts";
-import { ITEMS_CHECKLIST, faltantesParaEnviar, parsearLitros, type CampoFaltante } from "./parte.ts";
+import { ITEMS_CHECKLIST, faltantesDeCierre, faltantesDeRevision, parsearLitros, type CampoDeCierre, type CampoDeRevision, type CampoFaltante } from "./parte.ts";
 import { TEXTO_FORMULARIO_PARTE as T, formatearKm, textoFaltantes } from "./textos.ts";
 import type { ErrorDeNegocio, ItemChecklist, NivelCombustible, Parte, RespuestaItem } from "./tipos.ts";
 import { validarTextoDeBorrador } from "./validacion.ts";
@@ -14,16 +14,20 @@ import { validarTextoDeBorrador } from "./validacion.ts";
 /** Un campo del formulario: el conductor, el inicio y el fin del kilometraje, los diez puntos, el combustible, los litros y «Otra novedad». */
 export type CampoParte = CampoFaltante | "litrosCargados";
 
-/** El orden del formulario (5.12): el del resumen de errores y el de las listas de faltantes (P4). */
-export const CAMPOS_PARTE: readonly CampoParte[] = [
-  "conductor",
-  "kmInicio",
-  "kmFin",
-  ...ITEMS_CHECKLIST.map((i) => i.id),
-  "combustible",
-  "litrosCargados",
-  "otraNovedad",
-];
+/** Los dos pasos del parte (sección 17): la revisión antes de salir y el cierre de la jornada. */
+export type PasoDelParte = "revision" | "cierre";
+
+/** Los campos de la revisión (paso 1), en el orden del formulario (5.12). */
+export const CAMPOS_DE_REVISION: readonly CampoDeRevision[] = ["conductor", "kmInicio", ...ITEMS_CHECKLIST.map((i) => i.id), "otraNovedad"];
+/** Los campos del cierre (paso 2), en el orden del formulario. */
+export const CAMPOS_DE_CIERRE: readonly (CampoDeCierre | "litrosCargados")[] = ["kmFin", "combustible", "litrosCargados"];
+
+/** El orden del formulario: primero la revisión y después el cierre. Es el del resumen de errores de cada paso (se filtra por paso) y el de las listas de faltantes (P4). */
+export const CAMPOS_PARTE: readonly CampoParte[] = [...CAMPOS_DE_REVISION, ...CAMPOS_DE_CIERRE];
+
+function camposDelPaso(paso: PasoDelParte): readonly CampoParte[] {
+  return paso === "revision" ? CAMPOS_DE_REVISION : CAMPOS_DE_CIERRE;
+}
 
 /** La respuesta a un punto del checklist: `""` es «sin responder». El texto escrito se conserva aunque se vuelva a «En orden» (por si se arrepiente). */
 export interface ValoresItem {
@@ -52,6 +56,7 @@ export type ErroresDeParte = ErroresDeFormularioDe<CampoParte> & {
 };
 
 export type ComandoDeBorrador = Extract<Comando, { tipo: "guardarBorrador" }>;
+export type ComandoDeCierre = Extract<Comando, { tipo: "guardarCierre" }>;
 
 /** 5.13: los cinco niveles del selector, de la reserva al lleno. */
 export const OPCIONES_COMBUSTIBLE: readonly { valor: NivelCombustible; etiqueta: string }[] = [
@@ -136,7 +141,7 @@ interface Conversion {
   errores: Map<CampoParte, string>;
 }
 
-function convertir(v: ValoresParte): Conversion {
+function convertir(v: ValoresParte, paso: PasoDelParte): Conversion {
   const errores = new Map<CampoParte, string>();
   const km = (texto: string, campo: "kmInicio" | "kmFin"): number | null => {
     if (texto.trim() === "") return null;
@@ -170,6 +175,9 @@ function convertir(v: ValoresParte): Conversion {
     if (!largo.ok) errores.set("otraNovedad", largo.error.mensaje);
   }
 
+  // Solo cuentan los errores de formato del paso que se está completando: un dato del otro paso (por ejemplo, un `kmFin` viejo de un borrador) no bloquea.
+  for (const campo of [...errores.keys()]) if (!camposDelPaso(paso).includes(campo)) errores.delete(campo);
+
   return {
     errores,
     datos: {
@@ -193,12 +201,12 @@ function enOrden(errores: Map<CampoParte, string>): { campo: CampoParte; mensaje
   return lista;
 }
 
-function conTitulo(lista: { campo: CampoParte; mensaje: string }[], general: string | null, faltan: number, tituloGeneral: string = T.tituloGeneral): ErroresDeParte {
+function conTitulo(lista: { campo: CampoParte; mensaje: string }[], general: string | null, faltan: number, tituloGeneral: string = T.tituloGeneral, paso: PasoDelParte = "revision"): ErroresDeParte {
   const base = armarErrores<CampoParte>(lista, general);
   let titulo: string;
   if (lista.length === 0) titulo = tituloGeneral;
-  else if (faltan === lista.length) titulo = T.tituloFaltan(faltan);
-  else titulo = T.tituloRevise(lista.length);
+  else if (faltan === lista.length) titulo = T.tituloFaltan(faltan, paso);
+  else titulo = T.tituloRevise(lista.length, paso);
   return { ...base, titulo };
 }
 
@@ -213,7 +221,7 @@ export function comandoDeBorrador(
   parteId: string | null,
   valores: ValoresParte,
 ): { ok: true; comando: ComandoDeBorrador } | { ok: false; errores: ErroresDeParte } {
-  const { datos, errores } = convertir(valores);
+  const { datos, errores } = convertir(valores, "revision");
   if (errores.size > 0) return { ok: false, errores: conTitulo(enOrden(errores), null, 0) };
   return {
     ok: true,
@@ -233,12 +241,23 @@ export function comandoDeBorrador(
   };
 }
 
-// --- Qué falta para enviar (P4) --------------------------------------------------------------------
+/**
+ * P3: el comando que guarda el cierre de un parte en uso (autoguardado del paso 2). Solo se controla el formato: con un error no se guarda nada y
+ * vuelve el error en el campo. Los litros vacíos son `null` (no cargó).
+ */
+export function comandoDeCierre(parteId: string, valores: ValoresParte): { ok: true; comando: ComandoDeCierre } | { ok: false; errores: ErroresDeParte } {
+  const { datos, errores } = convertir(valores, "cierre");
+  if (errores.size > 0) return { ok: false, errores: conTitulo(enOrden(errores), null, 0, T.tituloGeneralCierre, "cierre") };
+  return { ok: true, comando: { tipo: "guardarCierre", parteId, kmFin: datos.kmFin, combustible: datos.combustible, litrosCargados: datos.litrosCargados } };
+}
 
-/** P4: lo que falta para enviar, en el orden del formulario. Un campo con un error de formato no cuenta: es otro problema (ver `validarParaEnviar`). */
-export function faltantesDeValores(v: ValoresParte): CampoFaltante[] {
-  const { datos, errores } = convertir(v);
-  return faltantesParaEnviar(datos).filter((c) => !errores.has(c));
+// --- Qué falta para enviar la revisión o cerrar (P4) -------------------------------------------------
+
+/** P4: lo que falta para enviar la revisión (o cerrar el parte), en el orden del formulario. Un campo con un error de formato no cuenta: es otro problema (ver `validarParaEnviar`). */
+export function faltantesDeValores(v: ValoresParte, paso: PasoDelParte = "revision"): CampoFaltante[] {
+  const { datos, errores } = convertir(v, paso);
+  const faltan: CampoFaltante[] = paso === "revision" ? faltantesDeRevision(datos) : faltantesDeCierre(datos);
+  return faltan.filter((c) => !errores.has(c));
 }
 
 function mensajeDeFaltante(campo: CampoFaltante, v: ValoresParte): string {
@@ -248,35 +267,40 @@ function mensajeDeFaltante(campo: CampoFaltante, v: ValoresParte): string {
 }
 
 /**
- * 5.15: todo lo que impide enviar, en el orden del formulario: los faltantes de P4 y los errores de formato. `null` si se puede intentar el
- * envío (las reglas de kilometraje, la fecha y la unidad las dice el comando). El `titulo` es el del resumen.
+ * 5.15: todo lo que impide enviar la revisión (o cerrar el parte), en el orden del formulario: los faltantes de P4 y los errores de formato. `null` si se puede intentar
+ * el envío (las reglas de licencia, kilometraje, fecha y unidad las dice el comando). El `titulo` es el del resumen de ese paso.
  */
-export function validarParaEnviar(v: ValoresParte): ErroresDeParte | null {
-  const { datos, errores } = convertir(v);
-  const faltan = faltantesParaEnviar(datos).filter((c) => !errores.has(c));
+export function validarParaEnviar(v: ValoresParte, paso: PasoDelParte = "revision"): ErroresDeParte | null {
+  const { datos, errores } = convertir(v, paso);
+  const faltan = (paso === "revision" ? faltantesDeRevision(datos) : faltantesDeCierre(datos)).filter((c) => !errores.has(c));
   const todos = new Map(errores);
   for (const c of faltan) todos.set(c, mensajeDeFaltante(c, v));
   if (todos.size === 0) return null;
-  return conTitulo(enOrden(todos), null, faltan.length);
+  return conTitulo(enOrden(todos), null, faltan.length, paso === "revision" ? T.tituloGeneral : T.tituloGeneralCierre, paso);
 }
 
-/** Un error del comando, repartido para el formulario: al campo si lo es (K2, K3, K4); si no, general (P2, P8, guardado). */
-export function erroresDeNegocioParte(error: ErrorDeNegocio): ErroresDeParte {
-  const campo = CAMPOS_PARTE.find((c) => c === error.campo);
-  return campo === undefined ? conTitulo([], error.mensaje, 0) : conTitulo([{ campo, mensaje: error.mensaje }], null, 0);
+/**
+ * Un error del comando, repartido para el formulario: al campo si lo es (K2, K3, K4; L1 va al campo Conductor); si no, general (P2, P8, guardado). Con
+ * `paso` el título de lo general es el del paso.
+ */
+export function erroresDeNegocioParte(error: ErrorDeNegocio, paso: PasoDelParte = "revision"): ErroresDeParte {
+  const campoDeError = error.campo === "conductorId" ? "conductor" : error.campo;
+  const campo = CAMPOS_PARTE.find((c) => c === campoDeError);
+  const tituloGeneral = paso === "revision" ? T.tituloGeneral : T.tituloGeneralCierre;
+  return campo === undefined ? conTitulo([], error.mensaje, 0, tituloGeneral, paso) : conTitulo([{ campo, mensaje: error.mensaje }], null, 0, tituloGeneral, paso);
 }
 
-/** Solo un error general (sin datos, sin permiso, guardado fallido, algo que cambió en otra pestaña). El título por defecto es el del envío; otras acciones pasan el suyo. */
+/** Solo un error general (sin datos, sin permiso, guardado fallido, algo que cambió en otra pestaña). El título por defecto es el del envío de la revisión; otras acciones pasan el suyo. */
 export function errorGeneralParte(mensaje: string, titulo: string = T.tituloGeneral): ErroresDeParte {
   return conTitulo([], mensaje, 0, titulo);
 }
 
 // --- Lo que muestra el formulario ------------------------------------------------------------------
 
-/** Barra de envío (5.14): «Faltan 5 datos» o «Listo para enviar». Cuenta también lo que tiene un error de formato. */
-export function textoBarraDeEnvio(v: ValoresParte): string {
-  const n = validarParaEnviar(v)?.lista.length ?? 0;
-  return n === 0 ? T.barraLista : textoFaltantes(n);
+/** Barra de envío (5.14): «Faltan 5 datos» o «Listo para enviar» («Listo para cerrar» en el cierre). Cuenta también lo que tiene un error de formato. */
+export function textoBarraDeEnvio(v: ValoresParte, paso: PasoDelParte = "revision"): string {
+  const n = validarParaEnviar(v, paso)?.lista.length ?? 0;
+  return n === 0 ? (paso === "revision" ? T.barraLista : T.barraListaCierre) : textoFaltantes(n);
 }
 
 /** «Respondidos: 3 de 10» (5.12). */
