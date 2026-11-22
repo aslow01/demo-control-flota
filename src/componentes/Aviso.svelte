@@ -1,10 +1,22 @@
+<script lang="ts" module>
+  /**
+   * El aviso compacto de dos renglones (5.18, C10) a partir de una sola cadena: el hecho («ZK 214 BD no puede salir: Seguro vencido hace 1 día.») y, en la última frase, lo que hay que
+   * hacer («Avise al encargado antes de usarla.»). Es el único lugar donde se corta. Sin «. » adentro, queda todo como titular y sin segundo renglón.
+   */
+  export function partirAviso(texto: string): { titular: string; accion: string } {
+    const corte = texto.lastIndexOf(". ");
+    return corte < 0 ? { titular: texto, accion: "" } : { titular: texto.slice(0, corte + 1), accion: texto.slice(corte + 2) };
+  }
+</script>
+
 <script lang="ts">
   // 5.18 Aviso global: franja a lo ancho del contenido, con borde izquierdo del tono, ícono, texto y, a la derecha
   // (o debajo a menos de 40 rem), su acción. No lleva rol propio: va dentro del contenedor `role="status"` de la cabecera
   // (siempre presente, así lo que llega con la página abierta se anuncia). `rol="alert"` solo para el error de una acción
   // de la persona, que se inserta suelto. El que se puede cerrar lleva "Cerrar aviso" (`alCerrar`); al cerrarlo el foco pasa
   // al aviso siguiente (o al anterior) y, si no queda ninguno, al h1: nunca se pierde en el `body`.
-  // El texto va como contenido; la acción, como el fragmento `accion`.
+  // El texto va como contenido; el botón de la derecha, como el fragmento `boton`.
+  // Aviso compacto de dos renglones (C10): con `accion` (texto), el contenido es el renglón 1 (`aviso-titular`, 600) y `accion`, el renglón 2 (`aviso-accion`, `--t-chico`).
   import { tick, type Snippet } from "svelte";
   import Boton from "./Boton.svelte";
   import Icono from "./Icono.svelte";
@@ -16,14 +28,16 @@
     icono,
     rol,
     alCerrar,
-    accion,
+    boton,
+    accion = "",
     children,
   }: {
     tono: Tono;
     icono: NombreIcono;
     rol?: "alert";
     alCerrar?: () => void;
-    accion?: Snippet;
+    boton?: Snippet;
+    accion?: string;
     children: Snippet;
   } = $props();
 
@@ -47,10 +61,17 @@
 
 <div class="aviso" role={rol} data-tono={tono} bind:this={raiz}>
   <span class="icono-aviso"><Icono nombre={icono} /></span>
-  <div class="texto">{@render children()}</div>
-  {#if accion !== undefined || alCerrar !== undefined}
-    <div class="acciones" class:con-accion={accion !== undefined}>
-      {#if accion !== undefined}{@render accion()}{/if}
+  <div class="texto">
+    {#if accion !== ""}
+      <span class="aviso-titular">{@render children()}</span>
+      <span class="aviso-accion">{accion}</span>
+    {:else}
+      {@render children()}
+    {/if}
+  </div>
+  {#if boton !== undefined || alCerrar !== undefined}
+    <div class="acciones" class:con-accion={boton !== undefined}>
+      {#if boton !== undefined}{@render boton()}{/if}
       {#if alCerrar !== undefined}
         <Boton variante="icono" icono="cerrar" etiqueta={TEXTO_MARCO.cerrarAviso} onclick={cerrar} />
       {/if}
@@ -85,6 +106,17 @@
     line-height: 1.5;
     /* Lo que escribe la persona (un motivo, una marca) puede no tener espacios: no tiene que ensanchar la página. */
     overflow-wrap: anywhere;
+  }
+  .aviso-titular,
+  .aviso-accion {
+    display: block;
+  }
+  .aviso-titular {
+    font-weight: 600;
+  }
+  .aviso-accion {
+    font-size: var(--t-chico);
+    line-height: 1.4;
   }
   .texto :global(p + p) {
     margin-top: var(--e-1);

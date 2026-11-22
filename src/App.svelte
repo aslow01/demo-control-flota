@@ -266,7 +266,7 @@
             {:else if aviso.tipo === "datos-de-otra-fecha"}
               <Aviso tono="semana" icono="calendario" alCerrar={() => app.descartarAviso("datos-de-otra-fecha")}>
                 {textoDatosDeOtraFecha(aviso.fechaBase)}
-                {#snippet accion()}
+                {#snippet boton()}
                   <Boton variante="secundario" onclick={pedirReinicio}>{TEXTO_MARCO.reiniciarDemo}</Boton>
                 {/snippet}
               </Aviso>
@@ -280,7 +280,7 @@
             <Aviso tono="quincena" icono="reiniciar">
               <p>{TEXTO_AVISO.cambiosEnOtraPestana}</p>
               {#if errorAlActualizar !== ""}<p class="error-aviso">{errorAlActualizar}</p>{/if}
-              {#snippet accion()}
+              {#snippet boton()}
                 <Boton variante="secundario" onclick={actualizar}>{TEXTO_MARCO.actualizar}</Boton>
               {/snippet}
             </Aviso>

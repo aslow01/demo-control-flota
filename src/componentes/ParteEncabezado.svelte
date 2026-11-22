@@ -4,7 +4,7 @@
   // un texto, no un indicador gráfico); 4) la patente y «Int. 07 · Toyota Hilux 2022» (sin el tipo); 5) los avisos (fuera de término, «no puede salir»; solo la revisión los trae);
   // 6) el indicador de guardado (5.15). La región `role="status"` oculta dice SOLO el texto de `anuncio`, que cambia al cambiar de estado (no en cada guardado).
   // Vive dentro del contenedor `parte` de `ParteFormulario` (las reglas `@container parte` miden ese ancho).
-  import Aviso from "./Aviso.svelte";
+  import Aviso, { partirAviso } from "./Aviso.svelte";
   import EtiquetaDemo from "./EtiquetaDemo.svelte";
   import Icono from "./Icono.svelte";
   import Patente from "./Patente.svelte";
@@ -36,15 +36,11 @@
     anuncio: string;
   } = $props();
 
-  // La línea del conductor no se repite acá: con perfil Conductor ya está en la barra («Tamara Olivera (ficticia)»), y con perfil Encargado es el `select`.
+  // La línea del conductor no se repite acá: con perfil Conductor ya está en la barra («Tamara Olivera (persona ficticia)»), y con perfil Encargado es el `select`.
   // «Toyota Hilux 2022 · Camioneta»: el tipo sobra junto a la patente (se mira la unidad, no se la clasifica).
   const modelo = $derived(descripcion.includes(" · ") ? descripcion.slice(0, descripcion.lastIndexOf(" · ")) : descripcion);
-  // «ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.»: la primera parte es el hecho (firme) y la última frase, la acción (más chica).
-  const aviso = $derived.by(() => {
-    const t = avisoAptitud ?? "";
-    const corte = t.lastIndexOf(". ");
-    return corte < 0 ? { titular: t, accion: "" } : { titular: t.slice(0, corte + 1), accion: t.slice(corte + 2) };
-  });
+  // «ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.»: el hecho (firme) y la última frase, la acción (más chica). Lo corta `Aviso.svelte`.
+  const aviso = $derived(partirAviso(avisoAptitud ?? ""));
 </script>
 
 <!-- Con poco ancho, el enlace de vuelta y el rótulo de la demo comparten renglón: ahorra uno entero antes del primer campo (C1). -->
@@ -64,10 +60,7 @@
     <Aviso tono="semana" icono="calendario">{avisoFueraDeTermino}</Aviso>
   {/if}
   {#if avisoAptitud !== null}
-    <Aviso tono="critico" icono="vencido">
-      <span class="aviso-titular largo">{aviso.titular}</span>
-      {#if aviso.accion !== ""}<span class="aviso-accion largo">{aviso.accion}</span>{/if}
-    </Aviso>
+    <Aviso tono="critico" icono="vencido" accion={aviso.accion}>{aviso.titular}</Aviso>
   {/if}
   {#if indicador !== ""}
     <p class="indicador" class:con-error={indicadorConError}><Icono nombre={indicadorConError ? "vencido" : "guardado"} /><span>{indicador}</span></p>
@@ -156,21 +149,6 @@
       content: "· ";
       color: var(--c-texto-2);
     }
-  }
-  .largo {
-    overflow-wrap: anywhere;
-  }
-  /* Aviso de que la unidad no puede salir: compacto. El hecho en firme, la acción debajo en letra chica. */
-  .aviso-titular,
-  .aviso-accion {
-    display: block;
-  }
-  .aviso-titular {
-    font-weight: 600;
-  }
-  .aviso-accion {
-    font-size: var(--t-chico);
-    line-height: 1.4;
   }
   .indicador {
     --icono-tam: 1rem;
