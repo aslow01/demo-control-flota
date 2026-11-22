@@ -191,11 +191,13 @@ describe("filas (5.10)", () => {
     expect(fila("ZK214BD", panelDe(sinPartes)).ultimoParte).toEqual({ fecha: null, texto: "Sin partes", etiqueta: "Sin parte" });
     });
 
-    it("último parte: la fecha del último enviado, y la etiqueta «Sin enviar» o «Sin parte» cuando corresponde", () => {
+    it("último parte: la fecha del parte que nombra la etiqueta (C2); sin etiqueta o «Sin parte», la del último enviado", () => {
       for (const f of panel.filas) {
-        const enviados = e.partes.filter((p) => p.unidadId === f.unidadId && p.estado === "enviado").map((p) => p.fecha).sort();
-        const ultima = enviados.at(-1) ?? null;
-        expect(f.ultimoParte.fecha).toBe(ultima);
+        const de = (estado: string) => e.partes.filter((p) => p.unidadId === f.unidadId && p.estado === estado).map((p) => p.fecha).sort();
+        const enviados = de("enviado");
+        const delBorrador = de("borrador").at(-1) ?? null;
+        const ultima = f.ultimoParte.etiqueta === "Sin enviar" ? delBorrador : (enviados.at(-1) ?? null);
+        expect(f.ultimoParte.fecha, f.patente).toBe(ultima);
         expect(f.ultimoParte.texto).toBe(ultima === null ? "Sin partes" : formatearFecha(ultima));
       }
       const alertas = calcularAlertas(e, H).alertas;
@@ -207,10 +209,10 @@ describe("filas (5.10)", () => {
       expect(panel.filas.filter((f) => f.ultimoParte.etiqueta === "Sin parte").map((f) => f.unidadId).sort()).toEqual([...sinParte].sort());
     });
 
-    it("un borrador no es «último parte»", () => {
+    it("un borrador de hoy no es «último parte»: no hay etiqueta (todavía no alerta) y la fecha es la del último enviado", () => {
       const base = flotaDePrueba();
       const conBorrador: Estado = { ...base, partes: [...base.partes, parte({ id: "b", unidadId: "u1", fecha: H, estado: "borrador", enviado: null, kmFin: null })] };
-      expect(fila("ZK214BD", panelDe(conBorrador)).ultimoParte.fecha).toBe("2026-11-17");
+      expect(fila("ZK214BD", panelDe(conBorrador)).ultimoParte).toMatchObject({ fecha: "2026-11-17", etiqueta: null });
     });
 
     it("novedades: la cantidad de abiertas; si alguna es crítica, «1 (crítica)»", () => {
@@ -549,7 +551,21 @@ describe("conductor sin licencia y último parte en uso (L1, 17.5)", () => {
     expect(fila([uso(H)]).ultimoParte.etiqueta).toBe("En uso");
     expect(fila([uso("2026-11-16")]).ultimoParte.etiqueta).toBe("Sin cerrar");
     expect(fila([parte({ id: "b", unidadId: "u1", fecha: "2026-11-16", estado: "borrador", revisado: null, enviado: null })]).ultimoParte.etiqueta).toBe("Sin enviar");
-    // el último parte cerrado sigue siendo el de la fecha de la lista
-    expect(fila([uso(H)]).ultimoParte.fecha).toBe("2026-11-17");
+  });
+
+  it("C2: la fecha de «Último parte» es la del parte que nombra la etiqueta, no la del último cerrado", () => {
+    const base = flotaDePrueba();
+    const uso = (fecha: string) => parte({ id: `x${fecha}`, unidadId: "u1", fecha, estado: "en-uso", kmInicio: 84400, kmFin: null, combustible: null, enviado: null });
+    const fila = (partes: ReturnType<typeof parte>[]) => panelDe({ ...base, partes: [...base.partes, ...partes] }).filas.find((f) => f.patente === "ZK214BD")!;
+    // salió hoy: «H · En uso», no «17/11 · En uso»
+    expect(fila([uso(H)]).ultimoParte).toEqual({ fecha: H, texto: "18/11/2026", etiqueta: "En uso" });
+    // sin cerrar del 16 (hay un cerrado del 17): «16/11 · Sin cerrar»
+    expect(fila([uso("2026-11-16")]).ultimoParte).toEqual({ fecha: "2026-11-16", texto: "16/11/2026", etiqueta: "Sin cerrar" });
+    expect(fila([parte({ id: "b", unidadId: "u1", fecha: "2026-11-16", estado: "borrador", revisado: null, enviado: null })]).ultimoParte).toEqual({ fecha: "2026-11-16", texto: "16/11/2026", etiqueta: "Sin enviar" });
+    // sin etiqueta o «Sin parte»: la del último enviado
+    expect(fila([]).ultimoParte).toEqual({ fecha: "2026-11-17", texto: "17/11/2026", etiqueta: null });
+    // el orden «Último parte» usa la misma fecha
+    const orden = panelDe({ ...base, partes: [...base.partes, uso(H)] });
+    expect(orden.filas.find((f) => f.patente === "ZK214BD")?.ultimoParte.fecha).toBe(H);
   });
 });

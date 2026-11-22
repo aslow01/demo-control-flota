@@ -247,6 +247,16 @@ function armarFila(
   const sinCerrar = incompletos.some((x) => x.etapaParte === "en-uso");
   const enUsoHoy = estado.partes.some((p) => p.unidadId === u.id && p.estado === "en-uso" && p.fecha === hoy);
   const sinParte = alertasDeLaUnidad.some((x) => x.tipo === "sin-parte");
+  // C2: la fecha es la del parte que nombra la etiqueta (el más reciente de su clase); sin etiqueta o con «Sin parte», la del último enviado.
+  const ultimaDe = (lista: readonly Alerta[]): FechaCivil | null => lista.reduce<FechaCivil | null>((m, x) => (x.fecha !== null && (m === null || x.fecha > m) ? x.fecha : m), null);
+  const fechaDelParte =
+    sinEnviar
+      ? (ultimaDe(incompletos.filter((x) => x.etapaParte !== "en-uso")) ?? ultima)
+      : sinCerrar
+        ? (ultimaDe(incompletos.filter((x) => x.etapaParte === "en-uso")) ?? ultima)
+        : enUsoHoy
+          ? hoy
+          : ultima;
   const descripcion = textoDescripcionUnidad(u.marca, u.modelo, u.anio, u.tipo);
   return {
     unidadId: u.id,
@@ -269,8 +279,8 @@ function armarFila(
     proximoVencimiento: proximo,
     km: { valor: km, texto: km === null ? TEXTO_FLOTA.sinRegistros : `${formatearKm(km)} km` },
     ultimoParte: {
-      fecha: ultima,
-      texto: ultima === null ? TEXTO_FLOTA.sinPartes : formatearFecha(ultima),
+      fecha: fechaDelParte,
+      texto: fechaDelParte === null ? TEXTO_FLOTA.sinPartes : formatearFecha(fechaDelParte),
       etiqueta: sinEnviar
         ? TEXTO_ESTADO_PARTE_INCOMPLETO.borrador
         : sinCerrar
