@@ -1,9 +1,10 @@
 <script lang="ts">
-  // Diálogo «Antes de enviar» (5.17): el parte está completo pero hay avisos (K6, K7, P9) que conviene leer antes de enviarlo. Cada aviso va con su ícono y su tono (crítico
-  // para la documentación vencida, semana para los kilómetros inusuales). «Enviar igual» manda el parte aceptando esos avisos; «Volver al parte» lo cierra y devuelve
-  // el foco al botón «Enviar parte». No tiene reglas: la lista y los tonos los arma `app.enviarParte`.
+  // Diálogo «Antes de enviar» (5.17): el paso está completo pero hay avisos que conviene leer antes de seguir. En la revisión (`paso="revision"`) son K6 y P9 (solo documentos de la
+  // unidad); en el cierre (`paso="cierre"`), K7. Nunca hay una advertencia por la licencia: la licencia bloquea (L1). Cada aviso va con su ícono y su tono (crítico para la
+  // documentación vencida, semana para los kilómetros inusuales). «Enviar igual» (revisión) o «Cerrar igual» (cierre) acepta esos avisos; «Volver al parte» cierra el diálogo y devuelve
+  // el foco al botón de la barra de envío. No tiene reglas: la lista y los tonos los arma `app.enviarRevisionDeParte` o `app.enviarCierreDeParte`.
   //  - Foco al abrir: «Volver al parte» (el diálogo no tiene campos; enviar no es lo que se pide por defecto).
-  //  - Enviando: el botón queda con aria-disabled y no repite el pedido; el texto «Enviando…» aparece solo si tarda más de 200 ms (5.19). No se puede cerrar mientras tanto.
+  //  - Enviando: el botón queda con aria-disabled y no repite el pedido; el texto «Enviando…» («Cerrando…» en el cierre) aparece solo si tarda más de 200 ms (5.19). No se puede cerrar mientras tanto.
   import type { AdvertenciaDeEnvio } from "../lib/estado/app.svelte.ts";
   import Boton from "./Boton.svelte";
   import Dialogo from "./Dialogo.svelte";
@@ -15,6 +16,7 @@
     advertencias,
     enviando = false,
     mostrarEnviando = false,
+    paso = "revision",
     alEnviarIgual,
     focoDestino,
   }: {
@@ -23,6 +25,8 @@
     enviando?: boolean;
     /** «Enviando…» en el botón (recién cuando tarda). */
     mostrarEnviando?: boolean;
+    /** Qué paso del parte se está enviando: cambia la frase de arriba y el nombre del primario. */
+    paso?: "revision" | "cierre";
     alEnviarIgual: () => void;
     focoDestino?: () => HTMLElement | null;
   } = $props();
@@ -32,7 +36,7 @@
 </script>
 
 <Dialogo titulo={T.antesDeEnviar.titulo} bind:abierto bloqueado={enviando} cancelar={T.antesDeEnviar.volver} focoInicial="cancelar" descripcionId={idIntro} {focoDestino}>
-  <p id={idIntro}>{T.antesDeEnviar.intro}</p>
+  <p id={idIntro}>{paso === "cierre" ? T.antesDeEnviar.introCierre : T.antesDeEnviar.introRevision}</p>
   <ul class="avisos">
     {#each advertencias as a (a.tipo)}
       <li class="aviso" data-tono={a.tono}>
@@ -42,7 +46,9 @@
     {/each}
   </ul>
   {#snippet pie()}
-    <Boton cargando={enviando} onclick={alEnviarIgual}>{mostrarEnviando ? T.enviando : T.antesDeEnviar.enviarIgual}</Boton>
+    <Boton cargando={enviando} onclick={alEnviarIgual}>
+      {#if paso === "cierre"}{mostrarEnviando ? T.cerrando : T.antesDeEnviar.cerrarIgual}{:else}{mostrarEnviando ? T.enviando : T.antesDeEnviar.enviarIgual}{/if}
+    </Boton>
   {/snippet}
 </Dialogo>
 

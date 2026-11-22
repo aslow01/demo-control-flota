@@ -1,13 +1,14 @@
 <script lang="ts">
-  // Parte diario (6.5, `#/parte/ZK214BD/2026-11-18`): según `app.parteDeLaRuta` muestra el formulario para completar (`ParteFormulario`), el parte ya enviado en lectura, el
-  // motivo por el que no se puede cargar («No se puede cargar este parte») o «No se encontró la unidad». No tiene reglas de negocio: todo lo arma `vistaDeParte` (lib/estado/parte.ts).
-  //  - El formulario vive dentro de un `{#key}` (unidad, fecha y perfil): al cambiar de parte o de perfil arranca limpio y su autoguardado se cierra.
-  //  - Al enviar, `app.parteDeLaRuta` pasa a «lectura» por sí sola; esta pantalla se queda en «Parte enviado» (el `h1` recibe el foco) hasta que la persona elige «Volver al
-  //    inicio»: la vista del resultado es estado de esta pantalla (`recienEnviado`), no de la ruta.
-  //  - «Descartar borrador» (de dos pasos) en «No se puede cargar este parte»: es la salida (P5). Después el foco va al título y un `role="status"` dice «Borrador descartado.».
+  // Parte diario (6.5, `#/parte/ZK214BD/2026-11-18`): según `app.parteDeLaRuta` muestra la revisión antes de salir (A) o el cierre de la jornada (B), ambos con `ParteFormulario`; el parte
+  // ya cerrado en lectura (D); el motivo por el que no se puede cargar (E: «No se puede cargar este parte»); o «No se encontró la unidad». No tiene reglas de negocio: todo lo arma `vistaDeParte`
+  // (lib/estado/parte.ts).
+  //  - El formulario vive dentro de un `{#key}` (unidad, fecha, perfil y paso): al cambiar de parte, de perfil o de paso arranca limpio y su autoguardado se cierra.
+  //  - Al enviar, `app.parteDeLaRuta` cambia sola (la revisión deja el parte en uso; el cierre lo deja cerrado); esta pantalla se queda en el resultado (C1, C2 o C3, con el `h1` enfocado)
+  //    hasta que la persona elige una acción: la vista del resultado es estado de esta pantalla (`recienEnviado`), no de la ruta.
+  //  - «Completar el cierre» (C1) lleva a la misma ruta: la dirección no cambia, así que la pantalla suelta el resultado y muestra el cierre (B) con el foco en su `h1`.
+  //  - «Descartar borrador» (de dos pasos) en E es la salida (P5). Después el foco va al título y un `role="status"` dice «Borrador descartado.».
   import { tick } from "svelte";
   import { app } from "../lib/estado/instancia.ts";
-  import type { PanelParteEnviado } from "../lib/estado/parte.ts";
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import EnlaceAccion from "./EnlaceAccion.svelte";
   import EtiquetaDemo from "./EtiquetaDemo.svelte";
@@ -15,25 +16,41 @@
   import ParteEnviado from "./ParteEnviado.svelte";
   import ParteFormulario from "./ParteFormulario.svelte";
   import Patente from "./Patente.svelte";
+  import RevisionLeida from "./RevisionLeida.svelte";
   import { TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
+  import type { PanelParteEnviado } from "./tipos.ts";
 
-  // `titulo` es el de la pestaña (`document.title`) cuando el `h1` no es el nombre de la ruta: «Parte enviado», «No se puede cargar este parte», «No se encontró la unidad».
-  // `App.svelte` lo lee con `bind:titulo`; vacío = el de la ruta.
+  // `titulo` es el de la pestaña (`document.title`) cuando el `h1` no es el nombre de la ruta: el de cada paso («Revisión antes de salir», «Cierre de la jornada»), el de los resultados
+  // («Revisión enviada»…), «No se puede cargar este parte» y «No se encontró la unidad». `App.svelte` lo lee con `bind:titulo`; vacío = el de la ruta.
   let { titulo = $bindable("") }: { titulo?: string } = $props();
 
   const vista = $derived(app.parteDeLaRuta);
 
-  // El panel que sale de enviar: se muestra en lugar del formulario hasta que se vuelve al inicio.
+  // El panel que sale de enviar: se muestra en lugar del formulario hasta que se elige una acción.
   let recienEnviado = $state.raw<PanelParteEnviado | null>(null);
-  async function alEnviado(panel: PanelParteEnviado): Promise<void> {
-    recienEnviado = panel;
+  async function irAlTitulo(): Promise<void> {
     await tick();
     window.scrollTo(0, 0);
     document.querySelector<HTMLElement>("main h1")?.focus();
   }
+  async function alEnviado(panel: PanelParteEnviado): Promise<void> {
+    recienEnviado = panel;
+    await irAlTitulo();
+  }
+  // C1 → B: misma ruta, otro contenido. El enlace conserva su dirección (se puede abrir en otra pestaña), pero acá no navega.
+  async function completarCierre(evento: MouseEvent): Promise<void> {
+    evento.preventDefault();
+    recienEnviado = null;
+    await irAlTitulo();
+  }
 
   $effect(() => {
-    titulo = recienEnviado !== null ? recienEnviado.titulo : vista !== null && (vista.tipo === "no-disponible" || vista.tipo === "no-encontrada") ? vista.titulo : "";
+    titulo =
+      recienEnviado !== null
+        ? recienEnviado.titulo
+        : vista !== null && (vista.tipo === "no-disponible" || vista.tipo === "no-encontrada" || vista.tipo === "edicion" || vista.tipo === "cierre")
+          ? vista.titulo
+          : "";
   });
 
   // «Borrador descartado.» en «No se puede cargar este parte».
@@ -47,62 +64,60 @@
 </script>
 
 {#if recienEnviado !== null}
+  {@const panel = recienEnviado}
   <div class="pantalla">
     <div class="solo-angosto"><EtiquetaDemo /></div>
-    <ParteEnviado panel={recienEnviado} nivel="h1">
+    <ParteEnviado {panel} nivel="h1">
       {#snippet acciones()}
-        <EnlaceAccion href={recienEnviado?.volverAlInicio.href ?? "#/"} variante="primario" tamano="grande">{recienEnviado?.volverAlInicio.texto ?? ""}</EnlaceAccion>
+        {#if panel.completarCierre !== null && panel.completarCierre.primario}
+          <!-- Parte de un día pasado: lo que falta es el cierre; volver al inicio queda como botón-texto. -->
+          <EnlaceAccion href={panel.completarCierre.href} variante="primario" tamano="grande" alActivar={completarCierre}>{panel.completarCierre.texto}</EnlaceAccion>
+          <EnlaceAccion href={panel.volverAlInicio.href} variante="texto">{panel.volverAlInicio.texto}</EnlaceAccion>
+        {:else}
+          <EnlaceAccion href={panel.volverAlInicio.href} variante="primario" tamano="grande">{panel.volverAlInicio.texto}</EnlaceAccion>
+          {#if panel.completarCierre !== null}
+            <EnlaceAccion href={panel.completarCierre.href} variante="texto" alActivar={completarCierre}>{panel.completarCierre.texto}</EnlaceAccion>
+          {/if}
+        {/if}
       {/snippet}
     </ParteEnviado>
   </div>
 {:else if vista !== null}
-  {#if vista.tipo === "edicion"}
-    {#key `${vista.unidadId}/${vista.fecha}/${app.perfil.tipo}`}
+  {#if vista.tipo === "edicion" || vista.tipo === "cierre"}
+    {#key `${vista.unidadId}/${vista.fecha}/${app.perfil.tipo}/${vista.tipo}`}
       <ParteFormulario {vista} {alEnviado} />
     {/key}
   {:else if vista.tipo === "lectura"}
     <div class="pantalla">
       <a class="vuelta" href={vista.vuelta.href}><Icono nombre="flecha-izq" />{vista.vuelta.texto}</a>
-      <header class="encabezado">
-        <div class="solo-angosto"><EtiquetaDemo /></div>
-        <h1 tabindex="-1">{vista.titulo}</h1>
-        <p class="identidad">
-          <Patente patente={vista.patente} tamano="grande" />
-          <span class="interno">{vista.interno}</span>
-        </p>
-        <p class="largo">{vista.descripcion}</p>
-        <p class="largo">{T.conductorLinea(vista.conductor ?? T.lectura.sinConductor)}</p>
-      </header>
-
-      <ParteEnviado panel={vista.panel} />
-
-      <section class="revision" aria-labelledby="titulo-revision">
-        <h2 id="titulo-revision">{T.lectura.revision}</h2>
-        {#if vista.puntosEnOrden !== null}
-          <p class="en-orden"><span class="icono-orden"><Icono nombre="check" /></span><span>{vista.puntosEnOrden}</span></p>
-        {/if}
-        {#if vista.novedades.length > 0}
-          <ul class="novedades">
-            {#each vista.novedades as n (n.rotulo + n.texto)}
-              <li class="novedad" data-tono={n.critica ? "critico" : "semana"}>
-                <span class="icono-novedad"><Icono nombre={n.critica ? "octogono" : "alerta"} /></span>
-                <p>
-                  <strong>{n.critica ? `${n.rotulo} (${T.lectura.critica})` : n.rotulo}:</strong>
-                  {n.texto}
-                </p>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      </section>
+      <div class="solo-angosto"><EtiquetaDemo /></div>
+      <ParteEnviado panel={vista.panel} nivel="h1" titulo={vista.titulo} etiqueta={vista.etiqueta} momentos={vista.momentos} sinLinea>
+        {#snippet encabezado()}
+          <div class="unidad">
+            <p class="identidad">
+              <Patente patente={vista.patente} tamano="grande" />
+              <span class="interno">{vista.interno}</span>
+            </p>
+            <p class="largo">{vista.descripcion}</p>
+            <p class="largo">{T.conductorLinea(vista.conductor ?? T.lectura.sinConductor)}</p>
+          </div>
+        {/snippet}
+        {#snippet cuerpo()}
+          <section class="revision" aria-labelledby="titulo-revision">
+            <h2 id="titulo-revision">{T.lectura.revision}</h2>
+            <RevisionLeida revision={{ puntosEnOrden: vista.puntosEnOrden, novedades: vista.novedades }} />
+          </section>
+        {/snippet}
+      </ParteEnviado>
     </div>
   {:else if vista.tipo === "no-disponible" || vista.tipo === "no-encontrada"}
-    <!-- «No se puede cargar este parte» y «No se encontró la unidad»: h1, el motivo y el camino de vuelta (8: Error). -->
+    <!-- E: «No se puede cargar este parte» y «No se encontró la unidad»: h1, el motivo y el camino de vuelta (8: Error). -->
     <div class="pantalla">
       <div class="encabezado">
         <div class="solo-angosto"><EtiquetaDemo /></div>
         <h1 tabindex="-1">{vista.titulo}</h1>
         <p class="parrafo largo">{vista.mensaje}</p>
+        {#if vista.tipo === "no-disponible" && vista.nota !== null}<p class="parrafo largo">{vista.nota}</p>{/if}
       </div>
       <div class="acciones">
         {#if vista.tipo === "no-disponible" && vista.borrador !== null}
@@ -147,6 +162,12 @@
     min-height: var(--alto-tactil);
     font-weight: 600;
   }
+  .unidad {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-1);
+    min-width: 0;
+  }
   .identidad {
     display: flex;
     flex-wrap: wrap;
@@ -166,60 +187,16 @@
     gap: var(--e-3);
   }
 
+  /* La revisión de la unidad, dentro del panel de lectura: separada de los datos por una línea. */
   .revision {
     display: flex;
     flex-direction: column;
     gap: var(--e-3);
-    padding: var(--e-4);
-    background: var(--c-superficie);
-    border: 1px solid var(--c-ventana-borde);
-    border-radius: var(--r-3);
-    box-shadow: var(--s-ventana);
-  }
-  @media (min-width: 40rem) {
-    .revision {
-      padding: var(--e-5);
-    }
+    padding-top: var(--e-4);
+    border-top: 1px solid var(--c-borde);
   }
   .revision h2 {
     font-size: var(--t-h3);
     line-height: 1.3;
-  }
-  .en-orden {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--e-2);
-    overflow-wrap: anywhere;
-  }
-  .icono-orden {
-    --icono-tam: 1.125rem;
-    display: inline-flex;
-    flex: none;
-    margin-top: 0.1875rem;
-    color: var(--c-vigente-t);
-  }
-  .novedades {
-    display: flex;
-    flex-direction: column;
-    gap: var(--e-3);
-  }
-  .novedad {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--e-3);
-    padding: var(--e-3) var(--e-4);
-    background: var(--tono-f);
-    border: 1px solid transparent;
-    border-left: 4px solid var(--tono-r);
-    border-radius: var(--r-2);
-    line-height: 1.5;
-    overflow-wrap: anywhere;
-  }
-  .icono-novedad {
-    --icono-tam: 1.125rem;
-    display: inline-flex;
-    flex: none;
-    margin-top: 0.1875rem;
-    color: var(--tono-t);
   }
 </style>

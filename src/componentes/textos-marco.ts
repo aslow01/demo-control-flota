@@ -84,7 +84,7 @@ export const TEXTO_COMO_FUNCIONA = {
     {
       etiqueta: "Vencido o faltante",
       texto:
-        "El documento venció o, si es obligatorio, falta cargarlo. Si es de la unidad, la unidad figura como «No puede salir». Si es del conductor, no la bloquea: avisa al enviar el parte.",
+        "El documento venció o, si es obligatorio, falta cargarlo. Si es de la unidad, la unidad figura como «No puede salir». Si es la licencia del conductor, no puede enviar la revisión ni salir con ninguna unidad.",
     },
     { etiqueta: "7 días o menos", texto: "Vence hoy o en los próximos 7 días. Hasta el día del vencimiento incluido, la unidad puede salir." },
     { etiqueta: "8 a 15 días", texto: "Hay que planificar la renovación." },
@@ -93,7 +93,7 @@ export const TEXTO_COMO_FUNCIONA = {
   ],
   tituloParte: "El parte diario",
   parte:
-    "Está pensado para usarse desde el celular: el conductor carga el kilometraje, 10 puntos de revisión y, si cargó, el combustible. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
+    "Está pensado para usarse desde el celular y tiene dos pasos. Antes de salir, el conductor carga el kilometraje y completa 10 puntos de revisión de la unidad. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio en ese momento, y la unidad no sale hasta que el encargado resuelva la novedad. Al terminar la jornada, cierra el parte con el kilometraje final y el combustible. Sin licencia de conducir vigente no puede enviar la revisión.",
   tituloDatos: "Dónde se guardan los datos",
   datos:
     "Los datos que usted carga quedan solo en este navegador y no se envían a ningún servidor. «Reiniciar demo» borra esos cambios y vuelve a la flota de ejemplo con las fechas de hoy.",
@@ -126,6 +126,9 @@ export const TEXTO_ALERTAS = {
   /** Texto oculto de las celdas que muestran «—» (un lector de pantalla diría «raya» o nada). */
   sinFecha: "Sin fecha",
   sinProyecto: "Sin proyecto",
+  /** L6: «Luis Ferreyra (ficticia)» en la fila de un conductor sin licencia vigente, y el rótulo de su unidad. */
+  conductorFicticio: (nombre: string) => `${nombre} (ficticia)`,
+  unidadDelConductor: "Unidad",
   /** Lo que se dice cuando la fila que se quiso abrir ya no está pendiente (se renovó o se cargó mientras tanto). */
   yaNoPendiente: "Ese documento ya no está pendiente. La lista está al día.",
   /** Ídem para una novedad que se resolvió mientras tanto (otra pestaña, o ya resuelta desde la ficha). */
@@ -156,6 +159,8 @@ export const TEXTO_FLOTA_VISTA = {
   mostrar: "Mostrar",
   quitarFiltros: "Quitar filtros",
   sinConductor: "Sin conductor",
+  /** L6: a continuación del nombre del conductor asignado cuya licencia no ampara hoy (en minúscula: sigue al nombre). */
+  sinLicencia: "sin licencia vigente",
   /** Texto oculto de la celda que muestra «—» (un lector de pantalla diría «raya» o nada). */
   sinProyecto: "Sin proyecto",
   columnas: {
@@ -307,13 +312,21 @@ export const TEXTO_CONDUCTOR_VISTA = {
   parteDel: "Parte del ",
 } as const;
 
-/** Parte diario (6.5): rótulos del formulario, de la barra de envío, del diálogo «Antes de enviar» y del parte en lectura. Los textos de ayuda, de errores y del panel «Parte enviado» vienen de `textos.ts`. */
+/**
+ * Parte diario (6.5): rótulos de los dos pasos (la revisión antes de salir y el cierre de la jornada), de la barra de envío, del diálogo «Antes de enviar» y de la lectura. Los `h1`, el renglón de
+ * contexto, los textos de los resultados (C1 a C3), de la lectura y de «No se puede cargar este parte», las ayudas y los errores vienen de `textos.ts`.
+ */
 export const TEXTO_PARTE_VISTA = {
   conductorLinea: (nombre: string) => `Conductor: ${nombre}`,
-  /** Sigue a «Los campos con * son obligatorios.» (arriba del parte): los puntos de revisión y el combustible lo son sin llevar asterisco. */
-  obligatoriosRevision: "También son obligatorios los puntos de revisión y el nivel de combustible.",
-  opcionConductor: (nombre: string, patente: string) => `${nombre} (${patente})`,
-  secciones: { km: "1. Kilometraje", revision: "2. Revisión de la unidad", combustible: "3. Combustible", otra: "4. Otra novedad" },
+  /** Sigue a «Los campos con * son obligatorios.» (arriba de la revisión): los puntos de revisión lo son sin llevar asterisco. En el cierre no hace falta: el combustible lleva el suyo. */
+  obligatoriosRevision: "También son obligatorios los puntos de revisión.",
+  /** Opción del `select` Conductor del encargado: «Tamara Olivera · ZK 214 BD»; con la licencia sin vigencia para la fecha del parte, «… (sin licencia vigente)» (L1, 6.5). */
+  opcionConductor: (nombre: string, patente: string | null, sinLicencia: boolean) =>
+    `${patente === null ? nombre : `${nombre} · ${patente}`}${sinLicencia ? " (sin licencia vigente)" : ""}`,
+  secciones: {
+    revision: { km: "1. Kilometraje al salir", puntos: "2. Revisión de la unidad", otra: "3. Otra novedad (opcional)" },
+    cierre: { km: "1. Kilometraje al terminar", combustible: "2. Combustible" },
+  },
   kmInicio: "Al iniciar",
   kmFin: "Al terminar",
   recorrido: "Recorrido",
@@ -323,19 +336,23 @@ export const TEXTO_PARTE_VISTA = {
   conNovedad: "Con novedad",
   queEncontro: "¿Qué encontró?",
   nivelCombustible: "Nivel de combustible al terminar",
-  litros: "Combustible cargado hoy",
-  enviar: "Enviar parte",
+  litros: "Combustible cargado en la jornada",
+  enviar: "Enviar revisión",
+  cerrar: "Cerrar el parte",
   enviando: "Enviando…",
+  cerrando: "Cerrando…",
   descartar: "Descartar borrador",
   confirmarDescartar: "Confirmar descarte",
   /** Diálogo «Antes de enviar» (K6, K7, P9): lo que explica cada aviso viene de `textoAdvertencia` (dominio). */
   antesDeEnviar: {
     titulo: "Antes de enviar",
-    intro: "El parte está completo, pero hay avisos que conviene leer antes de enviarlo.",
+    introRevision: "La revisión está completa, pero hay avisos que conviene leer antes de enviarla.",
+    introCierre: "El parte está completo, pero hay avisos que conviene leer antes de cerrarlo.",
     enviarIgual: "Enviar igual",
+    cerrarIgual: "Cerrar igual",
     volver: "Volver al parte",
   },
-  enviado: { avisosAceptados: "Avisos aceptados al enviar" },
+  enviado: { avisosAceptados: "Avisos aceptados" },
   lectura: {
     revision: "Revisión de la unidad",
     sinConductor: "Sin conductor",

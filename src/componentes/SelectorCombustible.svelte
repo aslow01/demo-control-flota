@@ -12,8 +12,11 @@
     valor = $bindable(""),
     id,
     error = "",
+    requerido = false,
   }: {
     leyenda: string;
+    /** Lleva el asterisco de obligatorio en la leyenda (el nivel de combustible lo es en el cierre). */
+    requerido?: boolean;
     opciones: readonly { valor: NivelCombustible; etiqueta: string }[];
     valor?: "" | NivelCombustible;
     id: string;
@@ -27,7 +30,7 @@
 </script>
 
 <fieldset class="combustible" class:con-error={error !== ""} role="radiogroup" aria-required="true" aria-invalid={error !== "" ? "true" : undefined} aria-describedby={error !== "" ? idError : undefined}>
-  <legend>{leyenda}</legend>
+  <legend>{leyenda}{#if requerido}<span aria-hidden="true"> *</span>{/if}</legend>
   {#if error !== ""}
     <p class="error" id={idError}><Icono nombre="vencido" /><span>{error}</span></p>
   {/if}

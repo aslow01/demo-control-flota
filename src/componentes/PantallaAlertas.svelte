@@ -8,6 +8,9 @@
   //    fila desaparece, el mensaje («Novedad resuelta: Frenos (ZU 899 QE).») va a la barra de estado del detalle y el foco, a su título (o al de «Operación
   //    diaria» si el detalle quedó vacío). "Abrir el parte diario" cambia la vista a Conductor con el diálogo ya existente (`alAbrirParte`, que lo abre el marco).
   //  - Cambiar el filtro anuncia "Mostrando 4 de 11 vencimientos." en una región `role="status"` aparte (la barra de estado del panel es para lo que pasó).
+  //  - «Conductores que no pueden manejar hoy» (L6): dentro del protagonista, debajo de las unidades, una fila por conductor con «Renovar» (o «Cargar» si falta la licencia). El botón abre
+  //    el MISMO diálogo de la fila de su licencia en Vencimientos (mismo `alertaId`); al guardar, el foco va al `h2` del protagonista y su barra de estado dice «Licencia de … renovada.».
+  //    La cifra no cambia (cuenta unidades, A8).
   import { formatearFecha } from "../lib/dominio/fechas.ts";
   import { contextoDeCargar, contextoDeRenovar, type CampoDocumento, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
   import { contextoDeResolver } from "../lib/dominio/formulario-novedad.ts";
@@ -21,6 +24,7 @@
     type IdFiltro,
   } from "../lib/estado/centro-alertas.ts";
   import { app } from "../lib/estado/instancia.ts";
+  import { textoAnunciado } from "./anuncio.svelte.ts";
   import { aspectoDeOperacion, aspectoDeVencimiento } from "./alertas-aspecto.ts";
   import Boton from "./Boton.svelte";
   import DialogoDocumento, { type ContextoDeDocumento } from "./DialogoDocumento.svelte";
@@ -36,11 +40,12 @@
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
   import { TEXTO_ALERTAS as T } from "./textos-marco.ts";
-  import type { Tono } from "./tipos.ts";
+  import type { FilaDeConductorSinLicencia, Tono } from "./tipos.ts";
 
   let { alAbrirParte }: { alAbrirParte: () => void } = $props();
 
   const ID_TITULO_VENCIMIENTOS = "titulo-vencimientos";
+  const ID_TITULO_PROTAGONISTA = "titulo-protagonista";
 
   const c = $derived(app.centroDeAlertas);
 
@@ -119,15 +124,24 @@
   );
   // Cada mensaje es un objeto nuevo: dos iguales seguidos («Seguro renovado…») cambian la identidad y el panel los vuelve a anunciar.
   let estadoVencimientos = $state({ texto: "" });
+  // L6: el diálogo se puede abrir desde una fila de Vencimientos o desde «Renovar» / «Cargar» de un conductor; de ahí depende a dónde va el foco y dónde se dice lo que pasó.
+  let origenDelDialogo = $state<"vencimientos" | "protagonista">("vencimientos");
+  let estadoProtagonista = $state({ texto: "" });
+  const anunciadoProtagonista = textoAnunciado(() => ({ texto: estadoProtagonista.texto, repetir: estadoProtagonista }));
 
-  function abrirDialogo(accion: AccionDeDocumento): void {
+  function abrirDialogo(accion: AccionDeDocumento, origen: "vencimientos" | "protagonista" = "vencimientos"): void {
     const estado = app.estado;
     if (estado === null) return;
+    origenDelDialogo = origen;
+    const yaNoPendiente = (): void => {
+      if (origen === "protagonista") estadoProtagonista = { texto: T.yaNoPendiente };
+      else estadoVencimientos = { texto: T.yaNoPendiente };
+    };
     if (accion.tipo === "renovar" && accion.documentoId !== null) {
       const documentoId = accion.documentoId;
       const ctx = contextoDeRenovar(estado, documentoId, app.hoy);
       if (ctx === null) {
-        estadoVencimientos = { texto: T.yaNoPendiente };
+        yaNoPendiente();
         return;
       }
       contextoDialogo = { titulo: ctx.titulo, contexto: ctx.contexto, primario: ctx.primario, valoresIniciales: ctx.valoresIniciales };
@@ -135,7 +149,7 @@
     } else {
       const ctx = contextoDeCargar(estado, accion.titular, accion.tipoDocumento);
       if (ctx === null) {
-        estadoVencimientos = { texto: T.yaNoPendiente };
+        yaNoPendiente();
         return;
       }
       contextoDialogo = { titulo: ctx.titulo, primario: ctx.primario, valoresIniciales: ctx.valoresIniciales };
@@ -145,7 +159,20 @@
   }
 
   function alGuardar(r: { mensaje: string }): void {
-    estadoVencimientos = { texto: r.mensaje };
+    if (origenDelDialogo === "protagonista") estadoProtagonista = { texto: r.mensaje };
+    else estadoVencimientos = { texto: r.mensaje };
+  }
+
+  /** «Renovar» / «Cargar» de un conductor sin licencia: abre el diálogo de la fila de su licencia en Vencimientos (el mismo `alertaId`). */
+  function abrirLicencia(conductor: FilaDeConductorSinLicencia): void {
+    const alertaId = conductor.accion?.alertaId;
+    const fila = c === null || alertaId === undefined ? undefined : c.vencimientos.grupos.flatMap((g) => g.filas).find((f) => f.alertaId === alertaId);
+    if (fila === undefined) {
+      origenDelDialogo = "protagonista";
+      estadoProtagonista = { texto: T.yaNoPendiente };
+      return;
+    }
+    abrirDialogo(fila.accion, "protagonista");
   }
 
   // ---------- Diálogo Resolver (novedades) ----------
@@ -172,16 +199,21 @@
     if (r === null) return null;
     return document.getElementById("titulo-detalle") ?? document.getElementById("titulo-operacion");
   }
-  /** La fila que abrió «Renovar» o «Cargar» ya no existe: el foco va al h2 del panel de vencimientos. */
+  /** La fila que abrió «Renovar» o «Cargar» ya no existe: el foco va al h2 del panel de vencimientos (o, si lo abrió un conductor del protagonista, al h2 del protagonista). */
   function focoDestino(r: { foco: string } | null): HTMLElement | null {
     if (r === null) return null;
-    return document.getElementById(ID_TITULO_VENCIMIENTOS);
+    return document.getElementById(origenDelDialogo === "protagonista" ? ID_TITULO_PROTAGONISTA : ID_TITULO_VENCIMIENTOS);
   }
 </script>
 
 <!-- «Disponibles hoy: 20 de 23 unidades activas.»: es un dato de la pantalla, no un mensaje de lo que se hizo; sin `role="status"` no se anuncia cada vez que cambian los datos
      (guardar un documento lo cambiaba y pisaba la confirmación, auditoría de accesibilidad M3). -->
-{#snippet disponibles()}{c?.protagonista.disponibles}{/snippet}
+{#snippet disponibles()}
+  <span>{c?.protagonista.disponibles}</span>
+  <!-- Lo que pasó al guardar la licencia de un conductor («Licencia de … renovada.»): visible en la barra y anunciado en una región aparte que existe desde el principio. -->
+  {#if estadoProtagonista.texto !== ""}<span class="mensaje-estado">{estadoProtagonista.texto}</span>{/if}
+  <span class="solo-lectores" role="status">{anunciadoProtagonista.valor}</span>
+{/snippet}
 
 {#if c !== null && v !== null}
   <div class="pantalla">
@@ -194,7 +226,7 @@
     <!-- 1 y 2: el protagonista y la operación diaria. -->
     <div class="principales">
       <Panel
-        id="titulo-protagonista"
+        id={ID_TITULO_PROTAGONISTA}
         titulo={c.protagonista.titulo}
         icono="vencido"
         meta={T.alFecha(formatearFecha(app.hoy))}
@@ -202,7 +234,7 @@
       >
         <div class="protagonista" data-tono={c.protagonista.tono}>
           {#if c.protagonista.cifra > 0}
-            <p class="solo-lectores">{c.protagonista.textoLector}</p>
+            <p class="solo-lectores">{c.protagonista.textoLector}{#if c.protagonista.textoLectorConductores !== null}{" "}{c.protagonista.textoLectorConductores}{/if}</p>
             <p class="cifra-linea" aria-hidden="true">
               <span class="cifra num">{c.protagonista.cifra}</span>
               <span class="palabra">{c.protagonista.palabra}</span>
@@ -223,7 +255,37 @@
               <p class="mas"><a href={c.protagonista.masEnLaFlota.href}>{c.protagonista.masEnLaFlota.texto}</a></p>
             {/if}
           {:else}
-            <p class="todas"><Icono nombre="check" />{c.protagonista.textoLector}</p>
+            <p class="todas"><Icono nombre="check" />{c.protagonista.textoLector}{#if c.protagonista.textoLectorConductores !== null}<span class="solo-lectores">{" "}{c.protagonista.textoLectorConductores}</span>{/if}</p>
+          {/if}
+          {#if c.protagonista.conductores.length > 0}
+            <!-- L6: conductores que hoy no pueden manejar (no cambian la cifra: A8). Separados de las unidades por un divisor. -->
+            <div class="conductores">
+              <h3>{c.protagonista.tituloConductores}</h3>
+              <ul class="filas-conductores">
+                {#each c.protagonista.conductores as k (k.conductorId)}
+                  <li class="conductor">
+                    <span class="icono-conductor"><Icono nombre="vencido" /></span>
+                    <span class="texto-conductor">
+                      <span class="nombre-conductor">{T.conductorFicticio(k.nombre)}</span>
+                      <span class="motivo-conductor">{k.motivo}</span>
+                    </span>
+                    {#if k.unidad !== null}
+                      <span class="unidad-conductor">
+                        {T.unidadDelConductor}
+                        <Patente patente={k.unidad.patenteTexto.replaceAll(" ", "")} href={k.unidad.href} />
+                      </span>
+                    {/if}
+                    {#if k.accion !== null}
+                      <span class="accion-conductor">
+                        <Boton variante="secundario" onclick={() => abrirLicencia(k)}>
+                          {k.accion.etiqueta}<span class="solo-lectores">{sufijoAccesible(k.accion.nombreAccesible, k.accion.etiqueta)}</span>
+                        </Boton>
+                      </span>
+                    {/if}
+                  </li>
+                {/each}
+              </ul>
+            </div>
           {/if}
         </div>
       </Panel>
@@ -480,6 +542,88 @@
     align-items: center;
     min-height: var(--alto-tactil);
   }
+  /* ---------- Conductores que no pueden manejar hoy (L6) ---------- */
+  .conductores {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-2);
+    margin-top: var(--e-1);
+    padding-top: var(--e-3);
+    border-top: 1px solid var(--c-borde);
+  }
+  .conductores h3 {
+    font-size: var(--t-h3);
+    line-height: 1.3;
+  }
+  .filas-conductores {
+    display: flex;
+    flex-direction: column;
+  }
+  /* Con poco ancho la fila se apila: ícono y nombre; motivo; unidad; botón (con su ancho, no a todo el ancho). */
+  .conductor {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "icono texto"
+      ". unidad"
+      ". accion";
+    align-items: center;
+    gap: var(--e-1) var(--e-3);
+    padding-block: var(--e-2);
+  }
+  .conductor + .conductor {
+    border-top: 1px solid var(--c-borde);
+  }
+  .icono-conductor {
+    grid-area: icono;
+    align-self: start;
+    --icono-tam: 1.125rem;
+    display: inline-flex;
+    margin-top: 0.1875rem;
+    color: var(--c-critico-t);
+  }
+  .texto-conductor {
+    grid-area: texto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    font-size: var(--t-tabla);
+    line-height: 1.4;
+    color: var(--c-texto);
+    overflow-wrap: anywhere;
+  }
+  .nombre-conductor {
+    font-weight: 600;
+  }
+  .unidad-conductor {
+    grid-area: unidad;
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e-1) var(--e-2);
+    font-size: var(--t-tabla);
+    color: var(--c-texto-2);
+  }
+  /* El enlace de la patente mide 44 px de alto (su blanco táctil) y la patente solo 24: el aire que sobra no es espacio entre renglones. */
+  .unidad-conductor :global(.enlace-patente) {
+    margin-block: -0.625rem;
+  }
+  .accion-conductor {
+    grid-area: accion;
+    justify-self: start;
+  }
+  /* Con lugar, en un renglón: ícono · nombre y motivo (uno sobre otro) · unidad · botón. */
+  @container interior (min-width: 36rem) {
+    .conductor {
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "icono texto unidad accion";
+      gap: var(--e-3);
+    }
+  }
+  .mensaje-estado {
+    font-weight: 600;
+  }
+
   /* Con 0: franja vigente, ícono grande y la frase. */
   .todas {
     --icono-tam: 1.5rem;

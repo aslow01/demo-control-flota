@@ -1,7 +1,9 @@
 <script lang="ts">
   // Un enlace con el aspecto de un botón (5.1): para las acciones que llevan a otra pantalla («Abrir parte», «Ver ficha», «Empezar el parte»).
   // Es un <a>: navega; las acciones que hacen algo en el lugar son <button> (componente Boton).
-  //  - `variante`: «secundario» (por defecto) o «primario» (el que lleva a lo principal de la pantalla; uno solo por zona).
+  //  - `variante`: «secundario» (por defecto), «primario» (el que lleva a lo principal de la pantalla; uno solo por zona) o «texto» (sin fondo ni borde, como el botón-texto: «Volver al inicio»
+  //    junto a un primario).
+  //  - `alActivar`: para el enlace que lleva a la misma pantalla (la dirección no cambia y el enrutador no se entera): quien lo usa cancela la navegación y hace el cambio él.
   //  - `tamano`: «grande» (3 rem) para «Empezar el parte» y «Continuar el parte».
   //  - `etiqueta`: nombre accesible cuando el texto visible solo no alcanza («Cargarlo» + la patente y la fecha). Tiene que empezar con el texto visible.
   import type { Snippet } from "svelte";
@@ -11,17 +13,19 @@
     variante = "secundario",
     tamano = "normal",
     etiqueta,
+    alActivar,
     children,
   }: {
     href: string;
-    variante?: "primario" | "secundario";
+    variante?: "primario" | "secundario" | "texto";
     tamano?: "normal" | "grande";
     etiqueta?: string;
+    alActivar?: (evento: MouseEvent) => void;
     children: Snippet;
   } = $props();
 </script>
 
-<a class="enlace-accion" data-variante={variante} data-tamano={tamano} {href} aria-label={etiqueta}>{@render children()}</a>
+<a class="enlace-accion" data-variante={variante} data-tamano={tamano} {href} aria-label={etiqueta} onclick={alActivar}>{@render children()}</a>
 
 <style>
   .enlace-accion {
@@ -50,8 +54,21 @@
     border-color: transparent;
     color: var(--c-acento-texto);
   }
+  /* Texto: sin fondo, acento, subrayado de 1 px (2 px con el cursor encima), como el botón-texto. */
+  .enlace-accion[data-variante="texto"] {
+    padding: 0 var(--e-2);
+    background: none;
+    border-color: transparent;
+    color: var(--c-acento);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
   .enlace-accion:active {
     transform: translateY(1px);
+  }
+  .enlace-accion[data-variante="texto"]:active {
+    transform: none;
   }
   @media (hover: hover) {
     .enlace-accion:hover {
@@ -59,6 +76,10 @@
     }
     .enlace-accion[data-variante="primario"]:hover {
       background: var(--c-acento-hover);
+    }
+    .enlace-accion[data-variante="texto"]:hover {
+      background: none;
+      text-decoration-thickness: 2px;
     }
   }
 </style>

@@ -1,5 +1,6 @@
 <script lang="ts">
-  // Diálogo "¿Quién completa el parte?" (5.2 y 5.17): lista de conductores activos (ficticios) con su unidad, en radios.
+  // Diálogo "¿Quién completa el parte?" (5.2 y 5.17): lista de conductores activos (ficticios) con su unidad, en radios. En el renglón 2, junto a la unidad, el conductor cuya licencia no ampara hoy (L1)
+  // lleva `i-vencido` + «Sin licencia vigente» (texto crítico, sin fondo). Sigue siendo elegible (es un punto de vista): así el visitante encuentra el caso del bloqueo.
   // El foco inicial va al conductor elegido (o al primero). "Continuar" no se deshabilita: sin elección muestra el error en el diálogo.
   // Quien lo usa recibe la lista armada y hace el cambio de perfil (`alConfirmar`); si falla, `error` se muestra acá y el diálogo sigue abierto.
   import { untrack } from "svelte";
@@ -7,7 +8,7 @@
   import Dialogo from "./Dialogo.svelte";
   import Icono from "./Icono.svelte";
   import { TEXTO_ELEGIR_CONDUCTOR as T } from "./textos-marco.ts";
-  import type { OpcionConductor } from "./tipos.ts";
+  import { ETIQUETAS_DE_PARTE, type OpcionConductor } from "./tipos.ts";
 
   let {
     abierto = $bindable(false),
@@ -82,7 +83,12 @@
             />
             <span class="datos">
               <span class="nombre">{c.nombre}</span>
-              <span class="nota">{c.unidad === null ? T.sinUnidad : T.unidad(c.unidad)}</span>
+              <span class="renglon-2">
+                <span class="nota">{c.unidad === null ? T.sinUnidad : T.unidad(c.unidad)}</span>
+                {#if !c.licenciaVigente}
+                  <span class="sin-licencia"><Icono nombre="vencido" />{ETIQUETAS_DE_PARTE["sin-licencia-vigente"].texto}</span>
+                {/if}
+              </span>
             </span>
           </label>
         </li>
@@ -145,6 +151,21 @@
   }
   .nombre {
     font-weight: 500;
+  }
+  .renglon-2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--e-3);
+  }
+  .sin-licencia {
+    --icono-tam: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e-1);
+    font-size: var(--t-chico);
+    font-weight: 600;
+    color: var(--c-critico-t);
   }
   .error {
     --icono-tam: 1rem;

@@ -1,16 +1,16 @@
 <script lang="ts">
-  // Parte diario para completar (6.5, edición): jerarquía 1) de qué unidad y qué día es, 2) lo que falta, 3) enviar. Una columna de 40 rem; el kilometraje en dos columnas
-  // cuando entra. No tiene reglas de negocio: los valores son texto (`dominio/formulario-parte.ts`), el borrador se guarda solo (`app.autoguardadoDeParte`, P3) y «Enviar parte»
-  // lo decide `app.enviarParte`.
+  // Parte diario para completar, en sus dos pasos (6.5, A y B): la revisión antes de salir (`vista.tipo === "edicion"`: kilometraje al salir, los 10 puntos y «Otra novedad») y el cierre de
+  // la jornada (`vista.tipo === "cierre"`: kilometraje al terminar y combustible). Jerarquía: 1) qué paso es, de qué unidad y qué día; 2) lo que falta; 3) enviar la revisión o cerrar.
+  // No tiene reglas de negocio: los valores son texto (`dominio/formulario-parte.ts`), el borrador se guarda solo (`app.autoguardadoDeParte` / `app.autoguardadoDeCierre`, P3) y el envío lo
+  // deciden `app.enviarRevisionDeParte` y `app.enviarCierreDeParte`. El paso no cambia mientras el formulario está en pantalla (`PantallaParte` lo monta con una clave que incluye el tipo).
   //  - Autoguardado: cada tecla (`input`) y cada cambio de un radio o un `select` (`change`) lo programan 500 ms después; al salir de un campo guarda ya. El texto escrito nunca
   //    se pisa: la vista nueva (`valoresIniciales`) solo se lee al arrancar y después de «Descartar borrador». Antes de enviar, de descartar o de irse, se guarda lo pendiente.
   //  - El indicador de guardado es texto visible; el `role="status"` oculto dice SOLO el texto de `indicador.anuncio`, que cambia al cambiar de estado (no en cada guardado).
-  //  - «Enviar parte» nunca se deshabilita (5.14): con datos que faltan abre el resumen de errores arriba, con el foco; con avisos (K6, K7, P9), el diálogo «Antes de enviar»;
-  //    si sale, avisa a la pantalla (`alEnviado`) y esta pasa a «Parte enviado». El error de un campo se queda mientras el campo tenga lo mismo que al enviar (no desaparece solo
-  //    con el tiempo); al tocarlo, su mensaje y su renglón del resumen se van, y el resumen cambia su título al nuevo conteo.
+  //  - «Enviar revisión» y «Cerrar el parte» nunca se deshabilitan (5.14): con datos que faltan abren el resumen de errores arriba, con el foco; con avisos (K6, K7, P9), el diálogo
+  //    «Antes de enviar»; si sale, avisan a la pantalla (`alEnviado`) y esta pasa al resultado (C1, C2 o C3). El error de un campo se queda mientras el campo tenga lo mismo que al enviar
+  //    (no desaparece solo con el tiempo); al tocarlo, su mensaje y su renglón del resumen se van, y el resumen cambia su título al nuevo conteo.
   //  - Los errores de formato de un campo (km con letras…) llegan al salir del campo y bloquean el guardado hasta corregirlos (indicador «Sin guardar: corrija…»).
-  //  - Barra de envío: pegada abajo con poco ancho (5.14); `html` reserva `scroll-padding-bottom` para que no tape el campo con foco (WCAG 2.4.11). Con la pantalla muy baja
-  //    (menos de 30 rem de alto: zoom 400 %, teléfono apaisado) no se pega: queda al final del formulario.
+  //  - Paso 2: la revisión ya enviada no se toca (P7): va como resumen arriba (con un `details` que muestra los puntos), sin «Descartar borrador» y sin `select` de conductor.
   import { onDestroy, tick, untrack } from "svelte";
   import { errorGeneralParte, recorridoDe, respondidos, textoBarraDeEnvio, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../lib/dominio/formulario-parte.ts";
   import { ERRORES, TEXTO_DIALOGOS_FICHA, TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos.ts";
@@ -19,22 +19,22 @@
   import type { IndicadorDeGuardado } from "../lib/estado/autoguardado.ts";
   import { guardarConIndicador } from "../lib/estado/guardado.ts";
   import { app } from "../lib/estado/instancia.ts";
-  import type { ParteEnEdicion, PanelParteEnviado } from "../lib/estado/parte.ts";
-  import Aviso from "./Aviso.svelte";
-  import Boton from "./Boton.svelte";
+  import BarraEnvio from "./BarraEnvio.svelte";
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import Campo from "./Campo.svelte";
   import Casilla from "./Casilla.svelte";
+  import Dato from "./Dato.svelte";
+  import Detalles from "./Detalles.svelte";
   import DialogoAntesDeEnviar from "./DialogoAntesDeEnviar.svelte";
-  import EtiquetaDemo from "./EtiquetaDemo.svelte";
-  import Icono from "./Icono.svelte";
   import ItemRevision from "./ItemRevision.svelte";
-  import Patente from "./Patente.svelte";
+  import ParteEncabezado from "./ParteEncabezado.svelte";
   import ResumenErrores from "./ResumenErrores.svelte";
+  import RevisionLeida from "./RevisionLeida.svelte";
   import SelectorCombustible from "./SelectorCombustible.svelte";
   import { TEXTO_DIALOGO, TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
+  import type { PanelParteEnviado, ParteEnCierre, ParteEnEdicion } from "./tipos.ts";
 
-  let { vista, alEnviado }: { vista: ParteEnEdicion; alEnviado: (panel: PanelParteEnviado) => void } = $props();
+  let { vista, alEnviado }: { vista: ParteEnEdicion | ParteEnCierre; alEnviado: (panel: PanelParteEnviado) => void } = $props();
 
   const uid = $props.id();
   const id = (nombre: string): string => `${uid}-${nombre}`;
@@ -42,18 +42,21 @@
 
   // Con lo que arrancó el formulario: no se vuelve a leer (pisaría lo que se está escribiendo), salvo al descartar el borrador.
   const arranque = untrack(() => vista);
+  const paso = arranque.paso;
+  const esCierre = paso === "cierre";
   let valores = $state<ValoresParte>(structuredClone(arranque.valoresIniciales));
   let indicador = $state<IndicadorDeGuardado>({ estado: "inicial", visible: "", anuncio: "", hora: null });
   let descartado = $state("");
-  const auto = app.autoguardadoDeParte(arranque, (i) => {
+  const alCambiarIndicador = (i: IndicadorDeGuardado): void => {
     indicador = i;
     if (i.estado !== "inicial") descartado = "";
-  });
+  };
+  const auto = arranque.tipo === "edicion" ? app.autoguardadoDeParte(arranque, alCambiarIndicador) : app.autoguardadoDeCierre(arranque, alCambiarIndicador);
 
   // «Recorrido» se actualiza al salir de cada campo (5.11): es un `output`, que se lee solo, y no hay que dictarlo en cada tecla.
   let recorrido = $state(untrack(() => recorridoDe(valores.kmInicio, valores.kmFin)));
 
-  // Errores: los del último «Enviar parte» (resumen y campos, hasta el próximo envío) y los de formato que dijo el autoguardado al salir de un campo.
+  // Errores: los del último envío (resumen y campos, hasta el próximo envío) y los de formato que dijo el autoguardado al salir de un campo.
   // El mensaje de un campo se queda hasta que la persona lo toca (no desaparece solo con el tiempo): se compara con lo que había al enviar.
   let erroresEnvio = $state.raw<ErroresDeParte | null>(null);
   let valoresAlEnviar = $state.raw<ValoresParte | null>(null);
@@ -97,11 +100,11 @@
   const listaVigente = $derived(erroresEnvio === null ? [] : erroresEnvio.lista.filter((x) => vigente(x.campo)));
   const itemsResumen = $derived(listaVigente.map((x) => ({ campoId: idDelError(x.campo), mensaje: x.mensaje })));
   const tituloResumen = $derived(
-    erroresEnvio === null ? "" : listaVigente.length === erroresEnvio.lista.length ? erroresEnvio.titulo : TEXTO_FORMULARIO_PARTE.tituloRevise(listaVigente.length),
+    erroresEnvio === null ? "" : listaVigente.length === erroresEnvio.lista.length ? erroresEnvio.titulo : TEXTO_FORMULARIO_PARTE.tituloRevise(listaVigente.length, paso),
   );
   const hayResumen = $derived(erroresEnvio !== null && (listaVigente.length > 0 || erroresEnvio.general !== null));
 
-  const pendientes = $derived(validarParaEnviar(valores)?.lista.length ?? 0);
+  const pendientes = $derived(validarParaEnviar(valores, paso)?.lista.length ?? 0);
   const textoIndicador = $derived(
     descartado !== "" && indicador.estado === "inicial" ? descartado : indicador.visible !== "" ? indicador.visible : (vista.borrador?.mensaje ?? ""),
   );
@@ -121,8 +124,10 @@
   function alOcultarse(): void {
     if (document.visibilityState === "hidden" && !terminado && !yaEnviado()) void auto.vaciar(instantanea());
   }
-  // Al irse de la pantalla se guarda lo pendiente; un parte que ya salió no se toca (al enviar, la vista pasa a «lectura» antes de que este componente se entere).
-  const yaEnviado = (): boolean => app.estado?.partes.some((p) => p.unidadId === arranque.unidadId && p.fecha === arranque.fecha && p.estado === "enviado") === true;
+  // Al irse de la pantalla se guarda lo pendiente; un paso que ya salió no se toca (al enviar, la vista pasa al paso siguiente o a «lectura» antes de que este componente se entere):
+  // la revisión salió cuando el parte deja de ser un borrador; el cierre, cuando queda enviado.
+  const yaEnviado = (): boolean =>
+    app.estado?.partes.some((p) => p.unidadId === arranque.unidadId && p.fecha === arranque.fecha && (esCierre ? p.estado === "enviado" : p.estado !== "borrador")) === true;
   onDestroy(() => {
     if (!terminado && !yaEnviado()) void auto.vaciar(instantanea());
     auto.cerrar();
@@ -136,7 +141,7 @@
     const r = await guardarConIndicador<ResultadoDeEnvio>(
       async () => {
         await auto.vaciar(copia); // lo escrito en los últimos 500 ms no se pierde
-        return app.enviarRevisionDeParte(arranque.unidadId, arranque.fecha, copia, aceptadas);
+        return esCierre ? app.enviarCierreDeParte(arranque.unidadId, arranque.fecha, copia, aceptadas) : app.enviarRevisionDeParte(arranque.unidadId, arranque.fecha, copia, aceptadas);
       },
       {
         alTardar: () => (mostrarEnviando = true),
@@ -144,7 +149,12 @@
           enviando = false;
           mostrarEnviando = false;
         },
-        alFallar: () => ({ tipo: "errores", errores: errorGeneralParte(ERRORES.noPudoGuardarElParte), foco: "resumen-de-errores", primerCampo: null }),
+        alFallar: () => ({
+          tipo: "errores",
+          errores: errorGeneralParte(ERRORES.noPudoGuardarElParte, esCierre ? TEXTO_FORMULARIO_PARTE.tituloGeneralCierre : undefined),
+          foco: "resumen-de-errores",
+          primerCampo: null,
+        }),
       },
     );
     if (r.tipo === "enviado") {
@@ -171,9 +181,9 @@
     return document.querySelector<HTMLElement>("[data-resumen-parte] [tabindex='-1']");
   }
 
-  // ---------- Descartar el borrador ----------
+  // ---------- Descartar el borrador (solo en la revisión: la revisión enviada no se descarta, P7) ----------
   async function descartar(): Promise<void> {
-    const parteId = vista.parteId;
+    const parteId = arranque.tipo === "edicion" ? vista.parteId : null;
     if (parteId === null) return;
     const r = await app.descartarBorradorDeParte(parteId);
     if (!r.ok) {
@@ -198,51 +208,37 @@
     document.querySelector<HTMLElement>("main h1")?.focus();
   }
 
-  // La línea del conductor no se repite acá: con perfil Conductor ya está en la barra («Tamara Olivera (ficticia)»), y con perfil Encargado es el `select`.
-  // «Toyota Hilux 2022 · Camioneta»: el tipo sobra junto a la patente (se mira la unidad, no se la clasifica).
-  const modelo = $derived(vista.descripcion.includes(" · ") ? vista.descripcion.slice(0, vista.descripcion.lastIndexOf(" · ")) : vista.descripcion);
-  // «ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.»: la primera parte es el hecho (firme) y la última frase, la acción (más chica).
-  const avisoAptitud = $derived.by(() => {
-    const t = vista.avisoAptitud ?? "";
-    const corte = t.lastIndexOf(". ");
-    return corte < 0 ? { titular: t, accion: "" } : { titular: t.slice(0, corte + 1), accion: t.slice(corte + 2) };
-  });
-
-  function etiquetaConductor(o: { etiqueta: string; asignadoA: string | null }): string {
-    return o.asignadoA === null ? o.etiqueta : T.opcionConductor(o.etiqueta, o.asignadoA);
+  function etiquetaConductor(o: { etiqueta: string; asignadoA: string | null; licenciaVigente: boolean }): string {
+    return T.opcionConductor(o.etiqueta, o.asignadoA, !o.licenciaVigente);
   }
 </script>
 
 <svelte:document onvisibilitychange={alOcultarse} />
 
 <div class="parte">
-  <!-- Con poco ancho, el enlace de vuelta y el rótulo de la demo comparten renglón: ahorra uno entero antes del primer campo (C1). -->
-  <div class="fila-vuelta">
-    <a class="vuelta" href={vista.vuelta.href}><Icono nombre="flecha-izq" />{vista.vuelta.texto}</a>
-    <div class="solo-angosto"><EtiquetaDemo /></div>
-  </div>
+  <ParteEncabezado
+    vuelta={vista.vuelta}
+    titulo={vista.titulo}
+    contexto={vista.contexto}
+    patente={vista.patente}
+    interno={vista.interno}
+    descripcion={vista.descripcion}
+    avisoFueraDeTermino={vista.tipo === "edicion" ? vista.avisoFueraDeTermino : null}
+    avisoAptitud={vista.tipo === "edicion" ? vista.avisoAptitud : null}
+    indicador={textoIndicador}
+    {indicadorConError}
+    anuncio={anuncioVivo}
+  />
 
-  <header class="encabezado">
-    <h1 tabindex="-1">{vista.titulo}</h1>
-    <p class="identidad">
-      <Patente patente={vista.patente} tamano="grande" />
-      <span class="datos-unidad"><span class="interno">{vista.interno}</span><span class="modelo">{modelo}</span></span>
-    </p>
-    {#if vista.avisoFueraDeTermino !== null}
-      <Aviso tono="semana" icono="calendario">{vista.avisoFueraDeTermino}</Aviso>
-    {/if}
-    {#if vista.avisoAptitud !== null}
-      <Aviso tono="critico" icono="vencido">
-        <span class="aviso-titular largo">{avisoAptitud.titular}</span>
-        {#if avisoAptitud.accion !== ""}<span class="aviso-accion largo">{avisoAptitud.accion}</span>{/if}
-      </Aviso>
-    {/if}
-    {#if textoIndicador !== ""}
-      <p class="indicador" class:con-error={indicadorConError}><Icono nombre={indicadorConError ? "vencido" : "guardado"} /><span>{textoIndicador}</span></p>
-    {/if}
-    <!-- Lo que se dice al lector de pantalla: solo cambia cuando cambia de estado, no en cada guardado. -->
-    <div class="solo-lectores" role="status">{anuncioVivo}</div>
-  </header>
+  {#if vista.tipo === "cierre"}
+    <!-- Lo que ya se envió y no cambia (P7): no es un panel ni un campo. -->
+    <div class="resumen-revision">
+      <p class="linea-revision">{vista.resumen.linea}</p>
+      <Detalles resumen={vista.resumen.verLaRevision}>
+        <RevisionLeida revision={vista.resumen.revision} />
+      </Detalles>
+    </div>
+  {/if}
 
   {#if erroresEnvio !== null && hayResumen}
     <div data-resumen-parte>
@@ -250,75 +246,84 @@
     </div>
   {/if}
 
-  <p class="nota">{TEXTO_DIALOGO.obligatorios} {T.obligatoriosRevision}</p>
+  <p class="nota">{TEXTO_DIALOGO.obligatorios}{esCierre ? "" : ` ${T.obligatoriosRevision}`}</p>
 
   <!-- Los cambios llegan por `input` (texto) y `change` (radios, casillas y listas); el foco al salir de un campo guarda ya y actualiza el recorrido. -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form class="hoja" novalidate onsubmit={(evento) => evento.preventDefault()} oninput={alCambiar} onchange={alCambiar} onfocusout={alSalirDelCampo}>
-    <section class="seccion" aria-labelledby={id("km-titulo")}>
-      <h2 id={id("km-titulo")}>{T.secciones.km}</h2>
-      {#if vista.conductor.tipo === "elegir"}
-        <Campo etiqueta={vista.conductor.etiqueta} tipo="select" grande requerido id={idCampo("conductor")} bind:valor={valores.conductorId} error={errorDe("conductor")}>
-          {#each vista.conductor.opciones as o (o.valor)}
-            <option value={o.valor}>{etiquetaConductor(o)}</option>
-          {/each}
-        </Campo>
-      {/if}
-      <div class="km">
+    {#if vista.tipo === "edicion"}
+      <section class="seccion" aria-labelledby={id("km-titulo")}>
+        <h2 id={id("km-titulo")}>{T.secciones.revision.km}</h2>
+        {#if vista.conductor.tipo === "elegir"}
+          <Campo etiqueta={vista.conductor.etiqueta} tipo="select" grande requerido id={idCampo("conductor")} bind:valor={valores.conductorId} error={errorDe("conductor")}>
+            {#each vista.conductor.opciones as o (o.valor)}
+              <option value={o.valor}>{etiquetaConductor(o)}</option>
+            {/each}
+          </Campo>
+        {/if}
         <Campo etiqueta={T.kmInicio} tipo="km" grande requerido id={idCampo("kmInicio")} bind:valor={valores.kmInicio} ayuda={vista.ayudaKmInicio} error={errorDe("kmInicio")} />
-        <Campo etiqueta={T.kmFin} tipo="km" grande requerido id={idCampo("kmFin")} bind:valor={valores.kmFin} ayuda={vista.ayudaKmFin} error={errorDe("kmFin")} />
-      </div>
-      <p class="recorrido">{T.recorrido}: <output for={`${idCampo("kmInicio")} ${idCampo("kmFin")}`} class="num">{recorrido}</output></p>
-    </section>
+      </section>
 
-    <section class="seccion" aria-labelledby={id("revision-titulo")}>
-      <div class="titulo-seccion">
-        <h2 id={id("revision-titulo")}>{T.secciones.revision}</h2>
-        <p class="respondidos num">{T.respondidos(respondidos(valores), vista.puntos.length)}</p>
-      </div>
-      <div class="puntos">
-        {#each vista.puntos as p (p.id)}
-          <ItemRevision
-            texto={p.texto}
-            critico={p.critico}
-            notaCritica={p.notaCritica}
-            etiquetaImpideUso={vista.etiquetaImpideUso}
-            idBase={idCampo(p.id)}
-            bind:valor={valores.checklist[p.id]}
-            error={errorDe(p.id)}
-          />
-        {/each}
-      </div>
-    </section>
+      <section class="seccion" aria-labelledby={id("revision-titulo")}>
+        <div class="titulo-seccion">
+          <h2 id={id("revision-titulo")}>{T.secciones.revision.puntos}</h2>
+          <p class="respondidos num">{T.respondidos(respondidos(valores), vista.puntos.length)}</p>
+        </div>
+        <div class="puntos">
+          {#each vista.puntos as p (p.id)}
+            <ItemRevision
+              texto={p.texto}
+              critico={p.critico}
+              notaCritica={p.notaCritica}
+              etiquetaImpideUso={vista.etiquetaImpideUso}
+              idBase={idCampo(p.id)}
+              bind:valor={valores.checklist[p.id]}
+              error={errorDe(p.id)}
+            />
+          {/each}
+        </div>
+      </section>
 
-    <section class="seccion" aria-labelledby={id("combustible-titulo")}>
-      <h2 id={id("combustible-titulo")}>{T.secciones.combustible}</h2>
-      <SelectorCombustible leyenda={T.nivelCombustible} opciones={vista.combustible} bind:valor={valores.combustible} id={idCampo("combustible")} error={errorDe("combustible")} />
-      <Campo etiqueta={T.litros} tipo="litros" grande id={idCampo("litrosCargados")} bind:valor={valores.litros} ayuda={vista.ayudaLitros} error={errorDe("litrosCargados")} />
-    </section>
+      <section class="seccion" aria-labelledby={id("otra-titulo")}>
+        <h2 id={id("otra-titulo")}>{T.secciones.revision.otra}</h2>
+        <Campo etiqueta={vista.etiquetaOtraNovedad} tipo="area" id={idCampo("otraNovedad")} bind:valor={valores.otraNovedad.descripcion} error={errorDe("otraNovedad")} />
+        <Casilla etiqueta={vista.etiquetaImpideUso} bind:marcada={valores.otraNovedad.impideUso} ayuda={TEXTO_DIALOGOS_FICHA.cargarNovedad.impideNota} />
+      </section>
+    {:else}
+      <section class="seccion" aria-labelledby={id("km-titulo")}>
+        <h2 id={id("km-titulo")}>{T.secciones.cierre.km}</h2>
+        <div class="km">
+          <!-- «Al iniciar» como texto, junto al campo, desde 30 rem de contenedor: con menos ancho ya está en el resumen de la revisión. -->
+          <dl class="inicio-texto"><Dato etiqueta={T.kmInicio} valor={vista.kmInicioTexto} /></dl>
+          <Campo etiqueta={T.kmFin} tipo="km" grande requerido id={idCampo("kmFin")} bind:valor={valores.kmFin} ayuda={vista.ayudaKmFin} error={errorDe("kmFin")} />
+        </div>
+        <p class="recorrido">{T.recorrido}: <output for={idCampo("kmFin")} class="num">{recorrido}</output></p>
+      </section>
 
-    <section class="seccion" aria-labelledby={id("otra-titulo")}>
-      <h2 id={id("otra-titulo")}>{T.secciones.otra}</h2>
-      <Campo etiqueta={vista.etiquetaOtraNovedad} tipo="area" id={idCampo("otraNovedad")} bind:valor={valores.otraNovedad.descripcion} error={errorDe("otraNovedad")} />
-      <Casilla etiqueta={vista.etiquetaImpideUso} bind:marcada={valores.otraNovedad.impideUso} ayuda={TEXTO_DIALOGOS_FICHA.cargarNovedad.impideNota} />
-    </section>
+      <section class="seccion" aria-labelledby={id("combustible-titulo")}>
+        <h2 id={id("combustible-titulo")}>{T.secciones.cierre.combustible}</h2>
+        <SelectorCombustible leyenda={T.nivelCombustible} requerido opciones={vista.combustible} bind:valor={valores.combustible} id={idCampo("combustible")} error={errorDe("combustible")} />
+        <Campo etiqueta={T.litros} tipo="litros" grande id={idCampo("litrosCargados")} bind:valor={valores.litros} ayuda={vista.ayudaLitros} error={errorDe("litrosCargados")} />
+      </section>
+    {/if}
   </form>
 
-  {#if vista.parteId !== null}
+  {#if vista.tipo === "edicion" && vista.parteId !== null}
     <div class="descartar">
       <BotonConfirmar texto={T.descartar} textoConfirmar={T.confirmarDescartar} variante="texto" alConfirmar={descartar} />
     </div>
   {/if}
 
-  <div class="barra-envio">
-    <p class="estado-barra" class:lista={pendientes === 0}>
-      {#if pendientes === 0}<Icono nombre="check" />{/if}<span>{textoBarraDeEnvio(valores)}</span>
-    </p>
-    <Boton tamano="grande" cargando={enviando} onclick={() => enviar()}>{mostrarEnviando ? T.enviando : T.enviar}</Boton>
-  </div>
+  <BarraEnvio
+    estado={textoBarraDeEnvio(valores, paso)}
+    lista={pendientes === 0}
+    etiqueta={esCierre ? (mostrarEnviando ? T.cerrando : T.cerrar) : mostrarEnviando ? T.enviando : T.enviar}
+    cargando={enviando}
+    alActivar={() => enviar()}
+  />
 </div>
 
-<DialogoAntesDeEnviar bind:abierto={dialogoAbierto} {advertencias} {enviando} {mostrarEnviando} alEnviarIgual={() => enviar(aceptables)} focoDestino={focoDelDialogo} />
+<DialogoAntesDeEnviar bind:abierto={dialogoAbierto} {paso} {advertencias} {enviando} {mostrarEnviando} alEnviarIgual={() => enviar(aceptables)} focoDestino={focoDelDialogo} />
 
 <style>
   .parte {
@@ -330,122 +335,30 @@
     min-width: 0;
     margin-inline: auto;
   }
-  .fila-vuelta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0 var(--e-3);
-  }
-  .vuelta {
-    --icono-tam: 1.125rem;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--e-2);
-    min-height: var(--alto-tactil);
-    font-weight: 600;
-  }
-  .encabezado {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--e-2);
-    min-width: 0;
-  }
-  .encabezado > :global(.aviso) {
-    align-self: stretch;
-  }
-  /* Con poco ancho el título (tamaño de un h2, 22 px) entra en un renglón con cualquier día de la semana («Parte del miércoles 25/11/2026» mide unos 315 px a 360):
-     la pantalla gana unos 37 px antes del primer campo. Con 28 px se partía en dos. */
-  @container parte (max-width: 29.99rem) {
-    .encabezado h1 {
-      font-size: var(--t-h2);
-    }
-  }
   @media (max-width: 31.99rem) {
     .parte {
       gap: var(--e-3);
     }
   }
-  /* El rótulo "Demo con datos ficticios" baja acá cuando la barra superior no tiene lugar (menos de 40 rem). */
-  @media (min-width: 40rem) {
-    .solo-angosto {
-      display: none;
-    }
-  }
-  .identidad {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--e-2) var(--e-3);
-  }
-  /* Con poco ancho, el interno y el modelo van uno sobre otro al lado de la patente (la altura de la patente); con más lugar, en un solo renglón: «Int. 07 · Toyota Hilux 2022». */
-  .datos-unidad {
+
+  /* Resumen de la revisión (paso 2): una caja del color de la página, sin sombra ni título de panel (no es un campo ni una ventana: es lo que ya se envió). */
+  .resumen-revision {
     display: flex;
     flex-direction: column;
+    gap: 0;
     min-width: 0;
+    padding: var(--e-1) var(--e-3);
+    background: var(--c-fondo);
+    border: 1px solid var(--c-borde);
+    border-radius: var(--r-2);
+  }
+  .linea-revision {
     font-size: var(--t-chico);
-    line-height: 1.3;
+    line-height: 1.5;
     overflow-wrap: anywhere;
-  }
-  .interno {
-    font-weight: 600;
-  }
-  .modelo {
-    color: var(--c-texto-2);
-  }
-  @container parte (min-width: 30rem) {
-    .datos-unidad {
-      flex-direction: row;
-      gap: var(--e-2);
-      font-size: var(--t-cuerpo);
-      line-height: 1.5;
-    }
-    .modelo {
-      color: var(--c-texto);
-    }
-    .modelo::before {
-      content: "· ";
-      color: var(--c-texto-2);
-    }
-  }
-  .largo {
-    overflow-wrap: anywhere;
-  }
-  /* Aviso de que la unidad no puede salir: compacto. El hecho en firme, la acción debajo en letra chica. */
-  .encabezado > :global(.aviso) {
-    padding: var(--e-2) var(--e-3);
-  }
-  .aviso-titular,
-  .aviso-accion {
-    display: block;
-  }
-  .aviso-titular {
-    font-weight: 600;
-  }
-  .aviso-accion {
-    font-size: var(--t-chico);
-    line-height: 1.4;
-  }
-  .indicador {
-    --icono-tam: 1rem;
-    display: flex;
-    align-items: flex-start;
-    gap: var(--e-2);
-    font-size: var(--t-chico);
-    line-height: 1.4;
-    color: var(--c-texto-2);
-  }
-  .indicador :global(.icono) {
-    flex: none;
-    margin-top: 0.1rem;
-  }
-  .indicador.con-error {
-    font-weight: 600;
-    color: var(--c-critico-t);
   }
 
-  /* La hoja del formulario: las cuatro secciones sobre una superficie, separadas por una línea. */
+  /* La hoja del formulario: las secciones sobre una superficie, separadas por una línea. */
   .hoja {
     display: flex;
     flex-direction: column;
@@ -461,6 +374,13 @@
     gap: var(--e-4);
     min-width: 0;
     padding: var(--e-4);
+  }
+  /* Con poco ancho las secciones se aprietan un poco: la meta de 6.5 pide «Al iniciar» y «Al terminar» por encima de los 600 px a 360 × 780. */
+  @media (max-width: 31.99rem) {
+    .seccion {
+      gap: var(--e-3);
+      padding: var(--e-3) var(--e-4);
+    }
   }
   .seccion + .seccion {
     border-top: 1px solid var(--c-borde);
@@ -494,16 +414,25 @@
     padding-bottom: 0;
     border-bottom: 0;
   }
+
+  /* Paso 2: «Al iniciar» (texto) y «Al terminar» (campo) en dos columnas desde 30 rem de contenedor; con menos, solo el campo. */
   .km {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--e-4);
   }
+  .inicio-texto {
+    display: none;
+    margin: 0;
+  }
   @container parte (min-width: 30rem) {
     .km {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      /* Las ayudas tienen largos distintos: los dos campos quedan a la misma altura. */
+      /* La ayuda del campo tiene un largo propio: el texto y el campo quedan abajo, a la misma altura. */
       align-items: end;
+    }
+    .inicio-texto {
+      display: block;
     }
   }
   .recorrido {
@@ -515,59 +444,5 @@
 
   .descartar {
     display: flex;
-  }
-
-  /* Barra de envío (5.14): con poco ancho, pegada abajo y a lo ancho de la pantalla; desde 40 rem, estática al final del formulario. */
-  .barra-envio {
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--e-3);
-    min-height: var(--alto-barra-envio);
-    margin-inline: calc(-1 * var(--gutter));
-    padding: var(--e-3) var(--gutter);
-    padding-bottom: calc(var(--e-3) + env(safe-area-inset-bottom, 0px));
-    background: var(--c-ventana-barra);
-    border-top: 1px solid var(--c-borde);
-    box-shadow: var(--s-flotante);
-  }
-  .estado-barra {
-    --icono-tam: 1.125rem;
-    display: flex;
-    align-items: center;
-    gap: var(--e-2);
-    font-size: var(--t-chico);
-    font-weight: 600;
-    line-height: 1.3;
-    color: var(--c-texto-2);
-  }
-  .estado-barra.lista {
-    color: var(--c-vigente-t);
-  }
-  @media (min-width: 40rem) {
-    .barra-envio {
-      position: static;
-      min-height: 0;
-      margin-inline: 0;
-      padding: var(--e-3) 0 0;
-      background: none;
-      border-top: 0;
-      box-shadow: none;
-    }
-  }
-  /* Pantalla muy baja (zoom 400 %, teléfono apaisado): la barra no se queda pegada. Ocuparía casi la mitad de la pantalla y taparía el campo con foco. */
-  @media (max-height: 30rem) {
-    .barra-envio {
-      position: static;
-    }
-  }
-  /* El campo con foco no queda tapado por la barra pegada (2.4.11). */
-  @media (max-width: 39.99rem) and (min-height: 30.01rem) {
-    :global(html:has(.barra-envio)) {
-      scroll-padding-bottom: calc(var(--alto-barra-envio) + var(--e-4));
-    }
   }
 </style>

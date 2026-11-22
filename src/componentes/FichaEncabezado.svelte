@@ -14,6 +14,7 @@
   import EnlaceAccion from "./EnlaceAccion.svelte";
   import Etiqueta from "./Etiqueta.svelte";
   import EtiquetaDemo from "./EtiquetaDemo.svelte";
+  import EtiquetaParte from "./EtiquetaParte.svelte";
   import MenuMas from "./MenuMas.svelte";
   import Patente from "./Patente.svelte";
   import { TEXTO_FICHA_VISTA as T } from "./textos-marco.ts";
@@ -83,7 +84,13 @@
 
   <dl class="datos">
     <Dato etiqueta={T.datos.proyecto} valor={ficha.datos.proyecto ?? T.datos.sinProyecto} />
-    <Dato etiqueta={T.datos.conductor} valor={ficha.datos.conductor ?? T.datos.sinConductor} />
+    <Dato etiqueta={T.datos.conductor}>
+      <span class="conductor">
+        <span>{ficha.datos.conductor ?? T.datos.sinConductor}</span>
+        <!-- L6: la etiqueta de aptitud de la unidad no cambia por esto (A1): la unidad puede salir con otro conductor. -->
+        {#if ficha.datos.conductorSinLicencia}<EtiquetaParte tipo="sin-licencia-vigente" />{/if}
+      </span>
+    </Dato>
     <Dato etiqueta={T.datos.kilometraje} valor={ficha.datos.km.textoConFecha} />
   </dl>
 
@@ -118,6 +125,13 @@
     .solo-angosto {
       display: none;
     }
+  }
+
+  .conductor {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e-1) var(--e-2);
   }
 
   /* ---------- Migas ---------- */

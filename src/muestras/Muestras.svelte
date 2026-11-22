@@ -1,6 +1,7 @@
 <script lang="ts">
   // Página de muestras de los componentes de 3.2 (solo en desarrollo, ver muestras.html). Datos ficticios.
   // Sirve para mirar cada pieza en claro y oscuro, a 360 y 1280 px, y para recorrerlas con teclado.
+  import Aviso from "../componentes/Aviso.svelte";
   import Boton from "../componentes/Boton.svelte";
   import BotonConfirmar from "../componentes/BotonConfirmar.svelte";
   import Campo from "../componentes/Campo.svelte";
@@ -11,7 +12,7 @@
   import Icono from "../componentes/Icono.svelte";
   import Panel from "../componentes/Panel.svelte";
   import Patente from "../componentes/Patente.svelte";
-  import { ICONOS, type NombreIcono, type Tono } from "../componentes/tipos.ts";
+  import { ETIQUETAS_DE_PARTE, ICONOS, type NombreIcono, type Tono } from "../componentes/tipos.ts";
   import { SEMILLA_POR_DEFECTO, generar } from "../lib/datos/generador.ts";
   import { calcularAlertas, type Alerta } from "../lib/dominio/alertas.ts";
   import { horizonteCompleto, horizonteDeUnidad, horizonteMinimo } from "../lib/dominio/horizonte.ts";
@@ -48,7 +49,7 @@
     })),
   ];
 
-  const etiquetas: { tono: Tono; icono: NombreIcono; texto: string }[] = [
+  const etiquetas: { tono: Tono; icono: NombreIcono; texto: string; variante?: "texto" }[] = [
     { tono: "critico", icono: "vencido", texto: "Vencido hace 3 días" },
     { tono: "critico", icono: "vencido", texto: "Vencido hace 1 día" },
     { tono: "critico", icono: "faltante", texto: "Falta cargar" },
@@ -59,16 +60,15 @@
     { tono: "mes", icono: "anillo", texto: "Vence en 24 días" },
     { tono: "vigente", icono: "check", texto: "Vigente hasta 12/05/2027" },
     { tono: "neutro", icono: "guion", texto: "Reemplazado el 17/11/2026" },
-    { tono: "vigente", icono: "check", texto: "Puede salir" },
+    { tono: "vigente", icono: "check", texto: "Puede salir", variante: "texto" },
     { tono: "critico", icono: "vencido", texto: "No puede salir" },
     { tono: "semana", icono: "llave", texto: "Fuera de servicio" },
     { tono: "neutro", icono: "caja", texto: "De baja" },
     { tono: "critico", icono: "octogono", texto: "Crítica" },
     { tono: "semana", icono: "llave", texto: "Abierta" },
     { tono: "neutro", icono: "check", texto: "Resuelta el 16/11/2026" },
-    { tono: "vigente", icono: "check", texto: "Enviado" },
-    { tono: "neutro", icono: "lapiz", texto: "Borrador" },
-    { tono: "semana", icono: "lapiz", texto: "Sin enviar" },
+    // Parte y conductor (5.7, 19/11/2026): «Cerrado», «Borrador», «En uso», «Sin enviar», «Sin cerrar» y «Sin licencia vigente» salen de la misma tabla que usan las pantallas.
+    ...Object.values(ETIQUETAS_DE_PARTE),
     { tono: "semana", icono: "guion", texto: "Sin parte" },
     { tono: "critico", icono: "vencido", texto: "Con documentación vencida" },
     { tono: "neutro", icono: "octogono", texto: "Punto crítico" },
@@ -245,9 +245,26 @@
   <Panel titulo="Etiquetas de estado" meta="{etiquetas.length} de la tabla 5.7">
     <ul class="etiquetas">
       {#each etiquetas as e (e.texto)}
-        <li><Etiqueta tono={e.tono} icono={e.icono}>{e.texto}</Etiqueta></li>
+        <li><Etiqueta tono={e.tono} icono={e.icono} variante={e.variante}>{e.texto}</Etiqueta></li>
       {/each}
     </ul>
+    <h3>Con el texto de las pantallas</h3>
+    <ul class="etiquetas">
+      <li><Etiqueta tono="vigente" icono="check">Cerrado a las 18:42</Etiqueta></li>
+      <li><Etiqueta tono="quincena" icono="flecha-der">En uso desde las 06:52</Etiqueta></li>
+    </ul>
+  </Panel>
+
+  <Panel titulo="Aviso de bloqueo por licencia" meta="6.4, estado 5" icono="persona">
+    <p class="nota">Inicio del conductor: sin primario ni «Usar otra unidad». No es un `role="alert"`: el foco ya fue al título.</p>
+    <div data-muestra="bloqueo">
+      <Aviso tono="critico" icono="vencido">
+        <p class="bloqueo-1">No puede manejar hoy: su licencia de conducir venció el 15/11/2026.</p>
+        <p class="bloqueo-2">Avise al encargado: cuando cargue una licencia vigente, podrá empezar la revisión.</p>
+      </Aviso>
+    </div>
+    <p class="nota">Compacto, para un parte cerrado sin salida (estado 2):</p>
+    <Aviso tono="critico" icono="octogono">Revisión de las 06:52: novedad crítica en Frenos. La unidad no salió.</Aviso>
   </Panel>
 
   <Panel titulo="Horizonte de vencimientos" meta="5.6, paso 4.1" icono="calendario">
@@ -421,6 +438,13 @@
 <style>
   .encabezado {
     padding-block: var(--e-5) var(--e-3);
+  }
+  .bloqueo-1 {
+    font-weight: 600;
+  }
+  .bloqueo-2 {
+    font-size: var(--t-chico);
+    line-height: 1.4;
   }
   .pagina {
     display: flex;

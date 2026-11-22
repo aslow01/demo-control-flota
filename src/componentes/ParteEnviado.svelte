@@ -1,39 +1,64 @@
 <script lang="ts">
-  // Panel «Parte enviado» (6.5): una franja vigente a la izquierda, el título, la línea «ZK 214 BD, 18/11/2026, enviado a las 18:42.», los datos en un `dl` (Recorrido,
-  // Combustible, Combustible cargado, Novedades), el aviso de que la unidad quedó fuera de servicio si hubo una novedad crítica, los avisos que se aceptaron al enviar y
-  // «Enviado fuera de término.». Lo usan las dos vistas: al terminar de enviar (el título es el `h1` de la pantalla y recibe el foco, con «Volver al inicio») y el parte
-  // ya enviado en lectura (el título es un `h2`). No tiene reglas: todo lo arma `panelDeParteEnviado` (lib/estado/parte.ts).
+  // Panel de resultado de un parte (5.4, variante «panel de resultado»; 6.5, C y D): sin barra de título, con una franja izquierda de 4 px del tono del resultado (vigente si salió bien o se cerró,
+  // crítico si la unidad no puede salir), el título (el `h1` de la pantalla o un `h2`, con el ícono del tono: `i-check` o `i-octogono`), la línea del resultado, un `dl` con los datos, las notas y
+  // los avisos, y las acciones al final (el primario primero). Lo usan cuatro vistas: C1 «Revisión enviada», C2 «La unidad no puede salir», C3 «Parte cerrado» (el título es el `h1` y recibe
+  // el foco) y la lectura de un parte cerrado (D: el `h1` es «Parte del miércoles 18/11/2026», con la etiqueta «Cerrado», los momentos de la revisión y el cierre y la revisión de la unidad).
+  // No tiene reglas: todo lo arma la lógica (`panelDeRevisionEnviada`, `panelDeSinSalida`, `panelDeParteEnviado`: lib/estado/parte.ts).
+  //  - `titulo` reemplaza al del panel (la lectura usa el de la ruta); `etiqueta` agrega «Cerrado» al lado; `momentos` son las filas «Revisión» y «Cierre», antes de las del panel;
+  //    `sinLinea` omite la línea (en la lectura sus horas ya están en `momentos`); `encabezado` va debajo del título; `cuerpo`, después de los datos; `acciones`, al final.
   import type { Snippet } from "svelte";
-  import type { PanelParteEnviado } from "../lib/estado/parte.ts";
+  import type { PanelParteEnviado } from "./tipos.ts";
   import Aviso from "./Aviso.svelte";
   import Dato from "./Dato.svelte";
+  import EtiquetaParte from "./EtiquetaParte.svelte";
   import Icono from "./Icono.svelte";
   import { TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
 
   let {
     panel,
     nivel = "h2",
+    titulo,
+    etiqueta,
+    momentos = [],
+    sinLinea = false,
+    encabezado,
+    cuerpo,
     acciones,
   }: {
     panel: PanelParteEnviado;
-    /** El `h1` cuando es lo principal de la pantalla (recién enviado); si no, `h2`. */
+    /** El `h1` cuando es lo principal de la pantalla (recién enviado y lectura); si no, `h2`. */
     nivel?: "h1" | "h2";
-    /** Los botones de abajo («Volver al inicio»). */
+    titulo?: string;
+    etiqueta?: string;
+    momentos?: { rotulo: string; valor: string }[];
+    sinLinea?: boolean;
+    encabezado?: Snippet;
+    cuerpo?: Snippet;
+    /** Los botones de abajo («Volver al inicio»…). */
     acciones?: Snippet;
   } = $props();
 
   const uid = $props.id();
   const idTitulo = $derived(`${uid}-titulo`);
+  const critico = $derived(panel.variante === "sin-salida");
+  const filas = $derived([...momentos, ...panel.filas]);
 </script>
 
-<section class="enviado" aria-labelledby={idTitulo}>
-  <svelte:element this={nivel} class="titulo" id={idTitulo} tabindex="-1"><Icono nombre="check" />{panel.titulo}</svelte:element>
-  <p class="linea">{panel.linea}</p>
-  <dl class="datos">
-    {#each panel.filas as f (f.rotulo)}
-      <Dato etiqueta={f.rotulo} valor={f.valor} />
-    {/each}
-  </dl>
+<section class="resultado" aria-labelledby={idTitulo} data-tono={critico ? "critico" : "vigente"}>
+  <div class="cabeza">
+    <svelte:element this={nivel} class="titulo" id={idTitulo} tabindex="-1"><Icono nombre={critico ? "octogono" : "check"} />{titulo ?? panel.titulo}</svelte:element>
+    {#if etiqueta !== undefined}<EtiquetaParte tipo="cerrado" texto={etiqueta} />{/if}
+  </div>
+  {#if encabezado !== undefined}{@render encabezado()}{/if}
+  {#if !sinLinea}<p class="linea">{panel.linea}</p>{/if}
+  {#if filas.length > 0}
+    <dl class="datos">
+      {#each filas as f (f.rotulo)}
+        <Dato etiqueta={f.rotulo} valor={f.valor} />
+      {/each}
+    </dl>
+  {/if}
+  {#if panel.notaEncargado !== null}<p class="nota">{panel.notaEncargado}</p>{/if}
   {#if panel.avisoCritica !== null}
     <Aviso tono="semana" icono="llave">{panel.avisoCritica}</Aviso>
   {/if}
@@ -48,12 +73,14 @@
     </div>
   {/if}
   {#if panel.fueraDeTermino !== null}<p class="nota">{panel.fueraDeTermino}</p>{/if}
+  {#if panel.parrafo !== null}<p class="parrafo">{panel.parrafo}</p>{/if}
+  {#if cuerpo !== undefined}{@render cuerpo()}{/if}
   {#if acciones !== undefined}<div class="acciones">{@render acciones()}</div>{/if}
 </section>
 
 <style>
-  .enviado {
-    container: enviado / inline-size;
+  .resultado {
+    container: resultado / inline-size;
     display: flex;
     flex-direction: column;
     gap: var(--e-4);
@@ -61,23 +88,30 @@
     padding: var(--e-4);
     background: var(--c-superficie);
     border: 1px solid var(--c-ventana-borde);
-    border-left: 4px solid var(--c-vigente-r);
+    border-left: 4px solid var(--tono-r);
     border-radius: var(--r-3);
     box-shadow: var(--s-ventana);
   }
   @media (min-width: 40rem) {
-    .enviado {
+    .resultado {
       padding: var(--e-5);
     }
+  }
+  .cabeza {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e-2) var(--e-3);
   }
   .titulo {
     --icono-tam: 1.5rem;
     display: flex;
     align-items: center;
     gap: var(--e-2);
+    min-width: 0;
     font-size: var(--t-h2);
     line-height: 1.25;
-    color: var(--c-vigente-t);
+    color: var(--tono-t);
   }
   .titulo :global(.icono) {
     flex: none;
@@ -86,12 +120,15 @@
     font-weight: 600;
     overflow-wrap: anywhere;
   }
+  .parrafo {
+    color: var(--c-texto-2);
+  }
   .datos {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--e-3);
   }
-  @container enviado (min-width: 28rem) {
+  @container resultado (min-width: 28rem) {
     .datos {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }

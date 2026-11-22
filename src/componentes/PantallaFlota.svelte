@@ -25,6 +25,7 @@
   import DialogoUnidad from "./DialogoUnidad.svelte";
   import Etiqueta from "./Etiqueta.svelte";
   import EtiquetaDemo from "./EtiquetaDemo.svelte";
+  import EtiquetaParte from "./EtiquetaParte.svelte";
   import FiltrosConteo from "./FiltrosConteo.svelte";
   import Horizonte from "./Horizonte.svelte";
   import Icono from "./Icono.svelte";
@@ -33,7 +34,11 @@
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
   import { TEXTO_FLOTA_VISTA as T } from "./textos-marco.ts";
-  import type { Tono } from "./tipos.ts";
+  import type { EtiquetaDeParte, Tono } from "./tipos.ts";
+
+  // «Último parte» (5.10): la etiqueta que arma `panelDeFlota` («En uso», «Sin enviar», «Sin cerrar», «Sin parte») y la de tabla 5.7 que le toca. «Sin parte» no es una etiqueta de parte
+  // (es la falta de uno): tono semana con `i-guion`.
+  const ETIQUETA_DE_PARTE: Record<string, EtiquetaDeParte> = { "En uso": "en-uso", "Sin enviar": "sin-enviar", "Sin cerrar": "sin-cerrar" };
 
   const ID_TITULO = "titulo-flota";
   const PAUSA_AL_ESCRIBIR_MS = 500;
@@ -239,7 +244,12 @@
               <span class="apilado">
                 <span class="num" class:nota={f.ultimoParte.fecha === null}>{f.ultimoParte.texto}</span>
                 {#if f.ultimoParte.etiqueta !== null}
-                  <Etiqueta tono="semana" icono={f.ultimoParte.etiqueta === "Sin enviar" ? "lapiz" : "guion"}>{f.ultimoParte.etiqueta}</Etiqueta>
+                  {@const tipo = ETIQUETA_DE_PARTE[f.ultimoParte.etiqueta]}
+                  {#if tipo !== undefined}
+                    <EtiquetaParte {tipo} />
+                  {:else}
+                    <Etiqueta tono="semana" icono="guion">{f.ultimoParte.etiqueta}</Etiqueta>
+                  {/if}
                 {/if}
               </span>
             </td>
@@ -253,7 +263,13 @@
             <td {...CELDA} data-col="proyecto" data-etiqueta={T.columnas.proyecto}>
               <span class="apilado">
                 <span>{#if f.proyecto !== null}{f.proyecto}{:else}<span aria-hidden="true">—</span><span class="solo-lectores">{T.sinProyecto}</span>{/if}</span>
-                <span class="nota">{f.conductor ?? T.sinConductor}</span>
+                <span class="nota">
+                  {f.conductor ?? T.sinConductor}
+                  {#if f.conductorSinLicencia}
+                    <!-- L6: la unidad puede salir con otro conductor (A1): no cambia la etiqueta de «Estado hoy» ni lleva franja. -->
+                    <span class="sin-licencia"><Icono nombre="vencido" />{T.sinLicencia}</span>
+                  {/if}
+                </span>
               </span>
             </td>
           {/snippet}
@@ -492,6 +508,16 @@
     color: var(--c-texto-2);
     /* El motivo de «fuera de servicio» lo escribe la persona: un texto sin espacios no tiene que ensanchar la página. */
     overflow-wrap: anywhere;
+  }
+  /* «sin licencia vigente» a continuación del nombre del conductor, en el mismo renglón si entra (5.10): `i-vencido` de 14 px y texto crítico de 600. */
+  .sin-licencia {
+    --icono-tam: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e-1);
+    font-size: var(--t-chico);
+    font-weight: 600;
+    color: var(--c-critico-t);
   }
   .novedad-critica {
     --icono-tam: 1rem;
