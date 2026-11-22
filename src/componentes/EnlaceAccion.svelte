@@ -71,6 +71,16 @@
   .enlace-accion[data-variante="texto"]:active {
     transform: none;
   }
+  /* C8: el anillo de foco no toca la primera letra (ver `Boton.svelte`). */
+  .enlace-accion[data-variante="texto"]:focus-visible {
+    outline-offset: 0.25rem;
+  }
+  /* m2: en colores forzados el borde transparente se dibuja con un color del sistema; sin relleno tocaría las letras. */
+  @media (forced-colors: active) {
+    .enlace-accion[data-variante="texto"] {
+      padding-inline: var(--e-2);
+    }
+  }
   @media (hover: hover) {
     .enlace-accion:hover {
       background: var(--c-superficie-2);

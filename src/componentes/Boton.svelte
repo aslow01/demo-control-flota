@@ -129,6 +129,10 @@
   .boton[data-variante="texto"]:active {
     transform: none;
   }
+  /* C8: el anillo de foco no toca la primera letra; sale 4 px dentro del relleno del contenedor, el texto no se mueve. */
+  .boton[data-variante="texto"]:focus-visible {
+    outline-offset: 0.25rem;
+  }
   @media (hover: hover) {
     .boton[data-variante="texto"]:hover {
       background: none;
@@ -189,6 +193,10 @@
   @media (forced-colors: active) {
     .boton[data-variante="icono"]:focus-visible::before {
       outline-color: Highlight;
+    }
+    /* m2: en colores forzados el borde transparente se dibuja con un color del sistema; sin relleno tocaría las letras. */
+    .boton[data-variante="texto"] {
+      padding-inline: var(--e-2);
     }
   }
 </style>
