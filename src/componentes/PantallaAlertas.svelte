@@ -483,6 +483,7 @@
   }
   .cifra-linea {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     gap: var(--e-3);
     color: var(--tono-t);
@@ -620,6 +621,35 @@
     grid-area: accion;
     justify-self: start;
   }
+  /* Texto agrandado (el interior mide 17 rem o menos: 272 px con el texto normal): el relleno de la columna del protagonista baja, el motivo y la unidad dejan de apretarse
+     contra el chevron y el botón de la licencia toma el ancho de la fila (C1 de la etapa 7, S5: ningún texto parte una palabra). */
+  @container interior (max-width: 17rem) {
+    .protagonista {
+      padding-left: var(--e-2);
+    }
+    .unidad {
+      padding-right: var(--e-1);
+    }
+    .unidad .siguiente {
+      position: static;
+      translate: none;
+      order: 1;
+      margin-inline-start: auto;
+    }
+    .unidad .motivo {
+      order: 2;
+      flex-basis: 100%;
+    }
+    .conductores h3 {
+      font-size: var(--t-cuerpo);
+    }
+    .conductor {
+      grid-template-areas:
+        "icono texto"
+        "unidad unidad"
+        "accion accion";
+    }
+  }
   /* Con lugar, en un renglón: ícono · nombre y motivo (uno sobre otro) · unidad · botón. */
   @container interior (min-width: 36rem) {
     .conductor {
@@ -656,10 +686,15 @@
   }
   .filas-operacion li {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--e-3);
+    gap: 0 var(--e-3);
     min-height: 3rem;
     border-bottom: 1px solid var(--c-borde);
+  }
+  /* El botón «Ver» con su chevron no se achica: con poco lugar (texto agrandado) baja a su renglón, a la derecha, y el texto de la fila conserva el ancho (C1 de la etapa 7). */
+  .filas-operacion li > :global(.boton) {
+    margin-inline-start: auto;
   }
   .icono-fila {
     display: inline-flex;
@@ -667,7 +702,7 @@
     color: var(--tono-t);
   }
   .texto-fila {
-    flex: 1;
+    flex: 1 1 8rem;
     min-width: 0;
     line-height: 1.35;
     overflow-wrap: anywhere;

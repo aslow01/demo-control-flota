@@ -116,6 +116,26 @@
   function alCambiar(): void {
     auto.cambio(instantanea());
   }
+  /** B3 de la etapa 7: la tecla Enter de un campo hace lo que promete su `enterkeyhint`. «next» pasa al control siguiente del formulario; «done» lleva el foco al botón de envío (no lo activa: otro Enter lo hace). */
+  function alTeclear(evento: KeyboardEvent & { currentTarget: EventTarget & HTMLFormElement }): void {
+    if (evento.key !== "Enter" || evento.isComposing || evento.shiftKey || evento.ctrlKey || evento.altKey || evento.metaKey) return;
+    const campo = evento.target;
+    if (!(campo instanceof HTMLInputElement)) return;
+    const tecla = campo.getAttribute("enterkeyhint");
+    if (tecla === null) return;
+    evento.preventDefault();
+    if (tecla === "done") {
+      document.querySelector<HTMLButtonElement>(".barra-envio button")?.focus();
+      return;
+    }
+    const controles = [...evento.currentTarget.querySelectorAll<HTMLElement>("input, select, textarea, button, a[href]")];
+    const siguiente = controles.find(
+      (c) => c !== campo && c.tabIndex >= 0 && !c.matches(":disabled") && c.getClientRects().length > 0 && Boolean(campo.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING),
+    );
+    // Un grupo de radios con una respuesta elegida entra por esa respuesta (como con Tab).
+    const destino = siguiente instanceof HTMLInputElement && siguiente.type === "radio" ? (controles.find((c) => c instanceof HTMLInputElement && c.type === "radio" && c.name === siguiente.name && c.checked) ?? siguiente) : siguiente;
+    destino?.focus();
+  }
   async function alSalirDelCampo(): Promise<void> {
     recorrido = recorridoDe(valores.kmInicio, valores.kmFin);
     const r = await auto.alSalirDelCampo(instantanea());
@@ -248,7 +268,7 @@
 
   <!-- Los cambios llegan por `input` (texto) y `change` (radios, casillas y listas); el foco al salir de un campo guarda ya y actualiza el recorrido. -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <form class="hoja" novalidate onsubmit={(evento) => evento.preventDefault()} oninput={alCambiar} onchange={alCambiar} onfocusout={alSalirDelCampo}>
+  <form class="hoja" novalidate onsubmit={(evento) => evento.preventDefault()} oninput={alCambiar} onchange={alCambiar} onfocusout={alSalirDelCampo} onkeydown={alTeclear}>
     {#if vista.tipo === "edicion"}
       <section class="seccion" aria-labelledby={id("km-titulo")}>
         <h2 id={id("km-titulo")}>{T.secciones.revision.km}</h2>
@@ -391,6 +411,21 @@
       padding: var(--e-5);
     }
   }
+  /* Texto agrandado (el parte mide 17 rem o menos): menos relleno a los lados, para que una palabra como «Documentación» entre entera en su renglón (S5 de la etapa 7). */
+  @container parte (max-width: 17rem) {
+    .seccion {
+      padding-inline: var(--e-2);
+    }
+    .resumen-revision {
+      padding-inline: var(--e-2);
+    }
+  }
+  /* 320 px con el texto agrandado (el parte mide 8 rem): otro escalón menos de relleno, para que una palabra de 7 rem entre entera. */
+  @container parte (max-width: 8.5rem) {
+    .seccion {
+      padding-inline: var(--e-1);
+    }
+  }
   .seccion h2 {
     font-size: var(--t-h3);
     line-height: 1.3;
@@ -442,11 +477,14 @@
   @container parte (min-width: 30rem) {
     .km {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      /* El valor de «Al iniciar» y el campo «Al terminar» terminan a la misma altura (el campo tiene una ayuda entre su rótulo y su caja, el texto no). */
-      align-items: end;
+      /* C6 de la etapa 7: las dos celdas miden lo mismo; el rótulo de «Al iniciar» queda arriba, en la línea del de «Al terminar», y su valor abajo, en la línea del texto del campo
+         (el campo tiene una ayuda, y a veces un error, entre su rótulo y su caja; el texto no). */
+      align-items: stretch;
     }
     .inicio-texto {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
   }
   /* Recorrido: el rótulo discreto y el valor firme (con todo en 600 competía con el h2). */

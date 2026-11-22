@@ -41,7 +41,8 @@
   --c-diferencia-r: #c4372e;
   --c-neutro-t: #4d545b;
   --c-neutro-f: #ecede7;
-  --c-neutro-r: #8e949a;
+  /* B8 de la etapa 7: el de la Demo 1 (#8e949a) da 2,62 sobre acento-suave y 2,63 sobre superficie-2 (marca del filtro «De baja» y franja de las filas de baja). */
+  --c-neutro-r: #737980;
 
   /* ---------- Color: tonos con nombre de esta demo (3.2). Son alias: siguen solos al modo oscuro. ---------- */
   --c-critico-t: var(--c-diferencia-t);

@@ -138,7 +138,8 @@
   @container parte (min-width: 30rem) {
     .datos-unidad {
       flex-direction: row;
-      gap: var(--e-2);
+      /* C7 de la etapa 7: el «·» lleva un espacio a cada lado y nada más (este hueco y el espacio de `::before`). */
+      gap: 0.25em;
       font-size: var(--t-cuerpo);
       line-height: 1.5;
     }

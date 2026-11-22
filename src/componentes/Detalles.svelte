@@ -77,4 +77,15 @@
     font-size: var(--t-tabla);
     line-height: 1.4;
   }
+  /* Texto agrandado (el parte mide 17 rem o menos): el contenido usa todo el ancho, sin la sangría de la flecha (S5 de la etapa 7). */
+  @container parte (max-width: 17rem) {
+    .contenido {
+      padding-left: 0;
+    }
+  }
+  @container interior (max-width: 17rem) {
+    .contenido {
+      padding-left: 0;
+    }
+  }
 </style>

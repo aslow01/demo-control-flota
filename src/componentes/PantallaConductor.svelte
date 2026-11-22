@@ -26,6 +26,8 @@
 
   const uid = $props.id();
   const idHoy = `${uid}-hoy`;
+  /** m4 de la etapa 7: el `h1` de «Cerrar antes» lleva la razón en `aria-describedby`, como los resultados C1 y C2. */
+  const ID_AVISO_CERRAR_ANTES = `${uid}-aviso-cerrar-antes`;
   const idSelect = `${uid}-unidad`;
 
   // Lo que eligió con «Usar otra unidad» (`""` = la asignada).
@@ -80,7 +82,7 @@
   <div class="pantalla">
     <div class="encabezado">
       <div class="solo-angosto"><EtiquetaDemo /></div>
-      <h1 tabindex="-1">{inicio.titulo}</h1>
+      <h1 tabindex="-1" aria-describedby={inicio.hoyEstado.tipo === "cierre-pendiente" ? ID_AVISO_CERRAR_ANTES : undefined}>{inicio.titulo}</h1>
     </div>
 
     <Panel id={idHoy} titulo={inicio.hoy.titulo} icono="parte" estado={mensaje.texto} repetir={mensaje.n}>
@@ -140,7 +142,7 @@
       {:else if inicio.hoyEstado.tipo === "cierre-pendiente"}
         <!-- Estado 5 bis, «Cerrar antes» (A1, P20): una tarea pendiente (tono semana, `i-lapiz`), no una prohibición; por eso hay primario. Tampoco es `role="alert"`. -->
         {@const c = inicio.hoyEstado}
-        <Aviso tono="semana" icono="lapiz" accion={c.renglon2}>{c.renglon1}</Aviso>
+        <Aviso tono="semana" icono="lapiz" accion={c.renglon2} idTexto={ID_AVISO_CERRAR_ANTES}>{c.renglon1}</Aviso>
         <div class="accion-principal"><EnlaceAccion href={c.primario.href} variante="primario" tamano="grande">{c.primario.texto}</EnlaceAccion></div>
         {#if c.borrador !== null}
           {@const b = c.borrador}
@@ -247,6 +249,18 @@
   }
   .interno {
     font-weight: 600;
+  }
+  /* C9 y m1 de la etapa 7: con el texto agrandado (el interior mide 17 rem o menos) la patente grande, que no se parte, sale de su caja; pasa a su tamaño chico (5.5). */
+  @container interior (max-width: 17rem) {
+    .identidad :global(.patente[data-tamano="grande"]) {
+      --alto: 1.5rem;
+      --relleno: 0.375rem;
+      --tam: var(--t-patente-chica);
+    }
+    .pendiente :global(.enlace-accion) {
+      grid-column: 1 / -1;
+      padding-inline: var(--e-1);
+    }
   }
   .descripcion {
     overflow-wrap: anywhere;

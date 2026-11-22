@@ -38,6 +38,8 @@
 
   // «Último parte» (5.10): la etiqueta que arma `panelDeFlota` («En uso», «Sin enviar», «Sin cerrar», «Sin parte») y la de tabla 5.7 que le toca. «Sin parte» no es una etiqueta de parte
   // (es la falta de uno): tono semana con `i-guion`.
+  /** C5 de la etapa 7: «en 30 días» no se corta entre la cifra y la unidad (espacio duro). Si el texto ya lo trae así, no cambia nada. */
+  const unirCifra = (texto: string): string => texto.replace(/(\d) (días?)/g, "$1\u00a0$2");
   const ETIQUETA_DE_PARTE: Record<string, EtiquetaDeParte> = { "En uso": "en-uso", "Sin enviar": "sin-enviar", "Sin cerrar": "sin-cerrar" };
 
   const ID_TITULO = "titulo-flota";
@@ -230,10 +232,10 @@
               {:else if pv.tipo === "por-vencer"}
                 <span class="con-horizonte">
                   {#if pv.horizonte !== null}<Horizonte horizonte={pv.horizonte} />{/if}
-                  <span>{pv.texto}</span>
+                  <span>{unirCifra(pv.texto)}</span>
                 </span>
               {:else}
-                <span class="nota">{pv.texto}</span>
+                <span class="nota">{unirCifra(pv.texto)}</span>
               {/if}
             </td>
             <td {...CELDA} data-col="km" data-etiqueta={T.columnas.km}>
@@ -387,6 +389,12 @@
     gap: var(--e-1);
     min-width: 0;
   }
+  /* Texto agrandado (el panel mide 17 rem o menos): cada selector toma su renglón, así «Proyecto» no se parte (S5 de la etapa 7). */
+  @container panel (max-width: 17rem) {
+    .selector {
+      flex-basis: 100%;
+    }
+  }
   .selector span {
     font-size: var(--t-chico);
     font-weight: 600;
@@ -498,7 +506,8 @@
     .grupo-int {
       display: inline-flex;
       align-items: center;
-      gap: var(--e-2);
+      /* C7: el «·» lleva un espacio a cada lado y nada más (el de `::after` y este). */
+      gap: 0.25em;
       min-width: 0;
       max-width: 100%;
       white-space: nowrap;
@@ -527,6 +536,13 @@
   }
   .con-horizonte > :global(:only-child) {
     grid-column: 1 / -1;
+  }
+  /* Texto agrandado (la tarjeta mide 17 rem o menos): el horizonte mínimo arriba, con su ancho de 4 rem, y el texto debajo, a todo el ancho (S5: ninguna columna fija deja el texto en 36 px). */
+  @container lista (max-width: 17rem) {
+    .con-horizonte {
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: start;
+    }
   }
   .nota {
     color: var(--c-texto-2);

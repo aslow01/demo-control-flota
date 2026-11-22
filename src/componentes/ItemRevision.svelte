@@ -96,6 +96,26 @@
     padding-left: var(--e-3);
     border-left: 4px solid var(--c-critico-r);
   }
+  @container parte (max-width: 17rem) {
+    .item.con-error {
+      padding-left: var(--e-2);
+    }
+  }
+  @container parte (max-width: 8.5rem) {
+    .item.con-error {
+      padding-left: 0;
+    }
+  }
+  /* Texto agrandado: el mensaje de error baja debajo de su ícono si no entra a su lado sin partir una palabra (S5 de la etapa 7). */
+  @container parte (max-width: 17rem) {
+    .error {
+      flex-wrap: wrap;
+    }
+    .error > span:last-child {
+      flex: 1 1 7rem;
+      min-width: 0;
+    }
+  }
   /* La etiqueta «Punto crítico» siempre en el mismo lugar (C12): debajo del nombre con poco ancho y a su derecha desde 40 rem. Antes bajaba o no según el largo del nombre. */
   legend {
     display: flex;
@@ -116,6 +136,8 @@
   .nombre {
     font-weight: 600;
     line-height: 1.4;
+    /* m1 de la etapa 7: si el nombre del punto no entra ni en su propio renglón (320 px con el texto al 200 %), se parte en vez de ensanchar la página. */
+    overflow-wrap: anywhere;
   }
 
   .error {
@@ -127,6 +149,7 @@
     font-weight: 600;
     line-height: 1.4;
     color: var(--c-critico-t);
+    overflow-wrap: anywhere;
   }
   .error :global(.icono) {
     margin-top: 0.1rem;

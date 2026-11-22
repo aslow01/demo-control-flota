@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CELDA, ENCABEZADO_DE_GRUPO, FILA, GRUPO_DE_FILAS, TABLA } from "./lista-roles.ts";
   // Panel «Kilometraje» de la ficha (6.3): los últimos partes enviados y correcciones (fecha, inicio → fin y recorrido), el más nuevo primero. Los saltos y
   // recorridos largos que se aceptaron al enviar llevan `i-alerta` en tono semana; las correcciones, `i-km` y su motivo. No tiene reglas: todo lo arma
   // `ficha.kilometraje`. «Corregir kilometraje» avisa con `alCorregir`. La tabla tiene encabezados solo para lectores de pantalla.
@@ -29,26 +30,26 @@
   {#if kilometraje.vacio !== null}
     <p class="vacio"><Icono nombre="guion" />{kilometraje.vacio}</p>
   {:else}
-    <table>
+    <table {...TABLA}>
       <caption class="solo-lectores">{kilometraje.subtitulo}</caption>
-      <thead class="solo-lectores">
-        <tr>
-          <th scope="col">{T.kilometraje.columnas.fecha}</th>
-          <th scope="col">{T.kilometraje.columnas.registro}</th>
-          <th scope="col">{T.kilometraje.columnas.recorrido}</th>
+      <thead class="solo-lectores" {...GRUPO_DE_FILAS}>
+        <tr {...FILA}>
+          <th scope="col" role="columnheader">{T.kilometraje.columnas.fecha}</th>
+          <th scope="col" role="columnheader">{T.kilometraje.columnas.registro}</th>
+          <th scope="col" role="columnheader">{T.kilometraje.columnas.recorrido}</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody {...GRUPO_DE_FILAS}>
         {#each kilometraje.filas as f (f.clave)}
-          <tr>
-            <th scope="row" class="fecha num">
+          <tr {...FILA}>
+            <th scope="row" {...ENCABEZADO_DE_GRUPO} class="fecha num">
               {#if f.href !== null}
                 <a href={f.href}><span class="solo-lectores">{T.kilometraje.parteDel}</span>{f.fecha}</a>
               {:else}
                 {f.fecha}
               {/if}
             </th>
-            <td class="registro">
+            <td {...CELDA} class="registro">
               <span class="texto num">
                 {#if f.tipo === "correccion"}<Icono nombre="km" />{/if}{f.texto}
               </span>
@@ -57,7 +58,7 @@
                 <span class="advertencia"><Icono nombre="alerta" />{advertencia}</span>
               {/each}
             </td>
-            <td class="recorrido num">
+            <td {...CELDA} class="recorrido num">
               {#if f.recorrido !== null}{f.recorrido}{:else if f.tipo === "salida"}<!-- Parte en uso (C16): el recorrido todavía no se conoce; la raya ocupa su lugar para que la fila se alinee con las demás. --><span aria-hidden="true">—</span><span class="solo-lectores">{T.kilometraje.sinRecorrido}</span>{/if}
             </td>
           </tr>
@@ -141,6 +142,44 @@
     text-align: right;
     white-space: nowrap;
     color: var(--c-texto-2);
+  }
+  /* Texto agrandado (el interior mide 17 rem o menos): tres columnas no caben; cada fila pasa a dos renglones, la fecha a la izquierda y el recorrido a la derecha, y el registro (inicio → fin)
+     a todo el ancho debajo. Con `display: block` los roles escritos en el marcado mantienen la tabla para los lectores de pantalla. */
+  @container interior (max-width: 17rem) {
+    table,
+    tbody {
+      display: block;
+    }
+    thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    tr {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      column-gap: var(--e-3);
+      padding-block: var(--e-2);
+    }
+    th,
+    td {
+      padding: 0;
+    }
+    .fecha {
+      width: auto;
+    }
+    .registro {
+      order: 3;
+      flex: 1 0 100%;
+    }
+    .recorrido {
+      margin-inline-start: auto;
+    }
   }
   .corregir {
     display: flex;

@@ -69,6 +69,22 @@
     border-radius: var(--r-2);
     line-height: 1.5;
   }
+  @container dialogo (max-width: 17rem) {
+    .aviso {
+      flex-wrap: wrap;
+      gap: var(--e-1) var(--e-2);
+      padding: var(--e-2);
+    }
+    .texto {
+      flex: 1 1 7rem;
+    }
+  }
+  /* 320 px con el texto agrandado (el diálogo mide 10 rem): otro escalón menos de relleno, para que «documentación» (7 rem) entre entera. */
+  @container dialogo (max-width: 10.5rem) {
+    .aviso {
+      padding-inline: var(--e-1);
+    }
+  }
   .icono-aviso {
     --icono-tam: 1.125rem;
     display: inline-flex;

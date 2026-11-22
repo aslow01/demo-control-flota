@@ -218,4 +218,15 @@
       padding-inline: var(--e-5);
     }
   }
+  /* Texto agrandado (el panel mide 17 rem o menos): el relleno del interior y de las barras baja, así el texto conserva el ancho (S5 de la etapa 7). */
+  @container panel (max-width: 17rem) {
+    .interior {
+      padding: var(--e-2);
+    }
+    .herramientas,
+    .estado {
+      padding-inline: var(--e-2);
+    }
+  }
+
 </style>

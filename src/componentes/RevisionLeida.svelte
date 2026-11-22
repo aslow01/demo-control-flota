@@ -71,4 +71,21 @@
     margin-top: 0.1875rem;
     color: var(--tono-t);
   }
+  /* Texto agrandado (el contenedor mide 17 rem o menos): el ícono y el texto no caben uno al lado del otro sin partir las palabras; el texto baja a su renglón, a todo el ancho (S5 de la etapa 7). */
+  @container (max-width: 17rem) {
+    .en-orden,
+    .novedad {
+      flex-wrap: wrap;
+      gap: var(--e-1) var(--e-2);
+    }
+    .novedad {
+      padding-inline: var(--e-2);
+    }
+    .en-orden > :last-child,
+    .novedad > :last-child {
+      flex: 1 1 8rem;
+      min-width: 0;
+      margin: 0;
+    }
+  }
 </style>

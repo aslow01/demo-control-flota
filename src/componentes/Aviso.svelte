@@ -19,6 +19,7 @@
     alCerrar,
     boton,
     accion = "",
+    idTexto,
     children,
   }: {
     tono: Tono;
@@ -27,6 +28,8 @@
     alCerrar?: () => void;
     boton?: Snippet;
     accion?: string;
+    /** `id` del texto del aviso, para que un título lo use en `aria-describedby` («Cerrar antes»: quien recibe el foco en el `h1` oye también la razón). */
+    idTexto?: string;
     children: Snippet;
   } = $props();
 
@@ -50,7 +53,7 @@
 
 <div class="aviso" role={rol} data-tono={tono} bind:this={raiz}>
   <span class="icono-aviso"><Icono nombre={icono} /></span>
-  <div class="texto">
+  <div class="texto" id={idTexto}>
     {#if accion !== ""}
       <span class="aviso-titular">{@render children()}</span>
       <span class="aviso-accion">{accion}</span>
@@ -117,6 +120,12 @@
     align-items: center;
     gap: var(--e-2);
     margin-left: auto;
+  }
+  /* Texto agrandado (el contenedor del aviso mide 17 rem o menos): menos relleno a los lados, así lo que dice el aviso conserva el ancho (S5 de la etapa 7). */
+  @container (max-width: 17rem) {
+    .aviso {
+      padding-inline: var(--e-2);
+    }
   }
   @media (max-width: 39.99rem) {
     /* Con poco ancho una acción con texto baja a su renglón; el "Cerrar aviso" solo se queda a la derecha. */

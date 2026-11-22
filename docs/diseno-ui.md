@@ -142,7 +142,7 @@ Propiedades personalizadas en `:root`, bloque oscuro en `@media (prefers-color-s
 | `--c-foco` | `#0B6B70` | `#5BC6C0` | Anillo de foco. |
 | `--c-edicion` | `#E8F3F3` | `#14292A` | Fondo de campo con borrador recién guardado (destello). |
 
-Tonos de estado (texto `-t`, fondo `-f`, franja o marca `-r`), mismos valores que la Demo 1:
+Tonos de estado (texto `-t`, fondo `-f`, franja o marca `-r`), mismos valores que la Demo 1, salvo el `neutro-r` claro (B8):
 
 | Tono base | Claro t / f / r | Oscuro t / f / r |
 | --- | --- | --- |
@@ -150,9 +150,13 @@ Tonos de estado (texto `-t`, fondo `-f`, franja o marca `-r`), mismos valores qu
 | `pendiente` | `#0A5F64` / `#E2F0EF` / `#0B6B70` | `#7DD5D0` / `#123231` / `#5BC6C0` |
 | `revisar` | `#774700` / `#FBEED3` / `#B57A06` | `#F1C46E` / `#33280F` / `#D9A030` |
 | `diferencia` | `#9E2620` / `#FAE5E2` / `#C4372E` | `#F59B91` / `#3A1B18` / `#E2665B` |
-| `neutro` | `#4D545B` / `#ECEDE7` / `#8E949A` | `#AEB6BD` / `#23282D` / `#7A838B` |
+| `neutro` | `#4D545B` / `#ECEDE7` / `#737980` | `#AEB6BD` / `#23282D` / `#7A838B` |
 
-### 3.2 Tonos con nombre de esta demo (alias, sin valores nuevos salvo `--c-mes-r`)
+B8 (22/11/2026): el valor de la Demo 1 (`#8E949A`) da 2,62:1 sobre `--c-acento-suave` y 2,63:1 sobre `--c-superficie-2`, y aquí
+marca la selección del filtro "De baja" y la franja de las filas de baja. `#737980`: 4,40 superficie · 3,78
+superficie-2 · 3,76 acento-suave · 4,02 fondo. Oscuro sin cambios (`#7A838B`).
+
+### 3.2 Tonos con nombre de esta demo (alias, sin valores nuevos salvo `--c-mes-r` y el `neutro-r` claro)
 
 | Tono de la demo | Alias de | Significa | Dónde |
 | --- | --- | --- | --- |
@@ -564,7 +568,9 @@ parte · Novedades · Proyecto y conductor.
 
 - **Unidad:** patente-enlace + "Int. 07"; línea 2 "Toyota Hilux 2022 · Camioneta".
 - **Estado hoy:** etiqueta (Puede salir en su variante texto, 5.7 / No puede salir / Fuera de servicio / De baja) +
-  motivo principal en línea 2 ("Seguro vencido hace 1 día"; si hay más, "y 1 motivo más").
+  motivo principal en línea 2 ("Seguro vencido hace 1 día"; si hay más, "y 1 motivo más"). Motivo de fuera de servicio por
+  novedad crítica: si la fecha del parte es la del "Desde", no se repite: "Desde el 20/11/2026: novedad crítica en
+  Frenos."; si es otra, "…, parte del {F}.".
 - **Próximo vencimiento:** horizonte mínimo + "Revisión técnica · en 6 días"; si es > 30 días, "Seguro · 12/05/2027"
   en `--c-texto-2` sin horizonte; si hay vencido o faltante, la etiqueta crítica y el nombre.
 - **Kilometraje:** "84.320 km", alineado a la derecha, tabular. Sin registros: "Sin registros".
@@ -582,8 +588,11 @@ parte · Novedades · Proyecto y conductor.
   `@container lista (min-width: 66rem)`, `table-layout: fixed` con Unidad `11.5rem` · Estado hoy `12.5rem` · Próximo
   vencimiento `15rem` (4rem son del horizonte) · Km `5.5rem` · Último parte `6.5rem` · Novedades `6rem` · Proyecto y
   conductor el resto (unos 190 px a 1280); `white-space: nowrap` en kilometraje y fechas; horizonte mínimo siempre a la
-  izquierda del texto. **Metas a 1280:** ≤ 64 px en las filas que pueden salir; ≤ 88 px en las que llevan motivo (no
-  pueden salir, fuera de servicio). Hoy, 10 de 23 filas pasan de 64 px (máximo 113).
+  izquierda del texto. **Metas a 1280:** ≤ 64 px en las filas que pueden salir; ≤ 68 px si además "Último parte" lleva etiqueta
+  (fecha y etiqueta apiladas; medido 65); ≤ 88 px en las que llevan un aviso: motivo en "Estado hoy" (no pueden salir,
+  fuera de servicio) o "sin licencia vigente" en "Proyecto y conductor" (medido 77). Relleno horizontal de las celdas de la
+  tabla completa: 8 px (desvío aceptado del 22/11/2026). Medido el 22/11/2026: 16 filas de 62, 3 de 65, una de 77; con
+  motivo, 62 a 79 salvo ZU 899 QE (96, por un motivo que repetía la fecha: C3 de la etapa 7).
 - **Tarjetas (< 40rem; S10, C8 del 22/11/2026):**
   - Renglón 1: patente-enlace y "Int. 17 · Peugeot Partner 2024" en **un solo `span`** con `white-space: nowrap`; si no
     entra junto a la patente, baja entero (nunca un "·" colgado al final del renglón).
@@ -593,7 +602,13 @@ parte · Novedades · Proyecto y conductor.
   - Renglón 4, km y parte: `display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--e-2);` con tres
     piezas: "59.413 km", "· último parte 21/11/2026" (`white-space: nowrap`) y la etiqueta. Si no entra, baja la
     etiqueta entera; la fecha nunca se separa de "último parte".
-  - Meta: ≤ 190 px por tarjeta, medida en ZK 214 BD, ZW 827 VD y ZW 749 JE.
+  - Kilometraje y último parte son dos celdas: "59.413 km" se alinea arriba (`align-self: start`), en la línea de "·
+    último parte 21/11/2026"; si la etiqueta no entra, baja debajo de "· último parte" (no al borde izquierdo de la
+    tarjeta).
+  - Meta: ≤ 180 px la tarjeta de cuatro renglones (patente con interno y modelo, estado, próximo vencimiento, km y parte;
+    medidas ZYN 469 y ZK 214 BD, 172 y 174). Cada dato que suma un renglón (interno y modelo que bajan, próximo
+    vencimiento en dos renglones, etiqueta del último parte, novedades) suma unos 20 a 28 px: **≤ 230 px** toda tarjeta
+    cuyo texto arma la lógica (medidas ZW 827 VD y ZW 749 JE, 220). Un motivo escrito por una persona no tiene tope.
 - Franja izquierda **solo** en filas que no pueden salir (crítico), fuera de servicio (semana) o de baja (neutro). Las
   que pueden salir no llevan franja: un muro verde no informa nada.
 - **Orden:** un `select` "Ordenar por" (Prioridad, Patente, Interno, Próximo vencimiento, Último parte) en la barra de
@@ -1226,9 +1241,11 @@ de qué unidad y qué día; 2) lo que falta; 3) enviar la revisión o cerrar.
 5. Solo en A: aviso compacto "no puede salir" de la unidad, si corresponde (como en 6.4).
 6. Indicador de guardado (5.15).
 
-Meta verificable (C1, se mantiene): a 360 × 780, la etiqueta "Al iniciar" (A) y la etiqueta "Al terminar" (B) quedan
-por encima de los 600 px. El `h1` del paso es más corto que el anterior ("Parte del miércoles 18/11/2026" ocupaba dos
-renglones a 360 px), así que el renglón de contexto no suma altura.
+Meta verificable (perfil Conductor, 360 × 780, demo recién cargada): el borde superior de la etiqueta "Al iniciar" (A)
+y de "Al terminar" (B) queda en `y ≤ 600` px, y el borde inferior de su campo, al menos 16 px por encima del borde
+superior de la barra de envío. Medido el 22/11/2026: A 590 / 683 / 707; B 585 / 677 / 707. Con el perfil Encargado
+el primer campo es "Conductor" y "Al iniciar" queda debajo de la barra: es lo esperado. El `h1` del paso es más corto que el
+anterior ("Parte del miércoles 18/11/2026" ocupaba dos renglones a 360 px), así que el renglón de contexto no suma altura.
 
 **A. Revisión antes de salir — teléfono, 360 px (pantalla principal de esta vista)**
 
@@ -1345,7 +1362,8 @@ y da el título de la pestaña):
   06:52." (fuera de plazo: "Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de plazo)."). `dl`: "Al
   iniciar" "84.320 km" · "Novedades" "Sin novedades" (o "1 normal: Niveles de aceite y agua", con la nota "El encargado
   la ve en el centro de alertas.") · "Avisos aceptados" (si hubo, en pasado). Párrafo `--c-texto-2`: "Al terminar la
-  jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible." Acciones: **parte de hoy** →
+  jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible." (parte de un día pasado: "Falta cerrar este
+  parte con el kilometraje y el combustible de esa jornada.") Acciones: **parte de hoy** →
   "Volver al inicio" (primario) + "Completar el cierre ahora" (botón-texto); **parte de un día pasado** → "Completar el
   cierre" (primario) + "Volver al inicio" (botón-texto). "Completar el cierre" muestra B en la misma ruta, con el foco en
   su `h1`.
@@ -1467,7 +1485,7 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 | Resumen de errores, puntos agrupados (D1, más de 3 sin responder) | "Faltan {N} puntos de la revisión" (enlace al primero sin responder). Con 3 o menos: "{Punto}: elija una opción" por punto |
 | Faltante de "Al iniciar" / "Al terminar" | "Escriba el kilometraje al iniciar." / "Escriba el kilometraje al terminar." (sin cambios) |
 | Resumen de la revisión (paso 2) | "Revisión enviada a las 06:52 · Al iniciar: 84.320 km · Sin novedades" · "· 1 novedad: Niveles de aceite y agua" · "· Conductor: {Nombre}" (perfil Encargado) · "Ver la revisión" |
-| C1 | `h1` "Revisión enviada" · "{P} puede salir. Revisión enviada a las 06:52." · fuera de plazo: "Revisión del {F} enviada el 18/11/2026 a las 08:10 (fuera de plazo)." · con documentación vencida aceptada (S1): "{P}: revisión enviada a las 06:52. Sale con documentación vencida: quedó registrado." / fuera de plazo: "Revisión del {F} enviada el {F2} a las 08:10 (fuera de plazo). Salió con documentación vencida: quedó registrado." · "El encargado la ve en el centro de alertas." · "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible." · "Volver al inicio" · "Completar el cierre ahora" · "Completar el cierre" |
+| C1 | `h1` "Revisión enviada" · "{P} puede salir. Revisión enviada a las 06:52." · fuera de plazo: "Revisión del {F} enviada el 18/11/2026 a las 08:10 (fuera de plazo)." · con documentación vencida aceptada (S1): "{P}: revisión enviada a las 06:52. Sale con documentación vencida: quedó registrado." / fuera de plazo: "Revisión del {F} enviada el {F2} a las 08:10 (fuera de plazo). Salió con documentación vencida: quedó registrado." · "El encargado la ve en el centro de alertas." · "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible." (parte de un día pasado: "Falta cerrar este parte con el kilometraje y el combustible de esa jornada.") · "Volver al inicio" · "Completar el cierre ahora" · "Completar el cierre" |
 | C2 | `h1` "La unidad no puede salir" · "Revisión enviada a las 06:52 con una novedad crítica: Frenos." · "… con 2 novedades críticas: Frenos, Dirección." · "{P} quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio. El parte quedó cerrado sin uso." · "Si tiene que salir, elija otra unidad desde el inicio." |
 | C3 | `h1` "Parte cerrado" · "{P}, {F}: revisión a las 06:52, cierre a las 18:42." |
 | Lectura, sin salida | "Sin uso: la unidad no salió" (recorrido) · "No se registró: la unidad no salió" (combustible) |
@@ -1611,12 +1629,16 @@ correcciones → `disenador-ui` revisa contra este documento → `critico-reclut
 - Recorrido "Cerrar antes": con el perfil Conductor y un parte anterior en uso → inicio en el estado 5 bis → "Cerrar el
   parte anterior" → cierre → C3 → "Volver al inicio" → estado 7. Con el perfil Encargado, abrir la fecha posterior por
   dirección → E "Cerrar antes" → primario → B.
-- Metas medidas a 360 × 780: "Al iniciar" (paso 1) y "Al terminar" (paso 2) por encima de 600 px; evento cerrado del
-  historial ≤ 100 px; tarjetas ≤ 200 / 190 px (5.9). A 1280: filas de la flota ≤ 64 px (pueden salir) y ≤ 88 px (con
-  motivo) (5.10).
+- Metas medidas a 360 × 780: "Al iniciar" (paso 1) y "Al terminar" (paso 2) con `top ≤ 600` px y el campo 16 px por encima
+  de la barra (6.5); evento cerrado del historial ≤ 100 px; tarjetas de alerta ≤ 200 px (5.9) y de la flota ≤ 180 / 230 px
+  (5.10). A 1280: filas de la flota ≤ 64 / 68 / 88 px (5.10).
 - Zoom 200 % y 400 %; **texto al 200 % a 360 px** (`html { font-size: 200% }`: sin desplazamiento horizontal ni
   superposiciones, 4.1 y 6.4 "Mis últimos partes"); espaciado de texto aumentado; `prefers-reduced-motion`; colores
   forzados (Windows, contraste alto).
+  Con el texto al 200 % a 360 px no alcanza con `scrollWidth`: ningún bloque de texto de más de 6 caracteres puede
+  medir menos de 3em de ancho (eso es una palabra partida letra por letra) ni salir de su panel. Regla de disposición:
+  toda fila con una columna fija en `rem` (horizonte mínimo, rótulo, botón con ícono) pasa a una sola columna con
+  `@container (max-width: 17rem)`, el mismo corte de "Mis últimos partes" y de las tarjetas.
 - Contraste de lo maquetado medido otra vez (los valores de 3.3 son de la paleta).
 - Consola sin errores ni violaciones de CSP con la compilación de producción servida con `public/_headers`.
 - IndexedDB bloqueado (ventana privada de un navegador que lo bloquee, o simulado): la demo funciona con el aviso D8.

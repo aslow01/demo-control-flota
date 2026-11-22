@@ -28,6 +28,8 @@
   let { titulo = $bindable("") }: { titulo?: string } = $props();
 
   const vista = $derived(app.parteDeLaRuta);
+  /** m4 de la etapa 7: el `h1` de la pantalla E «Cerrar antes» lleva la razón en `aria-describedby`, como los resultados C1 y C2. */
+  const ID_AVISO_CERRAR_ANTES = "aviso-cerrar-antes";
 
   // El panel que sale de enviar: se muestra en lugar del formulario hasta que se elige una acción.
   let recienEnviado = $state.raw<PanelParteEnviado | null>(null);
@@ -118,9 +120,9 @@
     <div class="pantalla">
       <div class="encabezado">
         <div class="solo-angosto"><EtiquetaDemo /></div>
-        <h1 tabindex="-1">{vista.titulo}</h1>
+        <h1 tabindex="-1" aria-describedby={vista.tipo === "no-disponible" && vista.cerrarAntes !== null ? ID_AVISO_CERRAR_ANTES : undefined}>{vista.titulo}</h1>
         {#if vista.tipo === "no-disponible" && vista.cerrarAntes !== null}
-          <Aviso tono="semana" icono="lapiz" accion={vista.cerrarAntes.renglon2}>{vista.cerrarAntes.renglon1}</Aviso>
+          <Aviso tono="semana" icono="lapiz" accion={vista.cerrarAntes.renglon2} idTexto={ID_AVISO_CERRAR_ANTES}>{vista.cerrarAntes.renglon1}</Aviso>
         {:else}
           <p class="parrafo largo">{vista.mensaje}</p>
         {/if}
@@ -143,6 +145,8 @@
 
 <style>
   .pantalla {
+    /* Las reglas de texto agrandado de los resultados y de la lectura miden el ancho de esta pantalla (S5 de la etapa 7). */
+    container: pagina-parte / inline-size;
     display: flex;
     flex-direction: column;
     gap: var(--e-4);

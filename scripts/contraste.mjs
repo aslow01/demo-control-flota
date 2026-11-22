@@ -121,6 +121,9 @@ par("Sin licencia vigente (texto crítico / fila con hover)", "critico-t", "supe
 par("Indicador de guardado con error / fondo", "critico-t", "fondo", 4.5);
 par("Renglón de contexto del parte (texto secundario / fondo)", "texto-2", "fondo", 4.5);
 par("Resumen de la revisión (texto / fondo)", "texto", "fondo", 4.5);
+// B8 (etapa 7): `neutro-r` marca la selección del filtro «De baja» (sobre acento-suave) y la franja de las filas de baja con el cursor encima (sobre superficie-2): 3:1.
+par("Marca de «De baja» (neutro-r / acento-suave, B8)", "neutro-r", "acento-suave", 3);
+par("Franja de baja con el cursor (neutro-r / superficie-2, B8)", "neutro-r", "superficie-2", 3);
 par("Foco / superficie", "foco", "superficie", 3);
 par("Foco / escritorio", "foco", "escritorio", 3);
 
