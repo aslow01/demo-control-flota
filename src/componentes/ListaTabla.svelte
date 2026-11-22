@@ -188,6 +188,15 @@
     [data-variante="flota"] .fila :global(td[data-col="novedades"]) {
       white-space: nowrap;
     }
+    /* Con 1.102 px de tabla, 12 px a cada lado de cada celda hacían que «Proyecto Arroyo Escondido» y «Revisión técnica · en 5 días» se partieran en un renglón más. */
+    [data-variante="flota"] th[scope="col"],
+    [data-variante="flota"] .fila :global(td) {
+      padding-inline: var(--e-2);
+    }
+    [data-variante="flota"] th[data-col="unidad"],
+    [data-variante="flota"] .fila :global(td:first-of-type) {
+      padding-left: var(--e-4);
+    }
   }
   @media (hover: hover) {
     .fila:hover :global(td) {
