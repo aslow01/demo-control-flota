@@ -24,6 +24,7 @@
     grande = false,
     autocomplete,
     modoEntrada,
+    teclaEnter,
     mayusculas = false,
     corto = false,
     maximo = 500,
@@ -45,6 +46,8 @@
     autocomplete?: "off" | "on";
     /** Teclado del celular para un texto con dígitos (`numeric`: interno, año). Es `text` y no `number`: sin flechas ni rueda. */
     modoEntrada?: "numeric" | "text";
+    /** Rótulo de la tecla Enter del teclado del celular (`enterkeyhint`): «siguiente» o «listo». Solo es la leyenda de la tecla: Enter no envía ni mueve el foco (B5). */
+    teclaEnter?: "next" | "done";
     /** Patentes y similares: teclado en mayúsculas y sin corrector. */
     mayusculas?: boolean;
     /** Ancho de 10 caracteres (números cortos como el año). */
@@ -110,6 +113,7 @@
         type={tipo === "fecha" ? "date" : "text"}
         max={tipo === "fecha" ? maxFecha : undefined}
         inputmode={tipo === "km" ? "numeric" : tipo === "litros" ? "decimal" : modoEntrada}
+        enterkeyhint={teclaEnter}
         autocapitalize={mayusculas ? "characters" : undefined}
         spellcheck={mayusculas ? false : undefined}
         autocomplete={autocomplete ?? (tipo === "texto" ? undefined : "off")}

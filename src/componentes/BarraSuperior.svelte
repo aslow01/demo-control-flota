@@ -4,6 +4,7 @@
   //  - 40 a 56 rem: las acciones pasan al menú "Más" y el enlace se acorta a "← Portafolio".
   //  - < 40 rem: marca + "← Portafolio" + "Más"; el rótulo "Demo con datos ficticios" baja al encabezado de cada pantalla.
   // Las acciones (Cómo funciona, Reiniciar demo) las decide quien arma la barra; sin acciones no hay botones ni menú.
+  // Texto agrandado (m1, 1.4.4): sin alto fijo (`min-height`), la fila pasa a otro renglón en vez de empujar la página, el ícono nunca se achica y el nombre puede partirse.
   import Boton from "./Boton.svelte";
   import EtiquetaDemo from "./EtiquetaDemo.svelte";
   import Icono from "./Icono.svelte";
@@ -43,9 +44,11 @@
   }
   .interior {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--e-3);
+    column-gap: var(--e-3);
+    row-gap: var(--e-1);
     min-height: 3.5rem;
   }
   .marca {
@@ -61,12 +64,13 @@
   }
   .nombre {
     font-weight: 600;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
   .derecha {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--e-3);
+    gap: 0 var(--e-3);
   }
   .acciones {
     display: flex;
@@ -77,6 +81,9 @@
     display: inline-flex;
     align-items: center;
     min-height: var(--alto-tactil);
+  }
+  .largo,
+  .corto {
     white-space: nowrap;
   }
   .corto {

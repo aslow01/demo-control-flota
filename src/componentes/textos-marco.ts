@@ -231,6 +231,8 @@ export const TEXTO_FICHA_VISTA = {
   kilometraje: {
     columnas: { fecha: "Fecha", registro: "Registro", recorrido: "Recorrido" },
     motivo: (texto: string) => `Motivo: ${texto}`,
+    /** Texto oculto de la celda del recorrido de un parte en uso, que muestra «—» (un lector de pantalla diría «raya» o nada). */
+    sinRecorrido: "Sin recorrido",
     /** Texto oculto delante de la fecha del enlace al parte: «Parte del 17/11/2026». */
     parteDel: "Parte del ",
   },
@@ -324,9 +326,6 @@ export const TEXTO_PARTE_VISTA = {
   conductorLinea: (nombre: string) => `Conductor: ${nombre}`,
   /** Sigue a «Los campos con * son obligatorios.» (arriba de la revisión): los puntos de revisión lo son sin llevar asterisco. En el cierre no hace falta: el combustible lleva el suyo. */
   obligatoriosRevision: "También son obligatorios los puntos de revisión.",
-  /** Opción del `select` Conductor del encargado: «Tamara Olivera · ZK 214 BD»; con la licencia sin vigencia para la fecha del parte, «… (sin licencia vigente)» (L1, 6.5). */
-  opcionConductor: (nombre: string, patente: string | null, sinLicencia: boolean) =>
-    `${patente === null ? nombre : `${nombre} · ${patente}`}${sinLicencia ? " (sin licencia vigente)" : ""}`,
   secciones: {
     revision: { km: "1. Kilometraje al salir", puntos: "2. Revisión de la unidad", otra: "3. Otra novedad (opcional)" },
     cierre: { km: "1. Kilometraje al terminar", combustible: "2. Combustible" },

@@ -1,12 +1,13 @@
 <script lang="ts">
   // Página de muestras de los componentes de 3.2 (solo en desarrollo, ver muestras.html). Datos ficticios.
   // Sirve para mirar cada pieza en claro y oscuro, a 360 y 1280 px, y para recorrerlas con teclado.
-  import Aviso from "../componentes/Aviso.svelte";
+  import Aviso, { partirAviso } from "../componentes/Aviso.svelte";
   import Boton from "../componentes/Boton.svelte";
   import BotonConfirmar from "../componentes/BotonConfirmar.svelte";
   import Campo from "../componentes/Campo.svelte";
   import Dialogo from "../componentes/Dialogo.svelte";
   import Dato from "../componentes/Dato.svelte";
+  import EnlaceAccion from "../componentes/EnlaceAccion.svelte";
   import Etiqueta from "../componentes/Etiqueta.svelte";
   import Horizonte from "../componentes/Horizonte.svelte";
   import Icono from "../componentes/Icono.svelte";
@@ -255,15 +256,21 @@
     </ul>
   </Panel>
 
-  <Panel titulo="Aviso de bloqueo por licencia" meta="6.4, estado 5" icono="persona">
-    <p class="nota">Inicio del conductor: sin primario ni «Usar otra unidad». No es un `role="alert"`: el foco ya fue al título.</p>
+  <Panel titulo="Avisos compactos de dos renglones" meta="5.18, 6.4" icono="persona">
+    <p class="nota">Bloqueo por licencia (estado 5): sin primario ni «Usar otra unidad». No es un `role="alert"`: el foco ya fue al título.</p>
     <div data-muestra="bloqueo">
-      <Aviso tono="critico" icono="vencido">
-        <p class="bloqueo-1">No puede manejar hoy: su licencia de conducir venció el 15/11/2026.</p>
-        <p class="bloqueo-2">Avise al encargado: cuando cargue una licencia vigente, podrá empezar la revisión.</p>
-      </Aviso>
+      <Aviso tono="critico" icono="vencido" accion="Avise al encargado: cuando cargue una licencia vigente, podrá empezar la revisión.">No puede manejar hoy: su licencia de conducir venció el 15/11/2026.</Aviso>
     </div>
-    <p class="nota">Compacto, para un parte cerrado sin salida (estado 2):</p>
+    <p class="nota">«Cerrar antes» (estado 5 bis y pantalla E): una tarea pendiente, en tono semana, con `i-lapiz`. A diferencia del bloqueo, tiene primario debajo.</p>
+    <div data-muestra="cerrar-antes" class="cerrar-antes">
+      <Aviso tono="semana" icono="lapiz" accion="Ciérrelo primero; después podrá empezar la revisión de hoy.">ZK 214 BD: el parte del sábado 21/11/2026 quedó sin cerrar.</Aviso>
+      <div class="accion-principal"><EnlaceAccion href="#/muestras" variante="primario" tamano="grande">Cerrar el parte anterior</EnlaceAccion></div>
+      <div><EnlaceAccion href="#/muestras" variante="texto">Usar otra unidad</EnlaceAccion></div>
+    </div>
+    <p class="nota">«No puede salir» de la unidad (estados 6 y 7 y paso 1), cortado por `partirAviso` desde una sola cadena:</p>
+    {@const noPuedeSalir = partirAviso("ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.")}
+    <div data-muestra="no-puede-salir"><Aviso tono="critico" icono="vencido" accion={noPuedeSalir.accion}>{noPuedeSalir.titular}</Aviso></div>
+    <p class="nota">De un renglón, para un parte cerrado sin salida (estado 2):</p>
     <Aviso tono="critico" icono="octogono">Revisión de las 06:52: novedad crítica en Frenos. La unidad no salió.</Aviso>
   </Panel>
 
@@ -439,12 +446,21 @@
   .encabezado {
     padding-block: var(--e-5) var(--e-3);
   }
-  .bloqueo-1 {
-    font-weight: 600;
+  .cerrar-antes {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--e-3);
   }
-  .bloqueo-2 {
-    font-size: var(--t-chico);
-    line-height: 1.4;
+  .cerrar-antes > :global(.aviso) {
+    align-self: stretch;
+  }
+  .accion-principal {
+    display: flex;
+    align-self: stretch;
+  }
+  .accion-principal :global(.enlace-accion) {
+    flex: 1;
   }
   .pagina {
     display: flex;

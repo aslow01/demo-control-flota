@@ -112,6 +112,9 @@ for (const t of tonos) par("Texto / fondos de tono (segmento elegido)", "texto",
 for (const f of ["superficie", "superficie-2", "fondo"]) par("Puede salir (variante texto, D1)", "vigente-t", f, 4.5);
 // D4 (motivos del protagonista en texto normal) y el texto sobre el fondo crítico del aviso de bloqueo.
 par("Texto / fondo crítico (D4, avisos)", "texto", "critico-f", 4.5);
+// 14.3, tarea 15: el aviso «Cerrar antes» (estado 5 bis y pantalla E, tono semana): dos renglones en --c-texto sobre el fondo semana (alias «revisar»), con su ícono i-lapiz.
+par("Aviso Cerrar antes (texto / fondo semana)", "texto", "semana-f", 4.5);
+par("Aviso Cerrar antes (ícono i-lapiz / fondo semana)", "semana-t", "semana-f", 4.5);
 // Parte en dos pasos y licencia (19/11/2026): «sin licencia vigente» (flota, 5.10) sobre la fila con el cursor encima, el indicador de guardado con error sobre la página,
 // y el renglón de contexto («Parte del … · paso 1 de 2») y el resumen de la revisión sobre el color de la página.
 par("Sin licencia vigente (texto crítico / fila con hover)", "critico-t", "superficie-2", 4.5);

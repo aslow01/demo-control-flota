@@ -36,9 +36,10 @@
     bottom: 0;
     z-index: 10;
     display: flex;
+    flex-wrap: wrap; /* a 320 px o con el texto agrandado el botón baja a su renglón en vez de salirse de la pantalla */
     align-items: center;
     justify-content: space-between;
-    gap: var(--e-3);
+    gap: var(--e-2) var(--e-3);
     min-height: var(--alto-barra-envio);
     margin-inline: calc(-1 * var(--gutter));
     padding: var(--e-3) var(--gutter);
@@ -50,6 +51,8 @@
   .estado-barra {
     --icono-tam: 1.125rem;
     display: flex;
+    flex: 1 1 7rem;
+    min-width: 0;
     align-items: center;
     gap: var(--e-2);
     font-size: var(--t-chico);

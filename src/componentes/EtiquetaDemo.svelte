@@ -12,6 +12,8 @@
     border: 1px solid var(--c-borde-fuerte);
     border-radius: var(--r-1);
     color: var(--c-texto-2);
-    white-space: nowrap;
+    /* Con el texto agrandado baja de renglón en lugar de empujar la página (m1). */
+    white-space: normal;
+    max-width: 100%;
   }
 </style>

@@ -12,7 +12,7 @@
   //  - Los errores de formato de un campo (km con letras…) llegan al salir del campo y bloquean el guardado hasta corregirlos (indicador «Sin guardar: corrija…»).
   //  - Paso 2: la revisión ya enviada no se toca (P7): va como resumen arriba (con un `details` que muestra los puntos), sin «Descartar borrador» y sin `select` de conductor.
   import { onDestroy, tick, untrack } from "svelte";
-  import { errorGeneralParte, recorridoDe, respondidos, textoBarraDeEnvio, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../lib/dominio/formulario-parte.ts";
+  import { agruparResumen, barraDeEnvio, errorGeneralParte, recorridoDe, respondidos, type CampoParte, type ErroresDeParte, type ValoresParte } from "../lib/dominio/formulario-parte.ts";
   import { ERRORES, TEXTO_DIALOGOS_FICHA, TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos.ts";
   import type { Advertencia, ItemChecklist } from "../lib/dominio/tipos.ts";
   import type { AdvertenciaDeEnvio, ResultadoDeEnvio } from "../lib/estado/app.svelte.ts";
@@ -23,7 +23,6 @@
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import Campo from "./Campo.svelte";
   import Casilla from "./Casilla.svelte";
-  import Dato from "./Dato.svelte";
   import Detalles from "./Detalles.svelte";
   import DialogoAntesDeEnviar from "./DialogoAntesDeEnviar.svelte";
   import ItemRevision from "./ItemRevision.svelte";
@@ -98,13 +97,15 @@
     return esItem(campo) && valores.checklist[campo].respuesta === "con-novedad" ? `${idCampo(campo)}-descripcion` : idCampo(campo);
   }
   const listaVigente = $derived(erroresEnvio === null ? [] : erroresEnvio.lista.filter((x) => vigente(x.campo)));
-  const itemsResumen = $derived(listaVigente.map((x) => ({ campoId: idDelError(x.campo), mensaje: x.mensaje })));
+  // D1: con más de 3 puntos sin responder, un solo enlace («Faltan 10 puntos de la revisión») que lleva al primero; mientras se completan, lo que sigue vigente se vuelve a agrupar.
+  const itemsResumen = $derived(agruparResumen(listaVigente).map((x) => ({ campoId: idDelError(x.campo), mensaje: x.mensaje })));
   const tituloResumen = $derived(
     erroresEnvio === null ? "" : listaVigente.length === erroresEnvio.lista.length ? erroresEnvio.titulo : TEXTO_FORMULARIO_PARTE.tituloRevise(listaVigente.length, paso),
   );
   const hayResumen = $derived(erroresEnvio !== null && (listaVigente.length > 0 || erroresEnvio.general !== null));
 
-  const pendientes = $derived(validarParaEnviar(valores, paso)?.lista.length ?? 0);
+  // La barra dice «Faltan N datos» o «Listo para enviar»; tras un intento con errores de reglas que siguen vigentes (la licencia, el kilometraje), «Revise N datos» (C5).
+  const barra = $derived(barraDeEnvio(valores, paso, listaVigente.map((x) => x.campo)));
   const textoIndicador = $derived(
     descartado !== "" && indicador.estado === "inicial" ? descartado : indicador.visible !== "" ? indicador.visible : (vista.borrador?.mensaje ?? ""),
   );
@@ -208,9 +209,6 @@
     document.querySelector<HTMLElement>("main h1")?.focus();
   }
 
-  function etiquetaConductor(o: { etiqueta: string; asignadoA: string | null; licenciaVigente: boolean }): string {
-    return T.opcionConductor(o.etiqueta, o.asignadoA, !o.licenciaVigente);
-  }
 </script>
 
 <svelte:document onvisibilitychange={alOcultarse} />
@@ -257,11 +255,11 @@
         {#if vista.conductor.tipo === "elegir"}
           <Campo etiqueta={vista.conductor.etiqueta} tipo="select" grande requerido id={idCampo("conductor")} bind:valor={valores.conductorId} error={errorDe("conductor")}>
             {#each vista.conductor.opciones as o (o.valor)}
-              <option value={o.valor}>{etiquetaConductor(o)}</option>
+              <option value={o.valor}>{o.textoDeOpcion}</option>
             {/each}
           </Campo>
         {/if}
-        <Campo etiqueta={T.kmInicio} tipo="km" grande requerido id={idCampo("kmInicio")} bind:valor={valores.kmInicio} ayuda={vista.ayudaKmInicio} error={errorDe("kmInicio")} />
+        <Campo etiqueta={T.kmInicio} tipo="km" grande requerido id={idCampo("kmInicio")} bind:valor={valores.kmInicio} ayuda={vista.ayudaKmInicio} error={errorDe("kmInicio")} teclaEnter="next" />
       </section>
 
       <section class="seccion" aria-labelledby={id("revision-titulo")}>
@@ -294,16 +292,19 @@
         <h2 id={id("km-titulo")}>{T.secciones.cierre.km}</h2>
         <div class="km">
           <!-- «Al iniciar» como texto, junto al campo, desde 30 rem de contenedor: con menos ancho ya está en el resumen de la revisión. -->
-          <dl class="inicio-texto"><Dato etiqueta={T.kmInicio} valor={vista.kmInicioTexto} /></dl>
-          <Campo etiqueta={T.kmFin} tipo="km" grande requerido id={idCampo("kmFin")} bind:valor={valores.kmFin} ayuda={vista.ayudaKmFin} error={errorDe("kmFin")} />
+          <dl class="inicio-texto">
+            <dt>{T.kmInicio}</dt>
+            <dd class="num">{vista.kmInicioTexto}</dd>
+          </dl>
+          <Campo etiqueta={T.kmFin} tipo="km" grande requerido id={idCampo("kmFin")} bind:valor={valores.kmFin} ayuda={vista.ayudaKmFin} error={errorDe("kmFin")} teclaEnter="next" />
         </div>
-        <p class="recorrido">{T.recorrido}: <output for={idCampo("kmFin")} class="num">{recorrido}</output></p>
+        <p class="recorrido"><span class="rotulo-recorrido">{T.recorrido}:</span> <output for={idCampo("kmFin")} class="num">{recorrido}</output></p>
       </section>
 
       <section class="seccion" aria-labelledby={id("combustible-titulo")}>
         <h2 id={id("combustible-titulo")}>{T.secciones.cierre.combustible}</h2>
         <SelectorCombustible leyenda={T.nivelCombustible} requerido opciones={vista.combustible} bind:valor={valores.combustible} id={idCampo("combustible")} error={errorDe("combustible")} />
-        <Campo etiqueta={T.litros} tipo="litros" grande id={idCampo("litrosCargados")} bind:valor={valores.litros} ayuda={vista.ayudaLitros} error={errorDe("litrosCargados")} />
+        <Campo etiqueta={T.litros} tipo="litros" grande id={idCampo("litrosCargados")} bind:valor={valores.litros} ayuda={vista.ayudaLitros} error={errorDe("litrosCargados")} teclaEnter="done" />
       </section>
     {/if}
   </form>
@@ -315,8 +316,8 @@
   {/if}
 
   <BarraEnvio
-    estado={textoBarraDeEnvio(valores, paso)}
-    lista={pendientes === 0}
+    estado={barra.texto}
+    lista={barra.lista}
     etiqueta={esCierre ? (mostrarEnviando ? T.cerrando : T.cerrar) : mostrarEnviando ? T.enviando : T.enviar}
     cargando={enviando}
     alActivar={() => enviar()}
@@ -421,25 +422,41 @@
     grid-template-columns: minmax(0, 1fr);
     gap: var(--e-4);
   }
+  /* «Al iniciar» es un texto: su rótulo con el estilo de la etiqueta de un campo (5.11) y su valor con el alto de un campo, para que quede en la misma línea que lo escrito en «Al terminar» (C11). */
   .inicio-texto {
     display: none;
+    margin: 0;
+  }
+  .inicio-texto dt {
+    font-size: var(--t-chico);
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--c-texto);
+  }
+  .inicio-texto dd {
+    display: flex;
+    align-items: center;
+    min-height: 3rem;
     margin: 0;
   }
   @container parte (min-width: 30rem) {
     .km {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      /* «Al iniciar» y «Al terminar» arrancan a la misma altura: el rótulo de uno frente al rótulo del otro. */
-      align-items: start;
+      /* El valor de «Al iniciar» y el campo «Al terminar» terminan a la misma altura (el campo tiene una ayuda entre su rótulo y su caja, el texto no). */
+      align-items: end;
     }
     .inicio-texto {
       display: block;
     }
   }
-  .recorrido {
-    font-weight: 600;
+  /* Recorrido: el rótulo discreto y el valor firme (con todo en 600 competía con el h2). */
+  .rotulo-recorrido {
+    font-size: var(--t-chico);
+    color: var(--c-texto-2);
   }
   .recorrido output {
     font-weight: 600;
+    color: var(--c-texto);
   }
 
   .descartar {

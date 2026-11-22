@@ -57,7 +57,9 @@
                 <span class="advertencia"><Icono nombre="alerta" />{advertencia}</span>
               {/each}
             </td>
-            <td class="recorrido num">{f.recorrido ?? ""}</td>
+            <td class="recorrido num">
+              {#if f.recorrido !== null}{f.recorrido}{:else if f.tipo === "salida"}<!-- Parte en uso (C16): el recorrido todavía no se conoce; la raya ocupa su lugar para que la fila se alinee con las demás. --><span aria-hidden="true">—</span><span class="solo-lectores">{T.kilometraje.sinRecorrido}</span>{/if}
+            </td>
           </tr>
         {/each}
       </tbody>

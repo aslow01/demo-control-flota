@@ -284,13 +284,12 @@
                         <Patente patente={k.unidad.patenteTexto.replaceAll(" ", "")} href={k.unidad.href} />
                       </span>
                     {/if}
-                    {#if k.accion !== null}
-                      <span class="accion-conductor">
-                        <Boton variante="secundario" onclick={() => abrirLicencia(k)}>
-                          {k.accion.etiqueta}<span class="solo-lectores">{sufijoAccesible(k.accion.nombreAccesible, k.accion.etiqueta)}</span>
-                        </Boton>
-                      </span>
-                    {/if}
+                    <!-- La acción siempre está completa (B2): «Renovar», «Cargar» o «Corregir» (una licencia que vale desde una fecha futura). -->
+                    <span class="accion-conductor">
+                      <Boton variante="secundario" onclick={() => abrirLicencia(k)}>
+                        {k.accion.etiqueta}<span class="solo-lectores">{sufijoAccesible(k.accion.nombreAccesible, k.accion.etiqueta)}</span>
+                      </Boton>
+                    </span>
                   </li>
                 {/each}
               </ul>
