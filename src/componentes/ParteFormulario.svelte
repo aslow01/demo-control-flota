@@ -136,7 +136,7 @@
     const r = await guardarConIndicador<ResultadoDeEnvio>(
       async () => {
         await auto.vaciar(copia); // lo escrito en los últimos 500 ms no se pierde
-        return app.enviarParte(arranque.unidadId, arranque.fecha, copia, aceptadas);
+        return app.enviarRevisionDeParte(arranque.unidadId, arranque.fecha, copia, aceptadas);
       },
       {
         alTardar: () => (mostrarEnviando = true),

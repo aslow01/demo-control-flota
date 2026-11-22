@@ -21,7 +21,6 @@
   import Pie from "./componentes/Pie.svelte";
   import { TEXTO_MARCO, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { ItemMenu, OpcionConductor, SeccionActiva } from "./componentes/tipos.ts";
-  import { formatearPatente } from "./lib/dominio/patente.ts";
   import { nombreDePantalla, rutaPorDefecto, aHash } from "./lib/estado/enrutador.ts";
   import { TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_PANTALLA, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
   import { app } from "./lib/estado/instancia.ts";
@@ -90,16 +89,7 @@
   // Elegir "Conductor" (o "Cambiar"): diálogo con la lista de conductores activos y su unidad.
   let cambiandoPerfil = $state(false);
   let errorAlElegirConductor = $state("");
-  const conductores = $derived<OpcionConductor[]>(
-    app.estado === null
-      ? []
-      : app.estado.conductores
-          .filter((c) => c.activo)
-          .map((c) => {
-            const unidad = app.estado?.unidades.find((u) => u.conductorId === c.id && u.estado.tipo !== "baja");
-            return { id: c.id, nombre: c.nombre, unidad: unidad === undefined ? null : formatearPatente(unidad.patente) };
-          }),
-  );
+  const conductores = $derived<OpcionConductor[]>(app.opcionesDeConductor());
   const conductorActual = $derived(app.perfil.tipo === "conductor" ? app.perfil.conductorId : null);
 
   function pedirConductor(): void {

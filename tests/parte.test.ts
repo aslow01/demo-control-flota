@@ -16,7 +16,7 @@ import {
 } from "../src/lib/dominio/parte.ts";
 import { textoFaltantes } from "../src/lib/dominio/textos.ts";
 import type { Documento, Parte, RespuestaItem } from "../src/lib/dominio/tipos.ts";
-import { PROYECTO_BASE, PROYECTO_PIEDRA, checklistEnOrden, checklistVacio, conductor, documento, parte, unidad } from "./ayuda.ts";
+import { PROYECTO_BASE, PROYECTO_PIEDRA, checklistEnOrden, checklistVacio, documento, parte, unidad } from "./ayuda.ts";
 
 const H = "2026-11-18";
 

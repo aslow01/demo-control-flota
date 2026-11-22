@@ -32,7 +32,7 @@ import {
 } from "../dominio/formulario-documento.ts";
 import { formatearHora } from "../dominio/fechas.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
-import { comandoDeBorrador, erroresDeNegocioParte, errorGeneralParte, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
+import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { kmDeRegistro, registroAnterior } from "../dominio/kilometraje.ts";
 import { advertenciasLegibles, esBorradorVacio } from "../dominio/parte.ts";
 import {
@@ -116,7 +116,20 @@ import { aHash, nombreDePantalla, resolverRuta, rutaPorDefecto, tituloDePagina, 
 import { fichaDeUnidad as armarFicha, type FichaDeUnidad, type FichaNoEncontrada } from "./ficha.ts";
 import { panelDeFlota, type PanelFlota } from "./flota.ts";
 import { generarId } from "./ids.ts";
-import { inicioDelConductor as armarInicio, panelDeParteEnviado, vistaDeParte, type InicioDelConductor, type PanelParteEnviado, type ParteEnEdicion, type VistaDeParte } from "./parte.ts";
+import {
+  inicioDelConductor as armarInicio,
+  opcionesParaElegirConductor as armarOpcionesDeConductor,
+  panelDeParteEnviado,
+  panelDeRevisionEnviada,
+  panelDeSinSalida,
+  vistaDeParte,
+  type InicioDelConductor,
+  type OpcionParaElegirConductor,
+  type PanelParteEnviado,
+  type ParteEnCierre,
+  type ParteEnEdicion,
+  type VistaDeParte,
+} from "./parte.ts";
 import type { Reloj } from "./reloj.ts";
 import type { Ubicacion } from "./ubicacion.ts";
 
@@ -176,16 +189,17 @@ export interface AdvertenciaDeEnvio {
 }
 
 /**
- * Resultado de «Enviar parte» (paso 4.5). Nunca rechaza.
- * - `enviado`: el parte salió. `panel` es el «Parte enviado» (el `h1` recibe el foco: `foco`). `yaEnviado` es `true` si ya estaba enviado (doble clic, otra pestaña): no se
- *   hizo nada y se devuelve el mismo panel.
+ * Resultado de «Enviar revisión» y de «Cerrar el parte» (sección 17). Nunca rechaza.
+ * - `enviado`: salió. `paso` dice cuál de los tres resultados es: `revision-enviada` (C1: el parte quedó en uso), `sin-salida` (C2: una novedad crítica cerró el parte sin salida) o
+ *   `cerrado` (C3). `panel` es el panel de resultado (el `h1` recibe el foco: `foco`). `yaEnviado` es `true` si ya estaba hecho (doble clic, otra pestaña): no se hizo nada y se
+ *   devuelve el mismo panel.
  * - `errores`: faltan datos o falla una regla (P4, K2 a K4, P2, P8, escritura): resumen de errores arriba del formulario con el foco (`foco`) y enlaces a cada campo.
  *   Lo escrito se guardó como borrador (si se podía): no se pierde.
  * - `advertencias`: el parte está completo pero hay que aceptar algo (K6, K7, P9): abrir «Antes de enviar». Al elegir «Enviar igual» se vuelve a llamar con
  *   `aceptables` como `aceptadas`.
  */
 export type ResultadoDeEnvio =
-  | { tipo: "enviado"; yaEnviado: boolean; panel: PanelParteEnviado; foco: "titulo-del-parte-enviado" }
+  | { tipo: "enviado"; paso: "revision-enviada" | "sin-salida" | "cerrado"; yaEnviado: boolean; panel: PanelParteEnviado; foco: "titulo-del-parte-enviado" }
   | { tipo: "errores"; errores: ErroresDeParte; foco: "resumen-de-errores"; primerCampo: CampoParte | null }
   | { tipo: "advertencias"; advertencias: AdvertenciaDeEnvio[]; aceptables: Advertencia["tipo"][]; foco: "dialogo-antes-de-enviar" };
 
@@ -193,10 +207,10 @@ export type ResultadoDeEnvio =
 export type ResultadoDeDescarte = { ok: true; mensaje: string } | { ok: false; mensaje: string; errores: ErroresDeParte };
 
 /** El perfil Conductor solo usa los comandos del parte (docs/diseno.md, sección 8). No es seguridad: es la perspectiva. */
-const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarParte", "descartarBorrador"]);
+const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarRevision", "guardarCierre", "enviarCierre", "descartarBorrador"]);
 
 /** Si no se pueden escribir, el mensaje habla del parte ("lo escrito sigue en pantalla; no cierre la pestaña"). */
-const COMANDOS_DEL_PARTE_A_GUARDAR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarParte"]);
+const COMANDOS_DEL_PARTE_A_GUARDAR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarRevision", "guardarCierre", "enviarCierre"]);
 
 /** Dos versiones del mismo borrador son iguales si solo difiere el instante del último guardado. */
 function mismoBorrador(a: Parte, b: Parte): boolean {
@@ -652,7 +666,8 @@ export class EstadoApp {
 
   // --- Inicio del conductor y parte diario (paso 4.5) --------------------------------------------------
   //
-  // El parte se guarda solo (P3: `guardarBorradorDeParte`, que llama el autoguardado) y se envía con `enviarParte`. Los dos van por la misma cola que el resto de
+  // El parte tiene dos pasos (sección 17). La revisión se guarda sola (P3: `guardarBorradorDeParte`, que llama el autoguardado) y se envía con `enviarRevisionDeParte`; el cierre se guarda solo
+  // (`guardarCierreDeParte`) y se envía con `enviarCierreDeParte`. Los dos van por la misma cola que el resto de
   // los comandos, y buscan el borrador de la unidad y la fecha DENTRO de la cola: dos guardados seguidos (autoguardado y «salir del campo») nunca crean dos borradores.
   // Los dos perfiles pueden usarlos (sección 8); con el perfil Conductor el conductor del parte es siempre quien lo completa.
 
@@ -665,6 +680,11 @@ export class EstadoApp {
     return armarInicio(this.estado, this.alertas, this.hoy, this.perfil, unidadElegidaId);
   }
 
+  /** Las opciones del diálogo «¿Quién completa el parte?»: todo conductor activo, con su unidad y si su licencia ampara hoy (L1). */
+  opcionesDeConductor(): OpcionParaElegirConductor[] {
+    return this.estado === null ? [] : armarOpcionesDeConductor(this.estado, this.hoy);
+  }
+
   /**
    * El autoguardado (P3) de la pantalla de un parte, ya conectado: `app.autoguardadoDeParte(vista, (i) => (indicador = i))`. Hay que `cerrar()` al salir de la pantalla y
    * `reiniciar(valores)` después de descartar el borrador. `opciones` es para los tests (reloj inyectado).
@@ -674,6 +694,12 @@ export class EstadoApp {
     // tiene que seguir firmado por quien escribió (código B9).
     const perfil = this.perfil;
     return crearAutoguardado({ ...opciones, valores: vista.valoresIniciales, alCambiar, guardar: (valores) => this.guardarBorradorDeParte(vista.unidadId, vista.fecha, valores, perfil) });
+  }
+
+  /** El autoguardado (P3) del cierre de la jornada (paso 2), con las mismas reglas que el de la revisión: `app.autoguardadoDeCierre(vista, (i) => (indicador = i))`. */
+  autoguardadoDeCierre(vista: ParteEnCierre, alCambiar: (indicador: IndicadorDeGuardado) => void, opciones: Pick<DependenciasAutoguardado, "esperaMs" | "programar" | "cancelar"> = {}): Autoguardado {
+    const perfil = this.perfil;
+    return crearAutoguardado({ ...opciones, valores: vista.valoresIniciales, alCambiar, guardar: (valores) => this.guardarCierreDeParte(vista.unidadId, vista.fecha, valores, perfil) });
   }
 
   /** El contexto de un ensayo (comando que no se escribe): no gasta ids del generador. */
@@ -703,6 +729,7 @@ export class EstadoApp {
     const v = perfil.tipo === "conductor" ? { ...valores, conductorId: perfil.conductorId } : valores;
     const existente = estado.partes.find((p) => p.unidadId === unidadId && p.fecha === fecha);
     if (existente?.estado === "enviado") return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.parteEnviadoInmutable) };
+    if (existente?.estado === "en-uso") return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.revisionYaEnviada) };
 
     const c = comandoDeBorrador(unidadId, fecha, existente?.id ?? null, v);
     if (!c.ok) return { ok: false, tipo: "campos", errores: c.errores };
@@ -728,51 +755,138 @@ export class EstadoApp {
   }
 
   /**
-   * «Enviar parte» (P4, P12, K2 a K4, K6, K7, P9, A3). Primero guarda lo que hay en el formulario como borrador (así lo escrito en los últimos 500 ms no se pierde y, si el envío
-   * se bloquea —K3, por ejemplo—, el borrador queda), después revisa lo que falta y por último envía. El envío es atómico (P12): el parte, las novedades, el cambio de estado de la
-   * unidad y los eventos se escriben juntos; si falla, queda el borrador. `aceptadas` son las advertencias que la persona aceptó en «Antes de enviar».
+   * P3: guarda el cierre (kilometraje al terminar, combustible y litros) del parte en uso de `unidadId` y `fecha`. Solo se controla el formato de cada campo. No genera eventos ni cuenta
+   * para el kilometraje hasta cerrar (K9); lo ya guardado no se vuelve a escribir (`sinCambios`).
    */
-  enviarParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio> {
-    return this.encolar(() => this.enviarParteAhora(unidadId, fecha, valores, aceptadas));
+  guardarCierreDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil = this.perfil): Promise<ResultadoDeBorrador> {
+    return this.encolar(() => this.guardarCierreAhora(unidadId, fecha, valores, perfil));
   }
 
-  private async enviarParteAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][]): Promise<ResultadoDeEnvio> {
-    const errores = (e: ErroresDeParte): ResultadoDeEnvio => ({ tipo: "errores", errores: e, foco: "resumen-de-errores", primerCampo: e.lista[0]?.campo ?? null });
+  private erroresDeCierre(error: ErrorDeNegocio): ResultadoDeBorrador {
+    if (error.codigo === "escritura-fallida") return { ok: false, tipo: "escritura", errores: errorGeneralParte(error.mensaje, TEXTO_FORMULARIO_PARTE.tituloGeneralCierre) };
+    const errores = erroresDeNegocioParte(error, "cierre");
+    return { ok: false, tipo: errores.lista.length > 0 ? "campos" : "regla", errores };
+  }
+
+  private async guardarCierreAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil): Promise<ResultadoDeBorrador> {
     const estado = this.estado;
-    if (estado === null) return errores(errorGeneralParte(ERRORES.sinDatos));
+    if (estado === null) return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.sinDatos, TEXTO_FORMULARIO_PARTE.tituloGeneralCierre) };
+    const existente = estado.partes.find((p) => p.unidadId === unidadId && p.fecha === fecha);
+    if (existente === undefined) return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.parteInexistente, TEXTO_FORMULARIO_PARTE.tituloGeneralCierre) };
+
+    const c = comandoDeCierre(existente.id, valores);
+    if (!c.ok) return { ok: false, tipo: "campos", errores: c.errores };
+    // Ensayo: si no cambia nada, no se escribe (ni se marca la demo como modificada).
+    const ensayo = aplicarComando(estado, c.comando, this.contextoDeEnsayo(perfil));
+    if (!ensayo.ok) return this.erroresDeCierre(ensayo.error);
+    if (ensayo.valor.cambios.partes.length === 0) return { ok: true, parteId: existente.id, hora: formatearHora(existente.actualizado), sinCambios: false };
+
+    const r = await this.ejecutarAhora(c.comando, perfil);
+    if (!r.ok) return this.erroresDeCierre(r.error);
+    const guardado = r.valor.cambios.partes[0];
+    return { ok: true, parteId: guardado?.id ?? existente.id, hora: guardado === undefined ? null : formatearHora(guardado.actualizado), sinCambios: false };
+  }
+
+  /** Los errores de un envío, con el foco en el resumen de errores. */
+  private erroresDeEnvio(e: ErroresDeParte): ResultadoDeEnvio {
+    return { tipo: "errores", errores: e, foco: "resumen-de-errores", primerCampo: e.lista[0]?.campo ?? null };
+  }
+
+  /** Las advertencias que hay que aceptar (K6, K7, P9), listas para el diálogo «Antes de enviar». */
+  private advertenciasPendientes(error: ErrorDeNegocio): ResultadoDeEnvio {
+    const pendientes = advertenciasLegibles(error.detalle?.["advertencias"]);
+    return {
+      tipo: "advertencias",
+      advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a), tono: a.tipo === "documentacion-vencida" ? "critico" : "semana" })),
+      aceptables: pendientes.map((a) => a.tipo),
+      foco: "dialogo-antes-de-enviar",
+    };
+  }
+
+  /** El resultado de un parte que ya estaba enviado cuando se pidió enviar (doble clic, otra pestaña): se devuelve el mismo panel sin hacer nada. */
+  private resultadoYaHecho(estado: Estado, p: Parte, perfil: Perfil): ResultadoDeEnvio {
+    if (p.estado === "en-uso") return { tipo: "enviado", paso: "revision-enviada", yaEnviado: true, panel: panelDeRevisionEnviada(estado, p, perfil, this.hoy), foco: "titulo-del-parte-enviado" };
+    if (p.sinSalida) return { tipo: "enviado", paso: "sin-salida", yaEnviado: true, panel: panelDeSinSalida(estado, p, perfil), foco: "titulo-del-parte-enviado" };
+    return { tipo: "enviado", paso: "cerrado", yaEnviado: true, panel: panelDeParteEnviado(estado, p, perfil), foco: "titulo-del-parte-enviado" };
+  }
+
+  /**
+   * «Enviar revisión» (P4, P12, L1, K3, K4, K6, P9, A3, P16). Primero guarda lo que hay en el formulario como borrador (así lo escrito en los últimos 500 ms no se pierde y, si el
+   * envío se bloquea —licencia, K3—, el borrador queda), después revisa lo que falta y por último envía. El envío es atómico (P12): el parte, las novedades, el cambio de estado de la
+   * unidad y los eventos se escriben juntos; si falla, queda el borrador. `aceptadas` son las advertencias que la persona aceptó en «Antes de enviar». El resultado es C1 (el parte quedó
+   * en uso) o C2 (una novedad crítica: la unidad no sale y el parte se cerró sin uso).
+   */
+  enviarRevisionDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio> {
+    return this.encolar(() => this.enviarRevisionAhora(unidadId, fecha, valores, aceptadas));
+  }
+
+  private async enviarRevisionAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][]): Promise<ResultadoDeEnvio> {
+    const estado = this.estado;
+    if (estado === null) return this.erroresDeEnvio(errorGeneralParte(ERRORES.sinDatos));
     const perfil = this.perfil;
     const donde = (p: { unidadId: string; fecha: FechaCivil }) => p.unidadId === unidadId && p.fecha === fecha;
 
-    // Un doble clic, o un parte que otra pestaña ya envió: no se hace nada y se devuelve el mismo parte.
-    const yaEnviado = estado.partes.find((p) => donde(p) && p.estado === "enviado");
-    if (yaEnviado !== undefined) return { tipo: "enviado", yaEnviado: true, panel: panelDeParteEnviado(estado, yaEnviado, perfil), foco: "titulo-del-parte-enviado" };
+    // Un doble clic, o una revisión que otra pestaña ya envió: no se hace nada y se devuelve el mismo resultado.
+    const yaHecho = estado.partes.find((p) => donde(p) && p.estado !== "borrador");
+    if (yaHecho !== undefined) return this.resultadoYaHecho(estado, yaHecho, perfil);
 
     const v = perfil.tipo === "conductor" ? { ...valores, conductorId: perfil.conductorId } : valores;
     // Todo lo que impide enviar (faltantes y errores de formato) se lista junto, en el orden del formulario. Lo escrito se guarda igual, salvo que tenga un error de formato.
-    const previos = validarParaEnviar(v);
+    const previos = validarParaEnviar(v, "revision");
     const guardado = await this.guardarBorradorAhora(unidadId, fecha, v, perfil);
-    if (!guardado.ok && guardado.tipo !== "campos") return errores(guardado.errores);
-    if (previos !== null) return errores(previos);
-    if (!guardado.ok) return errores(guardado.errores);
+    if (!guardado.ok && guardado.tipo !== "campos") return this.erroresDeEnvio(guardado.errores);
+    if (!guardado.ok) return this.erroresDeEnvio(previos ?? guardado.errores);
 
     const borrador = this.estado?.partes.find((p) => donde(p));
-    if (borrador === undefined) return errores(errorGeneralParte(ERRORES.parteInexistente));
-    const r = await this.ejecutarAhora({ tipo: "enviarParte", parteId: borrador.id, advertenciasAceptadas: aceptadas }, perfil);
+    // Abrir el formulario y enviarlo vacío no crea un borrador (D11): lo que falta se dice igual.
+    if (borrador === undefined) return this.erroresDeEnvio(previos ?? errorGeneralParte(ERRORES.parteInexistente));
+    // L1 va antes que los faltantes (como en el comando): a quien no puede manejar no se le piden los diez puntos.
+    const r = await this.ejecutarAhora({ tipo: "enviarRevision", parteId: borrador.id, advertenciasAceptadas: aceptadas }, perfil);
     if (!r.ok) {
-      if (r.error.codigo === "advertencias-sin-aceptar") {
-        const pendientes = advertenciasLegibles(r.error.detalle?.["advertencias"]);
-        return {
-          tipo: "advertencias",
-          advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a), tono: a.tipo === "documentacion-vencida" ? "critico" : "semana" })),
-          aceptables: pendientes.map((a) => a.tipo),
-          foco: "dialogo-antes-de-enviar",
-        };
-      }
-      return errores(erroresDeNegocioParte(r.error));
+      if (r.error.codigo === "licencia-no-vigente" || r.error.codigo === "escritura-fallida") return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
+      if (previos !== null) return this.erroresDeEnvio(previos);
+      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error);
+      return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
     }
     const enviado = r.valor.estado.partes.find((p) => p.id === borrador.id);
-    if (enviado === undefined) return errores(errorGeneralParte(ERRORES.parteInexistente)); // no pasa: el comando acaba de escribirlo
-    return { tipo: "enviado", yaEnviado: false, panel: panelDeParteEnviado(r.valor.estado, enviado, perfil), foco: "titulo-del-parte-enviado" };
+    if (enviado === undefined) return this.erroresDeEnvio(errorGeneralParte(ERRORES.parteInexistente)); // no pasa: el comando acaba de escribirlo
+    const hecho = this.resultadoYaHecho(r.valor.estado, enviado, perfil);
+    return hecho.tipo === "enviado" ? { ...hecho, yaEnviado: false } : hecho;
+  }
+
+  /**
+   * «Cerrar el parte» (P4, P12, P15, K2, K4, K7). Primero guarda lo que hay en el formulario del cierre, después revisa lo que falta y por último cierra. `aceptadas` son las
+   * advertencias que la persona aceptó en «Antes de enviar» (el cierre solo puede avisar del recorrido largo, K7). El resultado es C3.
+   */
+  enviarCierreDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio> {
+    return this.encolar(() => this.enviarCierreAhora(unidadId, fecha, valores, aceptadas));
+  }
+
+  private async enviarCierreAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][]): Promise<ResultadoDeEnvio> {
+    const titulo = TEXTO_FORMULARIO_PARTE.tituloGeneralCierre;
+    const estado = this.estado;
+    if (estado === null) return this.erroresDeEnvio(errorGeneralParte(ERRORES.sinDatos, titulo));
+    const perfil = this.perfil;
+    const parte = estado.partes.find((p) => p.unidadId === unidadId && p.fecha === fecha);
+    if (parte === undefined) return this.erroresDeEnvio(errorGeneralParte(ERRORES.parteInexistente, titulo));
+    // Un doble clic, o un cierre que otra pestaña ya hizo: no se hace nada y se devuelve el mismo parte.
+    if (parte.estado === "enviado") return this.resultadoYaHecho(estado, parte, perfil);
+    if (parte.estado === "borrador") return this.erroresDeEnvio(errorGeneralParte(ERRORES.parteSinRevision, titulo));
+
+    const previos = validarParaEnviar(valores, "cierre");
+    const guardado = await this.guardarCierreAhora(unidadId, fecha, valores, perfil);
+    if (!guardado.ok && guardado.tipo !== "campos") return this.erroresDeEnvio(guardado.errores);
+    if (previos !== null) return this.erroresDeEnvio(previos);
+    if (!guardado.ok) return this.erroresDeEnvio(guardado.errores);
+
+    const r = await this.ejecutarAhora({ tipo: "enviarCierre", parteId: parte.id, advertenciasAceptadas: aceptadas }, perfil);
+    if (!r.ok) {
+      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error);
+      return this.erroresDeEnvio(erroresDeNegocioParte(r.error, "cierre"));
+    }
+    const cerrado = r.valor.estado.partes.find((p) => p.id === parte.id);
+    if (cerrado === undefined) return this.erroresDeEnvio(errorGeneralParte(ERRORES.parteInexistente, titulo)); // no pasa: el comando acaba de escribirlo
+    return { tipo: "enviado", paso: "cerrado", yaEnviado: false, panel: panelDeParteEnviado(r.valor.estado, cerrado, perfil), foco: "titulo-del-parte-enviado" };
   }
 
   /** «Descartar borrador» (el botón-texto de dos pasos del parte y del inicio del conductor). No deja eventos (sección 8); un parte enviado no se descarta (P7). */

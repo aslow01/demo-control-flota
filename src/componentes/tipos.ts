@@ -46,6 +46,8 @@ export interface OpcionConductor {
   id: string;
   nombre: string;
   unidad: string | null;
+  /** L1: su licencia ampara hoy. Sigue siendo elegible (es un punto de vista): el diálogo agrega la marca «Sin licencia vigente» en el renglón 2. */
+  licenciaVigente: boolean;
 }
 
 /** La pestaña de la barra de la aplicación que corresponde a la pantalla actual. */
@@ -57,3 +59,37 @@ export interface ItemMenu {
   texto: string;
   alActivar: () => void;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Parte previo al uso y licencia que bloquea (docs/diseno.md, sección 17; docs/diseno-ui.md, 5.7 y 14).
+// El dominio y el estado entregan los datos ya armados (`lib/estado/parte.ts`, `centro-alertas.ts`, `flota.ts`, `ficha.ts`); la vista los pinta con estos tipos.
+// ---------------------------------------------------------------------------------------------
+
+/** Las etiquetas nuevas de la tabla 5.7: el texto, el tono y el ícono. La vista elige cuál según el estado del parte o del conductor. */
+export type EtiquetaDeParte = "cerrado" | "borrador" | "en-uso" | "sin-enviar" | "sin-cerrar" | "sin-licencia-vigente";
+
+export const ETIQUETAS_DE_PARTE: Record<EtiquetaDeParte, { texto: string; tono: Tono; icono: NombreIcono }> = {
+  cerrado: { texto: "Cerrado", tono: "vigente", icono: "check" },
+  borrador: { texto: "Borrador", tono: "neutro", icono: "lapiz" },
+  "en-uso": { texto: "En uso", tono: "quincena", icono: "flecha-der" },
+  "sin-enviar": { texto: "Sin enviar", tono: "semana", icono: "lapiz" },
+  "sin-cerrar": { texto: "Sin cerrar", tono: "semana", icono: "lapiz" },
+  "sin-licencia-vigente": { texto: "Sin licencia vigente", tono: "critico", icono: "vencido" },
+};
+
+/** Lo que el estado entrega para el parte, el inicio del conductor y el centro de alertas (todo con tipos de `lib/estado`). */
+export type {
+  EstadoDelDia,
+  InicioDelConductor,
+  OpcionParaElegirConductor,
+  PanelParteEnviado,
+  ParteEnCierre,
+  ParteEnEdicion,
+  ParteEnLectura,
+  ParteNoDisponible,
+  PendienteDelConductor,
+  RevisionEnLectura,
+  VistaDeParte,
+} from "../lib/estado/parte.ts";
+export type { FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
+export type { PasoDelParte } from "../lib/dominio/formulario-parte.ts";

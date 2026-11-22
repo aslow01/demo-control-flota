@@ -122,7 +122,7 @@ describe("las pantallas con un borrador roto", () => {
   it("el inicio del conductor cuenta lo que falta de un borrador roto sin romperse", () => {
     const e = conBorradorRoto({ checklist: null, combustible: 5, kmFin: null });
     const v = inicioDelConductor(e, calcularAlertas(e, H), H, { tipo: "conductor", conductorId: "c1" });
-    expect(v?.hoyEstado).toMatchObject({ tipo: "borrador", texto: "Tiene un parte empezado: faltan 12 datos." });
+    expect(v?.hoyEstado).toMatchObject({ tipo: "borrador", texto: "Tiene una revisión empezada: faltan 10 datos." });
   });
 
   it("el inicio del conductor y los últimos partes ignoran un parte enviado con los kilómetros rotos", () => {
@@ -134,10 +134,10 @@ describe("las pantallas con un borrador roto", () => {
 
   it("un parte enviado sin kilómetros ni hora legibles se muestra sin inventar nada", () => {
     const e = flotaDePrueba();
-    const p = roto({ kmInicio: null, kmFin: null, enviado: "x", actualizado: "y", checklist: checklistEnOrden() }, { id: "pr", estado: "enviado", unidadId: "u1", fecha: "2026-11-16" });
+    const p = roto({ kmInicio: null, kmFin: null, enviado: "x", revisado: "z", actualizado: "y", checklist: checklistEnOrden() }, { id: "pr", estado: "enviado", unidadId: "u1", fecha: "2026-11-16" });
     e.partes.push(p);
     const panel = panelDeParteEnviado(e, p, { tipo: "conductor", conductorId: "c1" });
-    expect(panel.linea).toBe("ZK 214 BD, 16/11/2026, enviado.");
+    expect(panel.linea).toBe("ZK 214 BD, 16/11/2026: parte cerrado.");
     expect(panel.filas[0]).toEqual({ rotulo: "Recorrido", valor: "—" });
     const v = vistaDeParte(e, H, { tipo: "conductor", conductorId: "c1" }, "ZK214BD", "2026-11-16");
     expect(v.tipo).toBe("lectura");
@@ -187,10 +187,10 @@ describe("la aplicación con un borrador roto en el almacenamiento", () => {
     if (v?.tipo !== "edicion") throw new Error("tenía que abrirse para editar");
     const valores = structuredClone(v.valoresIniciales);
     for (const k of Object.keys(valores.checklist) as (keyof typeof valores.checklist)[]) valores.checklist[k] = { respuesta: "en-orden", descripcion: "", impideUso: false };
-    const r = await app.enviarParte(v.unidadId, H, { ...valores, kmInicio: "84.320", kmFin: "84.400", combustible: "medio" });
+    const r = await app.enviarRevisionDeParte(v.unidadId, H, { ...valores, kmInicio: "84.320", kmFin: "84.400", combustible: "medio" });
     expect(r.tipo).toBe("enviado");
     const enviado = app.estado?.partes.find((p) => p.id === "pr");
-    expect(enviado).toMatchObject({ estado: "enviado", kmInicio: 84320, kmFin: 84400, combustible: "medio" });
+    expect(enviado).toMatchObject({ estado: "en-uso", kmInicio: 84320, kmFin: 84400, combustible: "medio" });
     expect(parteLegible(enviado as Parte)).toEqual(enviado);
   });
 

@@ -129,7 +129,7 @@ export function parte(parcial: Partial<Parte> = {}): Parte {
 export function estadoVacio(parcial: Partial<Estado> = {}): Estado {
   return {
     meta: {
-      versionEsquema: 1,
+      versionEsquema: 2,
       semilla: 1,
       fechaBase: "2026-11-18",
       modificada: false,

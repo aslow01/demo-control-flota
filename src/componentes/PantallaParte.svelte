@@ -96,7 +96,7 @@
         {/if}
       </section>
     </div>
-  {:else}
+  {:else if vista.tipo === "no-disponible" || vista.tipo === "no-encontrada"}
     <!-- «No se puede cargar este parte» y «No se encontró la unidad»: h1, el motivo y el camino de vuelta (8: Error). -->
     <div class="pantalla">
       <div class="encabezado">
