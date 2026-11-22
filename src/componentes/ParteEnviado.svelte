@@ -79,7 +79,7 @@
       </ul>
     </div>
   {/if}
-  {#if panel.fueraDeTermino !== null}<p class="nota">{panel.fueraDeTermino}</p>{/if}
+  {#if panel.fueraDePlazo !== null}<p class="nota">{panel.fueraDePlazo}</p>{/if}
   {#if panel.parrafo !== null}<p class="parrafo">{panel.parrafo}</p>{/if}
   {#if cuerpo !== undefined}{@render cuerpo()}{/if}
   {#if acciones !== undefined}<div class="acciones">{@render acciones()}</div>{/if}

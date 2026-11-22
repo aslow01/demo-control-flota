@@ -315,8 +315,8 @@ export const RESUMEN_EVENTO = {
     `Renovación de ${nombre} (${titular}): vencía el ${formatearFecha(anterior)}, ahora vence el ${formatearFecha(nuevo)}`,
   documentoCorregido: (nombre: string, titular: string, campos: readonly string[]) =>
     `Corrección de ${nombre} (${titular}): ${campos.join(", ")}`,
-  revisionEnviada: (patente: string, fecha: FechaCivil, fueraDeTermino: boolean, kmInicio: number, sinSalida: boolean) =>
-    `Revisión del ${formatearFecha(fecha)} de ${patente} enviada${fueraDeTermino ? " fuera de plazo" : ""}: ${sinSalida ? "la unidad no salió por una novedad crítica" : `sale con ${formatearKm(kmInicio)} km`}`,
+  revisionEnviada: (patente: string, fecha: FechaCivil, fueraDePlazo: boolean, kmInicio: number, sinSalida: boolean) =>
+    `Revisión del ${formatearFecha(fecha)} de ${patente} enviada${fueraDePlazo ? " fuera de plazo" : ""}: ${sinSalida ? "la unidad no salió por una novedad crítica" : `sale con ${formatearKm(kmInicio)} km`}`,
   parteCerrado: (patente: string, fecha: FechaCivil, kmInicio: number, kmFin: number) => {
     const recorrido = kmFin - kmInicio;
     const texto = recorrido === 0 ? "sin uso" : `${formatearKm(recorrido)} km`;
@@ -951,12 +951,12 @@ export function textoKmEnUso(km: number): string {
  * Evento «revision-enviada» en el historial: «Revisión antes de salir · 84.320 km · sin novedades» · «… · 1 novedad: Niveles de aceite y agua» ·
  * «… · novedad crítica en Frenos: la unidad no salió», y «(fuera de plazo)» al final.
  */
-export function textoRevisionEnHistorial(r: { kmInicio: number; normales: readonly string[]; criticas: readonly string[]; fueraDeTermino: boolean }): string {
+export function textoRevisionEnHistorial(r: { kmInicio: number; normales: readonly string[]; criticas: readonly string[]; fueraDePlazo: boolean }): string {
   const partes = ["Revisión antes de salir", `${formatearKm(r.kmInicio)} km`];
   if (r.criticas.length > 0) partes.push(`novedad crítica en ${r.criticas.join(", ")}: la unidad no salió`);
   else if (r.normales.length === 0) partes.push("sin novedades");
   else partes.push(`${pluralizar(r.normales.length, "novedad", "novedades")}: ${r.normales.join(", ")}`);
-  return `${partes.join(" · ")}${r.fueraDeTermino ? " (fuera de plazo)" : ""}`;
+  return `${partes.join(" · ")}${r.fueraDePlazo ? " (fuera de plazo)" : ""}`;
 }
 
 /** Evento «parte-enviado» (el cierre) en el historial: «Parte cerrado · 132 km (84.320 → 84.452) · combustible 3/4». */
@@ -1132,7 +1132,7 @@ export const TEXTO_FORMULARIO_PARTE = {
   ayudaPrimerRegistro: "Es el primer registro de esta unidad.",
   ayudaKmFin: "Lo que marca el tablero al terminar la jornada.",
   ayudaLitros: "Déjelo vacío si no cargó.",
-  fueraDeTermino: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: la revisión se enviará fuera de plazo.`,
+  fueraDePlazo: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: la revisión se enviará fuera de plazo.`,
   borradorDescartado: "Borrador descartado.",
 } as const;
 
@@ -1313,7 +1313,7 @@ export const TEXTO_PANTALLA_PARTE = {
   noSeRegistroSinSalida: "No se registró: la unidad no salió",
   sinNovedades: "Sin novedades",
   noCargo: "No cargó",
-  fueraDeTermino: "Revisión enviada fuera de plazo.",
+  fueraDePlazo: "Revisión enviada fuera de plazo.",
   rotulos: { alIniciar: "Al iniciar", recorrido: "Recorrido", combustible: "Combustible", litros: "Combustible cargado", novedades: "Novedades", avisos: "Avisos aceptados", revision: "Revisión", cierre: "Cierre" },
 } as const;
 

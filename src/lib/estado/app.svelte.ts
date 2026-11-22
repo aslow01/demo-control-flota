@@ -195,7 +195,7 @@ export interface AdvertenciaDeEnvio {
  *   devuelve el mismo panel.
  * - `errores`: faltan datos o falla una regla (P4, K2 a K4, P2, P8, escritura): resumen de errores arriba del formulario con el foco (`foco`) y enlaces a cada campo.
  *   Lo escrito se guardó como borrador (si se podía): no se pierde.
- * - `advertencias`: el parte está completo pero hay que aceptar algo (K6, K7, P9): abrir «Antes de enviar». Al elegir «Enviar igual» se vuelve a llamar con
+ * - `advertencias`: el parte está completo pero hay que aceptar algo (K6, K7, P9): abrir «Antes de enviar». Al elegir «Enviar de todos modos» (o «Cerrar de todos modos») se vuelve a llamar con
  *   `aceptables` como `aceptadas`.
  */
 export type ResultadoDeEnvio =

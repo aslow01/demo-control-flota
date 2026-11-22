@@ -252,7 +252,7 @@ export interface DetalleDeParte {
   puntosEnOrden: string | null;
   /** Las advertencias aceptadas al enviar (K6, K7, P9), ya en texto. */
   advertencias: string[];
-  fueraDeTermino: boolean;
+  fueraDePlazo: boolean;
   /** «Ver el parte completo». */
   href: string;
 }
@@ -726,7 +726,7 @@ function detalleDeParte(estado: Estado, unidad: Unidad, datos: Record<string, un
     novedades,
     puntosEnOrden: enOrden === 0 ? null : textoPuntosEnOrden(enOrden),
     advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
-    fueraDeTermino: datos["fueraDeTermino"] === true,
+    fueraDePlazo: datos["fueraDeTermino"] === true,
     href: aHash({ tipo: "parte", patente: unidad.patente, fecha: parte.fecha }),
   };
 }
@@ -744,7 +744,7 @@ function resumenDeParteEnHistorial(estado: Estado, e: Evento): string {
       kmInicio,
       normales: novedades.filter((n) => n.gravedad === "normal").map(nombre),
       criticas: novedades.filter((n) => n.gravedad === "critica").map(nombre),
-      fueraDeTermino: e.datos["fueraDeTermino"] === true,
+      fueraDePlazo: e.datos["fueraDeTermino"] === true,
     });
   }
   const kmFin = e.datos["kmFin"];

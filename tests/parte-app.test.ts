@@ -700,7 +700,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const uid = idDe(app, "ZW749JE");
     expect(app.alertas?.alertas.some((a) => a.tipo === "parte-sin-enviar" && a.unidadId === uid && a.etapaParte === "borrador")).toBe(true);
     const v = edicion(app);
-    expect(v).toMatchObject({ parteId: "pt-0579", avisoFueraDeTermino: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo." });
+    expect(v).toMatchObject({ parteId: "pt-0579", avisoFueraDePlazo: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo." });
     const r = await app.enviarRevisionDeParte(uid, "2026-11-17", completo(v.valoresIniciales));
     expect(r.tipo).toBe("enviado");
     if (r.tipo !== "enviado") return;

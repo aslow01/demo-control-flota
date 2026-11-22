@@ -417,7 +417,7 @@ describe("panel Historial (5.16, H3, H4)", () => {
     expect(ev?.detalle).toMatchObject({
       tipo: "parte",
       href: "#/parte/ZK214BD/2026-11-17",
-      fueraDeTermino: false,
+      fueraDePlazo: false,
       advertencias: [],
     });
     if (ev?.detalle?.tipo !== "parte") throw new Error("falta el detalle del parte");

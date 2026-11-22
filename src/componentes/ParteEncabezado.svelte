@@ -1,7 +1,7 @@
 <script lang="ts">
   // Encabezado de los dos pasos del parte (6.5, A y B), de arriba abajo y sin panel: 1) el enlace de vuelta y, con poco ancho, el rótulo de la demo en el mismo renglón (C1);
   // 2) el `h1` del paso («Revisión antes de salir» o «Cierre de la jornada»), que también es el título de la pestaña; 3) el renglón de contexto («Parte del miércoles 18/11/2026 · paso 1 de 2»:
-  // un texto, no un indicador gráfico); 4) la patente y «Int. 07 · Toyota Hilux 2022» (sin el tipo); 5) los avisos (fuera de término, «no puede salir»; solo la revisión los trae);
+  // un texto, no un indicador gráfico); 4) la patente y «Int. 07 · Toyota Hilux 2022» (sin el tipo); 5) los avisos (fuera de plazo, «no puede salir»; solo la revisión los trae);
   // 6) el indicador de guardado (5.15). La región `role="status"` oculta dice SOLO el texto de `anuncio`, que cambia al cambiar de estado (no en cada guardado).
   // Vive dentro del contenedor `parte` de `ParteFormulario` (las reglas `@container parte` miden ese ancho).
   import Aviso, { partirAviso } from "./Aviso.svelte";
@@ -16,7 +16,7 @@
     patente,
     interno,
     descripcion,
-    avisoFueraDeTermino = null,
+    avisoFueraDePlazo = null,
     avisoAptitud = null,
     indicador,
     indicadorConError = false,
@@ -28,7 +28,7 @@
     patente: string;
     interno: string;
     descripcion: string;
-    avisoFueraDeTermino?: string | null;
+    avisoFueraDePlazo?: string | null;
     avisoAptitud?: string | null;
     /** El texto visible del indicador de guardado; vacío = no se muestra. */
     indicador: string;
@@ -56,8 +56,8 @@
     <Patente {patente} tamano="grande" />
     <span class="datos-unidad"><span class="interno">{interno}</span><span class="modelo">{modelo}</span></span>
   </p>
-  {#if avisoFueraDeTermino !== null}
-    <Aviso tono="semana" icono="calendario">{avisoFueraDeTermino}</Aviso>
+  {#if avisoFueraDePlazo !== null}
+    <Aviso tono="semana" icono="calendario">{avisoFueraDePlazo}</Aviso>
   {/if}
   {#if avisoAptitud !== null}
     <Aviso tono="critico" icono="vencido" accion={aviso.accion}>{aviso.titular}</Aviso>

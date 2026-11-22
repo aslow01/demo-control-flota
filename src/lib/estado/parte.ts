@@ -409,7 +409,7 @@ export interface PanelParteEnviado {
    */
   conDocumentacionVencida: boolean;
   /** «Revisión enviada fuera de plazo.» (P5) o `null`. */
-  fueraDeTermino: string | null;
+  fueraDePlazo: string | null;
   /** C1: «El encargado la ve en el centro de alertas.» si la revisión abrió novedades normales. */
   notaEncargado: string | null;
   /** El párrafo final: C1 «Al terminar la jornada, vuelva a este parte…», C2 «Si tiene que salir, elija otra unidad desde el inicio.»; `null` en C3. */
@@ -504,7 +504,7 @@ export interface ParteEnEdicion {
   descripcion: string;
   fecha: FechaCivil;
   /** «Este parte es del 17/11/2026: la revisión se va a enviar fuera de plazo.» */
-  avisoFueraDeTermino: string | null;
+  avisoFueraDePlazo: string | null;
   avisoAptitud: string | null;
   /** El id del borrador guardado; `null` si todavía no se guardó nada (se crea con el primer cambio). */
   parteId: string | null;
@@ -633,7 +633,7 @@ export function panelDeParteEnviado(estado: Estado, entrada: Parte, perfil: Perf
     avisoCritica: criticas.length > 0 && unidad?.estado.tipo === "fuera-de-servicio" && parte.sinSalida ? TEXTO_PARTE.enviadoConCritica : null,
     advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
     conDocumentacionVencida: false,
-    fueraDeTermino: diaDeRevision !== null && diasEntre(parte.fecha, diaDeRevision) > 0 ? TP.fueraDeTermino : null,
+    fueraDePlazo: diaDeRevision !== null && diasEntre(parte.fecha, diaDeRevision) > 0 ? TP.fueraDePlazo : null,
     notaEncargado: null,
     parrafo: null,
     completarCierre: null,
@@ -663,7 +663,7 @@ export function panelDeRevisionEnviada(estado: Estado, entrada: Parte, perfil: P
     advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
     conDocumentacionVencida: parte.documentacionVencida.length > 0,
     // El texto de «fuera de plazo» ya va en la línea (C1).
-    fueraDeTermino: null,
+    fueraDePlazo: null,
     notaEncargado: normales.length > 0 ? TP.encargadoLaVe : null,
     parrafo: TP.alTerminarVuelva,
     completarCierre: { texto: esHoy ? TP.completarCierreAhora : TP.completarCierre, href, primario: !esHoy },
@@ -684,7 +684,7 @@ export function panelDeSinSalida(estado: Estado, entrada: Parte, perfil: Perfil)
     avisoCritica: textoUnidadQuedoFueraDeServicio(patente),
     advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
     conDocumentacionVencida: false,
-    fueraDeTermino: null,
+    fueraDePlazo: null,
     notaEncargado: null,
     parrafo: TP.siTieneQueSalir,
     completarCierre: null,
@@ -825,7 +825,7 @@ export function vistaDeParte(estado: Estado, hoy: FechaCivil, perfil: Perfil, pa
     interno: textoInterno(unidad.interno),
     descripcion: textoDescripcionUnidad(unidad.marca, unidad.modelo, unidad.anio, unidad.tipo),
     fecha,
-    avisoFueraDeTermino: fecha < hoy ? TEXTO_FORMULARIO_PARTE.fueraDeTermino(fecha) : null,
+    avisoFueraDePlazo: fecha < hoy ? TEXTO_FORMULARIO_PARTE.fueraDePlazo(fecha) : null,
     avisoAptitud: aviso,
     parteId: existente?.id ?? null,
     borrador: existente === undefined ? null : borradorRecuperado(existente),

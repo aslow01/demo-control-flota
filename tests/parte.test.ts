@@ -189,6 +189,11 @@ describe("P4: lo que falta para cerrar el parte", () => {
   it("P4: un solo faltante", () => {
     expect(faltantesDeCierre(completo({ kmFin: 1100, combustible: null }))).toEqual(["combustible"]);
   });
+
+  it("B9: los faltantes incluyen siempre el kilometraje que falta (los comandos se apoyan en eso, sin un `Math.max` que lo tape)", () => {
+    expect(faltantesDeRevision(completo({ kmInicio: null }))).toEqual(["kmInicio"]);
+    expect(faltantesDeCierre(completo({ kmFin: null, combustible: "medio" }))).toEqual(["kmFin"]);
+  });
 });
 
 describe("P11: novedades que genera un parte", () => {

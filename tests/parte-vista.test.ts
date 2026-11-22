@@ -497,7 +497,7 @@ describe("pantalla del parte, edición (6.5)", () => {
       interno: "Int. 07",
       descripcion: "Marca Modelo 2020 · Camioneta",
       fecha: H,
-      avisoFueraDeTermino: null,
+      avisoFueraDePlazo: null,
       avisoAptitud: null,
       parteId: null,
       borrador: null,
@@ -574,7 +574,7 @@ describe("pantalla del parte, edición (6.5)", () => {
     const w = ver({ ...e, partes: [...e.partes.filter((p) => p.id !== "p17"), posterior] }, COND, "ZK214BD", "2026-11-17");
     expect(w.tipo).toBe("edicion");
     if (w.tipo !== "edicion") return;
-    expect(w).toMatchObject({ avisoFueraDeTermino: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo.", contexto: "Parte del martes 17/11/2026 · paso 1 de 2", ayudaKmInicio: "Último registro: 84.000 km (parte del 16/11/2026)." });
+    expect(w).toMatchObject({ avisoFueraDePlazo: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo.", contexto: "Parte del martes 17/11/2026 · paso 1 de 2", ayudaKmInicio: "Último registro: 84.000 km (parte del 16/11/2026)." });
     expect(w.valoresIniciales.kmInicio).toBe("84.000");
   });
 
@@ -693,7 +693,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       avisoCritica: null,
       advertencias: [],
       conDocumentacionVencida: false,
-      fueraDeTermino: null,
+      fueraDePlazo: null,
       notaEncargado: null,
       parrafo: null,
       completarCierre: null,
@@ -761,7 +761,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     // Fuera de plazo: la revisión del parte de ayer se envió hoy.
     const tarde = { ...p, fecha: "2026-11-17", revisado: "2026-11-18T12:30:00.000Z" };
     const t = panelDeParteEnviado(estado, tarde, COND);
-    expect(t.fueraDeTermino).toBe("Revisión enviada fuera de plazo.");
+    expect(t.fueraDePlazo).toBe("Revisión enviada fuera de plazo.");
   });
 
   it("C1: «Revisión enviada»: el parte quedó en uso, con «Completar el cierre ahora» (hoy) o «Completar el cierre» como primario (día pasado)", () => {
@@ -778,7 +778,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       avisoCritica: null,
       advertencias: [],
       conDocumentacionVencida: false,
-      fueraDeTermino: null,
+      fueraDePlazo: null,
       notaEncargado: null,
       parrafo: "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible.",
       completarCierre: { texto: "Completar el cierre ahora", href: "#/parte/ZK214BD/2026-11-18", primario: false },
