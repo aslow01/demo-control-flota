@@ -16,6 +16,12 @@ revisión antes de salir y cierre) y que **la licencia vencida o faltante bloque
 5.10, 5.12 a 5.17, 5.19, 6.1 a 6.5, 7, 8, 9, 10, 12 y 13) y resumidos, con las tareas del maquetador, en la **sección
 14**. Las reglas nuevas (P14 a P17, K10, L1 a L7) y la lógica están en `docs/diseno.md`, secciones 6 y 17.
 
+**Actualización del 22/11/2026.** Revisión visual de la etapa 6 (`docs/revisiones/demo2-etapa6-diseno.md` del
+portafolio, con las de accesibilidad y QA) y decisiones de Matías: resumen de errores agrupado (D1), marca «(persona
+ficticia)» (D2), «fuera de plazo» en lugar de «fuera de término», «Enviar de todos modos» / «Cerrar de todos modos» y la
+regla nueva **«Cerrar antes»** (estado 5 bis del inicio y pantalla E). Aplicado en 4.1, 4.2, 5.1, 5.4, 5.9, 5.10, 5.11,
+5.14 a 5.18, 6.1 a 6.5, 7, 8, 9, 10, 12 y 13; las tareas del maquetador, en orden, en la **sección 14.3**.
+
 ---
 
 ## 0. Encuadre
@@ -260,6 +266,14 @@ póliza, legajo): `--t-mono`. Medida de lectura: párrafos con `max-width: 62ch`
 
 La marca no es un enlace (es la misma aplicación). Favicon: `i-marca` como SVG en `data:` (la CSP permite `img-src data:`).
 
+**Texto agrandado (1.4.4, m1 de la auditoría del 22/11/2026):** la barra no tiene alto fijo sino `min-height: 56px`, y
+su fila es `display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--e-3); row-gap: var(--e-1);`. La etiqueta
+"Demo con datos ficticios" (arriba y la copia de `.solo-angosto` bajo el encabezado de cada pantalla a < 40rem) lleva
+`white-space: normal` y `max-width: 100%`: con el texto al 200 % baja de renglón en lugar de empujar la página. "Control
+de flota" y su ícono nunca se superponen: el ícono es `flex: none` y el nombre puede partirse. Meta: a 360 px con
+`html { font-size: 200% }`, `document.documentElement.scrollWidth` ≤ 360 en todas las pantallas (hoy: 465, y 499 en
+alertas). El botón de la barra de envío a 320 px también entra en esa meta (5.14).
+
 ### 4.2 Barra de la aplicación (fondo `--c-superficie`, borde inferior `--c-borde`, 52 px)
 
 - **Navegación** (`nav aria-label="Secciones"`), pestañas-enlace con `aria-current="page"` en la activa:
@@ -271,7 +285,7 @@ La marca no es un enlace (es la misma aplicación). Favicon: `i-marca` como SVG 
     `--c-texto` y fondo `--c-superficie-2`. Alto 52 px (área táctil completa).
 - **Selector de perfil** a la derecha (5.2). A < 40rem pasa a una fila propia **debajo** de la navegación, a todo el
   ancho, y también va después de la navegación en el DOM (S1).
-- **Perfil Conductor:** el nombre elegido ("{Nombre} (ficticia)", `--t-chico`, `--c-texto-2`; para lectores, antepuesto
+- **Perfil Conductor:** el nombre elegido ("{Nombre} (persona ficticia)", D2 del 22/11/2026, `--t-chico`, `--c-texto-2`; para lectores, antepuesto
   "Conductor: ") y el botón-texto "Cambiar" (nombre accesible "Cambiar conductor") van **a la derecha del selector, en la
   misma fila**, desde 48rem; la barra conserva 52 px. A < 48rem, en un renglón propio debajo de "Ver como", separados con
   `gap` (nunca con "·" en el texto, que queda colgado al partirse). Va a la derecha y no a la izquierda para que el orden
@@ -320,6 +334,11 @@ próxima ronda; si lo objeta, se vuelve atrás.
 
 - Tamaños: normal `min-height: 2.75rem`, relleno `0 1rem`; grande (Empezar el parte, Enviar parte) `min-height: 3rem`,
   `0 1.5rem`, `1.0625rem`; en filas de tabla, el mismo alto de 2.75rem.
+- **Botón-texto alineado al borde (C12, 22/11/2026):** relleno horizontal **0** (`padding-inline: 0`), en `Boton.svelte`
+  y en `EnlaceAccion.svelte`; el alto de 44 px se conserva con `min-height: 2.75rem` y el texto ya mide más de 44 px de
+  ancho. Así "Usar otra unidad" o "Descartar borrador" empiezan en la misma columna que el primario de arriba (hoy, 8 px
+  más a la derecha). El anillo de foco (`outline-offset: 2px`) queda afuera del texto y no se corta (ningún contenedor
+  lleva `overflow: hidden`, 5.4).
 - **Un solo primario visible por zona.**
 - Confirmación en dos pasos (Descartar borrador): primer clic pasa a Peligro con "Confirmar: descartar"; se restablece
   con Esc, al salir del botón o al mover el foco; doble clic en menos de 500 ms se ignora (como la Demo 1).
@@ -371,9 +390,19 @@ al botón; clic afuera cierra. Ítems de 44 px de alto.
 
 **Variante "panel de resultado"** (S6; la usan "Revisión enviada", "La unidad no puede salir", "Parte cerrado" y el parte
 en lectura, 6.5): sin barra de título; franja izquierda de 4 px del tono del resultado (`vigente` si salió bien o se
-cerró, `critico` si la unidad no puede salir); el título (`h1` de la pantalla, 600, `--t-h2`) va adentro, con el ícono
-del tono a su izquierda (`i-check` o `i-octogono`, 24 px); interior con el mismo relleno que un panel; las acciones al
-final, alineadas a la izquierda, primario primero.
+cerró, `semana` si se envió con documentación vencida aceptada, `critico` si la unidad no puede salir); el título (`h1`
+de la pantalla, 600, `--t-h2`) va adentro, **en `--c-texto`**, con el ícono del tono a su izquierda (`i-check`,
+`i-alerta` u `i-octogono`, 24 px, en `--tono-t`); interior con el mismo relleno que un panel; las acciones al final,
+alineadas a la izquierda, primario primero.
+
+- **Color (S3, C9 de la revisión del 22/11/2026):** el tono va en la franja y en el ícono, **nunca en el título**
+  (`.titulo { color: var(--c-texto); }` y `.titulo :global(.icono) { color: var(--tono-t); }`). Franja + ícono + título
+  en color es el mismo exceso que D4 sacó del protagonista.
+- **Lectura (D):** sin ícono junto al título; la etiqueta "Cerrado" al lado ya dice el estado. Un parte leído días
+  después no tiene que parecer un "enviado con éxito".
+- **Para lectores (m2 de la auditoría, recomendado):** el `h1` lleva `aria-describedby` hacia la línea del resultado
+  ("ZK 214 BD puede salir. Revisión enviada a las 06:52."), así se oye junto al título cuando recibe el foco. No se
+  agrega `role="status"`: el foco ya anuncia el cambio.
 
 ### 5.5 Patente
 
@@ -508,7 +537,7 @@ solo para lectores de pantalla. Orden de una tarjeta de vencimiento: etiqueta de
 ("Vence en 5 días · 24/11/2026"); documento; patente + interno + modelo en **un** renglón (`[ZR 536 MZ] Int. 12 ·
 Toyota Hilux`); proyecto en `--t-chico` `--c-texto-2`; botón. En las de operación, sin "Fecha" (la dice el texto).
 **Alturas objetivo a 360 px:** ≤ 200 px por tarjeta de alerta con botón; ≤ 190 px por tarjeta de la flota (medido
-después de C7: 172, 169 y 189).
+después de C7: 172, 169 y 189; el 22/11/2026 volvieron a pasarse: 242, 213 y 216, ver tarjetas de la flota en 5.10).
 
 - Fila: alto mínimo 3.5rem; franja izquierda 4 px del tono de la alerta; hover `--c-superficie-2`. La fila no es un
   enlace entero (tiene un botón adentro): el enlace es la patente.
@@ -524,8 +553,14 @@ después de C7: 172, 169 y 189).
 
 ### 5.10 Tabla de la flota
 
-Misma técnica de tres disposiciones. Columnas a ≥ 66rem: Unidad · Estado hoy · Próximo vencimiento · Kilometraje ·
-Último parte · Novedades · Proyecto y conductor.
+Misma técnica de tres disposiciones. Columnas a ≥ 66rem: Unidad · Estado hoy · Próximo vencimiento · Km · Último
+parte · Novedades · Proyecto y conductor.
+
+- **Rótulo "Km" (S5, C7 del 22/11/2026):** la cabecera visible dice "Km" y el nombre completo queda para lectores:
+  `<th scope="col"><span aria-hidden="true">Km</span><span class="solo-lectores">Kilometraje</span></th>`. En tarjetas,
+  el `data-etiqueta` sigue "Kilometraje". Ninguna cabecera se parte dentro de una palabra: `th[scope="col"] {
+  overflow-wrap: normal; word-break: normal; hyphens: manual; }` (si una no entra, que se vea en la revisión, no que
+  quede "KILOMETRA / JE").
 
 - **Unidad:** patente-enlace + "Int. 07"; línea 2 "Toyota Hilux 2022 · Camioneta".
 - **Estado hoy:** etiqueta (Puede salir en su variante texto, 5.7 / No puede salir / Fuera de servicio / De baja) +
@@ -534,16 +569,31 @@ Misma técnica de tres disposiciones. Columnas a ≥ 66rem: Unidad · Estado hoy
   en `--c-texto-2` sin horizonte; si hay vencido o faltante, la etiqueta crítica y el nombre.
 - **Kilometraje:** "84.320 km", alineado a la derecha, tabular. Sin registros: "Sin registros".
 - **Último parte:** "17/11/2026" + etiqueta chica si corresponde ("En uso" si es el de hoy y falta el cierre, "Sin
-  enviar", "Sin cerrar", "Sin parte" de ayer).
+  enviar", "Sin cerrar", "Sin parte" de ayer). **La fecha es siempre la del parte que nombra la etiqueta** (C2 del
+  22/11/2026): con "En uso", la de hoy; con "Sin cerrar" o "Sin enviar", la de ese parte; con "Sin parte", la del
+  último enviado. Nunca "21/11/2026 · En uso" de una unidad que salió hoy. El orden "Último parte" del `select` usa la
+  misma fecha. (Lo arma `src/lib/estado/flota.ts`.)
 - **Novedades:** cifra de abiertas; si hay crítica, ícono `i-octogono` `--c-critico-t` y texto "1 (crítica)".
 - **Proyecto y conductor:** si el conductor asignado no tiene licencia vigente hoy (L6), después del nombre, en el mismo
   renglón si entra: ícono `i-vencido` 14 px + "sin licencia vigente" (`--t-chico` 600 `--c-critico-t`; 7,63 / 8,14 sobre
   superficie, 6,55 / 7,34 sobre superficie-2). No cambia la etiqueta de "Estado hoy" (la unidad puede salir con otro
   conductor, A1) ni pone franja.
-- **Anchos (C9, implementado):** desde 66rem, `table-layout: fixed` con Unidad 13rem · Estado hoy 14rem · Próximo
-  vencimiento 15rem · Kilometraje 7rem · Último parte 8rem · Novedades 6rem · Proyecto y conductor el resto;
-  `white-space: nowrap` en kilometraje y fechas; horizonte mínimo siempre a la izquierda del texto (columna de 4rem).
-  Meta: ≤ 64 px por fila a 1280.
+- **Anchos (S5, reemplaza a los de C9 del 19/11/2026, que no entraban en los 1.102 px del panel a 1280):** desde
+  `@container lista (min-width: 66rem)`, `table-layout: fixed` con Unidad `11.5rem` · Estado hoy `12.5rem` · Próximo
+  vencimiento `15rem` (4rem son del horizonte) · Km `5.5rem` · Último parte `6.5rem` · Novedades `6rem` · Proyecto y
+  conductor el resto (unos 190 px a 1280); `white-space: nowrap` en kilometraje y fechas; horizonte mínimo siempre a la
+  izquierda del texto. **Metas a 1280:** ≤ 64 px en las filas que pueden salir; ≤ 88 px en las que llevan motivo (no
+  pueden salir, fuera de servicio). Hoy, 10 de 23 filas pasan de 64 px (máximo 113).
+- **Tarjetas (< 40rem; S10, C8 del 22/11/2026):**
+  - Renglón 1: patente-enlace y "Int. 17 · Peugeot Partner 2024" en **un solo `span`** con `white-space: nowrap`; si no
+    entra junto a la patente, baja entero (nunca un "·" colgado al final del renglón).
+  - Renglón 2: etiqueta de estado y motivo.
+  - Renglón 3: próximo vencimiento, **solo si su tono no es crítico**. Si es vencido o faltante, no se muestra: ya lo
+    dice "No puede salir · Seguro vencido hace 1 día". En la tabla completa y la compacta se queda (son columnas).
+  - Renglón 4, km y parte: `display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--e-2);` con tres
+    piezas: "59.413 km", "· último parte 21/11/2026" (`white-space: nowrap`) y la etiqueta. Si no entra, baja la
+    etiqueta entera; la fecha nunca se separa de "último parte".
+  - Meta: ≤ 190 px por tarjeta, medida en ZK 214 BD, ZW 827 VD y ZW 749 JE.
 - Franja izquierda **solo** en filas que no pueden salir (crítico), fuera de servicio (semana) o de baja (neutro). Las
   que pueden salir no llevan franja: un muro verde no informa nada.
 - **Orden:** un `select` "Ordenar por" (Prioridad, Patente, Interno, Próximo vencimiento, Último parte) en la barra de
@@ -566,6 +616,11 @@ Específicos:
 - **Kilometraje:** `input type="text" inputmode="numeric" autocomplete="off"`, ancho 10ch + sufijo "km" fuera del campo.
   Al salir del campo se reformatea con punto de miles (`84320` → `84.320`). No se usa `type="number"` (las flechas y la
   rueda del mouse cambian el valor sin querer; no acepta el punto de miles).
+- **Enter en los campos del parte (B5 de QA, decidido el 22/11/2026):** **no envía**, a propósito. En el paso 1 el
+  kilometraje es el primer dato de once: un Enter sin querer (la tecla "Ir" del teclado numérico) abriría el resumen
+  de errores con diez faltantes. Para que el teclado del celular no prometa otra cosa: `enterkeyhint="next"` en "Al
+  iniciar" y "Al terminar", `enterkeyhint="done"` en litros. El primario sigue siendo `type="button"` (4.5 (2) de
+  `diseno.md`). No se agrega código que mueva el foco con Enter.
 - **Litros:** `inputmode="decimal"`, sufijo "litros".
 - **Fechas:** `input type="date"` nativo (en el celular abre el selector del sistema); la ayuda dice el formato
   esperado si el navegador muestra texto ("día/mes/año").
@@ -617,7 +672,10 @@ texto 600 e ícono `i-check`. El valor se lee por el radio, no por la barra.
   alto `--alto-barra-envio`, relleno `--e-3` + `env(safe-area-inset-bottom)`. A ≥ 40rem: estática al final del
   formulario, sin sombra.
 - Izquierda: estado del formulario (`--t-chico` 600): "Faltan 5 datos" (`--c-texto-2`) o "Listo para enviar" /
-  "Listo para cerrar" (`--c-vigente-t` + `i-check`). Derecha: primario grande **"Enviar revisión"** (paso 1) o **"Cerrar
+  "Listo para cerrar" (`--c-vigente-t` + `i-check`). **Después de un intento con errores de reglas** (K2–K4, P2, P8,
+  L1; S4, C5 del 22/11/2026): "Revise N datos" (`--c-texto-2`, sin `i-check`; el mismo N que el título del resumen)
+  hasta el próximo intento. Nunca "Listo para enviar" con un error en pantalla. El texto lo da `textoBarraDeEnvio`
+  (`src/lib/dominio/formulario-parte.ts`). Derecha: primario grande **"Enviar revisión"** (paso 1) o **"Cerrar
   el parte"** (paso 2). Es `type="button"` (4.5 (2) de `diseno.md`).
 - **El primario nunca se deshabilita**: si falta algo, al pulsarlo aparece el resumen de errores (5.15).
 - Para que la barra no tape el campo con foco (WCAG 2.4.11): mientras el formulario está en pantalla,
@@ -633,6 +691,13 @@ texto 600 e ícono `i-check`. El valor se lee por el radio, no por la barra.
   enlaces a cada campo ("Kilometraje al iniciar", "Luces y balizas: elija una opción"), en el orden del formulario de
   ese paso (P4). Los errores de reglas (K2–K4, P2, P8 y, con el perfil Encargado, L1 en el campo Conductor, primero de la
   lista) también van acá, con el texto de la regla. Títulos completos en la sección 7.
+- **Puntos de la revisión agrupados (D1, decidido por Matías el 22/11/2026):** si faltan **más de 3** puntos de la
+  revisión (sección 2 del paso 1), el resumen lleva **un solo enlace** "Faltan 10 puntos de la revisión", en el lugar
+  del primero de ellos (orden del formulario), que lleva al **primer punto sin responder** (foco en su primer radio).
+  Con **3 o menos**, un enlace por punto ("Frenos: elija una opción"). En los dos casos, cada punto conserva su borde y
+  su mensaje junto a los botones (5.12), y el título sigue contando todos los datos ("Faltan 11 datos para enviar la
+  revisión"). Motivo: diez enlaces de 44 px ocupaban unos 560 px a 360 y tapaban el formulario que había que llenar.
+  Solo se agrupan los puntos de la revisión; kilometraje, conductor y errores de reglas van siempre de a uno.
 - **Indicador de guardado** (debajo del encabezado del parte): `i-guardado` + "Guardado en este equipo a las 14:32"
   (`--t-chico`, `--c-texto-2`). Mientras escribe: "Guardando…". Error: "No se pudo guardar en este equipo. Lo escrito
   sigue en pantalla; no cierre la pestaña." (`--c-critico-t`). Es `role="status"`, pero **solo cambia su texto cuando
@@ -643,14 +708,14 @@ texto 600 e ícono `i-check`. El valor se lee por el radio, no por la barra.
 - Filtros (5.8): "Todo", "Partes", "Documentos", "Novedades", "Estado y kilometraje".
 - Lista agrupada por día: `h3` "Martes 17/11/2026" (`--t-chico` 600 mayúscula inicial, `--c-texto-2`, divisor arriba).
 - Evento: grilla `4rem | 1.25rem | 1fr` con `align-items: first baseline`: hora (`--t-mono`, `--c-texto-3`, "18:42") ·
-  ícono del tipo (18 px) · resumen (`--t-tabla`) + autor (`--t-chico`, `--c-texto-3`, "{Nombre} (ficticia)"): desde
+  ícono del tipo (18 px) · resumen (`--t-tabla`) + autor (`--t-chico`, `--c-texto-3`, "{Nombre} (persona ficticia)"): desde
   40rem a la derecha del resumen; con menos ancho, en el renglón de la hora (C4, implementado). El `summary` de un
   `details` no agrega relleno vertical propio y su flecha queda en línea con el **primer** renglón del resumen.
   Relleno vertical del evento `--e-2`. **Meta (S8):** ≤ 64 px por evento cerrado a 1280 (medido: 60) y ≤ 100 px a 360
   (medido: 97).
 - **Revisión enviada** (evento `revision-enviada`, ícono `i-parte`): una línea, sin `details`: "Revisión antes de salir
   · 84.320 km · sin novedades" / "· 1 novedad: Niveles de aceite y agua" / "· novedad crítica en Frenos: la unidad no
-  salió". Fuera de término: "(fuera de término)" al final.
+  salió". Fuera de plazo: "(fuera de plazo)" al final.
 - **Parte cerrado** (evento `parte-enviado`): es un `details`; `summary` "Parte cerrado · 132 km (84.320 → 84.452) ·
   combustible 3/4"; al abrir: kilometraje, combustible, litros, los puntos con novedad (texto completo), "8 puntos en
   orden", advertencias aceptadas (de la revisión y del cierre), y el enlace "Ver el parte completo".
@@ -694,10 +759,18 @@ Inventario de diálogos (los textos finales los pule `redactor-ux`):
 | Cambiar proyecto o conductor | `select` Proyecto, `select` Conductor (con "Sin conductor asignado"). Aviso si el nuevo proyecto exige una habilitación que la unidad no tiene. | "Guardar cambios" |
 | Dar de baja | Motivo*, aviso "No se puede deshacer en esta demo. La unidad deja de contar en la flota y en las alertas; su historial se conserva." | Peligro "Dar de baja ZK 214 BD" |
 | Agregar unidad | Patente*, Interno*, Tipo*, Marca*, Modelo*, Año*, Proyecto*, Conductor. Al guardar: va a la ficha con el mensaje "Unidad agregada. Le faltan 4 documentos: cárguelos desde aquí." | "Agregar unidad" |
-| Antes de enviar (parte) | Lista de advertencias con su explicación, en tono semana o crítico: en la **revisión**, K6 y P9 (solo documentos de la unidad); en el **cierre**, K7. Nunca hay una advertencia por la licencia: la licencia bloquea (L1). Foco inicial en "Volver al parte". | Revisión: "Enviar igual"; cierre: "Cerrar igual" (+ "Volver al parte") |
+| Antes de enviar (parte) | Frase de entrada, que no depende de cuántos avisos haya: revisión "Antes de enviar la revisión, lea esto."; cierre "Antes de cerrar el parte, lea esto." Debajo, lista de advertencias con su explicación, en tono semana o crítico: en la **revisión**, K6 y P9 (solo documentos de la unidad); en el **cierre**, K7. Nunca hay una advertencia por la licencia: la licencia bloquea (L1). Foco inicial en "Volver al parte". | Revisión: "Enviar de todos modos"; cierre: "Cerrar de todos modos" (+ "Volver al parte", botón-texto) |
 | ¿Quién completa el parte? | Radios con conductores ficticios: nombre en el renglón 1; en el 2, "Unidad ZK 214 BD" (`--c-texto-2`) y, si no tiene licencia vigente hoy, `i-vencido` + "Sin licencia vigente" (`--t-chico` 600 `--c-critico-t`), separados con `gap`. Sigue siendo elegible (es un punto de vista): así el visitante encuentra el caso del bloqueo. | "Ver como este conductor" (S1) |
 | Reiniciar demo | "Se borran los cambios hechos en este navegador y se vuelve a cargar la flota de ejemplo con las fechas de hoy." | Peligro "Reiniciar demo" |
 | Cómo funciona | Qué es (2 renglones); las reglas de vencimiento con **una etiqueta de ejemplo por tramo** ("Vencido o faltante", "7 días o menos", …, "Más de 30 días") en lugar de un horizonte sin datos (S5); qué hace el parte (revisión antes de salir y cierre), qué pasa con una novedad crítica y con la licencia vencida; dónde se guardan los datos; datos ficticios; "Ver como" es solo un punto de vista. Textos en la sección 7. | "Entendido" |
+
+**Botones de "Antes de enviar" (decidido el 22/11/2026, propuesta de `redactor-ux`):** "Enviar de todos modos" /
+"Cerrar de todos modos" reemplazan a "Enviar igual" / "Cerrar igual". "Igual" con el sentido de "de todos modos" es
+coloquial y no se entiende igual en todos los países; la demo pide español neutro. Ancho medido sobre el peor caso: a
+< 40rem el primario va a todo el ancho de la hoja (360 − 2 × 16 = 328 px) y el texto, en `1.0625rem` 600, ocupa unos
+195 px: entra en un renglón con más de 100 px de sobra. Desde 40rem el pie lleva primario + "Volver al parte" en una
+fila dentro de los 34rem del diálogo (unos 230 + 130 px): también entra. Con el texto al 200 %, el primario puede ir en
+dos renglones (`white-space: normal`, alto mínimo sin cambios), nunca cortado.
 
 ### 5.18 Avisos globales
 
@@ -713,6 +786,14 @@ largo), ícono 18 px, relleno `--e-3 --e-4`, con su acción a la derecha (o deba
 | Fecha de consulta simulada (D4, si se hace) | semana | "Volver a hoy" | Al volver a hoy |
 
 Los avisos son `role="status"` (no `alert`), salvo el de modo en memoria al arrancar, que se anuncia una vez.
+
+**Aviso compacto de dos renglones (C10 del 22/11/2026):** el mismo componente (`Aviso.svelte`) admite una prop
+`accion` (texto opcional). Con `accion`, el aviso tiene renglón 1 `span.aviso-titular` (`--t-cuerpo` 600) y renglón 2
+`span.aviso-accion` (`--t-chico`). Lo usan el aviso "no puede salir" de la unidad (inicio, estados 6 y 7, y paso 1), el
+bloqueo por licencia (estado 5) y "Cerrar antes" (estado 5 bis y pantalla E). Hoy el corte en la última ". " está
+repetido en `ParteEncabezado.svelte` y falta en `PantallaConductor.svelte`: pasa a vivir solo en `Aviso.svelte`. Si la
+lógica entrega los dos renglones por separado, se usan tal cual (`texto` y `accion`); si entrega una sola cadena, la
+corta `Aviso.svelte`, en un único lugar.
 
 ### 5.19 Estados vacío y cargando (piezas)
 
@@ -763,8 +844,9 @@ operación.
 │ │▌ [ZT 340 HN] Int. 19  En taller: embrague     › │ │ ⚒ 1  novedad abierta hace 9 días Ver ↓│ │
 │ │▌ ─────────────────────────────────────────────  │ │                                        │ │
 │ │▌ Conductores que no pueden manejar hoy (1)      │ │                                        │ │
-│ │▌ ⊗ {Nombre} (ficticio) · Licencia vencida hace  │ │                                        │ │
-│ │▌   3 días · Unidad [ZB 123 CD]       [Renovar]  │ │                                        │ │
+│ │▌ ⊗ {Nombre} (persona ficticia) · Licencia       │ │                                        │ │
+│ │▌   vencida hace 3 días · Unidad [ZB 123 CD]     │ │                                        │ │
+│ │▌                                    [Renovar]   │ │                                        │ │
 │ ├─────────────────────────────────────────────────┤ ├────────────────────────────────────────┤ │
 │ │ Disponibles hoy: 19 de 23 unidades activas.     │ │ Así lo carga el conductor:             │ │
 │ └──────────────── columnas 1–7 ───────────────────┘ │ Abrir el parte diario →  (cols 8–12)   │ │
@@ -809,7 +891,7 @@ operación.
   cuatro renglones se leen mejor.
 - **Conductores que no pueden manejar hoy (L6, 19/11/2026):** solo si hay al menos uno, dentro del mismo panel, debajo
   de la lista de unidades: divisor de 1 px `--c-borde`, `h3` "Conductores que no pueden manejar hoy (1)" (`--t-h3`) y
-  una fila por conductor: `i-vencido` 18 px `--c-critico-t` · nombre "{Nombre} (ficticio)" (`--t-tabla` 600
+  una fila por conductor: `i-vencido` 18 px `--c-critico-t` · nombre "{Nombre} (persona ficticia)" (`--t-tabla` 600
   `--c-texto`) · motivo en `--c-texto` ("Licencia vencida hace 3 días", "Falta cargar la licencia" o "Licencia válida
   desde el 20/11/2026") · "Unidad" + patente-enlace chica (si tiene unidad asignada) · botón secundario "Renovar" (o
   "Cargar" si falta), que abre **el mismo diálogo** de la fila de su licencia en Vencimientos (mismo `alertaId`), con
@@ -854,7 +936,8 @@ operación.
 ││▌ ───────────────────────── ││
 ││▌ Conductores que no pueden ││ h3 (solo si hay)
 ││▌ manejar hoy (1)           ││
-││▌ ⊗ {Nombre} (ficticio)     ││
+││▌ ⊗ {Nombre} (persona       ││
+││▌   ficticia)               ││
 ││▌ Licencia vencida hace 3 d.││ (el texto real no se abrevia: se parte)
 ││▌ Unidad [ZB 123 CD]        ││
 ││▌ [ Renovar ]               ││
@@ -920,7 +1003,8 @@ Jerarquía: 1) encontrar la unidad; 2) ver su estado de hoy; 3) agregar.
 - **Tableta:** búsqueda a todo el ancho; Proyecto y Ordenar por en una fila; filtros en una fila que se acomoda en dos;
   tabla compacta (Unidad + Estado · Próximo vencimiento + Último parte · Km + Novedades).
 - **Teléfono:** "Agregar unidad" pasa debajo del `h1`, a todo el ancho; búsqueda, `select`s y filtros apilados;
-  tarjetas: patente-enlace + interno, etiqueta de estado y motivo, próximo vencimiento, "84.320 km · último parte 17/11".
+  tarjetas como en 5.10 (S10): patente-enlace + "Int. 07 · Toyota Hilux 2022" sin cortar, etiqueta de estado y motivo,
+  próximo vencimiento (solo si no es crítico), "84.320 km · último parte 17/11/2026 [etiqueta]".
 
 ### 6.3 Ficha de unidad (`#/unidad/ZK214BD`)
 
@@ -932,7 +1016,7 @@ Jerarquía: 1) qué unidad es y si puede salir (y por qué); 2) documentos; 3) n
 │ Flota / ZK 214 BD                                                       (migas: nav aria-label="Ruta") │
 │ [ZK 214 BD] (h1, patente grande)   ⊗ No puede salir · Seguro vencido hace 1 día                 │
 │ Interno 07 · Toyota Hilux 2022 · Camioneta                                                      │
-│ Proyecto Arroyo Escondido · Conductor: Lucía Ferreyra (ficticia) · 84.320 km (al 17/11/2026)    │
+│ Proyecto Arroyo Escondido · Conductor: Lucía Ferreyra (persona ficticia) · 84.320 km (17/11)    │
 │ [Cargar parte]  [Poner fuera de servicio]  [Más acciones ▾]                                      │
 │ ┌ ▤ Documentos │ 4 · 1 vencido ───────────────────────────┐ ┌ ⚒ Novedades │ 0 abiertas ────────┐ │
 │ │ ┌Vencidos 1┐ Hoy ┃·························┊···· 30        │ │ [Abiertas 0] [Resueltas 4]          │ │
@@ -950,7 +1034,7 @@ Jerarquía: 1) qué unidad es y si puede salir (y por qué); 2) documentos; 3) n
 │ │ Mostrar: [Todo] [Partes] [Documentos] [Novedades] [Estado y km] │ ⚠ 14/11 salto de 1.250 km aceptado   │ │
 │ │ MARTES 17/11/2026                                           │ │ ⟲ 29/10 corrección: 120 km (tablero) │ │
 │ │ 18:42  ▤  ▸ Parte enviado · 132 km · combustible 3/4 …      │ └──────────────────────────────────────┘ │
-│ │            Lucía Ferreyra (ficticia)                        │                                          │
+│ │            Lucía Ferreyra (persona ficticia)                │                                          │
 │ │ …                                    [Ver 30 más]           │                                          │
 │ └─────────────────────────────────────────────────────────────┘                                          │
 ```
@@ -962,7 +1046,11 @@ Jerarquía: 1) qué unidad es y si puede salir (y por qué); 2) documentos; 3) n
   servicio" o "Volver a servicio" (según estado) · "Más acciones" (5.3): "Corregir kilometraje", "Cambiar proyecto o
   conductor", "Cargar novedad", "Dar de baja". Unidad de baja: ninguna acción; aviso neutro "Dada de baja el
   18/11/2026: {motivo}. Se conserva su historial."
-- **Línea de datos y conductor:** "Conductor: {Nombre} (ficticia)"; si no tiene licencia vigente hoy (L6), a
+- **Texto del primer botón según el parte (C16 del 22/11/2026, lo decide `ficha.ts`):** sin parte de hoy o con
+  borrador → "Cargar parte"; con el parte de hoy **en uso** → "Cerrar el parte" (mismo enlace, que abre B); con un
+  parte **anterior** en uso (regla "Cerrar antes") → "Cerrar el parte del {F}", que lleva a ese parte; con el parte de
+  hoy cerrado → "Ver el parte" (lectura D). Siempre secundario.
+- **Línea de datos y conductor:** "Conductor: {Nombre} (persona ficticia)"; si no tiene licencia vigente hoy (L6), a
   continuación la etiqueta chica "Sin licencia vigente" (5.7, crítico). La etiqueta de aptitud de la unidad no cambia
   por eso (A1). "Puede salir" usa la variante texto (D1).
 - **Documentos (S4, implementado):** horizonte mediano de la unidad; tabla Documento · Número · Vence · Estado ·
@@ -974,7 +1062,8 @@ Jerarquía: 1) qué unidad es y si puede salir (y por qué); 2) documentos; 3) n
 - **Novedades:** filtro Abiertas/Resueltas; cada novedad: etiqueta, texto, origen ("Parte del 16/11/2026, punto
   Frenos" o "Cargada por el encargado"), fecha y "Resolver".
 - **Kilometraje:** lista de los 10 últimos partes (cerrados y en uso) y correcciones (fecha, inicio → fin, recorrido);
-  un parte en uso dice "84.452 → en uso" y recorrido "—"; uno sin salida, "84.320 → 84.320 · Sin uso"; los saltos
+  un parte en uso dice "84.452 → en uso" y recorrido "—" (C16: hoy la celda queda vacía; tiene que decir "—", alineado
+  como los demás recorridos); uno sin salida, "84.320 → 84.320 · Sin uso"; los saltos
   aceptados con `i-alerta` tono semana; las correcciones con `i-km`.
 - **Historial:** 5.16 (10 eventos de entrada a < 40rem, 30 desde 40rem).
 - **Tableta:** una columna: encabezado, Documentos, Novedades, Historial, Kilometraje.
@@ -992,7 +1081,8 @@ partes.
 ```
 ┌──────────────────────────────┐ 360 px (a ≥ 40rem, la misma columna de 40rem centrada)
 │ barras (perfil: Conductor)   │
-│ {Nombre} (ficticia)  Cambiar │ renglón propio a < 48rem (4.2)
+│ {Nombre} (persona ficticia)  │
+│ Cambiar                      │ renglón propio a < 48rem (4.2)
 ├──────────────────────────────┤
 │ Parte diario (h1)            │
 │ ┌ Hoy, miércoles 18/11/2026 ┐│ panel
@@ -1006,9 +1096,9 @@ partes.
 │ │ Usar otra unidad           ││ botón-texto → select de unidades en servicio
 │ └────────────────────────────┘│
 │ ┌ Pendientes ───────────────┐│ solo si hay
-│ │ ZK 214 BD: el parte del    ││
-│ │ 17/11/2026 quedó sin       ││
-│ │ cerrar.        [Cerrarlo]  ││
+│ │ ZR 536 MZ: el parte del    ││
+│ │ 16/11/2026 está empezado y ││
+│ │ sin enviar. [Continuarlo]  ││
 │ └────────────────────────────┘│
 │ ┌ Su licencia ──────────────┐│ solo si vence en 30 días o menos (y no bloquea)
 │ │ △ Vence en 12 días         ││
@@ -1025,13 +1115,17 @@ unidad (patente, interno, modelo, último registro) se ve en todos menos en el 1
 
 | # | Situación | Qué se ve | Primario | Otros |
 | --- | --- | --- | --- | --- |
-| 1 | Sin unidad asignada (o de baja) | `select` "Elija la unidad" (solo unidades en servicio) | "Empezar la revisión", cuando elige una | — |
+| 1 | Sin unidad asignada (o de baja) | `select` (solo unidades en servicio) con la primera opción "Elija una unidad" (C14: "Elija otra unidad" queda solo para "Usar otra unidad" y para la unidad fuera de servicio) | "Empezar la revisión", cuando elige una | — |
 | 2 | El parte de hoy está **cerrado** | Etiqueta "Cerrado a las 18:42" (vigente, `i-check`). **Sin salida:** en su lugar, aviso crítico compacto "Revisión de las 06:52: novedad crítica en Frenos. La unidad no salió." | — | "Ver el parte" (secundario); "Usar otra unidad" |
 | 3 | El parte de hoy está **en uso** | Etiqueta "En uso desde las 06:52" (quincena, `i-flecha-der`) + "Al terminar la jornada, cierre el parte con el kilometraje y el combustible." (`--t-chico` `--c-texto-2`) | "Cerrar el parte" | "Usar otra unidad" |
 | 4 | Unidad fuera de servicio (sin parte de hoy o con borrador) | Aviso semana "ZK 214 BD está fuera de servicio desde el 13/11/2026 (En taller: cambio de embrague). No hace falta parte." | — | "Usar otra unidad" |
 | 5 | **Su licencia no ampara hoy (L1)** | Aviso crítico de bloqueo (abajo) | — (ninguno) | Si hay borrador: "Tiene una revisión empezada: se conserva." + "Descartar borrador" (botón-texto, dos pasos). **No** se ofrece "Usar otra unidad" (no cambia nada) |
+| 5 bis | **Su unidad tiene un parte anterior sin cerrar ("Cerrar antes", 22/11/2026)** (sin parte de hoy o con borrador) | Aviso semana "Cerrar antes" (abajo) | "Cerrar el parte anterior" → el cierre (B) de ese parte | Si hay borrador de hoy: "Tiene una revisión empezada: se conserva." + "Descartar borrador" (botón-texto, dos pasos); "Usar otra unidad" (otra unidad no está trabada) |
 | 6 | Borrador de hoy | "Tiene una revisión empezada: faltan 5 datos." (o "… y está lista para enviar.") | "Continuar la revisión" | "Descartar borrador" (botón-texto, dos pasos); "Usar otra unidad" |
-| 7 | Sin parte de hoy | "Antes de salir, revise la unidad y envíe la revisión." | "Empezar la revisión" | "Usar otra unidad" |
+| 7 | Sin parte de hoy | "Antes de salir, revise la unidad y envíe la revisión." (`p.nota-estado`, `--t-chico` `--c-texto-2`, **arriba del primario**; C3: hoy la lógica lo trae en `hoyEstado.texto` y la vista no lo muestra) | "Empezar la revisión" | "Usar otra unidad" |
+
+Se llama "5 bis" y no 6 para no renumerar los estados 6 y 7, que ya se citan así en el código, en las revisiones y en
+el resto de este documento.
 
 - **Aviso de bloqueo por licencia (estado 5):** caja con borde izquierdo de 4 px `--c-critico-r`, fondo `--c-critico-f`,
   `--r-2`, relleno `--e-3`, ícono `i-vencido` 18 px `--c-critico-t`. Renglón 1 en `--t-cuerpo` 600 `--c-texto`: "No
@@ -1040,9 +1134,44 @@ unidad (patente, interno, modelo, último registro) se ve en todos menos en el 1
   sobre `--c-critico-f`: 13,68 (claro) · 12,99 (oscuro). No es `role="alert"`: al llegar a la pantalla el foco va al
   `h1` y el aviso es lo primero que se lee dentro del panel. Si el encargado renueva la licencia en otra pestaña, el
   aviso D9 avisa; al actualizar, el panel pasa al estado 6 o 7.
+- **Aviso "Cerrar antes" (estado 5 bis, regla del 22/11/2026: mientras una unidad tenga un parte anterior sin cerrar, no
+  se empieza la revisión de una fecha posterior):** misma anatomía que el de la licencia (aviso compacto de 5.18, caja con
+  borde izquierdo de 4 px, `--r-2`, relleno `--e-3`, ícono 18 px, dos renglones en `--c-texto`), pero en **tono
+  semana**: no es una prohibición sobre la persona sino una tarea pendiente que se resuelve en el acto, y el ámbar es el
+  mismo de la etiqueta "Sin cerrar" (5.7). Borde `--c-semana-r`, fondo `--c-semana-f`, ícono `i-lapiz` en
+  `--c-semana-t`. Renglón 1 (`--t-cuerpo` 600): "{P}: el parte del {dia F} quedó sin cerrar." Renglón 2 (`--t-chico`):
+  "Ciérrelo primero; después podrá empezar la revisión de hoy." **A diferencia del bloqueo por licencia, hay primario**,
+  debajo de la caja: "Cerrar el parte anterior" (grande, ancho completo a < 40rem), enlace con aspecto de botón a
+  `#/parte/{P}/{F anterior}`, que muestra B con el foco en su `h1`. Nombre accesible: el texto visible basta (el
+  renglón 1 está justo arriba y es lo que lee el lector antes). Si hay más de un parte anterior sin cerrar (solo con
+  datos viejos), el aviso nombra **el más antiguo**. No es `role="alert"` (igual que el de la licencia). Contraste
+  medido (`scripts/contraste.mjs`, alias `revisar`): texto / semana-f 14,39 (claro) · 12,08 (oscuro); ícono semana-t /
+  semana-f 6,80 · 8,86; borde semana-r / superficie 3,65 · 7,36.
+
+  ```
+  ┌ Hoy, domingo 22/11/2026 ───┐ 360 px
+  │ [ZK 214 BD] Int. 07 ·      │
+  │ Toyota Hilux 2022          │
+  │ Último registro: 59.413 km │
+  │ (parte del 21/11/2026).    │
+  │ ▌✎ ZK 214 BD: el parte del │ caja semana; renglón 1 en 600
+  │ ▌  sábado 21/11/2026 quedó │
+  │ ▌  sin cerrar.             │
+  │ ▌  Ciérrelo primero;       │ renglón 2 en --t-chico
+  │ ▌  después podrá empezar la│
+  │ ▌  revisión de hoy.        │
+  │ [ Cerrar el parte anterior]│ primario grande
+  │ Usar otra unidad           │ botón-texto
+  └────────────────────────────┘
+  ```
+
+  Al volver del cierre (C3 → "Volver al inicio"), el panel pasa al estado 7 (o 6 si había borrador). En este estado,
+  "Pendientes" **no repite** ese mismo parte (como "Su licencia" en el estado 5); los demás pendientes siguen.
 - **Aviso "no puede salir" de la unidad** (documentos, P9; solo en los estados 6 y 7): el compacto de C1, arriba del
   primario: renglón 1 `--t-cuerpo` 600 "ZK 214 BD no puede salir: Seguro vencido hace 1 día." y renglón 2 `--t-chico`
-  "Avise al encargado antes de usarla.". El primario sigue (P9: si igual sale, la revisión lo registra).
+  "Avise al encargado antes de usarla.". El primario sigue (P9: si igual sale, la revisión lo registra). C10 del
+  22/11/2026: en el inicio hoy sale como un solo párrafo regular; tiene que ser el compacto de 5.18 (`Aviso.svelte` con
+  `accion`), idéntico al del paso 1.
 - **Pendientes** (ordenados por fecha): borrador de un día anterior ("ZK 214 BD: el parte del 17/11/2026 está empezado y
   sin enviar." + "Continuarlo"); día sin parte ("ZK 214 BD: no se envió el parte de ayer (17/11/2026)." + "Cargarlo");
   **parte en uso de un día anterior** ("ZK 214 BD: el parte del 17/11/2026 quedó sin cerrar." + "Cerrarlo"). El nombre
@@ -1051,6 +1180,16 @@ unidad (patente, interno, modelo, último registro) se ve en todos menos en el 1
 - **Su licencia:** como antes (solo si vence en 30 días o menos, está vencida o falta), **salvo en el estado 5**, donde
   no se muestra (el aviso del panel "Hoy" ya lo dice).
 - **Mis últimos partes:** los cinco **cerrados** más nuevos; uno sin salida dice "Sin uso" en lugar del recorrido.
+  **Fila (`.fila-parte`) con texto agrandado (1.4.4, M1 de la auditoría del 22/11/2026):** hoy, a 360 px con el texto
+  al 200 %, el recorrido queda encima de la patente. La fila pasa a `display: grid; grid-template-columns: auto auto
+  1fr; grid-template-areas: "fecha patente recorrido"; column-gap: var(--e-3); align-items: center;` y, con la lista
+  como contenedor (`container: partes / inline-size` en el `ul`) y `@container partes (max-width: 17rem)`, a
+  `grid-template-columns: auto 1fr; grid-template-areas: "fecha patente" "recorrido recorrido";` con `row-gap:
+  var(--e-1)`. El umbral está en `rem` a propósito: en una consulta de contenedor el `rem` sigue al tamaño de letra de la
+  raíz, así que a 360 px con texto normal (lista de unos 296 px, más que 17rem = 272 px) la fila queda en un renglón, y
+  con texto al 200 % (17rem = 544 px) se apila. `white-space: nowrap`
+  solo en la patente; fecha y recorrido pueden partirse. Meta: sin superposición a 360 px con `html { font-size: 200%
+  }` y fila de 44 px o más (es un enlace).
 - En el ejemplo: con la conductora asignada a ZK 214 BD se ve el estado 7 con el aviso de la unidad (caso C01); con el
   conductor del caso C21 se ve el estado 5. Quien cambia de vista ve en el acto cómo se cruzan las dos vistas.
 
@@ -1069,6 +1208,7 @@ de qué unidad y qué día; 2) lo que falta; 3) enviar la revisión o cerrar.
 | Cerrado (incluido sin salida) | **D. Lectura**. | **D**. |
 | Sin parte o borrador, y la unidad fuera de servicio o de baja, o la fecha fuera de P2 | **E** con el texto de la regla. | **E**. |
 | En uso y la unidad de baja | **E** (A7), sin descarte. | **E**. |
+| Sin parte o borrador, y la unidad tiene un parte **anterior** en uso (regla "Cerrar antes", 22/11/2026) | **E "Cerrar antes"** (abajo), con primario hacia ese parte. Si además su licencia no ampara la fecha, gana L1. | **E "Cerrar antes"**. |
 | Recién enviado | **C1** "Revisión enviada" · **C2** "La unidad no puede salir" · **C3** "Parte cerrado". | Igual. |
 
 **Encabezado de A y B** (de arriba abajo, sin panel):
@@ -1080,7 +1220,9 @@ de qué unidad y qué día; 2) lo que falta; 3) enviar la revisión o cerrar.
 3. Renglón de contexto, `--t-chico` 600 `--c-texto-2`: "Parte del miércoles 18/11/2026 · paso 1 de 2" (o "· paso 2 de
    2"). Un texto, no un indicador gráfico de pasos: en el teléfono no hay lugar y una oración se lee igual con lector de
    pantalla.
-4. Patente chica + "Int. 07 · Toyota Hilux 2022" en un renglón (sin el tipo).
+4. Patente **grande** (5.5; S7 del 22/11/2026: así quedó implementada y es lo que pide 5.5 para el parte; "chica" era
+   una contradicción de este documento) + "Int. 07 · Toyota Hilux 2022" a su derecha (sin el tipo). A < 30rem, interno
+   y modelo **apilados** a la derecha de la patente, en dos renglones `--t-chico`; desde 30rem, en uno.
 5. Solo en A: aviso compacto "no puede salir" de la unidad, si corresponde (como en 6.4).
 6. Indicador de guardado (5.15).
 
@@ -1096,8 +1238,8 @@ renglones a 360 px), así que el renglón de contexto no suma altura.
 │ Revisión antes de salir      │ h1
 │ Parte del miércoles          │ --t-chico 600 --c-texto-2
 │ 18/11/2026 · paso 1 de 2     │
-│ [ZK 214 BD] Int. 07 · Toyota │
-│ Hilux 2022                   │
+│ [ZK 214 BD] Int. 07          │ patente grande (S7)
+│             Toyota Hilux 2022│ interno y modelo apilados a < 30rem
 │ ⎙ Guardado en este equipo    │ indicador (5.15)
 │   a las 06:41                │
 │ Los campos con * son …       │
@@ -1129,11 +1271,15 @@ renglones a 360 px), así que el renglón de contexto no suma altura.
 - Nota de los puntos críticos con "Con novedad" (5.12): "Al enviar la revisión, la unidad queda fuera de servicio y no
   sale, hasta que el encargado resuelva la novedad y la vuelva a poner en servicio."
 - **Perfil Encargado:** primer campo de la sección 1, `select` "Conductor *" (activos), cada opción "{Nombre} · {patente
-  asignada}" y, si su licencia no ampara la fecha del parte, el sufijo " (sin licencia vigente)". El asignado se
+  asignada}" y, si su licencia no ampara la fecha del parte, **"{Nombre} (sin licencia vigente) · {patente}"** (S6, C13
+  del 22/11/2026: el dato va antes que la patente; a 360 el campo mide 294 px y cortaba "(sin licencia" justo en la
+  palabra que explica el error; si algo se corta, que sea la patente). El asignado se
   precarga solo si su licencia ampara la fecha (P13); si no, "Elija quién conduce". Si se elige uno sin licencia, el
   error llega al pulsar "Enviar revisión": mensaje sobre el campo (5.11, inválido) y primero en el resumen, con el texto
   de L1 en tercera persona (sección 7). No se valida al elegir (los errores aparecen al enviar, como el resto).
-- Barra: "Faltan N datos" / "Listo para enviar" + **"Enviar revisión"**.
+- Barra: "Faltan N datos" / "Listo para enviar" / "Revise N datos" (tras un intento con errores de reglas, 5.14) +
+  **"Enviar revisión"**.
+- Resumen de errores con los puntos agrupados si faltan más de 3 (D1, 5.15).
 
 **B. Cierre de la jornada — teléfono, 360 px**
 
@@ -1143,9 +1289,11 @@ renglones a 360 px), así que el renglón de contexto no suma altura.
 │ Cierre de la jornada         │ h1
 │ Parte del miércoles          │
 │ 18/11/2026 · paso 2 de 2     │
-│ [ZK 214 BD] Int. 07 · Toyota │
-│ Hilux 2022                   │
+│ [ZK 214 BD] Int. 07          │
+│             Toyota Hilux 2022│
 │ ⎙ Guardado en este equipo …  │
+│ Los campos con * son         │ nota corta (desvío 3)
+│ obligatorios.                │
 │ ┌──────────────────────────┐ │ resumen de la revisión: caja --c-fondo,
 │ │ Revisión enviada a las   │ │ borde 1 px --c-borde, --r-2, relleno --e-3
 │ │ 06:52 · Al iniciar:      │ │
@@ -1178,21 +1326,38 @@ renglones a 360 px), así que el renglón de contexto no suma altura.
   agua"; con el perfil Encargado agrega "· Conductor: {Nombre}") y un `details` "Ver la revisión" con los puntos como en
   la lectura (D). Sin hora legible: "Revisión enviada · …" (no se inventa).
 - Sin "Descartar borrador" (P7). Sin `select` de conductor (lo fijó la revisión).
+- **Nota de obligatorios** (desvío 3 del maquetador, aceptado el 22/11/2026): en el paso 2, solo "Los campos con * son
+  obligatorios." (la frase de los puntos no aplica: no hay puntos). A < 32rem de contenedor, el relleno de sección es
+  más chico, como quedó implementado.
+- **"Al iniciar" solo desde 30rem (S8):** en el teléfono no se repite, porque ya está en el resumen de la revisión.
 - **Tableta y escritorio:** a ≥ 30rem de contenedor, "Al iniciar" (como texto: "84.320 km") y "Al terminar" (campo) en
-  dos columnas; el recorrido debajo de las dos.
-- Barra: "Faltan N datos" / "Listo para cerrar" + **"Cerrar el parte"**.
+  dos columnas; el recorrido debajo de las dos. **Alineación (C11 del 22/11/2026):** el rótulo de "Al iniciar" usa el
+  estilo de la etiqueta de campo (5.11: `--t-chico` 600 `--c-texto`), no el de `Dato`; la fila `.km` lleva `align-items:
+  end`, y el valor de "Al iniciar" `min-height: 3rem; display: flex; align-items: center;`, así queda en la misma línea
+  que el texto escrito en "Al terminar" (hoy, 10 px más arriba, a la altura de la ayuda). "Recorrido": rótulo
+  `--t-chico` `--c-texto-2` y valor 600 `--c-texto` en `--t-cuerpo` (hoy todo en 600 compite con el `h2`).
+- Barra: "Faltan N datos" / "Listo para cerrar" / "Revise N datos" + **"Cerrar el parte"**.
 
 **C. Resultados** (estado de la pantalla después de enviar; variante "panel de resultado" de 5.4; el `h1` recibe el foco
 y da el título de la pestaña):
 
 - **C1 · "Revisión enviada"** (franja vigente, `i-check`). Línea: "ZK 214 BD puede salir. Revisión enviada a las
-  06:52." (fuera de término: "Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de término)."). `dl`: "Al
+  06:52." (fuera de plazo: "Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de plazo)."). `dl`: "Al
   iniciar" "84.320 km" · "Novedades" "Sin novedades" (o "1 normal: Niveles de aceite y agua", con la nota "El encargado
   la ve en el centro de alertas.") · "Avisos aceptados" (si hubo, en pasado). Párrafo `--c-texto-2`: "Al terminar la
   jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible." Acciones: **parte de hoy** →
   "Volver al inicio" (primario) + "Completar el cierre ahora" (botón-texto); **parte de un día pasado** → "Completar el
   cierre" (primario) + "Volver al inicio" (botón-texto). "Completar el cierre" muestra B en la misma ruta, con el foco en
   su `h1`.
+  - **Con documentación vencida aceptada (S1, C1 del 22/11/2026):** la pantalla no puede decir "puede salir" de una
+    unidad que el inicio y el paso 1 acaban de declarar que no puede. Franja **semana** (`--c-semana-r`), ícono
+    `i-alerta` en `--c-semana-t`, el título sigue "Revisión enviada" (en `--c-texto`, 5.4). Línea: "{P}: revisión
+    enviada a las 06:52. Sale con documentación vencida: quedó registrado." Fuera de plazo: "Revisión del {F} enviada
+    el {F2} a las 08:10 (fuera de plazo). Salió con documentación vencida: quedó registrado." El dato lo da la lógica
+    (`PanelParteEnviado.conAvisos`).
+  - **"Avisos aceptados"** (C1, C3 y D; C6): un renglón por documento, en pasado: "El seguro de ZK 214 BD venció el
+    21/11/2026. Se envió de todos modos: quedó registrado." (faltante: "Faltaba cargar {documento} de {P}. Se envió de
+    todos modos: quedó registrado."). Ícono `i-vencido` en `--c-critico-t`, **sin fondo** (no `i-alerta`).
 - **C2 · "La unidad no puede salir"** (franja crítica, `i-octogono`). Línea: "Revisión enviada a las 06:52 con una
   novedad crítica: Frenos." (con dos: "con 2 novedades críticas: Frenos, Dirección."). Aviso semana (5.18, sin acción):
   "ZK 214 BD quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio. El parte
@@ -1203,7 +1368,7 @@ y da el título de la pestaña):
   en PDF" (botón-texto) recién con el paso 6.1 (un botón que no hace nada no se muestra).
 
 **D. Lectura** (parte cerrado, en cualquier fecha y estado de la unidad): variante "panel de resultado" con franja
-vigente; `h1` "Parte del miércoles 18/11/2026" + etiqueta "Cerrado"; `dl` con Revisión "06:52", Cierre "18:42", y los
+vigente; `h1` "Parte del miércoles 18/11/2026" (en `--c-texto`, **sin ícono**: S3) + etiqueta "Cerrado"; `dl` con Revisión "06:52", Cierre "18:42", y los
 mismos datos de C3; los puntos "En orden" agrupados en una línea ("8 puntos en orden: …") y los que tienen novedad, con
 su texto. **Sin salida:** Recorrido "Sin uso: la unidad no salió"; Combustible "No se registró: la unidad no salió"; sin
 la fila "Combustible cargado"; sin la fila "Cierre".
@@ -1215,11 +1380,39 @@ diario" (Conductor) o "Ir a Centro de alertas" (Encargado). Texto de L1 para el 
 enviar la revisión ni salir con la unidad." Si la fecha es hoy y hay borrador, además: "El borrador se conserva: cuando
 el encargado cargue una licencia vigente, podrá enviarlo."
 
+**E "Cerrar antes"** (regla del 22/11/2026: la unidad tiene un parte anterior en uso y se abre una fecha posterior sin
+parte o con borrador; los dos perfiles). Misma pantalla E, con el aviso de 6.4 (estado 5 bis) en lugar del párrafo de la
+regla:
+
+```
+┌──────────────────────────────┐ 360 px
+│ ← Parte diario [DEMO CON …]  │
+│ No se puede cargar este      │ h1 (igual que toda E)
+│ parte                        │
+│ ▌✎ ZK 214 BD: el parte del   │ aviso compacto, tono semana (6.4)
+│ ▌  sábado 21/11/2026 quedó   │
+│ ▌  sin cerrar.               │
+│ ▌  Ciérrelo primero; después │
+│ ▌  se puede empezar la       │
+│ ▌  revisión del 22/11/2026.  │
+│ [ Cerrar el parte anterior ] │ primario grande → #/parte/ZK214BD/2026-11-21 (B)
+│ Descartar borrador           │ botón-texto, dos pasos, solo si hay borrador
+│ Ir a Parte diario            │ botón-texto (Encargado: "Ir a Centro de alertas")
+└──────────────────────────────┘
+```
+
+- Renglón 2 impersonal ("se puede", no "podrá"): sirve igual para el conductor y para el encargado, y nombra la fecha
+  que se quiso abrir. Si hay borrador: "Tiene una revisión empezada para el {F}: se conserva." debajo de la caja.
+- A ≥ 40rem, misma columna de 40rem; el primario no ocupa todo el ancho.
+- Esta E **sí** tiene primario (las otras no): la regla tiene un remedio inmediato y es de la misma persona.
+- Foco al `h1` al llegar. Al cerrar el parte anterior (C3 → "Volver al inicio" o volver con el navegador) la fecha
+  posterior ya se puede abrir.
+
 **Enviar (A y B):**
 
 1. Faltan datos o falla una regla → resumen de errores arriba con el foco (5.15); errores en cada campo.
-2. Completo y con advertencias → diálogo "Antes de enviar" (5.17): en A, K6 y P9; en B, K7. Primario "Enviar igual" o
-   "Cerrar igual".
+2. Completo y con advertencias → diálogo "Antes de enviar" (5.17): en A, K6 y P9; en B, K7. Primario "Enviar de todos
+   modos" o "Cerrar de todos modos".
 3. Completo sin advertencias, o aceptadas → se envía (primario en estado cargando, "Enviando…" o "Cerrando…", si pasa
    de 200 ms) y la pantalla pasa a C1, C2 o C3.
 4. Error al guardar (P12, D10) → mensaje en el resumen de errores; todo lo escrito sigue.
@@ -1250,7 +1443,7 @@ exact` solo en las etiquetas).
 | Hoy | "Hoy es miércoles 18/11/2026 (hora de Argentina)" |
 | Parte, ayuda de km | "Último registro: 84.320 km (parte del 17/11/2026)." |
 | Parte, punto crítico | "Al enviar la revisión, la unidad queda fuera de servicio y no sale, hasta que el encargado resuelva la novedad y la vuelva a poner en servicio." |
-| Parte, documentación vencida (diálogo, revisión) | "El seguro de ZK 214 BD venció el 17/11/2026. Puede enviar la revisión igual: quedará registrado que la unidad salió con documentación vencida." |
+| Parte, documentación vencida (diálogo, revisión) | Un renglón por documento: "El seguro de ZK 214 BD venció el 17/11/2026." · "Falta cargar {documento} de {P}." Cola: "Puede enviar la revisión de todos modos: quedará registrado que la unidad salió con documentación vencida." (C6: hoy dice "vencido o sin cargar" y habla del "parte") |
 | Reinicio | "Se borran los cambios hechos en este navegador y se vuelve a cargar la flota de ejemplo con las fechas de hoy." |
 
 Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros con punto de miles y "km". Nunca "ud." ni
@@ -1268,31 +1461,37 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 | Secciones del paso 2 | "1. Kilometraje al terminar", "2. Combustible" |
 | Ayuda de "Al terminar" | "Lo que marca el tablero al terminar la jornada." (reemplaza "Complételo al final del día.") |
 | Litros (etiqueta / ayuda) | "Combustible cargado en la jornada" / "Déjelo vacío si no cargó." |
-| Barra de envío | "Enviar revisión" · "Cerrar el parte" · "Listo para enviar" · "Listo para cerrar" · "Faltan N datos" |
+| Barra de envío | "Enviar revisión" · "Cerrar el parte" · "Listo para enviar" · "Listo para cerrar" · "Faltan N datos" · "Revise N datos" (tras un intento con errores de reglas, 5.14) |
 | Primario cargando | "Enviando…" · "Cerrando…" |
 | Resumen de errores (títulos) | "Faltan N datos para enviar la revisión" · "Revise N datos para enviar la revisión" · "No se pudo enviar la revisión" · "Faltan N datos para cerrar el parte" · "Revise N datos para cerrar el parte" · "No se pudo cerrar el parte" |
+| Resumen de errores, puntos agrupados (D1, más de 3 sin responder) | "Faltan {N} puntos de la revisión" (enlace al primero sin responder). Con 3 o menos: "{Punto}: elija una opción" por punto |
 | Faltante de "Al iniciar" / "Al terminar" | "Escriba el kilometraje al iniciar." / "Escriba el kilometraje al terminar." (sin cambios) |
 | Resumen de la revisión (paso 2) | "Revisión enviada a las 06:52 · Al iniciar: 84.320 km · Sin novedades" · "· 1 novedad: Niveles de aceite y agua" · "· Conductor: {Nombre}" (perfil Encargado) · "Ver la revisión" |
-| C1 | `h1` "Revisión enviada" · "{P} puede salir. Revisión enviada a las 06:52." · fuera de término: "Revisión del {F} enviada el 18/11/2026 a las 08:10 (fuera de término)." · "El encargado la ve en el centro de alertas." · "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible." · "Volver al inicio" · "Completar el cierre ahora" · "Completar el cierre" |
+| C1 | `h1` "Revisión enviada" · "{P} puede salir. Revisión enviada a las 06:52." · fuera de plazo: "Revisión del {F} enviada el 18/11/2026 a las 08:10 (fuera de plazo)." · con documentación vencida aceptada (S1): "{P}: revisión enviada a las 06:52. Sale con documentación vencida: quedó registrado." / fuera de plazo: "Revisión del {F} enviada el {F2} a las 08:10 (fuera de plazo). Salió con documentación vencida: quedó registrado." · "El encargado la ve en el centro de alertas." · "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible." · "Volver al inicio" · "Completar el cierre ahora" · "Completar el cierre" |
 | C2 | `h1` "La unidad no puede salir" · "Revisión enviada a las 06:52 con una novedad crítica: Frenos." · "… con 2 novedades críticas: Frenos, Dirección." · "{P} quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio. El parte quedó cerrado sin uso." · "Si tiene que salir, elija otra unidad desde el inicio." |
 | C3 | `h1` "Parte cerrado" · "{P}, {F}: revisión a las 06:52, cierre a las 18:42." |
 | Lectura, sin salida | "Sin uso: la unidad no salió" (recorrido) · "No se registró: la unidad no salió" (combustible) |
-| Diálogo "Antes de enviar" | Primario "Enviar igual" (revisión) · "Cerrar igual" (cierre) · "Volver al parte" |
+| Diálogo "Antes de enviar" | Frase de entrada: "Antes de enviar la revisión, lea esto." (revisión) · "Antes de cerrar el parte, lea esto." (cierre). Primario "Enviar de todos modos" (revisión) · "Cerrar de todos modos" (cierre) · "Volver al parte" |
+| "Avisos aceptados" (C1, C3, D; pasado) | "El seguro de ZK 214 BD venció el 21/11/2026. Se envió de todos modos: quedó registrado." · "Faltaba cargar {documento} de {P}. Se envió de todos modos: quedó registrado." |
+| Inicio, sin unidad (estado 1) | Primera opción del `select`: "Elija una unidad" ("Elija otra unidad" solo con "Usar otra unidad" o la unidad fuera de servicio) |
+| Inicio, "Cerrar antes" (estado 5 bis) | Renglón 1: "{P}: el parte del {dia F} quedó sin cerrar." · Renglón 2: "Ciérrelo primero; después podrá empezar la revisión de hoy." · primario "Cerrar el parte anterior" · con borrador: "Tiene una revisión empezada: se conserva." |
+| Parte, pantalla E "Cerrar antes" (los dos perfiles) | `h1` "No se puede cargar este parte" · Renglón 1: "{P}: el parte del {dia F} quedó sin cerrar." · Renglón 2: "Ciérrelo primero; después se puede empezar la revisión del {F2}." · primario "Cerrar el parte anterior" · con borrador: "Tiene una revisión empezada para el {F2}: se conserva." · Ficha: "Cerrar el parte del {F}" |
 | Inicio, panel "Hoy" | "Antes de salir, revise la unidad y envíe la revisión." · "Empezar la revisión" · "Tiene una revisión empezada: faltan N datos." · "Tiene una revisión empezada y está lista para enviar." · "Continuar la revisión" · "En uso desde las 06:52" · "Al terminar la jornada, cierre el parte con el kilometraje y el combustible." · "Cerrar el parte" · "Cerrado a las 18:42" · "Ver el parte" · "Revisión de las 06:52: novedad crítica en Frenos. La unidad no salió." |
 | Inicio, bloqueo (L1, segunda persona) | Renglón 1: vencida "No puede manejar hoy: su licencia de conducir venció el 15/11/2026." · faltante "No puede manejar hoy: no tiene una licencia de conducir cargada." · posterior "No puede manejar hoy: su licencia nueva vale desde el 20/11/2026." Renglón 2: "Avise al encargado: cuando cargue una licencia vigente, podrá empezar la revisión." Con borrador: "Tiene una revisión empezada: se conserva." |
 | Pendientes | "{P}: el parte del {F} quedó sin cerrar." · "Cerrarlo" (los de borrador y sin parte, sin cambios) |
 | Parte, pantalla E por licencia (segunda persona) | "Para el {F} no tiene licencia de conducir vigente ({detalle}). Sin licencia vigente no se puede enviar la revisión ni salir con la unidad." con {detalle} = "venció el 15/11/2026" · "no hay ninguna cargada" · "la nueva vale desde el 20/11/2026". Si la fecha es hoy y hay borrador: "El borrador se conserva: cuando el encargado cargue una licencia vigente, podrá enviarlo." |
 | Error de dominio L1 (tercera persona; campo Conductor del encargado) | vencida "{Nombre} no tiene licencia vigente para el {F}: venció el 15/11/2026. Elija otro conductor." · faltante "{Nombre} no tiene licencia de conducir cargada. Elija otro conductor." · posterior "{Nombre} no tiene licencia vigente para el {F}: la nueva vale desde el 20/11/2026. Elija otro conductor." |
 | Otros errores de dominio nuevos | `revision-ya-enviada`: "La revisión ya se envió: no se puede modificar." · `parte-sin-revision`: "Primero envíe la revisión antes de salir." |
-| Opción del `select` Conductor | "{Nombre} · {P} (sin licencia vigente)" |
+| Opción del `select` Conductor | "{Nombre} · {P}" · sin licencia: "{Nombre} (sin licencia vigente) · {P}" (S6, C13) |
+| Marca de nombres inventados (D2, toda la demo) | "{Nombre} (persona ficticia)": barra del perfil, autor en el historial, ficha, protagonista. Las empresas siguen "(ficticia)" |
 | Marca de conductor (flota, ficha, diálogo "¿Quién completa el parte?") | "Sin licencia vigente" (etiqueta en la ficha y en el diálogo; en la flota, en minúscula a continuación del nombre: "sin licencia vigente") |
 | Protagonista, conductores | `h3` "Conductores que no pueden manejar hoy (N)" · motivo "Licencia vencida hace 3 días" / "hace 1 día" · "Falta cargar la licencia" · "Licencia válida desde el 20/11/2026" · "Unidad" · "Renovar" / "Cargar" · nombre accesible "Renovar licencia de {Nombre}" · para lectores, después de la cifra: "1 conductor no puede manejar hoy." / "2 conductores no pueden manejar hoy." · barra de estado al guardar: "Licencia de {Nombre} renovada." / "cargada." |
 | Operación diaria (fila y grupo) | "1 parte sin enviar" · "1 parte sin cerrar" · "N partes sin enviar o sin cerrar" · grupo "Partes sin enviar (N)" · "Partes sin cerrar (N)" · "Partes sin enviar o sin cerrar (N)" |
 | Alerta de parte en uso de un día anterior | "Parte del {F} sin cerrar (salió con L. Ferreyra)" |
-| Historial | "Revisión antes de salir · 84.320 km · sin novedades" · "· 1 novedad: {punto}" · "· novedad crítica en {punto}: la unidad no salió" · "(fuera de término)" · "Parte cerrado · 132 km (84.320 → 84.452) · combustible 3/4" · "Ver 10 más" / "Ver 30 más" |
+| Historial | "Revisión antes de salir · 84.320 km · sin novedades" · "· 1 novedad: {punto}" · "· novedad crítica en {punto}: la unidad no salió" · "(fuera de plazo)" · "Parte cerrado · 132 km (84.320 → 84.452) · combustible 3/4" · "Ver 10 más" / "Ver 30 más" |
 | Ficha, kilometraje | "84.452 → en uso" · "Sin uso" |
 | Cómo funciona, regla "Vencido o faltante" | "El documento venció o, si es obligatorio, falta cargarlo. Si es de la unidad, la unidad figura como «No puede salir». Si es la licencia del conductor, no puede enviar la revisión ni salir con ninguna unidad." |
-| Cómo funciona, "El parte diario" | "Está pensado para usarse desde el celular y tiene dos pasos. Antes de salir, el conductor carga el kilometraje y revisa 10 puntos de la unidad. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio en ese momento, y la unidad no sale hasta que el encargado resuelva la novedad. Al terminar la jornada, cierra el parte con el kilometraje final y el combustible. Sin licencia de conducir vigente no puede enviar la revisión." |
+| Cómo funciona, "El parte diario" | "Está pensado para usarse desde el celular y tiene dos pasos. Antes de salir, el conductor carga el kilometraje y controla 10 puntos de revisión de la unidad. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio en ese momento, y la unidad no sale hasta que el encargado resuelva la novedad. Al terminar la jornada, cierra el parte con el kilometraje final y el combustible. Sin licencia de conducir vigente no puede enviar la revisión." |
 
 ---
 
@@ -1304,8 +1503,8 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 | Centro de alertas | — (los datos ya están en memoria) | Protagonista en 0 (vigente); Operación "Sin pendientes de operación."; Horizonte "Nada vence en los próximos 30 días"; lista "No hay vencimientos en los próximos 30 días." | — | Error al guardar desde un diálogo: en el diálogo (no se cierra). |
 | Flota | — | Por filtro: "Ninguna unidad coincide…" + "Quitar filtros". Sin unidades (no debería pasar): "Todavía no hay unidades." + "Agregar unidad". | — | — |
 | Ficha | — | Novedades: "Sin novedades abiertas." Kilometraje: "Todavía no hay partes de esta unidad." Documentos: solo faltantes (filas "Falta cargar"). | Historial con solo "Alta de la unidad". | Patente inexistente (6.3). Unidad de baja: aviso neutro, sin acciones. |
-| Inicio del conductor | — | "Mis últimos partes": "Todavía no envió partes." | Sin unidad asignada: `select`. | Unidad fuera de servicio: aviso (6.4, estado 4). **Licencia sin vigencia: aviso de bloqueo, sin primario (6.4, estado 5).** |
-| Parte | Envío: "Enviando…" (revisión) o "Cerrando…" (cierre) | — | Unidad sin km previo: ayuda "Es el primer registro de esta unidad." | Reglas (resumen de errores); guardado (indicador en error); pantalla E (P8, P2, A7 y, con el perfil Conductor, L1); dirección mal escrita (6.5). |
+| Inicio del conductor | — | "Mis últimos partes": "Todavía no envió partes." | Sin unidad asignada: `select`. | Unidad fuera de servicio: aviso (6.4, estado 4). **Licencia sin vigencia: aviso de bloqueo, sin primario (6.4, estado 5).** Parte anterior sin cerrar: aviso "Cerrar antes" con primario (6.4, estado 5 bis). |
+| Parte | Envío: "Enviando…" (revisión) o "Cerrando…" (cierre) | — | Unidad sin km previo: ayuda "Es el primer registro de esta unidad." | Reglas (resumen de errores); guardado (indicador en error); pantalla E (P8, P2, A7, "Cerrar antes" y, con el perfil Conductor, L1); dirección mal escrita (6.5). |
 
 ---
 
@@ -1331,6 +1530,13 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 - **Uso del color (1.4.1):** etiqueta = color + ícono de forma distinta + texto; horizonte con conteos en texto.
 - **Reflujo y texto (1.4.10, 1.4.12):** a 320 px de ancho y con zoom de 400 %, sin desplazamiento horizontal (salvo
   ninguna tabla: pasan a tarjetas). Espaciado de texto aumentado sin cortes.
+- **Texto agrandado (1.4.4; auditoría del 22/11/2026):** a 360 px con el texto al 200 % (`html { font-size: 200% }`,
+  que es lo que hace el ajuste de letra del navegador) no hay superposiciones ni desplazamiento horizontal. Dos
+  correcciones: **M1** "Mis últimos partes" pasa a dos renglones (6.4) y **m1** la cabecera común se acomoda en varias
+  líneas con la etiqueta de la demo partible (4.1). Una pantalla que hoy cumple 1.4.10 no puede romperse con el texto
+  grande.
+- **Resultado con su línea (4.1.3, m2, recomendado):** `aria-describedby` del `h1` del panel de resultado hacia su
+  línea (5.4).
 - **Lectores de pantalla:** tablas con `th` y `scope`; en tarjetas, roles explícitos; la patente-enlace dice "Ficha de
   ZK 214 BD"; el horizonte es `role="img"` con su resumen; la cifra protagonista es una frase.
 - **Modo de colores forzados:** foco, tramos del horizonte y bordes de patente con colores del sistema (5.5, 5.6).
@@ -1358,12 +1564,18 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
   mineros reales.
 - Botones visibles que no hacen nada o que no aplican (si no aplica, no se muestra).
 - **Parte (19/11/2026):** mostrarle al conductor sin licencia vigente el formulario de la revisión (llenaría diez puntos
-  para nada); ofrecer "Enviar igual" o cualquier advertencia aceptable por la licencia (L1 bloquea); deshabilitar el
+  para nada); ofrecer "Enviar de todos modos" o cualquier advertencia aceptable por la licencia (L1 bloquea); deshabilitar el
   botón en lugar de explicar el bloqueo; pedir kilometraje final o combustible en la revisión, o checklist en el cierre;
   ofrecer "Descartar" en un parte en uso; dibujar un indicador de pasos gráfico (alcanza con "paso 1 de 2"); contar a
   los conductores en la cifra del protagonista (cuenta unidades); poner franja o etiqueta "No puede salir" en una unidad
   porque su conductor no tiene licencia (puede salir con otro).
 - Etiqueta con fondo para "Puede salir" (D1: variante texto) y motivos del protagonista en rojo (D4: `--c-texto`).
+- **Etapa 6 (22/11/2026):** título del panel de resultado en el color del tono (va en `--c-texto`, 5.4); "puede salir"
+  en C1 cuando se aceptó documentación vencida; una fecha en "Último parte" que no es la del parte que nombra la
+  etiqueta; cabeceras de tabla partidas dentro de una palabra; diez enlaces de puntos sin responder en el resumen
+  (D1: se agrupan); "(ficticia)" o "(ficticio)" sueltos junto a un nombre (D2: "(persona ficticia)"); "fuera de
+  término"; "Enviar igual"; el aviso "Cerrar antes" en rojo o sin primario (es una tarea, no un bloqueo); empezar la
+  revisión de una fecha con un parte anterior de la misma unidad sin cerrar; que Enter en un campo del parte envíe.
 
 ---
 
@@ -1388,7 +1600,7 @@ correcciones → `disenador-ui` revisa contra este documento → `critico-reclut
 - 320, 360, 768, 1024 y 1280 px, claro y oscuro, con el ejemplo completo: sin desplazamiento horizontal.
 - Recorrido solo con teclado: alertas → filtro "7 días o menos" (flechas) → "Renovar" → diálogo (error V10, corregir,
   guardar) → el foco cae donde dice 5.17 → flota → buscar "zk214" → ficha → "Más acciones" → "Corregir kilometraje" →
-  Esc → perfil Conductor → revisión: enviar vacía (resumen con foco) → completar → advertencia → "Enviar igual" →
+  Esc → perfil Conductor → revisión: enviar vacía (resumen con foco) → completar → advertencia → "Enviar de todos modos" →
   "Revisión enviada" → "Completar el cierre ahora" → cierre vacío (resumen) → completar → "Cerrar el parte" → "Parte
   cerrado". Otra vuelta con "Frenos: con novedad" → "La unidad no puede salir" → inicio con la unidad fuera de servicio.
   Otra con el conductor del caso C21 → estado 5 del inicio (sin primario) → su parte por dirección → pantalla E → como
@@ -1396,9 +1608,15 @@ correcciones → `disenador-ui` revisa contra este documento → `critico-reclut
 - Celular real (o emulado con táctil): la revisión y el cierre con el pulgar; la barra de envío no tapa campos; el
   teclado numérico aparece en km y litros; recargar la página a mitad de la revisión y a mitad del cierre y encontrar lo
   escrito.
+- Recorrido "Cerrar antes": con el perfil Conductor y un parte anterior en uso → inicio en el estado 5 bis → "Cerrar el
+  parte anterior" → cierre → C3 → "Volver al inicio" → estado 7. Con el perfil Encargado, abrir la fecha posterior por
+  dirección → E "Cerrar antes" → primario → B.
 - Metas medidas a 360 × 780: "Al iniciar" (paso 1) y "Al terminar" (paso 2) por encima de 600 px; evento cerrado del
-  historial ≤ 100 px; tarjetas ≤ 200 / 190 px (5.9).
-- Zoom 200 % y 400 %; espaciado de texto aumentado; `prefers-reduced-motion`; colores forzados (Windows, contraste alto).
+  historial ≤ 100 px; tarjetas ≤ 200 / 190 px (5.9). A 1280: filas de la flota ≤ 64 px (pueden salir) y ≤ 88 px (con
+  motivo) (5.10).
+- Zoom 200 % y 400 %; **texto al 200 % a 360 px** (`html { font-size: 200% }`: sin desplazamiento horizontal ni
+  superposiciones, 4.1 y 6.4 "Mis últimos partes"); espaciado de texto aumentado; `prefers-reduced-motion`; colores
+  forzados (Windows, contraste alto).
 - Contraste de lo maquetado medido otra vez (los valores de 3.3 son de la paleta).
 - Consola sin errores ni violaciones de CSP con la compilación de producción servida con `public/_headers`.
 - IndexedDB bloqueado (ventana privada de un navegador que lo bloquee, o simulado): la demo funciona con el aviso D8.
@@ -1427,9 +1645,21 @@ portafolio), todas con la opción (b):
 | D3 | ¿Anillo de foco en el `h1` después de navegar? | Sin anillo en `h1[tabindex="-1"]` (con el visto bueno pendiente de `auditor-accesibilidad`). | 2, 5, 9 |
 | D4 | Motivos del protagonista en rojo | Motivo en `--c-texto`; el rojo queda en la franja y en la cifra. | 6.1 |
 
+Decididas el 22/11/2026 (revisión de la etapa 6, `docs/revisiones/demo2-etapa6-diseno.md` del portafolio):
+
+| # | Pregunta | Decisión | Dónde quedó |
+| --- | --- | --- | --- |
+| D1 | ¿Un enlace por punto sin responder en el resumen de errores? | Matías: agrupar con más de 3 ("Faltan 10 puntos de la revisión", lleva al primero); uno por punto con 3 o menos. | 5.15, 6.5, 7 |
+| D2 | Marca de los nombres inventados | Matías: "(persona ficticia)" en toda la demo. | 4.2, 5.16, 6.1, 6.3, 6.4, 7 |
+| — | "fuera de término" | Matías: "fuera de plazo" en todos los textos. | 5.16, 6.5, 7 |
+| — | Regla "Cerrar antes" | Matías (la lógica la implementa el programador). Vista: estado 5 bis del inicio y E "Cerrar antes", tono semana, con primario. | 6.3, 6.4, 6.5, 7, 8, 12 |
+| — | Desvíos 1, 3 y 4 del maquetador | Matías, como los juzgó `disenador-ui`: "controla 10 puntos de revisión", nota corta en el paso 2, frase de "Antes de enviar" que no depende del número de avisos. | 5.17, 6.5, 7 |
+| — | "Enviar igual" / "Cerrar igual" | `disenador-ui`, sobre la propuesta de `redactor-ux`: "Enviar de todos modos" / "Cerrar de todos modos" (entran a 360 px). | 5.17, 6.5, 7 |
+| — | Enter en los campos del parte (B5 de QA) | `disenador-ui`: no envía; `enterkeyhint` para el teclado del celular. | 5.11 |
+
 ---
 
-## 14. Cambios del 19/11/2026 — vista: resumen y tareas del maquetador
+## 14. Cambios del 19/11/2026 y del 22/11/2026 — vista: resumen y tareas del maquetador
 
 ### 14.1 Qué cambió y dónde está
 
@@ -1490,3 +1720,110 @@ portafolio), todas con la opción (b):
 14. **Verificación** (sección 12): recorridos nuevos con teclado, 320/360/768/1280 en claro y oscuro, consola y CSP con
     `npm run build` + `npm run servir`, `npm run check`, `npm run contraste`, `npm run buscar`. Después: `qa-destructor`,
     `auditor-accesibilidad` (que confirme D3) y `disenador-ui` contra este documento.
+
+### 14.3 Correcciones de la etapa 6: tareas del maquetador (22/11/2026)
+
+Salen de la revisión visual (`demo2-etapa6-diseno.md`, C1 a C16), de la auditoría de accesibilidad
+(`demo2-etapa6-accesibilidad.md`, M1, m1, m2) y de lo de presentación del QA (`demo2-etapa6-qa.md`, B1, B2, B5), en
+`docs/revisiones/` del portafolio, y de las decisiones de Matías del 22/11. Donde algo de 14.2 contradiga esta lista,
+manda esta. Marcas: **[solo M]** se hace ya; **[espera P]** necesita un dato o un texto que entrega el programador en
+`src/lib/` (hasta entonces se maqueta con el dato simulado en `Muestras.svelte` y se conecta después). Los textos que
+arma `src/lib/dominio/textos.ts` los cambia el programador; si al conectar difieren de la sección 7, **mandan los de la
+sección 7**: el maquetador los ajusta y lo anota en `docs/registro.md`.
+
+**Bloque 1: no dependen de la lógica [solo M]**
+
+1. **Textos de presentación** (`src/componentes/textos-marco.ts`; D2, desvíos 1 y 4, "fuera de plazo", botones):
+   - `conductorElegido` y `conductorFicticio`: `` `${nombre} (persona ficticia)` ``; en `Muestras.svelte`, "Lucía
+     Ferreyra (persona ficticia)". Actualizar los comentarios que citan "(ficticia)" (`BarraApp`, `ParteEncabezado`,
+     `SelectorPerfil`).
+   - `TEXTO_COMO_FUNCIONA.parte`: "… carga el kilometraje y controla 10 puntos de revisión de la unidad. …" (el resto
+     igual, sección 7).
+   - `antesDeEnviar.introRevision`: "Antes de enviar la revisión, lea esto."; `introCierre`: "Antes de cerrar el
+     parte, lea esto."; `enviarIgual`: "Enviar de todos modos"; `cerrarIgual`: "Cerrar de todos modos" (se pueden
+     renombrar las claves a `enviarDeTodosModos` / `cerrarDeTodosModos`, y los tests que las citen).
+   - `historial.fueraDeTermino` (línea ~243): "Enviado fuera de plazo." (la clave, si se renombra, `fueraDePlazo`).
+   - Nueva `elegirUna: "Elija una unidad"` (tarea 9).
+2. **Botón-texto alineado** (C12, 5.1): `Boton.svelte` y `EnlaceAccion.svelte`, variante `texto`: `padding-inline: 0`
+   con `min-height: 2.75rem`. Medir que "Usar otra unidad" empiece en la misma `x` que el primario y que el anillo de
+   foco no se corte.
+3. **Aviso compacto** (C10, 5.18): `Aviso.svelte` con prop `accion` (renglón 1 `span.aviso-titular` 600; renglón 2
+   `span.aviso-accion` `--t-chico`). Sacar el corte de `ParteEncabezado.svelte` y usar el aviso compacto en
+   `PantallaConductor.svelte` (líneas ~91–93, aviso "no puede salir" de los estados 6 y 7).
+4. **Inicio, estado 7** (C3, 6.4): `PantallaConductor.svelte`, rama `sin-parte` (~95): `<p class="nota-estado">
+   {inicio.hoyEstado.texto}</p>` antes de `div.accion-principal`.
+5. **"Descartar borrador" como botón-texto** (C4, 6.4 y 6.5 E): `variante="texto"` en `BotonConfirmar` de
+   `PantallaConductor.svelte` (~102 y ~130) y de `PantallaParte.svelte` (~125).
+6. **Panel de resultado** (C9 y m2, 5.4): `ParteEnviado.svelte`: `.titulo { color: var(--c-texto); }` y
+   `.titulo :global(.icono) { color: var(--tono-t); }`; en la lectura D, sin ícono junto al título; `aria-describedby`
+   del `h1` al `id` de la línea del resultado.
+7. **Flota a 1280** (C7 y B2 de QA, 5.10): cabecera `<span aria-hidden="true">Km</span><span class="solo-lectores">
+   Kilometraje</span>` (en `PantallaFlota.svelte` o `ListaTabla.svelte`, donde se arme el `th`); `th[scope="col"] {
+   overflow-wrap: normal; word-break: normal; hyphens: manual; }`; anchos en `@container lista (min-width: 66rem)`:
+   Unidad `11.5rem` · Estado hoy `12.5rem` · Próximo vencimiento `15rem` · Km `5.5rem` · Último parte `6.5rem` ·
+   Novedades `6rem` · el resto. Medir: filas ≤ 64 px (pueden salir) y ≤ 88 px (con motivo); ninguna cabecera partida
+   dentro de una palabra.
+8. **Tarjetas de la flota a 360** (C8, 5.10): `PantallaFlota.svelte`: "Int. N · Modelo" en un `span` con `nowrap`;
+   sin "Próximo vencimiento" cuando su tono es crítico (solo en tarjetas); renglón de km y parte con `flex-wrap` y
+   "· último parte {F}" en `nowrap`. Medir ≤ 190 px en ZK 214 BD, ZW 827 VD y ZW 749 JE.
+9. **Inicio, estado 1** (C14, 6.4): `PantallaConductor.svelte` línea ~142: con `inicio.unidad === null`, la primera
+   opción es `T.elegirUna` ("Elija una unidad"); `T.elegirOtra` solo con la unidad fuera de servicio o desde "Usar otra
+   unidad".
+10. **Paso 2, "Al iniciar" y recorrido** (C11 y S8, 6.5 B): `ParteFormulario.svelte`: rótulo de "Al iniciar" con el
+    estilo de etiqueta de campo (`--t-chico` 600 `--c-texto`), `.km { align-items: end; }`, valor de "Al iniciar" con
+    `min-height: 3rem; display: flex; align-items: center;`, y "Al iniciar" solo desde 30rem de contenedor;
+    `.recorrido`: rótulo `--t-chico` `--c-texto-2`, valor 600 `--c-texto`.
+11. **Encabezado del parte** (S7, 6.5): `ParteEncabezado.svelte`: patente grande (ya está); a < 30rem, "Int. 07" y el
+    modelo apilados a su derecha en `--t-chico`. Volver a medir "Al iniciar" y "Al terminar" por encima de 600 px a
+    360 × 780.
+12. **Enter en el parte** (B5 de QA, 5.11): `enterkeyhint="next"` en "Al iniciar" y "Al terminar", `enterkeyhint="done"`
+    en litros (`ParteFormulario.svelte`, o `Campo.svelte` por prop). Sin código que envíe ni mueva el foco con Enter.
+13. **Texto al 200 %, "Mis últimos partes"** (M1 de accesibilidad, 6.4): `PantallaConductor.svelte`, `.fila-parte` en
+    grilla con áreas, `container: partes / inline-size` en el `ul` y `@container partes (max-width: 17rem)` para pasar a
+    dos renglones; `nowrap` solo en la patente. Medir a 360 px con `html { font-size: 200% }`: sin superposición, y en
+    un renglón con el texto normal.
+14. **Texto al 200 %, cabecera común** (m1 de accesibilidad, 4.1): `BarraSuperior.svelte` (y `BarraApp.svelte` si hace
+    falta): `min-height` en lugar de alto fijo, `flex-wrap: wrap`, ícono `flex: none`; `EtiquetaDemo.svelte`:
+    `white-space: normal; max-width: 100%`. Revisar el botón de `BarraEnvio.svelte` a 320 px. Meta: `scrollWidth` ≤ 360
+    en todas las pantallas con el texto al 200 %.
+15. **Aviso "Cerrar antes", solo la pieza** (6.4 estado 5 bis y 6.5 E): en `Muestras.svelte`, el aviso semana con
+    `i-lapiz` y sus dos renglones, y debajo el primario "Cerrar el parte anterior", en claro y oscuro, a 360 y 1280.
+    Sumar a `scripts/contraste.mjs` el par texto / semana-f con el nombre "Aviso Cerrar antes" (el valor ya está medido
+    por el alias `revisar`: 14,39 · 12,08).
+
+**Bloque 2: dependen de la lógica [espera P]**
+
+16. **C1 con documentación vencida aceptada** (C1 y S1; 5.4, 6.5). Espera `PanelParteEnviado.conAvisos` y la línea
+    nueva de `textos.ts`. En `ParteEnviado.svelte`, con `conAvisos`: `data-tono="semana"` e ícono `i-alerta`; el título
+    sigue "Revisión enviada".
+17. **"Avisos aceptados"** (C6, 6.5). Espera los textos por documento de `textos.ts` (~379–395). Ícono `i-vencido` en
+    `--c-critico-t`, sin fondo, un renglón por documento, en C1, C3 y D.
+18. **Barra "Revise N datos"** (C5, 5.14). Espera `textoBarraDeEnvio` con los errores del último intento.
+    `BarraEnvio.svelte` muestra ese estado en `--c-texto-2`, sin `i-check`.
+19. **Resumen de errores agrupado** (D1, 5.15). Espera el armado del resumen (un elemento de grupo con su destino: el
+    primer punto sin responder). `ResumenErrores.svelte` lo pinta como un enlace más, que lleva el foco al primer radio
+    de ese punto. Probar con 10, 4, 3 y 1 puntos sin responder.
+20. **Inicio, estado 5 bis "Cerrar antes"** (6.4). Espera el estado nuevo de `inicio` (tipo, patente, fecha y ruta del
+    parte anterior) y sus textos. `PantallaConductor.svelte`: rama nueva con el aviso de la tarea 15, el primario
+    `EnlaceAccion` "Cerrar el parte anterior", "Tiene una revisión empezada: se conserva." + "Descartar borrador" si hay
+    borrador, y "Usar otra unidad"; "Pendientes" sin ese mismo parte. Textos: sección 7 (mandan sobre los del
+    programador).
+21. **Pantalla E "Cerrar antes"** (6.5). Espera el motivo nuevo de la pantalla E y la ruta del parte anterior.
+    `PantallaParte.svelte`: el aviso en lugar del párrafo de la regla, el primario hacia el parte anterior, "Descartar
+    borrador" si hay, y el enlace de vuelta como botón-texto. Foco al `h1`.
+22. **Ficha: primer botón del encabezado** (C16, 6.3). Espera la acción de `ficha.ts`. `FichaEncabezado.svelte` muestra
+    el texto que llega ("Cargar parte" / "Cerrar el parte" / "Cerrar el parte del {F}" / "Ver el parte").
+23. **Ficha, kilometraje en uso** (C16, 6.3). `FichaKilometraje.svelte`: recorrido "—" en la fila en uso, alineado como
+    los demás. [solo M si el dato "en uso" ya llega a la fila; si no, espera P]
+24. **Lo que corrige solo el programador, para mirar en la vista:** fecha de "Último parte" en la flota (C2,
+    `flota.ts`); opción del `select` "{Nombre} (sin licencia vigente) · {P}" (C13 y B1 de QA); nota del punto crítico
+    (C15); "fuera de plazo" en `textos.ts` (líneas ~289, ~893, ~1065, ~1222, ~1230). La vista no cambia: se comprueba a
+    360 px (la opción se lee hasta "vigente)" o se corta solo en la patente).
+
+**Bloque 3: cierre**
+
+25. **Verificación** (sección 12): `npm run check`, `npm test`, `npm run contraste`, `npm run buscar`, `npm run build` +
+    `npm run servir`; 320/360/768/1280 en claro y oscuro; texto al 200 % a 360; los recorridos de la sección 12, con el
+    nuevo de "Cerrar antes". Anotar en `docs/registro.md` cada medida (alto de filas y tarjetas, "Al iniciar" y "Al
+    terminar", `scrollWidth`). Después: `qa-destructor`, `auditor-accesibilidad` y `disenador-ui` contra este documento,
+    y `critico-reclutador`.
