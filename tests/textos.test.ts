@@ -255,7 +255,7 @@ describe("revisión de textos del 18/11/2026 (redactor-ux)", () => {
 
   it("el parte dice la acción real que saca a la unidad de «fuera de servicio»: resolver la novedad y volver a servicio", () => {
     expect(TEXTO_PARTE.puntoCritico).toBe(
-      "Al enviar, la unidad queda fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
+      "Al enviar la revisión, la unidad queda fuera de servicio y no sale, hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
     );
     expect(TEXTO_PARTE.enviadoConCritica).toBe(
       "La unidad quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",

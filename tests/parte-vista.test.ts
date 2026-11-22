@@ -509,7 +509,7 @@ describe("pantalla del parte, edición (6.5)", () => {
     });
     expect(v.valoresIniciales).toMatchObject({ conductorId: "c1", kmInicio: "84.320", kmFin: "", combustible: "" });
     expect(v.puntos).toHaveLength(10);
-    expect(v.puntos[0]).toEqual({ id: "frenos", texto: "Frenos", critico: true, notaCritica: "Al enviar, la unidad queda fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio." });
+    expect(v.puntos[0]).toEqual({ id: "frenos", texto: "Frenos", critico: true, notaCritica: "Al enviar la revisión, la unidad queda fuera de servicio y no sale, hasta que el encargado resuelva la novedad y la vuelva a poner en servicio." });
     expect(v.puntos[5]).toEqual({ id: "niveles", texto: "Niveles de aceite y agua", critico: false, notaCritica: null });
     expect(v.combustible.map((o) => o.valor)).toEqual(["reserva", "cuarto", "medio", "tres-cuartos", "lleno"]);
   });

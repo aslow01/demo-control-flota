@@ -495,7 +495,7 @@ export const TEXTO_ERROR_ARRANQUE = {
  */
 export const TEXTO_PARTE = {
   /** Nota en tono crítico bajo un punto crítico marcado «Con novedad». */
-  puntoCritico: "Al enviar, la unidad queda fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
+  puntoCritico: "Al enviar la revisión, la unidad queda fuera de servicio y no sale, hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
   /** Aviso del panel «Parte enviado» cuando hubo una novedad crítica. */
   enviadoConCritica: "La unidad quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio.",
 } as const;
