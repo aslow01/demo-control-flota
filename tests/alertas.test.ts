@@ -454,3 +454,104 @@ describe("las unidades de dos proyectos distintos", () => {
     expect(faltantes.map((a) => a.unidadId)).toEqual(["up"]);
   });
 });
+
+describe("partes en uso (P5, P6, P17)", () => {
+  const luis = conductor({ id: "c1", nombre: "Luis Ferreyra" });
+  const estadoCon = (partes: ReturnType<typeof parte>[], extra: Partial<Estado> = {}): Estado =>
+    base({ unidades: [vieja()], partes, conductores: [luis], documentos: [...docsUnidad("u1"), docConductor("c1", "licencia", en(200))], ...extra });
+  const enUso = (fecha: string, extra: Partial<ReturnType<typeof parte>> = {}) =>
+    parte({ id: `uso-${fecha}`, estado: "en-uso", enviado: null, revisado: `${fecha}T09:00:00.000Z`, kmFin: null, combustible: null, fecha, conductorId: "c1", ...extra });
+
+  it("P5: un parte en uso de H - 1 -> alerta «sin cerrar» con quién salió; el borrador sigue diciendo «sin enviar»", () => {
+    const { alertas } = calcularAlertas(estadoCon([enUso(en(-1))]), H);
+    const a = porTipo(alertas, "parte-sin-enviar");
+    expect(a).toHaveLength(1);
+    expect(a[0]).toMatchObject({ gravedad: "media", texto: "Parte del 17/11/2026 sin cerrar (salió con L. Ferreyra)", etapaParte: "en-uso", unidadId: "u1", conductorId: "c1" });
+    const borrador = parte({ id: "b", estado: "borrador", enviado: null, revisado: null, fecha: en(-1), conductorId: "c1" });
+    expect(porTipo(calcularAlertas(estadoCon([borrador]), H).alertas, "parte-sin-enviar")[0]).toMatchObject({ etapaParte: "borrador", texto: "Parte del 17/11/2026 sin enviar (iniciado por L. Ferreyra)" });
+  });
+
+  it("P5: un parte en uso de hoy no alerta (el cierre llega a la noche)", () => {
+    expect(porTipo(calcularAlertas(estadoCon([enUso(H)]), H).alertas, "parte-sin-enviar")).toHaveLength(0);
+  });
+
+  it("P5, P15: un parte en uso de hace más de 7 días alerta mientras exista", () => {
+    expect(porTipo(calcularAlertas(estadoCon([enUso(en(-10))]), H).alertas, "parte-sin-enviar")).toHaveLength(1);
+  });
+
+  it("P5: un parte en uso de una unidad de baja no alerta", () => {
+    const baja = vieja({ estado: { tipo: "baja", desde: "2026-11-01", motivo: "Venta" } });
+    expect(porTipo(calcularAlertas(estadoCon([enUso(en(-1))], { unidades: [baja] }), H).alertas, "parte-sin-enviar")).toHaveLength(0);
+  });
+
+  it("P6: una unidad con parte en uso de ayer no tiene alerta «sin parte» (solo P5)", () => {
+    const { alertas } = calcularAlertas(estadoCon([enUso(en(-1))]), H);
+    expect(porTipo(alertas, "sin-parte")).toHaveLength(0);
+  });
+
+  it("P17: un parte en uso con documentación vencida alerta desde que se envía la revisión", () => {
+    const p = enUso(H, { documentacionVencida: ["seguro"] });
+    const a = porTipo(calcularAlertas(estadoCon([p]), H).alertas, "uso-con-documentacion-vencida");
+    expect(a).toHaveLength(1);
+    expect(a[0]?.gravedad).toBe("critica");
+  });
+
+  it("P17: un parte sin salida con documentacionVencida (dato viejo) no alerta", () => {
+    const p = parte({ id: "ss", fecha: en(-2), sinSalida: true, documentacionVencida: ["seguro"], conductorId: "c1" });
+    expect(porTipo(calcularAlertas(estadoCon([p]), H).alertas, "uso-con-documentacion-vencida")).toHaveLength(0);
+  });
+});
+
+describe("conductores que no pueden manejar hoy (L6, L7)", () => {
+  const conLicencia = (id: string, nombre: string, vence: string | null, extra: Partial<Conductor> = {}) => ({
+    c: conductor({ id, nombre, ...extra }),
+    docs: vence === null ? [] : [docConductor(id, "licencia", vence)],
+  });
+
+  it("L6, L7: la licencia vencida de un conductor activo entra en la lista con su motivo y el id de su alerta de vencimiento", () => {
+    const a = conLicencia("c1", "Luis Ferreyra", en(-3));
+    const { alertas, resumen } = calcularAlertas(base({ conductores: [a.c], documentos: [...docsUnidad("u1"), ...a.docs] }), H);
+    expect(resumen.conductoresSinLicencia).toEqual([
+      { conductorId: "c1", nombre: "Luis Ferreyra", motivo: { vigente: false, motivo: "vencida", vence: en(-3) }, alertaId: "doc:c1-licencia" },
+    ]);
+    const alerta = alertas.find((x) => x.id === "doc:c1-licencia");
+    expect(alerta).toMatchObject({ gravedad: "critica", texto: "Vencida hace 3 días · Licencia de conducir" });
+  });
+
+  it("L6: sin licencia cargada el motivo es faltante y la alerta es la de «Falta cargar»", () => {
+    const a = conLicencia("c1", "Luis Ferreyra", null);
+    const { resumen } = calcularAlertas(base({ conductores: [a.c] }), H);
+    expect(resumen.conductoresSinLicencia).toEqual([{ conductorId: "c1", nombre: "Luis Ferreyra", motivo: { vigente: false, motivo: "faltante" }, alertaId: "falta:conductor:c1:licencia" }]);
+  });
+
+  it("L6: una licencia nueva que empieza a valer después es «posterior»; sin alerta de vencimiento el alertaId es null", () => {
+    const c = conductor({ id: "c1", nombre: "Luis Ferreyra" });
+    const vieja = documento({ id: "v", titular: { tipo: "conductor", id: "c1" }, tipo: "licencia", vence: en(-3), emitido: "2020-01-01" });
+    const nueva = documento({ id: "n", titular: { tipo: "conductor", id: "c1" }, tipo: "licencia", vence: en(900), emitido: en(2), reemplazaA: "v" });
+    const { resumen } = calcularAlertas(base({ conductores: [c], documentos: [...docsUnidad("u1"), vieja, nueva] }), H);
+    expect(resumen.conductoresSinLicencia).toEqual([{ conductorId: "c1", nombre: "Luis Ferreyra", motivo: { vigente: false, motivo: "posterior", desde: en(2) }, alertaId: null }]);
+  });
+
+  it("L6: un conductor inactivo con licencia vencida no cuenta, y uno con licencia vigente tampoco", () => {
+    const inactivo = conLicencia("c1", "Luis Ferreyra", en(-3), { activo: false });
+    const vigente = conLicencia("c2", "Rosa Quiroga", en(40));
+    const { resumen } = calcularAlertas(base({ conductores: [inactivo.c, vigente.c], documentos: [...docsUnidad("u1"), ...inactivo.docs, ...vigente.docs] }), H);
+    expect(resumen.conductoresSinLicencia).toEqual([]);
+  });
+
+  it("L6: ordenados por nombre", () => {
+    const z = conLicencia("c1", "Zoe Paz", en(-1));
+    const a = conLicencia("c2", "Ana Soto", en(-1));
+    const { resumen } = calcularAlertas(base({ conductores: [z.c, a.c], documentos: [...docsUnidad("u1"), ...z.docs, ...a.docs] }), H);
+    expect(resumen.conductoresSinLicencia.map((x) => x.nombre)).toEqual(["Ana Soto", "Zoe Paz"]);
+  });
+
+  it("L6: no cambia el protagonista ni la aptitud de la unidad asignada (A1 es de la unidad)", () => {
+    const a = conLicencia("c1", "Luis Ferreyra", en(-3));
+    const e = base({ unidades: [nueva({ conductorId: "c1" })], conductores: [a.c], documentos: [...docsUnidad("u1"), ...a.docs] });
+    const { resumen } = calcularAlertas(e, H);
+    expect(resumen.protagonista).toBe(0);
+    expect(resumen.disponibles).toBe(1);
+    expect(resumen.conductoresSinLicencia).toHaveLength(1);
+  });
+});

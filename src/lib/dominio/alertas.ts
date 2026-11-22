@@ -10,9 +10,11 @@ import {
   REQUISITOS,
   compararUrgencia,
   documentoVigente,
+  estadoDeLicencia,
   evaluarObligatorio,
   tiposObligatoriosDeConductor,
   tiposObligatoriosDeUnidad,
+  type EstadoLicencia,
   type Evaluacion,
   type Grupo,
 } from "./vencimientos.ts";
@@ -50,6 +52,16 @@ export interface Alerta {
   d: number | null;
   /** Fecha de referencia de las alertas de operación (parte o novedad), para ordenar. */
   fecha: FechaCivil | null;
+  /** Solo en `parte-sin-enviar` (P5): `borrador` = la revisión no se envió («sin enviar»); `en-uso` = falta el cierre («sin cerrar»). */
+  etapaParte: "borrador" | "en-uso" | null;
+}
+
+/** L6: un conductor activo cuya licencia no ampara hoy. `alertaId` es la alerta de vencimiento de su licencia (la que abre «Renovar» o «Cargar»); `null` si no tiene una. */
+export interface ConductorSinLicencia {
+  conductorId: string;
+  nombre: string;
+  motivo: Exclude<EstadoLicencia, { vigente: true }>;
+  alertaId: string | null;
 }
 
 export interface PuntoHorizonte {
@@ -60,6 +72,8 @@ export interface PuntoHorizonte {
 }
 
 export interface ResumenAlertas extends ResumenAptitud {
+  /** L6: conductores activos que hoy no pueden manejar, ordenados por nombre. No cambia el protagonista (A8) ni la aptitud de ninguna unidad. */
+  conductoresSinLicencia: ConductorSinLicencia[];
   porGrupo: Record<Grupo, number>;
   operacion: Record<TipoAlertaOperacion, number>;
   totalOperacion: number;
@@ -130,6 +144,7 @@ function alertasDeTitular(
       conductorId: titular.tipo === "conductor" ? titular.id : null,
       tipoDocumento: tipo,
       fecha: null,
+      etapaParte: null,
       texto: `${evaluacion.texto} · ${NOMBRES_DOCUMENTO[tipo]}`,
     };
     if (evaluacion.estado === "faltante" || vigente === undefined) {
@@ -243,10 +258,11 @@ function alertaDeNovedad(n: Novedad, hoy: FechaCivil): Alerta {
     tipoDocumento: null,
     d: null,
     fecha: n.fecha,
+    etapaParte: null,
   };
 }
 
-function operacion(base: Pick<Alerta, "id" | "tipo" | "gravedad" | "texto" | "fecha"> & { unidadId: string; conductorId?: string | null }): Alerta {
+function operacion(base: Pick<Alerta, "id" | "tipo" | "gravedad" | "texto" | "fecha"> & { unidadId: string; conductorId?: string | null; etapaParte?: Alerta["etapaParte"] }): Alerta {
   return {
     categoria: "operacion",
     grupo: null,
@@ -254,6 +270,7 @@ function operacion(base: Pick<Alerta, "id" | "tipo" | "gravedad" | "texto" | "fe
     documentoId: null,
     tipoDocumento: null,
     d: null,
+    etapaParte: null,
     ...base,
   };
 }
@@ -273,11 +290,14 @@ function alertaUsoConDocumentacionVencida(p: Parte): Alerta {
 
 function alertaParteSinEnviar(p: Parte, conductores: readonly Conductor[]): Alerta {
   const quien = conductores.find((c) => c.id === p.conductorId);
+  const nombre = quien === undefined ? null : nombreCorto(quien.nombre);
+  const enUso = p.estado === "en-uso";
   return operacion({
     id: `parte-sin-enviar:${p.id}`,
     tipo: "parte-sin-enviar",
     gravedad: "media",
-    texto: TEXTO_ALERTA.parteSinEnviar(p.fecha, quien === undefined ? null : nombreCorto(quien.nombre)),
+    etapaParte: enUso ? "en-uso" : "borrador",
+    texto: enUso ? TEXTO_ALERTA.parteSinCerrar(p.fecha, nombre) : TEXTO_ALERTA.parteSinEnviar(p.fecha, nombre),
     fecha: p.fecha,
     unidadId: p.unidadId,
     conductorId: p.conductorId,
@@ -306,16 +326,16 @@ function alertasDeOperacion(estado: Estado, hoy: FechaCivil): Alerta[] {
 
   for (const p of estado.partes) {
     if (!activas.has(p.unidadId)) continue;
-    if (p.estado === "enviado" && p.documentacionVencida.length > 0) {
-      // P9: la alerta dura 30 días desde la fecha del parte.
+    if (p.estado !== "borrador" && !p.sinSalida && p.documentacionVencida.length > 0) {
+      // P9, P17: partes en uso o cerrados que salieron; la alerta dura 30 días desde la fecha del parte.
       const dias = diasEntre(p.fecha, hoy);
       if (dias >= 0 && dias <= DIAS_AVISO_DOCUMENTACION_VENCIDA) alertas.push(alertaUsoConDocumentacionVencida(p));
     }
-    // P5: borrador de un día anterior a hoy.
-    if (p.estado === "borrador" && p.fecha < hoy) alertas.push(alertaParteSinEnviar(p, estado.conductores));
+    // P5: borrador o parte en uso de un día anterior a hoy (la revisión o el cierre quedaron sin enviar).
+    if (p.estado !== "enviado" && p.fecha < hoy) alertas.push(alertaParteSinEnviar(p, estado.conductores));
   }
 
-  // P6: en servicio, creada antes de ayer y sin parte de ayer (enviado ni borrador).
+  // P6: en servicio, creada antes de ayer y sin parte de ayer (en ningún estado: borrador, en uso ni cerrado).
   const ayer = sumarDias(hoy, -1);
   for (const u of activas.values()) {
     if (u.estado.tipo !== "en-servicio") continue;
@@ -336,6 +356,19 @@ function alertasDeOperacion(estado: Estado, hoy: FechaCivil): Alerta[] {
 }
 
 // ---------------------------------------------------------------------------------------------
+
+/** L6: los conductores activos sin licencia que ampare hoy, por nombre, cada uno con el id de su alerta de vencimiento de la licencia. */
+function conductoresSinLicencia(estado: Estado, hoy: FechaCivil, vencimientos: readonly Alerta[]): ConductorSinLicencia[] {
+  const lista: ConductorSinLicencia[] = [];
+  for (const c of estado.conductores) {
+    if (!c.activo) continue;
+    const licencia = estadoDeLicencia(estado.documentos, c.id, hoy);
+    if (licencia.vigente) continue;
+    const alerta = vencimientos.find((a) => a.conductorId === c.id && a.tipoDocumento === "licencia");
+    lista.push({ conductorId: c.id, nombre: c.nombre, motivo: licencia, alertaId: alerta?.id ?? null });
+  }
+  return lista.sort((a, b) => menor(a.nombre, b.nombre) || menor(a.conductorId, b.conductorId));
+}
 
 export function calcularAlertas(estado: Estado, hoy: FechaCivil): ResultadoAlertas {
   const vencimientos = alertasDeVencimientos(estado, hoy);
@@ -363,6 +396,7 @@ export function calcularAlertas(estado: Estado, hoy: FechaCivil): ResultadoAlert
     alertas,
     resumen: {
       ...resumenDeAptitud(estado, hoy),
+      conductoresSinLicencia: conductoresSinLicencia(estado, hoy, vencimientos),
       porGrupo,
       operacion: operacionPorTipo,
       totalOperacion: operacionAlertas.length,
