@@ -1176,7 +1176,7 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
   const criticas = novedades.filter((n) => n.gravedad === "critica");
   if (criticas.length > 0) {
     const nombres = criticas.map((n) => rotuloNovedad(n)).join(", ");
-    const efecto = efectoDeNovedadCritica(u, criticas, MOTIVO_NOVEDAD_CRITICA.delParte(parte.fecha, nombres), ctx);
+    const efecto = efectoDeNovedadCritica(u, criticas, MOTIVO_NOVEDAD_CRITICA.delParte(parte.fecha, nombres, ctx.hoy), ctx);
     if (efecto.unidad !== null) cambios.unidades = [efecto.unidad];
     if (efecto.evento !== null) eventos.push(efecto.evento);
   }

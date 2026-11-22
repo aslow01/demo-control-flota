@@ -326,6 +326,14 @@ describe("enviarRevision: el parte pasa a en uso (P14)", () => {
     expect(r.eventos[0]?.resumen).toBe("Revisión del 17/11/2026 de ZK 214 BD enviada fuera de plazo: sale con 1.000 km");
   });
 
+  it("C3: el motivo de fuera de servicio nombra el parte solo si es de otro día que el «Desde» (una revisión de ayer enviada hoy)", () => {
+    const e: Estado = { ...flotaDePrueba(), partes: [] };
+    const checklist = { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "Pedal blando", impideUso: false } };
+    const r = conRevision(e, listo({ fecha: "2026-11-17", kmInicio: 1000, checklist }));
+    const u = r.estado.unidades[0]!;
+    expect(u.estado.tipo === "fuera-de-servicio" && [u.estado.desde, u.estado.motivo]).toEqual(["2026-11-18", "Novedad crítica en Frenos, parte del 17/11/2026"]);
+  });
+
   it("P5: el límite es la medianoche de Argentina: 02:59:59.999Z todavía es el mismo día y 03:00:00.000Z ya no", () => {
     const base: Estado = { ...flotaDePrueba(), partes: [] };
     const ayer = contexto({ hoy: "2026-11-17", ahora: "2026-11-17T15:00:00.000Z" });
@@ -627,11 +635,11 @@ describe("enviarRevision: documentación de la unidad (P9) y novedades (A3, P11,
     expect(r.estado.unidades[0]?.estado).toEqual({
       tipo: "fuera-de-servicio",
       desde: H,
-      motivo: "Novedad crítica en Frenos, parte del 18/11/2026",
+      motivo: "Novedad crítica en Frenos",
       origen: "novedad-critica",
       novedadIds: [n.id],
     });
-    expect(r.eventos[2]?.resumen).toBe("ZK 214 BD fuera de servicio: Novedad crítica en Frenos, parte del 18/11/2026");
+    expect(r.eventos[2]?.resumen).toBe("ZK 214 BD fuera de servicio: Novedad crítica en Frenos");
     expect(r.eventos[0]?.resumen).toBe("Revisión del 18/11/2026 de ZK 214 BD enviada: la unidad no salió por una novedad crítica");
     expect(r.estado.eventos.some((x) => x.tipo === "parte-enviado")).toBe(false);
     expect(kmActual("u1", r.estado.partes, r.estado.correccionesKm)).toBe(84320);
@@ -661,7 +669,7 @@ describe("enviarRevision: documentación de la unidad (P9) y novedades (A3, P11,
     const r = conRevision(flotaDePrueba(), listo({ checklist }));
     expect(r.eventos.map((x) => x.tipo)).toEqual(["revision-enviada", "novedad-abierta", "novedad-abierta", "fuera-de-servicio"]);
     const u = r.estado.unidades[0]!;
-    expect(u.estado.tipo === "fuera-de-servicio" && u.estado.motivo).toBe("Novedad crítica en Frenos, Dirección, parte del 18/11/2026");
+    expect(u.estado.tipo === "fuera-de-servicio" && u.estado.motivo).toBe("Novedad crítica en Frenos, Dirección");
     expect(u.estado.tipo === "fuera-de-servicio" && u.estado.novedadIds).toHaveLength(2);
   });
 
@@ -685,7 +693,7 @@ describe("enviarRevision: documentación de la unidad (P9) y novedades (A3, P11,
   it("P11: 'Otra novedad' crítica -> motivo 'Otra novedad'", () => {
     const r = conRevision(flotaDePrueba(), listo({ otraNovedad: { descripcion: "Vidrio roto", impideUso: true } }));
     const u = r.estado.unidades[0]!;
-    expect(u.estado.tipo === "fuera-de-servicio" && u.estado.motivo).toBe("Novedad crítica en Otra novedad, parte del 18/11/2026");
+    expect(u.estado.tipo === "fuera-de-servicio" && u.estado.motivo).toBe("Novedad crítica en Otra novedad");
     expect(r.estado.novedades[0]?.origen).toEqual({ tipo: "parte", parteId: r.parteId, item: "otra" });
   });
 

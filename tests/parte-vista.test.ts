@@ -784,7 +784,10 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       completarCierre: { texto: "Completar el cierre ahora", href: "#/parte/ZK214BD/2026-11-18", primario: false },
       volverAlInicio: { texto: "Volver al inicio", href: "#/conductor" },
     });
-    expect(panelDeRevisionEnviada(estado, p, COND, "2026-11-19").completarCierre).toEqual({ texto: "Completar el cierre", href: "#/parte/ZK214BD/2026-11-18", primario: true });
+    const deAyer = panelDeRevisionEnviada(estado, p, COND, "2026-11-19");
+    expect(deAyer.completarCierre).toEqual({ texto: "Completar el cierre", href: "#/parte/ZK214BD/2026-11-18", primario: true });
+    // C4: un parte de un día pasado no dice «al terminar la jornada»: la jornada ya terminó
+    expect(deAyer.parrafo).toBe("Falta cerrar este parte con el kilometraje y el combustible de esa jornada.");
   });
 
   it("C1 (S1): con documentación vencida aceptada la línea no dice «puede salir» y el panel lo marca; fuera de plazo también", () => {

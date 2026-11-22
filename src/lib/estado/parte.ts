@@ -674,7 +674,7 @@ export function panelDeRevisionEnviada(estado: Estado, entrada: Parte, perfil: P
     // El texto de «fuera de plazo» ya va en la línea (C1).
     fueraDePlazo: null,
     notaEncargado: normales.length > 0 ? TP.encargadoLaVe : null,
-    parrafo: TP.alTerminarVuelva,
+    parrafo: esHoy ? TP.alTerminarVuelva : TP.faltaCerrarJornadaPasada,
     completarCierre: { texto: esHoy ? TP.completarCierreAhora : TP.completarCierre, href, primario: !esHoy },
     volverAlInicio,
   };

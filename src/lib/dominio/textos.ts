@@ -187,7 +187,8 @@ export const TEXTO_ALERTA = {
 
 /** Motivo con que una novedad crítica deja la unidad fuera de servicio (A3). */
 export const MOTIVO_NOVEDAD_CRITICA = {
-  delParte: (fecha: FechaCivil, items: string) => `Novedad crítica en ${items}, parte del ${formatearFecha(fecha)}`,
+  /** El parte se nombra solo si es de otro día que el «Desde» del motivo (`desde`): «Desde el 20/11/2026: novedad crítica en Frenos» no repite la fecha (C3 de la revisión visual). */
+  delParte: (fecha: FechaCivil, items: string, desde: FechaCivil) => `Novedad crítica en ${items}${fecha === desde ? "" : `, parte del ${formatearFecha(fecha)}`}`,
   cargada: (fecha: FechaCivil, descripcion: string) => `Novedad crítica cargada el ${formatearFecha(fecha)}: ${descripcion}`,
 } as const;
 
@@ -1327,6 +1328,8 @@ export const TEXTO_PANTALLA_PARTE = {
   verLaRevision: "Ver la revisión",
   encargadoLaVe: "El encargado la ve en el centro de alertas.",
   alTerminarVuelva: "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible.",
+  /** C1 de un parte de un día pasado: la jornada ya terminó (C4 de la revisión visual). */
+  faltaCerrarJornadaPasada: "Falta cerrar este parte con el kilometraje y el combustible de esa jornada.",
   siTieneQueSalir: "Si tiene que salir, elija otra unidad desde el inicio.",
   sinLicenciaVigente: "sin licencia vigente",
   sinUsoSinSalida: "Sin uso: la unidad no salió",

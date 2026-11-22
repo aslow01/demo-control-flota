@@ -17,6 +17,7 @@ import {
   errNovedadesCriticasAbiertas,
   errParteDuplicado,
   errUnidadFueraDeServicio,
+  MOTIVO_NOVEDAD_CRITICA,
   formatearKm,
   pluralizar,
   textoAdvertencia,
@@ -214,6 +215,13 @@ describe("advertencias antes de enviar (K6, K7, P9)", () => {
     expect(tonoDeAdvertencia({ tipo: "documentacion-vencida", documentos: ["seguro"] })).toBe("critico");
     expect(tonoDeAdvertencia({ tipo: "salto-km", km: 1 })).toBe("semana");
     expect(tonoDeAdvertencia({ tipo: "recorrido-largo", km: 1 })).toBe("semana");
+  });
+});
+
+describe("motivo de fuera de servicio por una novedad crítica (C3)", () => {
+  it("el parte se nombra solo si es de otro día que el «Desde»", () => {
+    expect(MOTIVO_NOVEDAD_CRITICA.delParte("2026-11-20", "Frenos", "2026-11-20")).toBe("Novedad crítica en Frenos");
+    expect(MOTIVO_NOVEDAD_CRITICA.delParte("2026-11-19", "Frenos, Dirección", "2026-11-20")).toBe("Novedad crítica en Frenos, Dirección, parte del 19/11/2026");
   });
 });
 
