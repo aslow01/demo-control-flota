@@ -46,7 +46,7 @@
     autocomplete?: "off" | "on";
     /** Teclado del celular para un texto con dígitos (`numeric`: interno, año). Es `text` y no `number`: sin flechas ni rueda. */
     modoEntrada?: "numeric" | "text";
-    /** Rótulo de la tecla Enter del teclado del celular (`enterkeyhint`): «siguiente» o «listo». Solo es la leyenda de la tecla: Enter no envía ni mueve el foco (B5). */
+    /** Rótulo de la tecla Enter del teclado del celular (`enterkeyhint`): «siguiente» o «listo». Con teclado físico, `ParteFormulario` hace lo que la leyenda promete: «next» pasa al control siguiente y «done» lleva el foco al botón de envío (B3 de la etapa 7); Enter nunca envía solo. */
     teclaEnter?: "next" | "done";
     /** Patentes y similares: teclado en mayúsculas y sin corrector. */
     mayusculas?: boolean;
@@ -170,6 +170,16 @@
     --icono-tam: 1rem;
     margin-top: 0.1rem;
   }
+  /* Texto agrandado (el contenedor mide 17 rem o menos): el mensaje baja debajo de su ícono si no entra a su lado sin partir una palabra (S5 de la etapa 7). */
+  @container (max-width: 17rem) {
+    .error {
+      flex-wrap: wrap;
+    }
+    .error > span:last-child {
+      flex: 1 1 7rem;
+      min-width: 0;
+    }
+  }
 
   .fila {
     display: flex;
@@ -197,6 +207,12 @@
     color: var(--c-texto);
     font-size: var(--t-cuerpo); /* 16 px: evita el zoom automático de iOS */
     line-height: 1.5;
+  }
+  /* B5 de la etapa 7: la opción elegida de un `select` no se parte en renglones; si no entra (la de un conductor sin licencia vigente, a 360 px), termina en «…» y no en un «·» suelto. */
+  select {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   input.corto {
     flex: 0 1 auto;
