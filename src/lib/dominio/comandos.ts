@@ -1,23 +1,24 @@
 // Comandos (docs/diseno.md, sección 8): toda modificación es un comando puro
 // `aplicar(estado, comando, contexto) -> { cambios, eventos } | error`. El repositorio escribe los dos en una sola transacción.
-// Reglas de este archivo: A3 a A7, K5, N1 a N3, P1 a P3, P7, P8, V10, V11, U1 a U7, H1, D11.
+// Reglas de este archivo: A3 a A7, K5, L1, L3, L4, N1 a N3, P1 a P4, P7, P8, P14 a P16, V10, V11, U1 a U7, H1, D11.
 
 import { aplicarCambios, sinCambios, type Cambios } from "./estado.ts";
 import { diasEntre, fechaEnArgentina, parsearFechaCivil, parsearInstante } from "./fechas.ts";
-import { kmActual, registrosDeKm, validarKilometraje } from "./kilometraje.ts";
+import { kmActual, registrosDeKm, validarKmDeCierre, validarKmDeSalida } from "./kilometraje.ts";
 import { criticasAbiertasDeUnidad, rotuloNovedad } from "./novedades.ts";
 import {
   ITEMS_CHECKLIST,
-  advertenciasDeEnvio,
+  advertenciasDeRevision,
   documentacionVencidaEn,
   esBorradorVacio,
-  faltantesParaEnviar,
+  faltantesDeCierre,
+  faltantesDeRevision,
   validarLitros,
   novedadesDelParte,
   validarFechaParte,
 } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
-import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errNovedadesCriticasAbiertas, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
+import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errLicenciaNoVigente, errNovedadesCriticasAbiertas, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
 import {
   fallo,
   ok,
@@ -51,7 +52,7 @@ import {
   validarTextoDeBorrador,
   validarVencimiento,
 } from "./validacion.ts";
-import { NOMBRES_DOCUMENTO, REQUISITOS, documentoVigente, esTipoDocumento } from "./vencimientos.ts";
+import { NOMBRES_DOCUMENTO, REQUISITOS, documentoVigente, esTipoDocumento, estadoDeLicencia, type EstadoLicencia } from "./vencimientos.ts";
 
 /** Lo que el dominio necesita saber del momento y de quién actúa. El reloj y los ids se inyectan: nada es global. */
 export interface Contexto {
@@ -109,7 +110,11 @@ export type Comando =
       checklist: Parte["checklist"];
       otraNovedad: Parte["otraNovedad"];
     }
-  | { tipo: "enviarParte"; parteId: string; advertenciasAceptadas: Advertencia["tipo"][] }
+  /** La revisión antes de salir (reemplaza a `enviarParte`, sección 17): el parte pasa a en uso o, con una novedad crítica, se cierra sin salida. */
+  | { tipo: "enviarRevision"; parteId: string; advertenciasAceptadas: Advertencia["tipo"][] }
+  /** Autoguardado del cierre de un parte en uso. */
+  | { tipo: "guardarCierre"; parteId: string; kmFin: number | null; combustible: NivelCombustible | null; litrosCargados: number | null }
+  | { tipo: "enviarCierre"; parteId: string; advertenciasAceptadas: Advertencia["tipo"][] }
   | { tipo: "descartarBorrador"; parteId: string }
   | { tipo: "cargarNovedad"; unidadId: string; descripcion: string; impideUso: boolean }
   | { tipo: "resolverNovedad"; novedadId: string; texto: string; volverAServicio: boolean }
@@ -226,8 +231,12 @@ function manejar(estado: Estado, c: Comando, ctx: Contexto): Resultado<Parcial> 
       return corregirDocumento(estado, c, ctx);
     case "guardarBorrador":
       return guardarBorrador(estado, c, ctx);
-    case "enviarParte":
-      return enviarParte(estado, c, ctx);
+    case "enviarRevision":
+      return enviarRevision(estado, c, ctx);
+    case "guardarCierre":
+      return guardarCierre(estado, c, ctx);
+    case "enviarCierre":
+      return enviarCierre(estado, c, ctx);
     case "descartarBorrador":
       return descartarBorrador(estado, c);
     case "cargarNovedad":
@@ -890,6 +899,12 @@ function unidadQuePuedeTenerParte(estado: Estado, unidadId: string): Resultado<U
   return r;
 }
 
+/** El detalle del error de L1: el motivo y su fecha, sin la marca `vigente`. */
+function detalleDeLicencia(l: Exclude<EstadoLicencia, { vigente: true }>): Record<string, unknown> {
+  const { vigente: _vigente, ...detalle } = l;
+  return detalle;
+}
+
 const ESTADOS_DE_RESPUESTA = ["sin-responder", "en-orden", "con-novedad"];
 
 /** P3: de un borrador solo se valida el tipo de cada campo. */
@@ -957,6 +972,7 @@ function guardarBorrador(
     existente = estado.partes.find((p) => p.id === c.parteId);
     if (existente === undefined) return fallo("parte-inexistente", ERRORES.parteInexistente);
     if (existente.estado === "enviado") return fallo("parte-enviado-inmutable", ERRORES.parteEnviadoInmutable);
+    if (existente.estado === "en-uso") return fallo("revision-ya-enviada", ERRORES.revisionYaEnviada);
     if (existente.unidadId !== c.unidadId) return fallo("parte-otra-unidad", ERRORES.parteOtraUnidad);
   }
 
@@ -983,6 +999,8 @@ function guardarBorrador(
     fecha: fecha.valor,
     conductorId: c.conductorId,
     estado: "borrador",
+    revisado: null,
+    sinSalida: false,
     kmInicio: c.kmInicio,
     kmFin: c.kmFin,
     combustible: c.combustible,
@@ -1004,6 +1022,7 @@ function descartarBorrador(estado: Estado, c: Extract<Comando, { tipo: "descarta
   const parte = estado.partes.find((p) => p.id === c.parteId);
   if (parte === undefined) return fallo("parte-inexistente", ERRORES.parteInexistente);
   if (parte.estado === "enviado") return fallo("parte-enviado-inmutable", ERRORES.parteEnviadoInmutable);
+  if (parte.estado === "en-uso") return fallo("revision-ya-enviada", ERRORES.revisionYaEnviada);
   const actual = kmActual(parte.unidadId, estado.partes, estado.correccionesKm);
   return ok({ cambios: { partesBorrados: [parte.id] }, eventos: [], modifica: !esBorradorVacio(parte, actual) });
 }
@@ -1017,9 +1036,28 @@ function recortarRespuestas(checklist: Parte["checklist"]): Parte["checklist"] {
   return resultado;
 }
 
-function enviarParte(estado: Estado, c: Extract<Comando, { tipo: "enviarParte" }>, ctx: Contexto): Resultado<Parcial> {
+function trimOtraNovedad(o: Parte["otraNovedad"]): Parte["otraNovedad"] {
+  return o === null ? null : { ...o, descripcion: o.descripcion.trim() };
+}
+
+/** Un parte que se puede cerrar o completar: existe y no es un borrador (`parte-sin-revision`) ni está cerrado (`parte-enviado-inmutable`). */
+function parteEnUso(estado: Estado, parteId: string): Resultado<Parte> {
+  const p = estado.partes.find((x) => x.id === parteId);
+  if (p === undefined) return fallo("parte-inexistente", ERRORES.parteInexistente);
+  if (p.estado === "borrador") return fallo("parte-sin-revision", ERRORES.parteSinRevision);
+  if (p.estado === "enviado") return fallo("parte-enviado-inmutable", ERRORES.parteEnviadoInmutable);
+  return ok(p);
+}
+
+/**
+ * La revisión antes de salir (P14, P16, L1; sección 17.3). El primero que falla corta: parte, unidad (P8), fecha (P2), licencia (L1, antes de pedir los diez
+ * puntos: es un hecho sobre quién maneja), faltantes (P4), kilometraje (K3, K4), advertencias (K6, P9). Sin novedad crítica el parte queda en uso; con una, se
+ * cierra sin salida y la unidad queda fuera de servicio (A3, P16), todo en la misma operación (P12).
+ */
+function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevision" }>, ctx: Contexto): Resultado<Parcial> {
   const borrador = estado.partes.find((p) => p.id === c.parteId);
   if (borrador === undefined) return fallo("parte-inexistente", ERRORES.parteInexistente);
+  if (borrador.estado === "en-uso") return fallo("revision-ya-enviada", ERRORES.revisionYaEnviada);
   if (borrador.estado === "enviado") return fallo("parte-enviado-inmutable", ERRORES.parteEnviadoInmutable);
 
   const unidad = unidadQuePuedeTenerParte(estado, borrador.unidadId);
@@ -1030,101 +1068,159 @@ function enviarParte(estado: Estado, c: Extract<Comando, { tipo: "enviarParte" }
   const fecha = validarFechaParte(borrador.fecha, ctx.hoy);
   if (!fecha.ok) return fecha;
 
-  // P4: todo lo que falta, en el orden del formulario.
-  const faltan = faltantesParaEnviar(borrador);
-  if (faltan.length > 0) return fallo("faltan-datos", textoFaltantes(faltan.length), { detalle: { faltan } });
-  const kmInicio = borrador.kmInicio as number;
-  const kmFin = borrador.kmFin as number;
-
-  // K2, K3 y K4 bloquean; K6 y K7 son advertencias.
-  const km = validarKilometraje({
-    unidad: u,
-    fecha: borrador.fecha,
-    kmInicio,
-    kmFin,
-    partes: estado.partes,
-    correcciones: estado.correccionesKm,
-  });
-  if (!km.ok) return km;
-
-  // P9: documentación vencida o faltante a la fecha del parte.
-  const proyecto = buscarProyecto(estado, u.proyectoId);
-  if (!proyecto.ok) return proyecto;
   const conductor = buscarConductorActivo(estado, borrador.conductorId, "conductorId");
   if (!conductor.ok) return conductor;
-  const documentacionVencida = documentacionVencidaEn({
-    fecha: borrador.fecha,
-    unidad: u,
-    proyecto: proyecto.valor,
-    conductor: conductor.valor,
-    documentos: estado.documentos,
-  });
 
-  const requeridas = advertenciasDeEnvio({ kmAnterior: km.valor.kmAnterior, kmInicio, kmFin, documentacionVencida });
+  // L1: sin licencia vigente a la fecha del parte no se envía la revisión (sin advertencia aceptable).
+  if (conductor.valor !== null) {
+    const licencia = estadoDeLicencia(estado.documentos, conductor.valor.id, borrador.fecha);
+    if (!licencia.vigente) {
+      return fallo("licencia-no-vigente", errLicenciaNoVigente(conductor.valor.nombre, borrador.fecha, licencia), {
+        campo: "conductorId",
+        detalle: detalleDeLicencia(licencia),
+      });
+    }
+  }
+
+  // P4: lo que falta de la revisión, en el orden del formulario.
+  const faltan = faltantesDeRevision(borrador);
+  if (faltan.length > 0) return fallo("faltan-datos", textoFaltantes(faltan.length), { detalle: { faltan } });
+  const kmInicio = borrador.kmInicio as number;
+
+  // K3 y K4 bloquean; K6 es una advertencia.
+  const km = validarKmDeSalida({ unidad: u, fecha: borrador.fecha, kmInicio, partes: estado.partes, correcciones: estado.correccionesKm });
+  if (!km.ok) return km;
+
+  const checklist = recortarRespuestas(borrador.checklist);
+  const otraNovedad = trimOtraNovedad(borrador.otraNovedad);
+  const recortado: Parte = { ...borrador, checklist, otraNovedad };
+
+  // P11: novedades del parte. P16: con una crítica la unidad no sale.
+  const nuevas = novedadesDelParte(recortado);
+  const hayCritica = nuevas.some((n) => n.gravedad === "critica");
+
+  // P9: documentación de la unidad vencida o faltante a la fecha del parte; no si la unidad no sale.
+  let documentacionVencida: TipoDocumento[] = [];
+  if (!hayCritica) {
+    const proyecto = buscarProyecto(estado, u.proyectoId);
+    if (!proyecto.ok) return proyecto;
+    documentacionVencida = documentacionVencidaEn({ fecha: borrador.fecha, unidad: u, proyecto: proyecto.valor, documentos: estado.documentos });
+  }
+
+  const requeridas = advertenciasDeRevision({ kmAnterior: km.valor.kmAnterior, kmInicio, documentacionVencida });
   const pendientes = requeridas.filter((a) => !c.advertenciasAceptadas.includes(a.tipo));
   if (pendientes.length > 0) {
     return fallo("advertencias-sin-aceptar", ERRORES.advertenciasSinAceptar, { detalle: { advertencias: pendientes } });
   }
 
-  const enviado: Parte = {
-    ...borrador,
-    checklist: recortarRespuestas(borrador.checklist),
-    otraNovedad:
-      borrador.otraNovedad === null ? null : { ...borrador.otraNovedad, descripcion: borrador.otraNovedad.descripcion.trim() },
-    estado: "enviado",
-    advertenciasAceptadas: requeridas,
-    documentacionVencida,
-    actualizado: ctx.ahora,
-    enviado: ctx.ahora,
-    autor: ctx.autor,
-  };
+  const base: Parte = { ...recortado, advertenciasAceptadas: requeridas, actualizado: ctx.ahora, autor: ctx.autor, revisado: ctx.ahora };
+  const parte: Parte = hayCritica
+    ? { ...base, estado: "enviado", sinSalida: true, kmFin: kmInicio, combustible: null, litrosCargados: null, documentacionVencida: [], enviado: ctx.ahora }
+    : { ...base, estado: "en-uso", sinSalida: false, documentacionVencida, enviado: null };
 
-  // P11: novedades del parte.
-  const novedades: Novedad[] = novedadesDelParte(enviado).map((n) => ({
+  const novedades: Novedad[] = nuevas.map((n) => ({
     id: ctx.nuevoId(),
     unidadId: u.id,
-    origen: { tipo: "parte", parteId: enviado.id, item: n.item },
+    origen: { tipo: "parte", parteId: parte.id, item: n.item },
     descripcion: n.descripcion,
     gravedad: n.gravedad,
-    fecha: enviado.fecha,
+    fecha: parte.fecha,
     estado: "abierta",
     resolucion: null,
   }));
 
-  const fueraDeTermino = diasEntre(enviado.fecha, ctx.hoy) > 0;
+  const fueraDeTermino = diasEntre(parte.fecha, ctx.hoy) > 0;
   const eventos: EventoNuevo[] = [
     {
-      tipo: "parte-enviado",
+      tipo: "revision-enviada",
       unidadId: u.id,
-      conductorId: enviado.conductorId,
-      resumen: RESUMEN_EVENTO.parteEnviado(pat(u), enviado.fecha, fueraDeTermino, kmInicio, kmFin),
-      datos: {
-        parteId: enviado.id,
-        fecha: enviado.fecha,
-        kmInicio,
-        kmFin,
-        recorrido: kmFin - kmInicio,
-        fueraDeTermino,
-        advertencias: requeridas,
-      },
+      conductorId: parte.conductorId,
+      resumen: RESUMEN_EVENTO.revisionEnviada(pat(u), parte.fecha, fueraDeTermino, kmInicio, hayCritica),
+      datos: { parteId: parte.id, fecha: parte.fecha, kmInicio, fueraDeTermino, sinSalida: hayCritica, advertencias: requeridas },
     },
     ...novedades.map((n) => eventoDeNovedadAbierta(u, n)),
   ];
 
-  const cambios: Partial<Cambios> = { partes: [enviado], novedades };
+  const cambios: Partial<Cambios> = { partes: [parte], novedades };
 
   // A3: una novedad crítica deja la unidad fuera de servicio, en la misma operación.
   const criticas = novedades.filter((n) => n.gravedad === "critica");
   if (criticas.length > 0) {
     const nombres = criticas.map((n) => rotuloNovedad(n)).join(", ");
-    const efecto = efectoDeNovedadCritica(
-      u,
-      criticas,
-      MOTIVO_NOVEDAD_CRITICA.delParte(enviado.fecha, nombres),
-      ctx,
-    );
+    const efecto = efectoDeNovedadCritica(u, criticas, MOTIVO_NOVEDAD_CRITICA.delParte(parte.fecha, nombres), ctx);
     if (efecto.unidad !== null) cambios.unidades = [efecto.unidad];
     if (efecto.evento !== null) eventos.push(efecto.evento);
   }
   return ok({ cambios, eventos, modifica: true });
+}
+
+/** P3: el autoguardado del cierre de un parte en uso. No genera eventos ni cuenta para el kilometraje (K9); no controla fecha (P15) ni licencia (L4). */
+function guardarCierre(estado: Estado, c: Extract<Comando, { tipo: "guardarCierre" }>, ctx: Contexto): Resultado<Parcial> {
+  const p = parteEnUso(estado, c.parteId);
+  if (!p.ok) return p;
+  const unidad = buscarUnidadActiva(estado, p.valor.unidadId); // fuera de servicio sí se acepta (P8)
+  if (!unidad.ok) return unidad;
+
+  if (c.kmFin !== null) {
+    const km = validarKmNumero(c.kmFin, "kmFin");
+    if (!km.ok) return km;
+  }
+  if (c.litrosCargados !== null) {
+    const litros = validarLitros(c.litrosCargados);
+    if (!litros.ok) return litros;
+  }
+  if (c.combustible !== null && !NIVELES_COMBUSTIBLE.includes(c.combustible)) {
+    return fallo("combustible-invalido", ERRORES.combustibleInvalido, { campo: "combustible" });
+  }
+  const parte = p.valor;
+  if (parte.kmFin === c.kmFin && parte.combustible === c.combustible && parte.litrosCargados === c.litrosCargados) {
+    return ok({ cambios: {}, eventos: [], modifica: false });
+  }
+  const guardado: Parte = { ...parte, kmFin: c.kmFin, combustible: c.combustible, litrosCargados: c.litrosCargados, actualizado: ctx.ahora };
+  return ok({ cambios: { partes: [guardado] }, eventos: [], modifica: true });
+}
+
+/** El cierre (P15): K2, K4 y K7. No vuelve a mirar la licencia (L3) ni la fecha (P15) ni la documentación (P9: quedó fijada en la revisión). */
+function enviarCierre(estado: Estado, c: Extract<Comando, { tipo: "enviarCierre" }>, ctx: Contexto): Resultado<Parcial> {
+  const p = parteEnUso(estado, c.parteId);
+  if (!p.ok) return p;
+  const unidad = buscarUnidadActiva(estado, p.valor.unidadId);
+  if (!unidad.ok) return unidad;
+  const u = unidad.valor;
+  const parte = p.valor;
+
+  const faltan = faltantesDeCierre(parte);
+  if (faltan.length > 0) return fallo("faltan-datos", textoFaltantes(faltan.length), { detalle: { faltan } });
+  const kmFin = parte.kmFin as number;
+  if (parte.kmInicio === null) return fallo("faltan-datos", textoFaltantes(1), { detalle: { faltan: ["kmInicio"] } });
+  const kmInicio = parte.kmInicio;
+
+  const km = validarKmDeCierre({ unidad: u, fecha: parte.fecha, kmInicio, kmFin, partes: estado.partes, correcciones: estado.correccionesKm });
+  if (!km.ok) return km;
+  const requeridas = km.valor.advertencias;
+  const pendientes = requeridas.filter((a) => !c.advertenciasAceptadas.includes(a.tipo));
+  if (pendientes.length > 0) {
+    return fallo("advertencias-sin-aceptar", ERRORES.advertenciasSinAceptar, { detalle: { advertencias: pendientes } });
+  }
+
+  const cerrado: Parte = {
+    ...parte,
+    estado: "enviado",
+    enviado: ctx.ahora,
+    actualizado: ctx.ahora,
+    advertenciasAceptadas: [...parte.advertenciasAceptadas, ...requeridas],
+  };
+  return ok({
+    cambios: { partes: [cerrado] },
+    eventos: [
+      {
+        tipo: "parte-enviado",
+        unidadId: u.id,
+        conductorId: parte.conductorId,
+        resumen: RESUMEN_EVENTO.parteCerrado(pat(u), parte.fecha, kmInicio, kmFin),
+        datos: { parteId: parte.id, fecha: parte.fecha, kmInicio, kmFin, recorrido: kmFin - kmInicio, advertencias: requeridas },
+      },
+    ],
+    modifica: true,
+  });
 }

@@ -3,13 +3,14 @@ import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
 import { kmActual } from "../src/lib/dominio/kilometraje.ts";
 import { sumarDias } from "../src/lib/dominio/fechas.ts";
-import type { Estado } from "../src/lib/dominio/tipos.ts";
-import { checklistEnOrden, checklistVacio, contexto, ejecutarError, ejecutarOk, flotaDePrueba, parte } from "./ayuda.ts";
+import type { Estado, Parte } from "../src/lib/dominio/tipos.ts";
+import { checklistEnOrden, checklistVacio, contexto, documento, ejecutarError, ejecutarOk, flotaDePrueba, parte } from "./ayuda.ts";
 
 const H = "2026-11-18";
 
 type Borrador = Extract<Comando, { tipo: "guardarBorrador" }>;
-type Enviar = Extract<Comando, { tipo: "enviarParte" }>;
+type Revision = Extract<Comando, { tipo: "enviarRevision" }>;
+type Cierre = Extract<Comando, { tipo: "enviarCierre" }>;
 
 function borrador(parcial: Partial<Borrador> = {}): Borrador {
   return {
@@ -28,20 +29,21 @@ function borrador(parcial: Partial<Borrador> = {}): Borrador {
   };
 }
 
-function completo(parcial: Partial<Borrador> = {}): Borrador {
-  return borrador({ kmFin: 84450, combustible: "medio", checklist: checklistEnOrden(), ...parcial });
+/** Una revisión lista para enviar: conductor, kmInicio y los diez puntos en orden (sin datos de cierre). */
+function listo(parcial: Partial<Borrador> = {}): Borrador {
+  return borrador({ checklist: checklistEnOrden(), ...parcial });
 }
 
 /** Guarda un borrador y devuelve el estado y el id del parte creado. */
-function conBorrador(e: Estado, cmd: Borrador): { estado: Estado; parteId: string } {
-  const r = ejecutarOk(e, cmd);
+function conBorrador(e: Estado, cmd: Borrador, ctx = contexto()): { estado: Estado; parteId: string } {
+  const r = ejecutarOk(e, cmd, ctx);
   const creado = r.cambios.partes[0];
   if (creado === undefined) throw new Error("no se guardó el borrador");
   return { estado: r.estado, parteId: creado.id };
 }
 
-function enviar(parteId: string, aceptadas: Enviar["advertenciasAceptadas"] = []): Enviar {
-  return { tipo: "enviarParte", parteId, advertenciasAceptadas: aceptadas };
+function revision(parteId: string, aceptadas: Revision["advertenciasAceptadas"] = []): Revision {
+  return { tipo: "enviarRevision", parteId, advertenciasAceptadas: aceptadas };
 }
 
 describe("guardarBorrador (P3)", () => {
@@ -186,62 +188,163 @@ describe("descartarBorrador", () => {
   });
 });
 
-describe("enviarParte", () => {
-  it("H1, P12: un parte completo se envía en un solo paso: parte enviado, un evento y kilometraje actualizado", () => {
-    const e = flotaDePrueba();
-    const { estado, parteId } = conBorrador(e, completo());
-    const r = ejecutarOk(estado, enviar(parteId));
-    const p = r.estado.partes.find((x) => x.id === parteId)!;
-    expect(p).toMatchObject({ estado: "enviado", enviado: "2026-11-18T15:00:00.000Z", autor: "Rocío Medina", documentacionVencida: [], advertenciasAceptadas: [] });
-    expect(r.eventos.map((x) => x.tipo)).toEqual(["parte-enviado"]);
+/** El estado después de guardar el borrador y enviar la revisión: el parte queda en uso (o cerrado sin salida, si hay una novedad crítica). */
+function conRevision(e: Estado, cmd: Borrador = listo(), aceptadas: Revision["advertenciasAceptadas"] = [], ctx = contexto()) {
+  const { estado, parteId } = conBorrador(e, cmd, ctx);
+  const r = ejecutarOk(estado, revision(parteId, aceptadas), ctx);
+  return { ...r, parteId };
+}
+
+function parteDe(e: Estado, id: string) {
+  const p = e.partes.find((x) => x.id === id);
+  if (p === undefined) throw new Error(`no hay parte ${id}`);
+  return p;
+}
+
+function conLicenciaQueVence(e: Estado, vence: string): Estado {
+  return { ...e, documentos: e.documentos.map((d) => (d.id === "c1-licencia" ? { ...d, vence } : d)) };
+}
+
+function conSeguroQueVence(e: Estado, vence: string): Estado {
+  return { ...e, documentos: e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence } : d)) };
+}
+
+describe("guardarBorrador y descartarBorrador sobre un parte en uso (P7, L4)", () => {
+  it("P7: guardarBorrador sobre un parte en uso -> revision-ya-enviada", () => {
+    const { estado, parteId } = conRevision(flotaDePrueba());
+    const err = ejecutarError(estado, borrador({ parteId, kmInicio: 84330 }));
+    expect(err.codigo).toBe("revision-ya-enviada");
+    expect(err.mensaje).toBe("La revisión ya se envió: no se puede modificar.");
+  });
+
+  it("P7: descartarBorrador sobre un parte en uso -> el mismo error, y el parte sigue ahí", () => {
+    const { estado, parteId } = conRevision(flotaDePrueba());
+    expect(ejecutarError(estado, { tipo: "descartarBorrador", parteId }).codigo).toBe("revision-ya-enviada");
+    expect(parteDe(estado, parteId).estado).toBe("en-uso");
+  });
+
+  it("P1: un segundo borrador para la fecha de un parte en uso -> duplicado con el estado «en uso»", () => {
+    const { estado, parteId } = conRevision(flotaDePrueba());
+    const err = ejecutarError(estado, borrador());
+    expect(err.codigo).toBe("parte-duplicado");
+    expect(err.mensaje).toBe("Ya hay un parte de ZK 214 BD para el 18/11/2026 (en uso). Ábralo para continuar.");
+    expect(err.detalle).toEqual({ parteId });
+  });
+
+  it("L4: guardarBorrador y descartarBorrador con un conductor sin licencia vigente se aceptan (no se mira la licencia)", () => {
+    const e = conLicenciaQueVence(flotaDePrueba(), "2026-11-15");
+    const { estado, parteId } = conBorrador(e, listo());
+    expect(ejecutarOk(estado, borrador({ parteId, kmInicio: 84330 })).estado.partes.find((p) => p.id === parteId)?.kmInicio).toBe(84330);
+    expect(ejecutarOk(estado, { tipo: "descartarBorrador", parteId }).estado.partes.some((p) => p.id === parteId)).toBe(false);
+  });
+});
+
+describe("enviarRevision: el parte pasa a en uso (P14)", () => {
+  it("P14, H1, P12: una revisión completa sin novedades -> en uso, revisado = ahora, sin cierre y un solo evento revision-enviada", () => {
+    const r = conRevision(flotaDePrueba());
+    const p = parteDe(r.estado, r.parteId);
+    expect(p).toMatchObject({
+      estado: "en-uso",
+      revisado: "2026-11-18T15:00:00.000Z",
+      enviado: null,
+      sinSalida: false,
+      autor: "Rocío Medina",
+      documentacionVencida: [],
+      advertenciasAceptadas: [],
+    });
+    expect(r.eventos.map((x) => x.tipo)).toEqual(["revision-enviada"]);
     expect(r.eventos[0]).toMatchObject({ unidadId: "u1", conductorId: "c1" });
-    expect(r.eventos[0]?.resumen).toBe("Parte del 18/11/2026 de ZK 214 BD enviado: 84.320 a 84.450 km (130 km)");
-    expect(r.eventos[0]?.datos).toMatchObject({ parteId, fecha: H, kmInicio: 84320, kmFin: 84450, fueraDeTermino: false });
-    expect(kmActual("u1", r.estado.partes, r.estado.correccionesKm)).toBe(84450);
+    expect(r.eventos[0]?.datos).toEqual({ parteId: r.parteId, fecha: H, kmInicio: 84320, fueraDeTermino: false, sinSalida: false, advertencias: [] });
+    expect(r.eventos[0]?.resumen).toBe("Revisión del 18/11/2026 de ZK 214 BD enviada: sale con 84.320 km");
     expect(r.estado.unidades[0]?.estado).toEqual({ tipo: "en-servicio" });
     expect(r.cambios.novedades).toEqual([]);
     expect(r.estado.meta.modificada).toBe(true);
   });
 
-  it("K2: un recorrido de cero se dice 'sin uso' en el resumen", () => {
-    const e = flotaDePrueba();
-    const { estado, parteId } = conBorrador(e, completo({ kmFin: 84320 }));
-    const r = ejecutarOk(estado, enviar(parteId));
-    expect(r.eventos[0]?.resumen).toBe("Parte del 18/11/2026 de ZK 214 BD enviado: 84.320 a 84.320 km (sin uso)");
+  it("K9, K10: el kilometraje actual pasa a ser el kmInicio del parte en uso (los datos de cierre de un borrador viejo no cuentan)", () => {
+    const { estado } = conRevision(flotaDePrueba(), listo({ kmInicio: 84330, kmFin: 99999, combustible: "lleno" }));
+    expect(kmActual("u1", estado.partes, estado.correccionesKm)).toBe(84330);
   });
 
-  it("P4: si falta algo no se envía: lista los faltantes en el orden del formulario", () => {
-    const e = flotaDePrueba();
+  it("K9: los datos de cierre que traía el borrador (versiones viejas) se conservan como datos de cierre sin cerrar", () => {
+    const { estado, parteId } = conRevision(flotaDePrueba(), listo({ kmFin: 84450, combustible: "medio", litrosCargados: 20 }));
+    expect(parteDe(estado, parteId)).toMatchObject({ estado: "en-uso", kmFin: 84450, combustible: "medio", litrosCargados: 20 });
+  });
+
+  it("U7: el checklist y «Otra novedad» se recortan al enviar", () => {
+    const checklist = { ...checklistEnOrden(), niveles: { estado: "con-novedad" as const, descripcion: "  Falta agua  ", impideUso: false } };
+    const { estado, parteId } = conRevision(flotaDePrueba(), listo({ checklist, otraNovedad: { descripcion: "  Vidrio rayado ", impideUso: false } }));
+    expect(parteDe(estado, parteId).checklist.niveles).toEqual({ estado: "con-novedad", descripcion: "Falta agua", impideUso: false });
+    expect(parteDe(estado, parteId).otraNovedad).toEqual({ descripcion: "Vidrio rayado", impideUso: false });
+  });
+
+  it("P4: a la revisión le faltan kmInicio y luces -> ['kmInicio', 'luces'] (no pide kmFin ni combustible)", () => {
     const checklist = { ...checklistEnOrden(), luces: { estado: "sin-responder" as const } };
-    const { estado, parteId } = conBorrador(e, completo({ kmFin: null, combustible: null, checklist }));
-    const err = ejecutarError(estado, enviar(parteId));
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo({ kmInicio: null, checklist }));
+    const err = ejecutarError(estado, revision(parteId));
     expect(err.codigo).toBe("faltan-datos");
-    expect(err.mensaje).toBe("Faltan 3 datos");
-    expect(err.detalle).toEqual({ faltan: ["kmFin", "luces", "combustible"] });
+    expect(err.mensaje).toBe("Faltan 2 datos");
+    expect(err.detalle).toEqual({ faltan: ["kmInicio", "luces"] });
   });
 
-  it("P4: el conductor es obligatorio para enviar", () => {
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ conductorId: null }));
-    expect(ejecutarError(estado, enviar(parteId)).detalle).toEqual({ faltan: ["conductor"] });
+  it("P4: el conductor es obligatorio; sin conductor va con los faltantes", () => {
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo({ conductorId: null }));
+    expect(ejecutarError(estado, revision(parteId)).detalle).toEqual({ faltan: ["conductor"] });
   });
 
-  it("K2: kmFin menor que kmInicio bloquea el envío y el borrador queda", () => {
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ kmFin: 84319 }));
-    const err = ejecutarError(estado, enviar(parteId));
-    expect(err.mensaje).toBe("El kilometraje al terminar (84.319 km) es menor que al iniciar (84.320 km). Revise los dos números.");
-    expect(estado.partes.find((p) => p.id === parteId)?.estado).toBe("borrador");
+  it("P7: enviarRevision sobre un parte en uso -> revision-ya-enviada; sobre uno cerrado -> parte-enviado-inmutable", () => {
+    const { estado, parteId } = conRevision(flotaDePrueba());
+    expect(ejecutarError(estado, revision(parteId)).codigo).toBe("revision-ya-enviada");
+    expect(ejecutarError(flotaDePrueba(), revision("p-u1-ayer")).codigo).toBe("parte-enviado-inmutable");
   });
 
-  it("K3: el kilometraje no retrocede (con el último parte enviado de fecha anterior)", () => {
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ kmInicio: 84319, kmFin: 84400 }));
-    const err = ejecutarError(estado, enviar(parteId));
+  it("parte inexistente", () => {
+    expect(ejecutarError(flotaDePrueba(), revision("zzz")).codigo).toBe("parte-inexistente");
+  });
+
+  it("P8 y P2 en la revisión: unidad fuera de servicio, de baja y fecha H - 8", () => {
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo());
+    const fuera = ejecutarOk(estado, { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "En taller" }).estado;
+    expect(ejecutarError(fuera, revision(parteId)).codigo).toBe("unidad-fuera-de-servicio");
+    const baja = ejecutarOk(estado, { tipo: "darDeBaja", unidadId: "u1", motivo: "Venta de la unidad" }).estado;
+    expect(ejecutarError(baja, revision(parteId)).codigo).toBe("unidad-de-baja");
+
+    const base = flotaDePrueba();
+    const viejo = parte({ id: "viejo", unidadId: "u1", fecha: "2026-11-10", estado: "borrador", enviado: null, revisado: null, kmInicio: 100, kmFin: null, combustible: null, checklist: checklistEnOrden() });
+    expect(ejecutarError({ ...base, partes: [...base.partes, viejo] }, revision("viejo")).codigo).toBe("parte-fecha-antigua");
+  });
+
+  it("P5: una revisión de H - 1 enviada hoy lleva fueraDeTermino en el evento y en el resumen", () => {
+    const e: Estado = { ...flotaDePrueba(), partes: [] };
+    const r = conRevision(e, listo({ fecha: "2026-11-17", kmInicio: 1000 }));
+    expect(r.eventos[0]?.datos).toMatchObject({ fueraDeTermino: true });
+    expect(r.eventos[0]?.resumen).toBe("Revisión del 17/11/2026 de ZK 214 BD enviada fuera de término: sale con 1.000 km");
+  });
+
+  it("P5: el límite es la medianoche de Argentina: 02:59:59.999Z todavía es el mismo día y 03:00:00.000Z ya no", () => {
+    const base: Estado = { ...flotaDePrueba(), partes: [] };
+    const ayer = contexto({ hoy: "2026-11-17", ahora: "2026-11-17T15:00:00.000Z" });
+    const a = ejecutarOk(base, listo({ fecha: "2026-11-17", kmInicio: 1000 }), ayer);
+    const id = a.cambios.partes[0]!.id;
+    const mismoDia = ejecutarOk(a.estado, revision(id), contexto({ hoy: "2026-11-17", ahora: "2026-11-18T02:59:59.999Z" }));
+    expect(mismoDia.eventos[0]?.datos).toMatchObject({ fueraDeTermino: false });
+    const alDiaSiguiente = ejecutarOk(a.estado, revision(id), contexto({ hoy: "2026-11-18", ahora: "2026-11-18T03:00:00.000Z" }));
+    expect(alDiaSiguiente.eventos[0]?.datos).toMatchObject({ fueraDeTermino: true });
+  });
+});
+
+describe("enviarRevision: kilometraje (K3, K4, K6, K10)", () => {
+  it("K3: el kilometraje no retrocede (con el último parte cerrado de fecha anterior)", () => {
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo({ kmInicio: 84319 }));
+    const err = ejecutarError(estado, revision(parteId));
     expect(err.codigo).toBe("km-retrocede");
+    expect(err.campo).toBe("kmInicio");
     expect(err.mensaje).toBe(
       "El último registro de ZK 214 BD es 84.320 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, hay que informarlo al encargado.",
     );
   });
 
-  it("K4: un parte de una fecha intermedia no puede superar el inicio del siguiente", () => {
+  it("K10 (K4 de la salida): la revisión de una fecha intermedia no puede superar el inicio del siguiente parte", () => {
     const base = flotaDePrueba();
     const e: Estado = {
       ...base,
@@ -250,61 +353,117 @@ describe("enviarParte", () => {
         parte({ id: "b", unidadId: "u1", fecha: "2026-11-17", kmInicio: 80500, kmFin: 81000, enviado: "2026-11-17T18:00:00.000Z" }),
       ],
     };
-    const { estado, parteId } = conBorrador(e, completo({ fecha: "2026-11-16", kmInicio: 80000, kmFin: 80600 }));
-    expect(ejecutarError(estado, enviar(parteId)).mensaje).toBe("El kilometraje supera el del inicio del parte del 17/11/2026 (80.500 km). Revise el número.");
+    const { estado, parteId } = conBorrador(e, listo({ fecha: "2026-11-16", kmInicio: 80600 }));
+    const err = ejecutarError(estado, revision(parteId));
+    expect(err.codigo).toBe("km-supera-siguiente");
+    expect(err.campo).toBe("kmInicio");
+    expect(err.mensaje).toBe("El kilometraje supera el del inicio del parte del 17/11/2026 (80.500 km). Revise el número.");
   });
 
-  it("K5: después de una corrección de kilometraje el parte siguiente se compara con la base nueva", () => {
-    // último parte enviado: el 15 (termina en 84.320); el 16 se cambió el tablero (base 120); el 17 empieza en 130
+  it("K5: después de una corrección de kilometraje la salida siguiente se compara con la base nueva", () => {
     const base = flotaDePrueba();
-    const e: Estado = {
-      ...base,
-      partes: [parte({ id: "a", unidadId: "u1", fecha: "2026-11-15", kmInicio: 84000, kmFin: 84320, enviado: "2026-11-15T18:00:00.000Z" })],
-    };
+    const e: Estado = { ...base, partes: [parte({ id: "a", unidadId: "u1", fecha: "2026-11-15", kmInicio: 84000, kmFin: 84320, enviado: "2026-11-15T18:00:00.000Z" })] };
     const corregido = ejecutarOk(e, { tipo: "corregirKilometraje", unidadId: "u1", desde: "2026-11-16", kmBase: 120, motivo: "Cambio de tablero" }).estado;
-    const { estado, parteId } = conBorrador(corregido, completo({ fecha: "2026-11-17", kmInicio: 130, kmFin: 200 }));
-    expect(ejecutarOk(estado, enviar(parteId)).estado.partes.find((p) => p.id === parteId)?.estado).toBe("enviado");
-    // 100 (menor que la base 120) sigue siendo un retroceso
-    const menor = conBorrador(corregido, completo({ fecha: "2026-11-17", kmInicio: 100, kmFin: 200 }));
-    expect(ejecutarError(menor.estado, enviar(menor.parteId)).codigo).toBe("km-retrocede");
+    const ok = conBorrador(corregido, listo({ fecha: "2026-11-17", kmInicio: 130 }));
+    expect(parteDe(ejecutarOk(ok.estado, revision(ok.parteId)).estado, ok.parteId).estado).toBe("en-uso");
+    const menor = conBorrador(corregido, listo({ fecha: "2026-11-17", kmInicio: 100 }));
+    expect(ejecutarError(menor.estado, revision(menor.parteId)).codigo).toBe("km-retrocede");
   });
 
-  it("K6: un salto de más de 1.000 km pide aceptar la advertencia; aceptada, queda guardada", () => {
-    const e = flotaDePrueba();
-    const { estado, parteId } = conBorrador(e, completo({ kmInicio: 85570, kmFin: 85700 }));
-    const err = ejecutarError(estado, enviar(parteId));
+  it("K6 en la revisión: un salto de 1.001 km pide aceptar la advertencia; 1.000 no", () => {
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo({ kmInicio: 85321 }));
+    const err = ejecutarError(estado, revision(parteId));
     expect(err.codigo).toBe("advertencias-sin-aceptar");
-    expect(err.detalle).toEqual({ advertencias: [{ tipo: "salto-km", km: 1250 }] });
-    const r = ejecutarOk(estado, enviar(parteId, ["salto-km"]));
-    expect(r.estado.partes.find((p) => p.id === parteId)?.advertenciasAceptadas).toEqual([{ tipo: "salto-km", km: 1250 }]);
-    expect(r.eventos[0]?.datos).toMatchObject({ advertencias: [{ tipo: "salto-km", km: 1250 }] });
+    expect(err.detalle).toEqual({ advertencias: [{ tipo: "salto-km", km: 1001 }] });
+    const r = ejecutarOk(estado, revision(parteId, ["salto-km"]));
+    expect(parteDe(r.estado, parteId).advertenciasAceptadas).toEqual([{ tipo: "salto-km", km: 1001 }]);
+    expect(r.eventos[0]?.datos).toMatchObject({ advertencias: [{ tipo: "salto-km", km: 1001 }] });
+    const justo = conBorrador(flotaDePrueba(), listo({ kmInicio: 85320 }));
+    expect(parteDe(ejecutarOk(justo.estado, revision(justo.parteId)).estado, justo.parteId).advertenciasAceptadas).toEqual([]);
   });
 
-  it("K6: justo 1.000 km no es salto", () => {
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ kmInicio: 85320, kmFin: 85400 }));
-    expect(ejecutarOk(estado, enviar(parteId)).estado.partes.find((p) => p.id === parteId)?.advertenciasAceptadas).toEqual([]);
+  it("K7 no se mira en la revisión: un kmFin viejo del borrador no pide advertencia", () => {
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo({ kmFin: 99999 }));
+    expect(ejecutarOk(estado, revision(parteId)).estado.partes.find((p) => p.id === parteId)?.estado).toBe("en-uso");
+  });
+});
+
+describe("enviarRevision: la licencia bloquea (L1 a L5)", () => {
+  it("L1: licencia vencida -> licencia-no-vigente en conductorId, sin cambios ni eventos", () => {
+    const e = conLicenciaQueVence(flotaDePrueba(), "2026-11-15");
+    const { estado, parteId } = conBorrador(e, listo());
+    const err = ejecutarError(estado, revision(parteId));
+    expect(err.codigo).toBe("licencia-no-vigente");
+    expect(err.campo).toBe("conductorId");
+    expect(err.mensaje).toBe("Luis Ferreyra no tiene licencia vigente para el 18/11/2026: venció el 15/11/2026. Elija otro conductor.");
+    expect(err.detalle).toEqual({ motivo: "vencida", vence: "2026-11-15" });
+    expect(parteDe(estado, parteId).estado).toBe("borrador");
+    expect(estado.eventos).toEqual([]);
   });
 
-  it("K7: un recorrido de más de 1.200 km pide aceptar la advertencia", () => {
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ kmInicio: 84320, kmFin: 85521 }));
-    expect(ejecutarError(estado, enviar(parteId)).detalle).toEqual({ advertencias: [{ tipo: "recorrido-largo", km: 1201 }] });
-    expect(ejecutarOk(estado, enviar(parteId, ["recorrido-largo"])).estado.partes.find((p) => p.id === parteId)?.advertenciasAceptadas).toEqual([{ tipo: "recorrido-largo", km: 1201 }]);
+  it("L1, L5: sin licencia cargada y licencia nueva que empieza a valer después", () => {
+    const sin: Estado = { ...flotaDePrueba(), documentos: flotaDePrueba().documentos.filter((d) => d.id !== "c1-licencia") };
+    const a = conBorrador(sin, listo());
+    const faltante = ejecutarError(a.estado, revision(a.parteId));
+    expect(faltante.mensaje).toBe("Luis Ferreyra no tiene licencia de conducir cargada. Elija otro conductor.");
+    expect(faltante.detalle).toEqual({ motivo: "faltante" });
+
+    const base = conLicenciaQueVence(flotaDePrueba(), "2026-11-15");
+    const nueva = { ...base, documentos: [...base.documentos, documento({ id: "c1-nueva", titular: { tipo: "conductor", id: "c1" }, tipo: "licencia", vence: "2031-01-01", emitido: "2026-11-20", reemplazaA: "c1-licencia" })] };
+    const b = conBorrador(nueva, listo());
+    const posterior = ejecutarError(b.estado, revision(b.parteId));
+    expect(posterior.mensaje).toBe("Luis Ferreyra no tiene licencia vigente para el 18/11/2026: la nueva vale desde el 20/11/2026. Elija otro conductor.");
+    expect(posterior.detalle).toEqual({ motivo: "posterior", desde: "2026-11-20" });
   });
 
-  it("aceptar solo una de dos advertencias no alcanza", () => {
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ kmInicio: 85570, kmFin: 87000 }));
-    expect(ejecutarError(estado, enviar(parteId, ["salto-km"])).detalle).toEqual({ advertencias: [{ tipo: "recorrido-largo", km: 1430 }] });
-    expect(ejecutarOk(estado, enviar(parteId, ["salto-km", "recorrido-largo"])).estado.partes.find((p) => p.id === parteId)?.advertenciasAceptadas).toHaveLength(2);
+  it("L1: gana sobre los faltantes (licencia vencida y faltan datos)", () => {
+    const e = conLicenciaQueVence(flotaDePrueba(), "2026-11-15");
+    const { estado, parteId } = conBorrador(e, listo({ kmInicio: null, checklist: checklistVacio() }));
+    expect(ejecutarError(estado, revision(parteId)).codigo).toBe("licencia-no-vigente");
   });
 
-  it("P9: con el seguro vencido hay que aceptar; aceptado queda documentacionVencida y la alerta crítica dura 30 días", () => {
-    const base = flotaDePrueba();
-    const e: Estado = { ...base, documentos: base.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-15" } : d)) };
-    const { estado, parteId } = conBorrador(e, completo());
-    const err = ejecutarError(estado, enviar(parteId));
+  it("L1: el mismo bloqueo con el autor encargado", () => {
+    const e = conLicenciaQueVence(flotaDePrueba(), "2026-11-15");
+    const { estado, parteId } = conBorrador(e, listo());
+    expect(ejecutarError(estado, revision(parteId), contexto({ autor: "Rocío Medina" })).codigo).toBe("licencia-no-vigente");
+  });
+
+  it("L1, L2: un parte de H - 4 con la licencia vencida en H - 3 se acepta; la licencia que vence hoy vale todo el día", () => {
+    const e = conLicenciaQueVence(flotaDePrueba(), "2026-11-15");
+    const { estado, parteId } = conBorrador(e, listo({ fecha: "2026-11-14", kmInicio: 83000 }));
+    expect(parteDe(ejecutarOk(estado, revision(parteId)).estado, parteId).estado).toBe("en-uso");
+    const hoy = conBorrador(conLicenciaQueVence(flotaDePrueba(), H), listo());
+    const tarde = contexto({ ahora: "2026-11-19T02:59:59.999Z" });
+    expect(parteDe(ejecutarOk(hoy.estado, revision(hoy.parteId), tarde).estado, hoy.parteId).estado).toBe("en-uso");
+  });
+
+  it("L4: tras cargar o renovar la licencia hoy, la revisión de hoy pasa; la de ayer (sin emisión: cargada hoy) sigue bloqueada", () => {
+    const e = conLicenciaQueVence(flotaDePrueba(), "2026-11-10");
+    const hoy = conBorrador(e, listo());
+    const ayer = conBorrador(hoy.estado, listo({ fecha: "2026-11-16", kmInicio: 83000 }));
+    expect(ejecutarError(ayer.estado, revision(hoy.parteId)).codigo).toBe("licencia-no-vigente");
+    const renovado = ejecutarOk(ayer.estado, { tipo: "renovarDocumento", documentoId: "c1-licencia", numero: "DEMO-N", emisor: "", vence: "2031-01-01", emitido: null }).estado;
+    expect(parteDe(ejecutarOk(renovado, revision(hoy.parteId)).estado, hoy.parteId).estado).toBe("en-uso");
+    const bloqueada = ejecutarError(renovado, revision(ayer.parteId));
+    expect(bloqueada.codigo).toBe("licencia-no-vigente");
+    expect(bloqueada.detalle).toEqual({ motivo: "posterior", desde: "2026-11-18" });
+  });
+
+  it("L1: se mira la licencia del conductor del parte, no la del asignado a la unidad", () => {
+    const e = conLicenciaQueVence(flotaDePrueba(), "2026-11-15"); // c1, asignado a u1, sin licencia
+    const { estado, parteId } = conBorrador(e, listo({ conductorId: "c2" }));
+    expect(parteDe(ejecutarOk(estado, revision(parteId)).estado, parteId).estado).toBe("en-uso");
+  });
+});
+
+describe("enviarRevision: documentación de la unidad (P9) y novedades (A3, P11, P16)", () => {
+  it("P9: con el seguro vencido hay que aceptar; aceptado queda en uso con ['seguro'] y la alerta crítica dura 30 días", () => {
+    const e = conSeguroQueVence(flotaDePrueba(), "2026-11-15");
+    const { estado, parteId } = conBorrador(e, listo());
+    const err = ejecutarError(estado, revision(parteId));
     expect(err.detalle).toEqual({ advertencias: [{ tipo: "documentacion-vencida", documentos: ["seguro"] }] });
-    const r = ejecutarOk(estado, enviar(parteId, ["documentacion-vencida"]));
-    expect(r.estado.partes.find((p) => p.id === parteId)?.documentacionVencida).toEqual(["seguro"]);
+    const r = ejecutarOk(estado, revision(parteId, ["documentacion-vencida"]));
+    expect(parteDe(r.estado, parteId)).toMatchObject({ estado: "en-uso", documentacionVencida: ["seguro"] });
     const alerta = (hoy: string) => calcularAlertas(r.estado, hoy).alertas.filter((a) => a.tipo === "uso-con-documentacion-vencida");
     expect(alerta(H)).toHaveLength(1);
     expect(alerta(H)[0]?.gravedad).toBe("critica");
@@ -312,45 +471,41 @@ describe("enviarParte", () => {
     expect(alerta(sumarDias(H, 31))).toHaveLength(0);
   });
 
-  it("P9: la licencia vencida del conductor también cuenta", () => {
+  it("P9 (C01): un seguro que venció ayer todavía valía ayer: la revisión de ayer pasa sin advertencia; la de hoy no", () => {
     const base = flotaDePrueba();
-    const e: Estado = { ...base, documentos: base.documentos.map((d) => (d.id === "c1-licencia" ? { ...d, vence: "2026-11-01" } : d)) };
-    const { estado, parteId } = conBorrador(e, completo());
-    expect(ejecutarError(estado, enviar(parteId)).detalle).toEqual({ advertencias: [{ tipo: "documentacion-vencida", documentos: ["licencia"] }] });
+    const e: Estado = { ...conSeguroQueVence(base, "2026-11-17"), partes: [] };
+    const ayer = conBorrador(e, listo({ fecha: "2026-11-17", kmInicio: 1000 }));
+    expect(parteDe(ejecutarOk(ayer.estado, revision(ayer.parteId)).estado, ayer.parteId).documentacionVencida).toEqual([]);
+    const hoy = conBorrador(e, listo({ fecha: H, kmInicio: 1000 }));
+    expect(ejecutarError(hoy.estado, revision(hoy.parteId)).codigo).toBe("advertencias-sin-aceptar");
   });
 
-  it("P9 (C01): un seguro que venció ayer todavía valía ayer: el parte de ayer se envía sin advertencia", () => {
-    const base = flotaDePrueba();
-    const e: Estado = {
-      ...base,
-      partes: [],
-      documentos: base.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d)),
-    };
-    const { estado, parteId } = conBorrador(e, completo({ fecha: "2026-11-17", kmInicio: 1000, kmFin: 1100 }));
-    const r = ejecutarOk(estado, enviar(parteId));
-    expect(r.estado.partes.find((p) => p.id === parteId)?.documentacionVencida).toEqual([]);
-    // hoy, en cambio, el mismo seguro está vencido y hay que aceptar
-    const hoy = conBorrador(e, completo({ fecha: H, kmInicio: 1000, kmFin: 1100 }));
-    expect(ejecutarError(hoy.estado, enviar(hoy.parteId)).codigo).toBe("advertencias-sin-aceptar");
+  it("aceptar solo una de dos advertencias no alcanza", () => {
+    const e = conSeguroQueVence(flotaDePrueba(), "2026-11-15");
+    const { estado, parteId } = conBorrador(e, listo({ kmInicio: 85570 }));
+    expect(ejecutarError(estado, revision(parteId, ["salto-km"])).detalle).toEqual({ advertencias: [{ tipo: "documentacion-vencida", documentos: ["seguro"] }] });
+    expect(parteDe(ejecutarOk(estado, revision(parteId, ["salto-km", "documentacion-vencida"])).estado, parteId).advertenciasAceptadas).toHaveLength(2);
   });
 
-  it("A3, P11, H1: una novedad crítica en el parte deja la unidad fuera de servicio, con los eventos en orden", () => {
-    const e = flotaDePrueba();
+  it("P16, A3, H1: una novedad crítica cierra el parte sin salida y deja la unidad fuera de servicio, con los eventos en orden", () => {
     const checklist = { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "  ruido al frenar en bajada  ", impideUso: false } };
-    const { estado, parteId } = conBorrador(e, completo({ checklist }));
-    const r = ejecutarOk(estado, enviar(parteId));
-    expect(r.eventos.map((x) => x.tipo)).toEqual(["parte-enviado", "novedad-abierta", "fuera-de-servicio"]);
-    expect(r.cambios.novedades).toHaveLength(1);
-    const n = r.estado.novedades[0]!;
-    expect(n).toMatchObject({
-      unidadId: "u1",
-      origen: { tipo: "parte", parteId, item: "frenos" },
-      descripcion: "ruido al frenar en bajada",
-      gravedad: "critica",
-      fecha: H,
-      estado: "abierta",
-      resolucion: null,
+    const r = conRevision(flotaDePrueba(), listo({ checklist, kmFin: 99999, combustible: "lleno", litrosCargados: 12 }));
+    const ahora = "2026-11-18T15:00:00.000Z";
+    expect(parteDe(r.estado, r.parteId)).toMatchObject({
+      estado: "enviado",
+      sinSalida: true,
+      kmInicio: 84320,
+      kmFin: 84320,
+      combustible: null,
+      litrosCargados: null,
+      revisado: ahora,
+      enviado: ahora,
+      documentacionVencida: [],
     });
+    expect(r.eventos.map((x) => x.tipo)).toEqual(["revision-enviada", "novedad-abierta", "fuera-de-servicio"]);
+    expect(r.eventos[0]?.datos).toMatchObject({ sinSalida: true, kmInicio: 84320 });
+    const n = r.estado.novedades[0]!;
+    expect(n).toMatchObject({ unidadId: "u1", origen: { tipo: "parte", parteId: r.parteId, item: "frenos" }, descripcion: "ruido al frenar en bajada", gravedad: "critica", fecha: H, estado: "abierta" });
     expect(r.estado.unidades[0]?.estado).toEqual({
       tipo: "fuera-de-servicio",
       desde: H,
@@ -359,8 +514,24 @@ describe("enviarParte", () => {
       novedadIds: [n.id],
     });
     expect(r.eventos[2]?.resumen).toBe("ZK 214 BD fuera de servicio: Novedad crítica en Frenos, parte del 18/11/2026");
-    // el parte y la novedad también quedan trimmeados y consistentes
-    expect(r.estado.partes.find((p) => p.id === parteId)?.checklist.frenos).toEqual({ estado: "con-novedad", descripcion: "ruido al frenar en bajada", impideUso: false });
+    expect(r.eventos[0]?.resumen).toBe("Revisión del 18/11/2026 de ZK 214 BD enviada: la unidad no salió por una novedad crítica");
+    expect(r.estado.eventos.some((x) => x.tipo === "parte-enviado")).toBe(false);
+    expect(kmActual("u1", r.estado.partes, r.estado.correccionesKm)).toBe(84320);
+  });
+
+  it("P16 + P9: seguro vencido y frenos con novedad -> sin advertencia de documentación y documentacionVencida vacía", () => {
+    const e = conSeguroQueVence(flotaDePrueba(), "2026-11-15");
+    const checklist = { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "Pedal blando", impideUso: false } };
+    const r = conRevision(e, listo({ checklist }));
+    expect(parteDe(r.estado, r.parteId)).toMatchObject({ sinSalida: true, documentacionVencida: [], advertenciasAceptadas: [] });
+    expect(calcularAlertas(r.estado, H).alertas.some((a) => a.tipo === "uso-con-documentacion-vencida")).toBe(false);
+  });
+
+  it("P16 + K6: con salto de kilometraje también hay que aceptar la advertencia, y queda guardada", () => {
+    const checklist = { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "Pedal blando", impideUso: false } };
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo({ checklist, kmInicio: 85570 }));
+    expect(ejecutarError(estado, revision(parteId)).detalle).toEqual({ advertencias: [{ tipo: "salto-km", km: 1250 }] });
+    expect(parteDe(ejecutarOk(estado, revision(parteId, ["salto-km"])).estado, parteId).advertenciasAceptadas).toEqual([{ tipo: "salto-km", km: 1250 }]);
   });
 
   it("A3: dos novedades críticas -> un solo evento fuera-de-servicio con las dos en el motivo", () => {
@@ -369,97 +540,213 @@ describe("enviarParte", () => {
       frenos: { estado: "con-novedad" as const, descripcion: "Pedal blando", impideUso: false },
       direccion: { estado: "con-novedad" as const, descripcion: "Juego en el volante", impideUso: false },
     };
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ checklist }));
-    const r = ejecutarOk(estado, enviar(parteId));
-    expect(r.eventos.map((x) => x.tipo)).toEqual(["parte-enviado", "novedad-abierta", "novedad-abierta", "fuera-de-servicio"]);
+    const r = conRevision(flotaDePrueba(), listo({ checklist }));
+    expect(r.eventos.map((x) => x.tipo)).toEqual(["revision-enviada", "novedad-abierta", "novedad-abierta", "fuera-de-servicio"]);
     const u = r.estado.unidades[0]!;
     expect(u.estado.tipo === "fuera-de-servicio" && u.estado.motivo).toBe("Novedad crítica en Frenos, Dirección, parte del 18/11/2026");
     expect(u.estado.tipo === "fuera-de-servicio" && u.estado.novedadIds).toHaveLength(2);
   });
 
-  it("P11: ítem no crítico con novedad sin marcar -> normal, la unidad sigue en servicio", () => {
+  it("P11, P14: un ítem no crítico con novedad sin marcar -> normal; el parte queda en uso y la unidad en servicio", () => {
     const checklist = { ...checklistEnOrden(), niveles: { estado: "con-novedad" as const, descripcion: "Falta agua", impideUso: false } };
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ checklist }));
-    const r = ejecutarOk(estado, enviar(parteId));
-    expect(r.eventos.map((x) => x.tipo)).toEqual(["parte-enviado", "novedad-abierta"]);
+    const r = conRevision(flotaDePrueba(), listo({ checklist }));
+    expect(r.eventos.map((x) => x.tipo)).toEqual(["revision-enviada", "novedad-abierta"]);
     expect(r.estado.novedades[0]?.gravedad).toBe("normal");
     expect(r.estado.unidades[0]?.estado.tipo).toBe("en-servicio");
+    expect(parteDe(r.estado, r.parteId)).toMatchObject({ estado: "en-uso", sinSalida: false });
   });
 
-  it("P11 -> A3: con 'Impide usar la unidad' la novedad es crítica y la unidad queda fuera de servicio", () => {
+  it("P11 -> P16: con 'Impide usar la unidad' la novedad es crítica y el parte se cierra sin salida", () => {
     const checklist = { ...checklistEnOrden(), niveles: { estado: "con-novedad" as const, descripcion: "Pierde aceite", impideUso: true } };
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ checklist }));
-    const r = ejecutarOk(estado, enviar(parteId));
-    expect(r.eventos.map((x) => x.tipo)).toEqual(["parte-enviado", "novedad-abierta", "fuera-de-servicio"]);
+    const r = conRevision(flotaDePrueba(), listo({ checklist }));
+    expect(r.eventos.map((x) => x.tipo)).toEqual(["revision-enviada", "novedad-abierta", "fuera-de-servicio"]);
     expect(r.estado.novedades[0]?.gravedad).toBe("critica");
+    expect(parteDe(r.estado, r.parteId).sinSalida).toBe(true);
   });
 
   it("P11: 'Otra novedad' crítica -> motivo 'Otra novedad'", () => {
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ otraNovedad: { descripcion: "Vidrio roto", impideUso: true } }));
-    const r = ejecutarOk(estado, enviar(parteId));
+    const r = conRevision(flotaDePrueba(), listo({ otraNovedad: { descripcion: "Vidrio roto", impideUso: true } }));
     const u = r.estado.unidades[0]!;
     expect(u.estado.tipo === "fuera-de-servicio" && u.estado.motivo).toBe("Novedad crítica en Otra novedad, parte del 18/11/2026");
-    expect(r.estado.novedades[0]?.origen).toEqual({ tipo: "parte", parteId, item: "otra" });
+    expect(r.estado.novedades[0]?.origen).toEqual({ tipo: "parte", parteId: r.parteId, item: "otra" });
   });
 
-  it("P5: se marca como fuera de término en el evento", () => {
-    const base = flotaDePrueba();
-    const e: Estado = { ...base, partes: [] };
-    const { estado, parteId } = conBorrador(e, completo({ fecha: "2026-11-17", kmInicio: 1000, kmFin: 1100 }));
-    const r = ejecutarOk(estado, enviar(parteId));
-    expect(r.eventos[0]?.datos).toMatchObject({ fueraDeTermino: true });
-    expect(r.eventos[0]?.resumen).toBe("Parte del 17/11/2026 de ZK 214 BD enviado fuera de término: 1.000 a 1.100 km (100 km)");
-  });
-
-  it("P5: el límite es la medianoche de Argentina: 02:59:59.999Z todavía es el mismo día y 03:00:00.000Z ya no", () => {
-    const base = { ...flotaDePrueba(), partes: [] };
-    const ayer = contexto({ hoy: "2026-11-17", ahora: "2026-11-17T15:00:00.000Z" });
-    const a = ejecutarOk(base, completo({ fecha: "2026-11-17", kmInicio: 1000, kmFin: 1100 }), ayer);
-    const id = a.cambios.partes[0]!.id;
-    const mismoDia = ejecutarOk(a.estado, enviar(id), contexto({ hoy: "2026-11-17", ahora: "2026-11-18T02:59:59.999Z" }));
-    expect(mismoDia.eventos[0]?.datos).toMatchObject({ fueraDeTermino: false });
-    expect(mismoDia.eventos[0]?.resumen).not.toContain("fuera de término");
-    const alDiaSiguiente = ejecutarOk(a.estado, enviar(id), contexto({ hoy: "2026-11-18", ahora: "2026-11-18T03:00:00.000Z" }));
-    expect(alDiaSiguiente.eventos[0]?.datos).toMatchObject({ fueraDeTermino: true });
-  });
-
-  it("P7: un parte ya enviado no se vuelve a enviar", () => {
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo());
-    const enviado = ejecutarOk(estado, enviar(parteId)).estado;
-    expect(ejecutarError(enviado, enviar(parteId)).mensaje).toBe("Un parte enviado no se puede modificar.");
-  });
-
-  it("P8: si mientras tanto la unidad quedó fuera de servicio, no se envía", () => {
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo());
-    const fuera = ejecutarOk(estado, { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "En taller" }).estado;
-    expect(ejecutarError(fuera, enviar(parteId)).codigo).toBe("unidad-fuera-de-servicio");
-  });
-
-  it("P2: al enviar se vuelve a controlar la fecha (un borrador viejo no se envía)", () => {
-    const base = flotaDePrueba();
-    const viejo = parte({ id: "viejo", unidadId: "u1", fecha: "2026-11-05", estado: "borrador", enviado: null, kmInicio: 100, kmFin: 200 });
-    const e: Estado = { ...base, partes: [...base.partes, viejo] };
-    expect(ejecutarError(e, enviar("viejo")).codigo).toBe("parte-fecha-antigua");
-  });
-
-  it("parte inexistente", () => {
-    expect(ejecutarError(flotaDePrueba(), enviar("zzz")).codigo).toBe("parte-inexistente");
-  });
-
-  it("P12: el envío devuelve todo junto (parte, novedades, unidad y eventos) para escribirlo en una sola transacción", () => {
+  it("P12: la revisión devuelve todo junto (parte, novedades, unidad y eventos) para escribirlo en una sola transacción", () => {
     const checklist = { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "Pedal blando", impideUso: false } };
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ checklist }));
-    const r = ejecutarOk(estado, enviar(parteId));
-    expect(r.cambios.partes.map((p) => p.id)).toEqual([parteId]);
+    const r = conRevision(flotaDePrueba(), listo({ checklist }));
+    expect(r.cambios.partes.map((p) => p.id)).toEqual([r.parteId]);
     expect(r.cambios.novedades).toHaveLength(1);
     expect(r.cambios.unidades.map((u) => u.id)).toEqual(["u1"]);
     expect(r.eventos).toHaveLength(3);
   });
 
-  it("el parte de un conductor distinto del asignado guarda a quien lo hizo", () => {
-    const { estado, parteId } = conBorrador(flotaDePrueba(), completo({ conductorId: "c2" }));
-    const r = ejecutarOk(estado, enviar(parteId), contexto({ autor: "Rosa Quiroga" }));
-    expect(r.estado.partes.find((p) => p.id === parteId)).toMatchObject({ conductorId: "c2", autor: "Rosa Quiroga" });
+  it("el parte de un conductor distinto del asignado guarda a quien envió la revisión", () => {
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo({ conductorId: "c2" }));
+    const r = ejecutarOk(estado, revision(parteId), contexto({ autor: "Rosa Quiroga" }));
+    expect(parteDe(r.estado, parteId)).toMatchObject({ conductorId: "c2", autor: "Rosa Quiroga" });
     expect(r.eventos[0]?.autor).toBe("Rosa Quiroga");
+  });
+});
+
+describe("guardarCierre (P3, K9)", () => {
+  const cierreCmd = (parteId: string, parcial: Partial<Extract<Comando, { tipo: "guardarCierre" }>> = {}): Comando => ({
+    tipo: "guardarCierre",
+    parteId,
+    kmFin: 84450,
+    combustible: "medio",
+    litrosCargados: null,
+    ...parcial,
+  });
+
+  it("sobre un borrador -> parte-sin-revision; sobre un parte cerrado -> parte-enviado-inmutable", () => {
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo());
+    const err = ejecutarError(estado, cierreCmd(parteId));
+    expect(err.codigo).toBe("parte-sin-revision");
+    expect(err.mensaje).toBe("Primero envíe la revisión antes de salir.");
+    expect(ejecutarError(flotaDePrueba(), cierreCmd("p-u1-ayer")).codigo).toBe("parte-enviado-inmutable");
+    expect(ejecutarError(flotaDePrueba(), cierreCmd("zzz")).codigo).toBe("parte-inexistente");
+  });
+
+  it("K9, H1: guarda los tres campos, sin eventos, sin cambiar kmActual ni la fecha de la revisión", () => {
+    const { estado, parteId } = conRevision(flotaDePrueba(), listo({ kmInicio: 84330 }));
+    const r = ejecutarOk(estado, cierreCmd(parteId, { kmFin: 84999, litrosCargados: 45.5 }), contexto({ ahora: "2026-11-18T20:00:00.000Z" }));
+    expect(parteDe(r.estado, parteId)).toMatchObject({ estado: "en-uso", kmFin: 84999, combustible: "medio", litrosCargados: 45.5, actualizado: "2026-11-18T20:00:00.000Z", revisado: "2026-11-18T15:00:00.000Z", enviado: null });
+    expect(r.eventos).toEqual([]);
+    expect(kmActual("u1", r.estado.partes, r.estado.correccionesKm)).toBe(84330);
+  });
+
+  it("P3: un km que no es entero o litros inválidos -> error de tipo; sin cambios -> modifica false (no marca la demo)", () => {
+    const { estado, parteId } = conRevision(flotaDePrueba());
+    expect(ejecutarError(estado, cierreCmd(parteId, { kmFin: 1.5 })).campo).toBe("kmFin");
+    expect(ejecutarError(estado, cierreCmd(parteId, { kmFin: -3 })).campo).toBe("kmFin");
+    expect(ejecutarError(estado, cierreCmd(parteId, { litrosCargados: 12.25 })).campo).toBe("litrosCargados");
+    expect(ejecutarError(estado, cierreCmd(parteId, { combustible: "rebalsando" as never })).campo).toBe("combustible");
+    const una = ejecutarOk(estado, cierreCmd(parteId));
+    const dos = ejecutarOk({ ...una.estado, meta: { ...una.estado.meta, modificada: false } }, cierreCmd(parteId), contexto({ ahora: "2026-11-18T16:00:00.000Z" }));
+    expect(dos.cambios.partes).toEqual([]);
+    expect(dos.estado.meta.modificada).toBe(false);
+  });
+
+  it("P15: sin control de fecha: un parte en uso de H - 10 se guarda; unidad fuera de servicio se acepta (P8), de baja no (A7)", () => {
+    const e: Estado = { ...flotaDePrueba(), partes: [] };
+    const viejo = conRevision(e, listo({ fecha: "2026-11-08", kmInicio: 1000 }), [], contexto({ hoy: "2026-11-08", ahora: "2026-11-08T15:00:00.000Z" }));
+    expect(parteDe(ejecutarOk(viejo.estado, cierreCmd(viejo.parteId, { kmFin: 1100 })).estado, viejo.parteId).kmFin).toBe(1100);
+
+    const { estado, parteId } = conRevision(flotaDePrueba());
+    const fuera = ejecutarOk(estado, { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "En taller" }).estado;
+    expect(ejecutarOk(fuera, cierreCmd(parteId)).estado.partes.find((p) => p.id === parteId)?.kmFin).toBe(84450);
+    const baja = ejecutarOk(estado, { tipo: "darDeBaja", unidadId: "u1", motivo: "Venta de la unidad" }).estado;
+    expect(ejecutarError(baja, cierreCmd(parteId)).codigo).toBe("unidad-de-baja");
+  });
+});
+
+describe("enviarCierre (P15)", () => {
+  const cerrar = (parteId: string, aceptadas: Cierre["advertenciasAceptadas"] = []): Cierre => ({ tipo: "enviarCierre", parteId, advertenciasAceptadas: aceptadas });
+  const conCierre = (kmFin: number | null, combustible: Borrador["combustible"], extra: Partial<Parte> = {}) => {
+    const { estado, parteId } = conRevision(flotaDePrueba(), listo({ kmInicio: 84330 }));
+    const guardado = estado.partes.map((p) => (p.id === parteId ? { ...p, kmFin, combustible, ...extra } : p));
+    return { estado: { ...estado, partes: guardado }, parteId };
+  };
+  const tarde = contexto({ ahora: "2026-11-18T21:40:00.000Z" });
+
+  it("P15, H1: un cierre completo -> cerrado, recorrido en el evento parte-enviado, kmActual = kmFin y autor del parte sin cambiar", () => {
+    const { estado, parteId } = conCierre(84452, "tres-cuartos");
+    const r = ejecutarOk(estado, cerrar(parteId), contexto({ autor: "Luis Ferreyra", ahora: "2026-11-18T21:40:00.000Z" }));
+    expect(parteDe(r.estado, parteId)).toMatchObject({ estado: "enviado", enviado: "2026-11-18T21:40:00.000Z", revisado: "2026-11-18T15:00:00.000Z", actualizado: "2026-11-18T21:40:00.000Z", autor: "Rocío Medina", sinSalida: false });
+    expect(r.eventos.map((x) => x.tipo)).toEqual(["parte-enviado"]);
+    expect(r.eventos[0]?.datos).toEqual({ parteId, fecha: H, kmInicio: 84330, kmFin: 84452, recorrido: 122, advertencias: [] });
+    expect(r.eventos[0]?.autor).toBe("Luis Ferreyra");
+    expect(r.eventos[0]?.resumen).toBe("Parte del 18/11/2026 de ZK 214 BD cerrado: 84.330 a 84.452 km (122 km)");
+    expect(kmActual("u1", r.estado.partes, r.estado.correccionesKm)).toBe(84452);
+  });
+
+  it("K2: un recorrido de cero se dice 'sin uso' en el resumen", () => {
+    const { estado, parteId } = conCierre(84330, "medio");
+    expect(ejecutarOk(estado, cerrar(parteId), tarde).eventos[0]?.resumen).toBe("Parte del 18/11/2026 de ZK 214 BD cerrado: 84.330 a 84.330 km (sin uso)");
+  });
+
+  it("P4: un cierre sin nada -> ['kmFin', 'combustible']; con uno solo, el que falta", () => {
+    const vacio = conCierre(null, null);
+    const err = ejecutarError(vacio.estado, cerrar(vacio.parteId), tarde);
+    expect(err.codigo).toBe("faltan-datos");
+    expect(err.detalle).toEqual({ faltan: ["kmFin", "combustible"] });
+    const medio = conCierre(84400, null);
+    expect(ejecutarError(medio.estado, cerrar(medio.parteId), tarde).detalle).toEqual({ faltan: ["combustible"] });
+  });
+
+  it("estados: sobre un borrador -> parte-sin-revision; sobre uno cerrado -> parte-enviado-inmutable; inexistente", () => {
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo());
+    expect(ejecutarError(estado, cerrar(parteId)).codigo).toBe("parte-sin-revision");
+    expect(ejecutarError(flotaDePrueba(), cerrar("p-u1-ayer")).codigo).toBe("parte-enviado-inmutable");
+    expect(ejecutarError(flotaDePrueba(), cerrar("zzz")).codigo).toBe("parte-inexistente");
+  });
+
+  it("K2 y K4 en el cierre (con el siguiente parte en uso)", () => {
+    const { estado, parteId } = conCierre(84329, "medio");
+    expect(ejecutarError(estado, cerrar(parteId), tarde).codigo).toBe("km-fin-menor");
+
+    const base: Estado = {
+      ...flotaDePrueba(),
+      partes: [parte({ id: "a", unidadId: "u1", fecha: "2026-11-15", kmInicio: 79000, kmFin: 80000, enviado: "2026-11-15T18:00:00.000Z" })],
+    };
+    const uso = conRevision(base, listo({ fecha: "2026-11-16", kmInicio: 80000 }), [], contexto({ hoy: "2026-11-16", ahora: "2026-11-16T15:00:00.000Z" }));
+    const siguiente = parte({ id: "b", unidadId: "u1", fecha: "2026-11-17", estado: "en-uso", kmInicio: 80500, kmFin: null, combustible: null, revisado: "2026-11-17T09:00:00.000Z", enviado: null });
+    const conSiguiente: Estado = { ...uso.estado, partes: [...uso.estado.partes.map((p) => (p.id === uso.parteId ? { ...p, kmFin: 80600, combustible: "medio" as const } : p)), siguiente] };
+    const err = ejecutarError(conSiguiente, cerrar(uso.parteId), tarde);
+    expect(err.codigo).toBe("km-supera-siguiente");
+    expect(err.campo).toBe("kmFin");
+  });
+
+  it("K7: un recorrido de 1.201 km pide aceptar; aceptada, advertenciasAceptadas = las de la revisión + las del cierre", () => {
+    const e = conSeguroQueVence(flotaDePrueba(), "2026-11-15");
+    const rev = conRevision(e, listo({ kmInicio: 84320 }), ["documentacion-vencida"]);
+    const estado: Estado = { ...rev.estado, partes: rev.estado.partes.map((p) => (p.id === rev.parteId ? { ...p, kmFin: 85521, combustible: "lleno" as const } : p)) };
+    const err = ejecutarError(estado, cerrar(rev.parteId), tarde);
+    expect(err.codigo).toBe("advertencias-sin-aceptar");
+    expect(err.detalle).toEqual({ advertencias: [{ tipo: "recorrido-largo", km: 1201 }] });
+    const r = ejecutarOk(estado, cerrar(rev.parteId, ["recorrido-largo"]), tarde);
+    expect(parteDe(r.estado, rev.parteId).advertenciasAceptadas).toEqual([{ tipo: "documentacion-vencida", documentos: ["seguro"] }, { tipo: "recorrido-largo", km: 1201 }]);
+    expect(r.eventos[0]?.datos).toMatchObject({ advertencias: [{ tipo: "recorrido-largo", km: 1201 }] });
+    expect(parteDe(r.estado, rev.parteId).documentacionVencida).toEqual(["seguro"]);
+  });
+
+  it("K7: 1.200 km justo no avisa", () => {
+    const { estado, parteId } = conCierre(85530, "medio");
+    expect(parteDe(ejecutarOk(estado, cerrar(parteId), tarde).estado, parteId).estado).toBe("enviado");
+  });
+
+  it("P8: una unidad puesta fuera de servicio a mano después de la revisión: el cierre se acepta", () => {
+    const { estado, parteId } = conCierre(84450, "medio");
+    const fuera = ejecutarOk(estado, { tipo: "ponerFueraDeServicio", unidadId: "u1", motivo: "En taller" }).estado;
+    expect(parteDe(ejecutarOk(fuera, cerrar(parteId), tarde).estado, parteId).estado).toBe("enviado");
+  });
+
+  it("A7: la unidad de baja -> unidad-de-baja en el cierre", () => {
+    const { estado, parteId } = conCierre(84450, "medio");
+    const baja = ejecutarOk(estado, { tipo: "darDeBaja", unidadId: "u1", motivo: "Venta de la unidad" }).estado;
+    expect(ejecutarError(baja, cerrar(parteId), tarde).codigo).toBe("unidad-de-baja");
+  });
+
+  it("P15: un parte en uso de H - 10 todavía se cierra (sin límite de fecha)", () => {
+    const e: Estado = { ...flotaDePrueba(), partes: [] };
+    const uso = conRevision(e, listo({ fecha: "2026-11-08", kmInicio: 1000 }), [], contexto({ hoy: "2026-11-08", ahora: "2026-11-08T15:00:00.000Z" }));
+    const estado: Estado = { ...uso.estado, partes: uso.estado.partes.map((p) => (p.id === uso.parteId ? { ...p, kmFin: 1100, combustible: "medio" as const } : p)) };
+    expect(parteDe(ejecutarOk(estado, cerrar(uso.parteId), tarde).estado, uso.parteId).estado).toBe("enviado");
+  });
+
+  it("L3: el reloj pasa a F + 1 y la licencia vencía F: el cierre se acepta (no mira la licencia)", () => {
+    const e = conLicenciaQueVence(flotaDePrueba(), H);
+    const rev = conRevision(e, listo({ kmInicio: 84330 }), [], contexto({ ahora: "2026-11-18T22:00:00.000Z" }));
+    const estado: Estado = { ...rev.estado, partes: rev.estado.partes.map((p) => (p.id === rev.parteId ? { ...p, kmFin: 84400, combustible: "medio" as const } : p)) };
+    const r = ejecutarOk(estado, cerrar(rev.parteId), contexto({ hoy: "2026-11-19", ahora: "2026-11-19T09:00:00.000Z" }));
+    expect(parteDe(r.estado, rev.parteId).estado).toBe("enviado");
+  });
+
+  it("P12: el cierre devuelve el parte y su evento juntos", () => {
+    const { estado, parteId } = conCierre(84450, "medio");
+    const r = ejecutarOk(estado, cerrar(parteId), tarde);
+    expect(r.cambios.partes.map((p) => p.id)).toEqual([parteId]);
+    expect(r.cambios.novedades).toEqual([]);
+    expect(r.eventos).toHaveLength(1);
   });
 });

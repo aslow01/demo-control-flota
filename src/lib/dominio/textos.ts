@@ -54,6 +54,10 @@ export const ERRORES = {
   parteInexistente: "No se encontró el parte. Vuelva a la lista e intente de nuevo.",
   novedadInexistente: "No se encontró la novedad. Vuelva a la lista e intente de nuevo.",
   parteEnviadoInmutable: "Un parte enviado no se puede modificar.",
+  /** P7: la revisión de un parte en uso ya no cambia. */
+  revisionYaEnviada: "La revisión ya se envió: no se puede modificar.",
+  /** El cierre o su autoguardado de un parte que todavía es un borrador. */
+  parteSinRevision: "Primero envíe la revisión antes de salir.",
   sinCambios: "No hay cambios para guardar.",
   unidadYaFueraDeServicio: "La unidad ya está fuera de servicio.",
   unidadYaEnServicio: "La unidad ya está en servicio.",
@@ -175,6 +179,9 @@ export const TEXTO_ALERTA = {
     `Circuló con documentación vencida: ${nombres} (parte del ${formatearFecha(fecha)})`,
   parteSinEnviar: (fecha: FechaCivil, iniciadoPor: string | null) =>
     `Parte del ${formatearFecha(fecha)} sin enviar${iniciadoPor === null ? "" : ` (iniciado por ${iniciadoPor})`}`,
+  /** P5: el parte salió (la revisión se envió) y falta el cierre. */
+  parteSinCerrar: (fecha: FechaCivil, salioCon: string | null) =>
+    `Parte del ${formatearFecha(fecha)} sin cerrar${salioCon === null ? "" : ` (salió con ${salioCon})`}`,
   sinParte: (ayer: FechaCivil) => `Sin parte de ayer (${formatearFecha(ayer)})`,
 } as const;
 
@@ -235,9 +242,19 @@ export function errNovedadesCriticasAbiertas(lista: readonly string[]): string {
   return `Antes de volver a servicio, resuelva: ${lista.join(", ")}.`;
 }
 
-export function errParteDuplicado(patente: string, fecha: FechaCivil, estado: "borrador" | "enviado"): string {
-  const final = estado === "borrador" ? "Ábralo para continuar." : "Ábralo para verlo.";
-  return `Ya hay un parte de ${patente} para el ${formatearFecha(fecha)} (${estado}). ${final}`;
+export function errParteDuplicado(patente: string, fecha: FechaCivil, estado: "borrador" | "en-uso" | "enviado"): string {
+  const final = estado === "enviado" ? "Ábralo para verlo." : "Ábralo para continuar.";
+  const nombre = estado === "en-uso" ? "en uso" : estado;
+  return `Ya hay un parte de ${patente} para el ${formatearFecha(fecha)} (${nombre}). ${final}`;
+}
+
+/** L1: el motivo por el que la licencia de un conductor no ampara la fecha de un parte (L5), en tercera persona: el dominio no sabe qué perfil está mirando. */
+export type MotivoDeLicencia = { motivo: "faltante" } | { motivo: "vencida"; vence: FechaCivil } | { motivo: "posterior"; desde: FechaCivil };
+
+export function errLicenciaNoVigente(nombre: string, fecha: FechaCivil, estado: MotivoDeLicencia): string {
+  if (estado.motivo === "faltante") return `${nombre} no tiene licencia de conducir cargada. Elija otro conductor.`;
+  const detalle = estado.motivo === "vencida" ? `venció el ${formatearFecha(estado.vence)}` : `la nueva vale desde el ${formatearFecha(estado.desde)}`;
+  return `${nombre} no tiene licencia vigente para el ${formatearFecha(fecha)}: ${detalle}. Elija otro conductor.`;
 }
 
 /** M3: la corrección de kilometraje no cambiaría nada porque hay un registro posterior. */
@@ -268,10 +285,12 @@ export const RESUMEN_EVENTO = {
     `Renovación de ${nombre} (${titular}): vencía el ${formatearFecha(anterior)}, ahora vence el ${formatearFecha(nuevo)}`,
   documentoCorregido: (nombre: string, titular: string, campos: readonly string[]) =>
     `Corrección de ${nombre} (${titular}): ${campos.join(", ")}`,
-  parteEnviado: (patente: string, fecha: FechaCivil, fueraDeTermino: boolean, kmInicio: number, kmFin: number) => {
+  revisionEnviada: (patente: string, fecha: FechaCivil, fueraDeTermino: boolean, kmInicio: number, sinSalida: boolean) =>
+    `Revisión del ${formatearFecha(fecha)} de ${patente} enviada${fueraDeTermino ? " fuera de término" : ""}: ${sinSalida ? "la unidad no salió por una novedad crítica" : `sale con ${formatearKm(kmInicio)} km`}`,
+  parteCerrado: (patente: string, fecha: FechaCivil, kmInicio: number, kmFin: number) => {
     const recorrido = kmFin - kmInicio;
     const texto = recorrido === 0 ? "sin uso" : `${formatearKm(recorrido)} km`;
-    return `Parte del ${formatearFecha(fecha)} de ${patente} enviado${fueraDeTermino ? " fuera de término" : ""}: ${formatearKm(kmInicio)} a ${formatearKm(kmFin)} km (${texto})`;
+    return `Parte del ${formatearFecha(fecha)} de ${patente} cerrado: ${formatearKm(kmInicio)} a ${formatearKm(kmFin)} km (${texto})`;
   },
   novedadAbierta: (patente: string, critica: boolean, detalle: string) =>
     `Novedad ${critica ? "crítica " : ""}abierta (${patente}): ${detalle}`,
