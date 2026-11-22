@@ -733,3 +733,76 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
 
 // Evita que el linter de variables sin uso se queje de las fábricas que solo usan algunos casos.
 void documento;
+
+describe("pantalla del parte y licencia (L1, P13; 17.5)", () => {
+  const sinLicencia = (e: Estado, vence = "2026-11-15"): Estado => ({ ...e, documentos: e.documentos.map((d) => (d.id === "c1-licencia" ? { ...d, vence } : d)) });
+
+  it("perfil Conductor sin licencia para la fecha: «No se puede cargar este parte» con el texto de L1 en segunda persona", () => {
+    const v = vistaDeParte(sinLicencia(flotaDePrueba()), H, COND, "ZK214BD", H);
+    expect(v).toEqual({
+      tipo: "no-disponible",
+      titulo: "No se puede cargar este parte",
+      mensaje: "Para el 18/11/2026 no tiene licencia de conducir vigente (venció el 15/11/2026). Sin licencia vigente no se puede enviar la revisión ni salir con la unidad.",
+      nota: null,
+      borrador: null,
+      enlace: { texto: "Ir a Parte diario", href: "#/conductor" },
+    });
+  });
+
+  it("los tres motivos de la pantalla: «no hay ninguna cargada» y «la nueva vale desde el 20/11/2026»", () => {
+    const sin = flotaDePrueba();
+    sin.documentos = sin.documentos.filter((d) => d.id !== "c1-licencia");
+    expect(vistaDeParte(sin, H, COND, "ZK214BD", H)).toMatchObject({ mensaje: expect.stringContaining("(no hay ninguna cargada)") });
+    const nueva = sinLicencia(flotaDePrueba());
+    nueva.documentos = [...nueva.documentos, documento({ id: "c1-nueva", titular: { tipo: "conductor", id: "c1" }, tipo: "licencia", vence: "2031-01-01", emitido: "2026-11-20", reemplazaA: "c1-licencia" })];
+    expect(vistaDeParte(nueva, H, COND, "ZK214BD", H)).toMatchObject({ mensaje: expect.stringContaining("(la nueva vale desde el 20/11/2026)") });
+  });
+
+  it("con un borrador de hoy: se ofrece descartarlo y se dice que se conserva; con un borrador de un día pasado, solo descartarlo", () => {
+    const e = sinLicencia(flotaDePrueba());
+    e.partes = e.partes.filter((p) => !(p.unidadId === "u1" && p.fecha === "2026-11-17"));
+    e.partes.push(parte({ id: "pb", estado: "borrador", enviado: null, revisado: null, fecha: H, unidadId: "u1" }));
+    expect(vistaDeParte(e, H, COND, "ZK214BD", H)).toMatchObject({
+      tipo: "no-disponible",
+      nota: "El borrador se conserva: cuando el encargado cargue una licencia vigente, podrá enviarlo.",
+      borrador: { parteId: "pb", descartar: "Descartar borrador" },
+    });
+    e.partes.push(parte({ id: "pc", estado: "borrador", enviado: null, revisado: null, fecha: "2026-11-17", unidadId: "u1" }));
+    expect(vistaDeParte(e, H, COND, "ZK214BD", "2026-11-17")).toMatchObject({ tipo: "no-disponible", nota: null, borrador: { parteId: "pc" } });
+  });
+
+  it("la licencia se mira a la fecha del parte: la que vencía H - 3 todavía vale para un parte de H - 4", () => {
+    const e = sinLicencia({ ...flotaDePrueba(), partes: [] }, "2026-11-15");
+    expect(vistaDeParte(e, H, COND, "ZK214BD", "2026-11-14").tipo).toBe("edicion");
+    expect(vistaDeParte(e, H, COND, "ZK214BD", "2026-11-16").tipo).toBe("no-disponible");
+  });
+
+  it("perfil Encargado: el formulario se muestra igual; el conductor asignado sin licencia no se precarga (P13) y su opción lo dice", () => {
+    const e = sinLicencia(flotaDePrueba());
+    const v = vistaDeParte(e, H, ENC, "ZK214BD", H);
+    expect(v.tipo).toBe("edicion");
+    if (v.tipo !== "edicion") return;
+    expect(v.valoresIniciales.conductorId).toBe("");
+    expect(v.conductor.tipo === "elegir" && v.conductor.opciones.map((o) => [o.valor, o.licenciaVigente])).toEqual([["", true], ["c1", false], ["c2", true]]);
+    // con la licencia al día se precarga como siempre
+    expect(vistaDeParte(flotaDePrueba(), H, ENC, "ZK214BD", H)).toMatchObject({ valoresIniciales: { conductorId: "c1" } });
+  });
+
+  it("un parte en uso con la licencia vencida después: se abre el cierre (L3), con el perfil Conductor también", () => {
+    const uso = sinLicencia(enUso(flotaDePrueba()).estado);
+    expect(vistaDeParte(uso, H, COND, "ZK214BD", H).tipo).toBe("cierre");
+    expect(vistaDeParte(uso, H, ENC, "ZK214BD", H).tipo).toBe("cierre");
+  });
+
+  it("un parte en uso de una unidad de baja: «No se puede cargar», sin descartar (A7, P7)", () => {
+    const uso = enUso(flotaDePrueba()).estado;
+    const baja = { ...uso, unidades: uso.unidades.map((u) => (u.id === "u1" ? { ...u, estado: { tipo: "baja" as const, desde: "2026-11-10", motivo: "Venta" } } : u)) };
+    expect(vistaDeParte(baja, H, COND, "ZK214BD", H)).toMatchObject({ tipo: "no-disponible", borrador: null, mensaje: "La unidad ZK 214 BD está dada de baja desde el 10/11/2026." });
+  });
+
+  it("un parte en uso con la unidad fuera de servicio: el cierre se acepta (P8)", () => {
+    const uso = enUso(flotaDePrueba()).estado;
+    const fuera = { ...uso, unidades: uso.unidades.map((u) => (u.id === "u1" ? { ...u, estado: { tipo: "fuera-de-servicio" as const, desde: H, motivo: "En taller", origen: "manual" as const, novedadIds: [] } } : u)) };
+    expect(vistaDeParte(fuera, H, COND, "ZK214BD", H).tipo).toBe("cierre");
+  });
+});

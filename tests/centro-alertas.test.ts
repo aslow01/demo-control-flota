@@ -363,3 +363,69 @@ describe("detalle de operación (6.1)", () => {
     expect(fila?.texto).toBe("Parte del 16/11/2026 sin enviar");
   });
 });
+
+describe("conductores que no pueden manejar hoy (L6, L7; diseno.md 17.5)", () => {
+  it("con el ejemplo: una fila, la de C21, con su motivo, su unidad y la acción «Renovar» de su alerta de vencimiento", () => {
+    const p = c.protagonista;
+    expect(p.conductores).toHaveLength(1);
+    expect(p.tituloConductores).toBe("Conductores que no pueden manejar hoy (1)");
+    expect(p.textoLectorConductores).toBe("1 conductor no puede manejar hoy.");
+    const fila = p.conductores[0]!;
+    expect(fila.motivo).toBe("Licencia vencida hace 3 días");
+    expect(fila.unidad).toMatchObject({ patenteTexto: expect.stringMatching(/^[A-Z]{2,3} \d{3}( [A-Z]{2})?$/) });
+    expect(fila.accion).toMatchObject({ tipo: "renovar", etiqueta: "Renovar", nombreAccesible: `Renovar licencia de ${fila.nombre}` });
+    const alerta = calcularAlertas(e, H).alertas.find((a) => a.id === fila.accion?.alertaId);
+    expect(alerta).toMatchObject({ tipoDocumento: "licencia", conductorId: fila.conductorId });
+    // no cambia la cifra del protagonista (A8)
+    expect(p.cifra).toBe(4);
+  });
+
+  it("sin conductores sin licencia: lista vacía y sin frase para lectores", () => {
+    const p = centroDe({ ...flotaDePrueba(), partes: [] }).protagonista;
+    expect(p.conductores).toEqual([]);
+    expect(p.textoLectorConductores).toBeNull();
+  });
+
+  it("los motivos: «hace 1 día», «Falta cargar la licencia» (acción «Cargar») y «Licencia válida desde el 20/11/2026» (sin alerta de vencimiento: sin acción)", () => {
+    const base = flotaDePrueba();
+    const sin = { ...base, documentos: base.documentos.filter((d) => d.id !== "c1-licencia") };
+    expect(centroDe(sin).protagonista.conductores[0]).toMatchObject({ motivo: "Falta cargar la licencia", accion: { tipo: "cargar", etiqueta: "Cargar", nombreAccesible: "Cargar licencia de Luis Ferreyra" } });
+    const ayer = { ...base, documentos: base.documentos.map((d) => (d.id === "c1-licencia" ? { ...d, vence: "2026-11-17" } : d)) };
+    expect(centroDe(ayer).protagonista.conductores[0]?.motivo).toBe("Licencia vencida hace 1 día");
+    const nueva = {
+      ...ayer,
+      documentos: [...ayer.documentos, { ...ayer.documentos.find((d) => d.id === "c1-licencia")!, id: "c1-nueva", vence: "2031-01-01", emitido: "2026-11-20", reemplazaA: "c1-licencia" }],
+    };
+    expect(centroDe(nueva).protagonista.conductores[0]).toMatchObject({ motivo: "Licencia válida desde el 20/11/2026", accion: null });
+  });
+});
+
+describe("operación diaria: partes sin enviar, sin cerrar o ambos (P5; diseno-ui.md, sección 7)", () => {
+  const sano = flotaDePrueba();
+  const borrador = parte({ id: "b", unidadId: "u1", fecha: "2026-11-16", estado: "borrador", revisado: null, enviado: null });
+  const enUso = parte({ id: "u", unidadId: "u2", fecha: "2026-11-17", estado: "en-uso", kmFin: null, combustible: null, enviado: null, conductorId: "c2" });
+  const con = (partes: ReturnType<typeof parte>[]) => centroDe({ ...sano, partes });
+
+  it("solo borradores: «1 parte sin enviar»; el grupo se llama «Partes sin enviar (1)»", () => {
+    const x = con([borrador]);
+    expect(x.operacion.filas.find((f) => f.tipo === "parte-sin-enviar")?.texto).toBe("1 parte sin enviar");
+    const g = x.detalle.grupos.find((y) => y.tipo === "parte-sin-enviar");
+    expect(g?.tituloConCantidad).toBe("Partes sin enviar (1)");
+    expect(g?.filas[0]?.estado).toBe("Sin enviar");
+  });
+
+  it("solo partes en uso: «1 parte sin cerrar»; «Partes sin cerrar (1)» y la etiqueta «Sin cerrar»", () => {
+    const x = con([enUso]);
+    expect(x.operacion.filas.find((f) => f.tipo === "parte-sin-enviar")?.texto).toBe("1 parte sin cerrar");
+    const g = x.detalle.grupos.find((y) => y.tipo === "parte-sin-enviar");
+    expect(g?.tituloConCantidad).toBe("Partes sin cerrar (1)");
+    expect(g?.filas[0]).toMatchObject({ estado: "Sin cerrar", texto: expect.stringMatching(/^Parte del 17\/11\/2026 sin cerrar \(salió con /) });
+    expect(g?.filas[0]?.accion).toMatchObject({ tipo: "abrir-parte", href: "#/parte/ZKB482/2026-11-17" });
+  });
+
+  it("ambos: «2 partes sin enviar o sin cerrar» y «Partes sin enviar o sin cerrar (2)»", () => {
+    const x = con([borrador, enUso]);
+    expect(x.operacion.filas.find((f) => f.tipo === "parte-sin-enviar")?.texto).toBe("2 partes sin enviar o sin cerrar");
+    expect(x.detalle.grupos.find((y) => y.tipo === "parte-sin-enviar")?.tituloConCantidad).toBe("Partes sin enviar o sin cerrar (2)");
+  });
+});

@@ -526,3 +526,30 @@ describe("la flota con un estado armado a mano", () => {
     expect(f.proximoVencimiento.texto).toMatch(/^[A-Za-zÁÉÍÓÚáéíóúñ ]+ · \d{2}\/\d{2}\/\d{4}$/);
   });
 });
+
+describe("conductor sin licencia y último parte en uso (L1, 17.5)", () => {
+  it("conductorSinLicencia: solo la unidad del conductor de C21 (la unidad puede salir con otro conductor)", () => {
+    const filas = panelDe(e).filas.filter((f) => f.conductorSinLicencia);
+    expect(filas).toHaveLength(1);
+    expect(filas[0]?.estado.categoria).toBe("puede-salir");
+  });
+
+  it("una unidad sin conductor o con licencia vigente no lo lleva", () => {
+    const base = flotaDePrueba();
+    expect(panelDe(base).filas.every((f) => !f.conductorSinLicencia)).toBe(true);
+    const vencida = { ...base, documentos: base.documentos.map((d) => (d.id === "c1-licencia" ? { ...d, vence: "2026-11-15" } : d)) };
+    expect(panelDe(vencida).filas.find((f) => f.patente === "ZK214BD")?.conductorSinLicencia).toBe(true);
+    expect(panelDe(vencida).filas.find((f) => f.patente === "ZKB482")?.conductorSinLicencia).toBe(false);
+  });
+
+  it("«Último parte»: «En uso» si salió hoy, «Sin cerrar» si el parte en uso es de un día anterior y «Sin enviar» si es un borrador", () => {
+    const base = flotaDePrueba();
+    const uso = (fecha: string) => parte({ id: `x${fecha}`, unidadId: "u1", fecha, estado: "en-uso", kmInicio: 84400, kmFin: null, combustible: null, enviado: null });
+    const fila = (partes: ReturnType<typeof parte>[]) => panelDe({ ...base, partes: [...base.partes, ...partes] }).filas.find((f) => f.patente === "ZK214BD")!;
+    expect(fila([uso(H)]).ultimoParte.etiqueta).toBe("En uso");
+    expect(fila([uso("2026-11-16")]).ultimoParte.etiqueta).toBe("Sin cerrar");
+    expect(fila([parte({ id: "b", unidadId: "u1", fecha: "2026-11-16", estado: "borrador", revisado: null, enviado: null })]).ultimoParte.etiqueta).toBe("Sin enviar");
+    // el último parte cerrado sigue siendo el de la fecha de la lista
+    expect(fila([uso(H)]).ultimoParte.fecha).toBe("2026-11-17");
+  });
+});

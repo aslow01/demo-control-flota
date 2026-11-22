@@ -16,7 +16,7 @@ import {
   type FichaDeUnidad,
   type FichaNoEncontrada,
 } from "../src/lib/estado/ficha.ts";
-import { contexto, flotaDePrueba } from "./ayuda.ts";
+import { contexto, flotaDePrueba, parte } from "./ayuda.ts";
 
 const H = "2026-11-18";
 const ENCARGADO: Perfil = { tipo: "encargado" };
@@ -523,5 +523,23 @@ describe("vistaDeHistorial: filtro, páginas de 30 y días", () => {
     const sinNovedades = vistaDeHistorial({ ...h, eventos: h.eventos.filter((x) => x.categoria !== "novedades") }, "novedades", 30);
     expect(sinNovedades.grupos).toEqual([]);
     expect(sinNovedades.vacio).toBe("Todavía no hay eventos.");
+  });
+});
+
+describe("ficha: conductor sin licencia y kilometraje con la salida (L1, K10, 17.5)", () => {
+  it("datos.conductorSinLicencia: la unidad de C21 lo trae en true; una sana, en false", () => {
+    const conMarca = e.unidades.filter((u) => u.conductorId !== null).filter((u) => fichaDe(e, u.patente).datos.conductorSinLicencia);
+    expect(conMarca).toHaveLength(1);
+    expect(fichaDe(e, "ZK214BD").datos.conductorSinLicencia).toBe(false);
+  });
+
+  it("un parte en uso aparece en el kilometraje como «84.452 → en uso» con enlace al parte; un parte sin salida dice «Sin uso»", () => {
+    const base = flotaDePrueba();
+    const uso = parte({ id: "uso", unidadId: "u1", fecha: H, estado: "en-uso", kmInicio: 84452, kmFin: null, combustible: null, enviado: null, revisado: "2026-11-18T12:00:00.000Z" });
+    const f = fichaDe({ ...base, partes: [...base.partes, uso] }, "ZK214BD");
+    expect(f.kilometraje.filas[0]).toMatchObject({ tipo: "salida", fecha: "18/11/2026", texto: "84.452 → en uso", recorrido: null, href: "#/parte/ZK214BD/2026-11-18" });
+    expect(f.datos.km).toMatchObject({ valor: 84452 });
+    const sin = parte({ id: "ss", unidadId: "u1", fecha: H, sinSalida: true, kmInicio: 84320, kmFin: 84320 });
+    expect(fichaDe({ ...base, partes: [...base.partes, sin] }, "ZK214BD").kilometraje.filas[0]).toMatchObject({ tipo: "parte", recorrido: "Sin uso" });
   });
 });
