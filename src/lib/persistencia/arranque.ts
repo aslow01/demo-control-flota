@@ -97,12 +97,15 @@ const ITEMS_DEL_CHECKLIST: Record<ItemChecklist, true> = {
   documentacion: true,
   cabina: true,
 };
+/** Los tres estados de un parte (sección 17): revisión sin enviar, en uso (revisión enviada) y cerrado. */
+const ESTADOS_DE_PARTE: Record<Parte["estado"], true> = { borrador: true, "en-uso": true, enviado: true };
 const TIPOS_DE_EVENTO: Record<TipoEvento, true> = {
   "unidad-alta": true,
   "asignacion-cambiada": true,
   "documento-cargado": true,
   "documento-renovado": true,
   "documento-corregido": true,
+  "revision-enviada": true,
   "parte-enviado": true,
   "novedad-abierta": true,
   "novedad-resuelta": true,
@@ -152,7 +155,7 @@ const FORMA_DE_ELEMENTO: Record<string, (o: Record<string, unknown>) => boolean>
     esObjeto(o.titular) &&
     textos(o.titular, "tipo", "id"),
   // Los partes pasan después por `parteLegible` (`conPartesLegibles`): acá solo se pide lo que hace falta para ubicarlos.
-  partes: (o) => textos(o, "id", "unidadId", "fecha", "estado") && esObjeto(o.checklist),
+  partes: (o) => textos(o, "id", "unidadId", "fecha") && estaEn(ESTADOS_DE_PARTE, o.estado) && esObjeto(o.checklist),
   novedades: (o) =>
     textos(o, "id", "unidadId", "estado", "gravedad", "fecha", "descripcion") &&
     origenDeNovedadUtilizable(o.origen) &&

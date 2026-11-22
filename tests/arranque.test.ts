@@ -129,6 +129,16 @@ describe("D7: versión de esquema distinta", () => {
     expect(TEXTO_AVISO.esquemaActualizado).toBe("La demo se actualizó. Se cargó de nuevo la flota de ejemplo y no se conservaron los datos anteriores.");
   });
 
+  it("D7, sección 17: datos guardados con la versión 1 (partes de un solo paso) se regeneran con el aviso: no se migran partes viejos", async () => {
+    const viejo = generar(SEMILLA_POR_DEFECTO, HOY);
+    viejo.meta.versionEsquema = 1;
+    const repo = await repoCon(viejo);
+    const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(repo) });
+    expect(r.estado).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
+    expect(r.estado.meta.versionEsquema).toBe(2);
+    expect(r.avisos).toEqual([{ tipo: "esquema-actualizado" }]);
+  });
+
   it("un registro meta dañado (fecha inválida) también reinicia con ese aviso", async () => {
     const roto = generar(SEMILLA_POR_DEFECTO, HOY);
     (roto.meta as { fechaBase: string }).fechaBase = "no es una fecha";
@@ -340,6 +350,7 @@ describe("D7: elementos dañados en las listas guardadas cuentan como otro forma
     ["conductores con un texto", "conductores", ["x"]],
     ["documentos sin titular", "documentos", [{ id: "d1", tipo: "seguro", vence: "2026-12-01" }]],
     ["partes sin checklist", "partes", [{ id: "p1", unidadId: "u1", fecha: "2026-11-18", estado: "borrador" }]],
+    ["partes con un estado que no existe", "partes", [{ id: "p1", unidadId: "u1", fecha: "2026-11-18", estado: "revisado", checklist: {} }]],
     ["novedades con la unidad de otro tipo", "novedades", [{ id: "n1", unidadId: 5 }]],
     ["eventos con un arreglo adentro", "eventos", [[]]],
   ];

@@ -51,6 +51,8 @@ export const APELLIDOS: readonly string[] = [
 
 const DIAS_DE_PARTES = 45;
 const CANTIDAD_DE_CONDUCTORES = 16;
+/** C21: el conductor asignado a la unidad del caso (la última de las que tienen conductor) es el de la licencia vencida. */
+const INDICE_DEL_CONDUCTOR_C21 = CANTIDAD_DE_CONDUCTORES - 1;
 
 // ---------------------------------------------------------------------------------------------
 // Plantilla de las 24 unidades: cada una cumple un papel en los casos garantizados (9.2)
@@ -58,7 +60,7 @@ const CANTIDAD_DE_CONDUCTORES = 16;
 
 type Rol =
   | "c02" | "c03" | "c04" | "c05" | "c06" | "c07" | "c01" | "c08" | "c09" | "c10" | "c11" | "c12" | "c13"
-  | "c18" | "c20" | "c14" | "c15" | "c19" | "relleno" | "c16";
+  | "c18" | "c20" | "c14" | "c15" | "c19" | "c21" | "relleno" | "c16";
 
 type ClaveProyecto = "piedra" | "arroyo" | "base";
 
@@ -85,11 +87,11 @@ const PLANTILLA: readonly Plantilla[] = [
   { interno: 13, tipo: "camioneta", proyecto: "arroyo", rol: "c13" },
   { interno: 14, tipo: "camioneta", proyecto: "piedra", rol: "c18" },
   { interno: 15, tipo: "utilitario", proyecto: "base", rol: "c20" },
-  { interno: 16, tipo: "utilitario", proyecto: "piedra", rol: "c14" },
+  { interno: 16, tipo: "utilitario", proyecto: "piedra", rol: "c21" },
   { interno: 17, tipo: "utilitario", proyecto: "base", rol: "c14" },
   { interno: 18, tipo: "utilitario", proyecto: "arroyo", rol: "c15" },
   { interno: 19, tipo: "camion-liviano", proyecto: "piedra", rol: "c19" },
-  { interno: 20, tipo: "camion-liviano", proyecto: "arroyo", rol: "relleno" },
+  { interno: 20, tipo: "camion-liviano", proyecto: "arroyo", rol: "c14" },
   { interno: 21, tipo: "camion-liviano", proyecto: "base", rol: "relleno" },
   { interno: 22, tipo: "minibus", proyecto: "piedra", rol: "relleno" },
   { interno: 23, tipo: "minibus", proyecto: "arroyo", rol: "relleno" },
@@ -182,7 +184,7 @@ function crearPatente(azar: Azar, anio: number, usadas: Set<string>): string {
 }
 
 /** Versión del formato de los datos guardados (D7): si cambia, la demo se reinicia sola con un aviso. */
-export const VERSION_ESQUEMA = 1;
+export const VERSION_ESQUEMA = 2;
 
 /** Genera el estado completo de la demo. Las fechas son relativas a `fechaBase` (el "hoy" del ejemplo). */
 export function generar(semilla: number, fechaBase: FechaCivil): Estado {
@@ -423,7 +425,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     autor: ENCARGADA,
   });
 
-  // Licencias (C17: la del tercer conductor vence en H + 12) y habilitaciones de manejo (opcionales).
+  // Licencias (C17: la del tercer conductor vence en H + 12; C21: la única licencia del último conductor venció en H - 3) y habilitaciones de manejo (opcionales).
   conductores.forEach((c, i) => {
     agregarDocumento({
       titular: { tipo: "conductor", id: c.id },
@@ -431,7 +433,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
       conductorId: c.id,
       etiqueta: c.nombre,
       tipo: "licencia",
-      vence: i === 2 ? d(12) : null,
+      vence: i === 2 ? d(12) : i === INDICE_DEL_CONDUCTOR_C21 ? d(-3) : null,
     });
   });
   conductores.forEach((c, i) => {
@@ -465,9 +467,10 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     documentacion: respuestaEnOrden,
     cabina: respuestaEnOrden,
   });
+  const conductorC21 = conductores[INDICE_DEL_CONDUCTOR_C21] as Conductor;
   const NIVELES: readonly NivelCombustible[] = ["reserva", "cuarto", "medio", "tres-cuartos", "lleno"];
 
-  /** Último día (relativo a H) con parte enviado, según el papel de la unidad. */
+  /** Último día (relativo a H) con parte cerrado, según el papel de la unidad. */
   const ULTIMO_DIA: Partial<Record<Rol, number>> = { c11: -2, c12: -6, c13: -2, c14: -2, c16: -29 };
 
   for (const u of unidades) {
@@ -476,12 +479,15 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     let km = azar.entero(20000, 180000);
     for (let n = -DIAS_DE_PARTES; n <= ultimo; n++) {
       const fecha = d(n);
-      const conductorId = u.conductorId ?? (azar.elegir(conductores) as Conductor).id;
+      let conductorId = u.conductorId ?? (azar.elegir(conductores) as Conductor).id;
+      // C21: el conductor sin licencia (venció en H - 3) no firma partes de H - 2 en adelante: en esos días lo releva otro conductor activo con licencia vigente (L1).
+      if (conductorId === conductorC21.id && n > -3) conductorId = (conductores[0] as Conductor).id;
       const recorrido = azar.entero(40, 260);
       const combustible = azar.elegir(NIVELES);
       const litros = azar.probabilidad(0.3) ? azar.entero(200, 800) / 10 : null;
       const conNovedadPasada = n <= -12 && azar.probabilidad(0.012);
       const minutoDeEnvio = azar.entero(0, 89);
+      const minutoDeRevision = azar.entero(0, 89);
 
       const advertencias: Advertencia[] = [];
       const checklist = checklistCompleto();
@@ -538,41 +544,47 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
         checklist[pasada[0]] = { estado: "con-novedad", descripcion: pasada[1], impideUso: false };
       }
 
+      // C11: la revisión informa una novedad crítica y el parte se cierra sin salida (P16): recorrido 0, sin combustible.
+      const sinSalida = frenosCriticos;
       const kmInicio = km;
-      const kmFin = km + recorrido;
+      const kmFin = sinSalida ? km : km + recorrido;
       km = kmFin;
-      // entre las 21:00 y las 22:29 UTC (18:00 a 19:29 en Argentina): el mismo día civil
-      const enviado = en(fecha, 21 + Math.floor(minutoDeEnvio / 60), minutoDeEnvio % 60);
+      // La revisión se envía entre las 09:00 y las 10:29 UTC (06:00 a 07:29 en Argentina) y el cierre entre las 21:00 y las 22:29 UTC (18:00 a 19:29): el mismo día civil.
+      const revisado = en(fecha, 9 + Math.floor(minutoDeRevision / 60), minutoDeRevision % 60);
+      const enviado = sinSalida ? revisado : en(fecha, 21 + Math.floor(minutoDeEnvio / 60), minutoDeEnvio % 60);
       const parte: Parte = {
         id: id("p", "pt", 4),
         unidadId: u.id,
         fecha,
         conductorId,
         estado: "enviado",
+        revisado,
+        sinSalida,
         kmInicio,
         kmFin,
-        combustible,
-        litrosCargados: litros,
+        combustible: sinSalida ? null : combustible,
+        litrosCargados: sinSalida ? null : litros,
         checklist,
         otraNovedad,
         advertenciasAceptadas: advertencias,
         documentacionVencida,
-        creado: en(fecha, 11, 0),
+        creado: en(fecha, 8, 0),
         actualizado: enviado,
         enviado,
         autor: nombreDe(conductorId),
       };
       partes.push(parte);
       evento({
-        instante: enviado,
+        instante: revisado,
         unidadId: u.id,
         conductorId,
-        tipo: "parte-enviado",
-        resumen: RESUMEN_EVENTO.parteEnviado(pat(u), fecha, false, kmInicio, kmFin),
-        datos: { parteId: parte.id, fecha, kmInicio, kmFin, recorrido, fueraDeTermino: false, advertencias },
+        tipo: "revision-enviada",
+        resumen: RESUMEN_EVENTO.revisionEnviada(pat(u), fecha, false, kmInicio, sinSalida),
+        datos: { parteId: parte.id, fecha, kmInicio, fueraDeTermino: false, sinSalida, advertencias },
         autor: parte.autor,
       });
 
+      /** Las novedades se abren con la revisión, antes de salir (P14). */
       const abrir = (item: ItemChecklist | "otra", descripcion: string, gravedad: Novedad["gravedad"]): Novedad => {
         const nov: Novedad = {
           id: id("n", "n", 3),
@@ -586,7 +598,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
         };
         novedades.push(nov);
         evento({
-          instante: enviado,
+          instante: revisado,
           unidadId: u.id,
           conductorId: null,
           tipo: "novedad-abierta",
@@ -626,12 +638,25 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
         const motivo = `Novedad crítica en Frenos, parte del ${formatearFecha(fecha)}`;
         u.estado = { tipo: "fuera-de-servicio", desde: fecha, motivo, origen: "novedad-critica", novedadIds: [nov.id] };
         evento({
-          instante: enviado,
+          instante: revisado,
           unidadId: u.id,
           conductorId: null,
           tipo: "fuera-de-servicio",
           resumen: RESUMEN_EVENTO.fueraDeServicio(pat(u), motivo),
           datos: { origen: "novedad-critica", motivo, novedadIds: [nov.id] },
+          autor: parte.autor,
+        });
+      }
+
+      // El cierre de la jornada (P15); un parte sin salida no tiene cierre aparte.
+      if (!sinSalida) {
+        evento({
+          instante: enviado,
+          unidadId: u.id,
+          conductorId,
+          tipo: "parte-enviado",
+          resumen: RESUMEN_EVENTO.parteCerrado(pat(u), fecha, kmInicio, kmFin),
+          datos: { parteId: parte.id, fecha, kmInicio, kmFin, recorrido, advertencias: [] },
           autor: parte.autor,
         });
       }
@@ -648,6 +673,8 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
         fecha: d(-1),
         conductorId: u.conductorId,
         estado: "borrador",
+        revisado: null,
+        sinSalida: false,
         kmInicio: km,
         kmFin: null,
         combustible: null,
