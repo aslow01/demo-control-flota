@@ -17,7 +17,7 @@
     enviando = false,
     mostrarEnviando = false,
     paso = "revision",
-    alEnviarIgual,
+    alAceptarAvisos,
     focoDestino,
   }: {
     abierto?: boolean;
@@ -27,7 +27,7 @@
     mostrarEnviando?: boolean;
     /** Qué paso del parte se está enviando: cambia la frase de arriba y el nombre del primario. */
     paso?: "revision" | "cierre";
-    alEnviarIgual: () => void;
+    alAceptarAvisos: () => void;
     focoDestino?: () => HTMLElement | null;
   } = $props();
 
@@ -46,7 +46,7 @@
     {/each}
   </ul>
   {#snippet pie()}
-    <Boton cargando={enviando} onclick={alEnviarIgual}>
+    <Boton cargando={enviando} onclick={alAceptarAvisos}>
       {#if paso === "cierre"}{mostrarEnviando ? T.cerrando : T.antesDeEnviar.cerrarDeTodosModos}{:else}{mostrarEnviando ? T.enviando : T.antesDeEnviar.enviarDeTodosModos}{/if}
     </Boton>
   {/snippet}

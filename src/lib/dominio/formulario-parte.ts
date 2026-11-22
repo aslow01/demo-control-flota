@@ -53,12 +53,6 @@ export interface ValoresParte {
 export type ErroresDeParte = ErroresDeFormularioDe<CampoParte> & {
   /** El `h2` del resumen de errores: «Faltan 3 datos para enviar el parte». */
   titulo: string;
-  /**
-   * Lo que lista el resumen de errores (5.15): `lista` con los puntos sin completar agrupados (D1). Con más de 3, un solo enlace «Faltan 10 puntos de la revisión» que lleva
-   * al primero; con 3 o menos, uno por campo. `lista` sigue siendo uno por campo: es lo que dice el mensaje sobre cada campo. Mientras se completan los puntos la vista
-   * vuelve a agrupar lo que sigue vigente con `agruparResumen`.
-   */
-  resumen: { campo: CampoParte; mensaje: string }[];
 };
 
 export type ComandoDeBorrador = Extract<Comando, { tipo: "guardarBorrador" }>;
@@ -240,7 +234,7 @@ function conTitulo(lista: { campo: CampoParte; mensaje: string }[], general: str
   if (lista.length === 0) titulo = tituloGeneral;
   else if (faltan === lista.length) titulo = T.tituloFaltan(faltan, paso);
   else titulo = T.tituloRevise(lista.length, paso);
-  return { ...base, titulo, resumen: agruparResumen(lista) };
+  return { ...base, titulo };
 }
 
 /**
@@ -321,6 +315,17 @@ export function erroresDeNegocioParte(error: ErrorDeNegocio, paso: PasoDelParte 
   const campo = CAMPOS_PARTE.find((c) => c === campoDeError);
   const tituloGeneral = paso === "revision" ? T.tituloGeneral : T.tituloGeneralCierre;
   return campo === undefined ? conTitulo([], error.mensaje, 0, tituloGeneral, paso) : conTitulo([{ campo, mensaje: error.mensaje }], null, 0, tituloGeneral, paso);
+}
+
+/**
+ * m3 (accesibilidad): un error de regla del kilometraje (K3, K4) que el comando todavía no llegó a decir porque faltan datos se suma al resumen de los faltantes, en su lugar del
+ * formulario, para que la persona vea todo junto y no de a uno al ir corrigiendo. Si ese campo ya tiene un error (formato o faltante), no se pisa.
+ */
+export function sumarErrorDeRegla(v: ValoresParte, previos: ErroresDeParte, regla: ErrorDeNegocio, paso: PasoDelParte = "revision"): ErroresDeParte {
+  const campo = CAMPOS_PARTE.find((c) => c === regla.campo);
+  if (campo === undefined || previos.lista.some((x) => x.campo === campo)) return previos;
+  const lista = [...previos.lista, { campo, mensaje: regla.mensaje }].sort((a, b) => CAMPOS_PARTE.indexOf(a.campo) - CAMPOS_PARTE.indexOf(b.campo));
+  return conTitulo(lista, previos.general, faltantesDeValores(v, paso).length, paso === "revision" ? T.tituloGeneral : T.tituloGeneralCierre, paso);
 }
 
 /** Solo un error general (sin datos, sin permiso, guardado fallido, algo que cambió en otra pestaña). El título por defecto es el del envío de la revisión; otras acciones pasan el suyo. */

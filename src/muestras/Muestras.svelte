@@ -1,7 +1,7 @@
 <script lang="ts">
   // Página de muestras de los componentes de 3.2 (solo en desarrollo, ver muestras.html). Datos ficticios.
   // Sirve para mirar cada pieza en claro y oscuro, a 360 y 1280 px, y para recorrerlas con teclado.
-  import Aviso, { partirAviso } from "../componentes/Aviso.svelte";
+  import Aviso from "../componentes/Aviso.svelte";
   import Boton from "../componentes/Boton.svelte";
   import BotonConfirmar from "../componentes/BotonConfirmar.svelte";
   import Campo from "../componentes/Campo.svelte";
@@ -18,6 +18,7 @@
   import { calcularAlertas, type Alerta } from "../lib/dominio/alertas.ts";
   import { horizonteCompleto, horizonteDeUnidad, horizonteMinimo } from "../lib/dominio/horizonte.ts";
   import { formatearPatente } from "../lib/dominio/patente.ts";
+  import { textoUnidadNoPuedeSalir } from "../lib/dominio/textos.ts";
   import type { Grupo } from "../lib/dominio/vencimientos.ts";
 
   const colores: { grupo: string; nombres: string[] }[] = [
@@ -267,8 +268,8 @@
       <div class="accion-principal"><EnlaceAccion href="#/muestras" variante="primario" tamano="grande">Cerrar el parte anterior</EnlaceAccion></div>
       <div><EnlaceAccion href="#/muestras" variante="texto">Usar otra unidad</EnlaceAccion></div>
     </div>
-    <p class="nota">«No puede salir» de la unidad (estados 6 y 7 y paso 1), cortado por `partirAviso` desde una sola cadena:</p>
-    {@const noPuedeSalir = partirAviso("ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.")}
+    <p class="nota">«No puede salir» de la unidad (estados 6 y 7 y paso 1), con el titular y la acción que arma la lógica (`textoUnidadNoPuedeSalir`):</p>
+    {@const noPuedeSalir = textoUnidadNoPuedeSalir("ZK 214 BD", ["Seguro vencido hace 1 día"], true)}
     <div data-muestra="no-puede-salir"><Aviso tono="critico" icono="vencido" accion={noPuedeSalir.accion}>{noPuedeSalir.titular}</Aviso></div>
     <p class="nota">De un renglón, para un parte cerrado sin salida (estado 2):</p>
     <Aviso tono="critico" icono="octogono">Revisión de las 06:52: novedad crítica en Frenos. La unidad no salió.</Aviso>

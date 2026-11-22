@@ -6,6 +6,7 @@ import type { Comando } from "../src/lib/dominio/comandos.ts";
 import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
 import { opcionesDeConductor } from "../src/lib/dominio/formulario.ts";
 import { inicioDelConductor, opcionesParaElegirConductor, panelDeParteEnviado, panelDeRevisionEnviada, panelDeSinSalida, vistaDeParte } from "../src/lib/estado/parte.ts";
+import { SEMILLA_POR_DEFECTO, generar } from "../src/lib/datos/generador.ts";
 import { checklistEnOrden, checklistVacio, documento, ejecutarOk, flotaDePrueba, parte, unidad } from "./ayuda.ts";
 
 const H = "2026-11-18";
@@ -148,14 +149,14 @@ describe("inicio del conductor (6.4)", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
     const v = inicio(e);
-    expect(v?.avisoAptitud).toBe("ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.");
+    expect(v?.avisoAptitud).toEqual({ titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día.", accion: "Avise al encargado antes de usarla." });
     expect(v?.hoyEstado).toMatchObject({ tipo: "sin-parte" });
   });
 
   it("varios motivos se separan con punto y coma", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.filter((d) => d.id !== "u1-matafuego").map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
-    expect(inicio(e)?.avisoAptitud).toBe("ZK 214 BD no puede salir: Seguro vencido hace 1 día; Falta cargar: Carga del matafuego. Avise al encargado antes de usarla.");
+    expect(inicio(e)?.avisoAptitud).toEqual({ titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día; Falta cargar: Carga del matafuego.", accion: "Avise al encargado antes de usarla." });
   });
 
   it("pendientes: un borrador de ayer sin enviar y un día sin parte, con «Continuarlo» y «Cargarlo»", () => {
@@ -452,6 +453,21 @@ describe("cerrar antes (A1, P20): un parte anterior en uso bloquea el de hoy", (
     expect(vistaDeParte(conUsoDeAyer(), H, ENC, "ZK214BD", "2026-11-16").tipo).toBe("edicion");
   });
 
+  it("QA B1 (P20): si el parte en uso de la otra unidad es de hoy, el aviso dice que está en uso y no que «quedó sin cerrar»", () => {
+    const { estado } = enUso(flotaDePrueba());
+    expect(inicio(estado, COND, "u2")?.hoyEstado).toMatchObject({
+      tipo: "cierre-pendiente",
+      renglon1: "ZK 214 BD: el parte de hoy está en uso.",
+      renglon2: "Ciérrelo primero; después podrá empezar la revisión de hoy.",
+      primario: { texto: "Cerrar el parte anterior", href: "#/parte/ZK214BD/2026-11-18" },
+    });
+    expect(vistaDeParte(estado, H, COND, "ZKB482", H)).toMatchObject({
+      tipo: "no-disponible",
+      mensaje: "ZK 214 BD: el parte de hoy está en uso. Ciérrelo primero; después se puede empezar la revisión del 18/11/2026.",
+      cerrarAntes: { renglon1: "ZK 214 BD: el parte de hoy está en uso." },
+    });
+  });
+
   it("pantalla del parte (P20): el conductor con un parte en uso en otra unidad no puede cargar la revisión de esta, y el aviso lleva a ese cierre", () => {
     const e = conUsoDeAyer();
     expect(vistaDeParte(e, H, COND, "ZKB482", H)).toMatchObject({
@@ -497,7 +513,7 @@ describe("pantalla del parte, edición (6.5)", () => {
       interno: "Int. 07",
       descripcion: "Marca Modelo 2020 · Camioneta",
       fecha: H,
-      avisoFueraDeTermino: null,
+      avisoFueraDePlazo: null,
       avisoAptitud: null,
       parteId: null,
       borrador: null,
@@ -574,7 +590,7 @@ describe("pantalla del parte, edición (6.5)", () => {
     const w = ver({ ...e, partes: [...e.partes.filter((p) => p.id !== "p17"), posterior] }, COND, "ZK214BD", "2026-11-17");
     expect(w.tipo).toBe("edicion");
     if (w.tipo !== "edicion") return;
-    expect(w).toMatchObject({ avisoFueraDeTermino: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo.", contexto: "Parte del martes 17/11/2026 · paso 1 de 2", ayudaKmInicio: "Último registro: 84.000 km (parte del 16/11/2026)." });
+    expect(w).toMatchObject({ avisoFueraDePlazo: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo.", contexto: "Parte del martes 17/11/2026 · paso 1 de 2", ayudaKmInicio: "Último registro: 84.000 km (parte del 16/11/2026)." });
     expect(w.valoresIniciales.kmInicio).toBe("84.000");
   });
 
@@ -598,13 +614,13 @@ describe("pantalla del parte, edición (6.5)", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
     const v = ver(e, COND);
-    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: "ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla." });
+    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: { titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día.", accion: "Avise al encargado antes de usarla." } });
   });
   it("el aviso de aptitud no le dice «avise al encargado» al propio encargado, y concuerda en género (QA M-2)", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.map((d) => (d.id === "u1-revision-tecnica" ? { ...d, vence: "2026-11-17" } : d));
     const v = ver(e, ENC);
-    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: "ZK 214 BD no puede salir: Revisión técnica vencida hace 1 día." });
+    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: { titular: "ZK 214 BD no puede salir: Revisión técnica vencida hace 1 día.", accion: "" } });
   });
 
   it("una patente que no existe: «No se encontró la unidad»", () => {
@@ -693,7 +709,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       avisoCritica: null,
       advertencias: [],
       conDocumentacionVencida: false,
-      fueraDeTermino: null,
+      fueraDePlazo: null,
       notaEncargado: null,
       parrafo: null,
       completarCierre: null,
@@ -754,14 +770,14 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     const { estado, parte: p } = enviado(e, { kmInicio: 85500, kmFin: 86800 }, ["salto-km", "documentacion-vencida", "recorrido-largo"]);
     const panel = panelDeParteEnviado(estado, p, COND);
     expect(panel.advertencias).toEqual([
-      "1.180 km sin registrar desde el último parte",
-      "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado.",
-      "Recorrido del día inusualmente largo: 1.300 km",
+      { tono: "semana", texto: "1.180 km sin registrar desde el último parte" },
+      { tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." },
+      { tono: "semana", texto: "Recorrido del día inusualmente largo: 1.300 km" },
     ]);
     // Fuera de plazo: la revisión del parte de ayer se envió hoy.
     const tarde = { ...p, fecha: "2026-11-17", revisado: "2026-11-18T12:30:00.000Z" };
     const t = panelDeParteEnviado(estado, tarde, COND);
-    expect(t.fueraDeTermino).toBe("Revisión enviada fuera de plazo.");
+    expect(t.fueraDePlazo).toBe("Revisión enviada fuera de plazo.");
   });
 
   it("C1: «Revisión enviada»: el parte quedó en uso, con «Completar el cierre ahora» (hoy) o «Completar el cierre» como primario (día pasado)", () => {
@@ -778,13 +794,16 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       avisoCritica: null,
       advertencias: [],
       conDocumentacionVencida: false,
-      fueraDeTermino: null,
+      fueraDePlazo: null,
       notaEncargado: null,
       parrafo: "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible.",
       completarCierre: { texto: "Completar el cierre ahora", href: "#/parte/ZK214BD/2026-11-18", primario: false },
       volverAlInicio: { texto: "Volver al inicio", href: "#/conductor" },
     });
-    expect(panelDeRevisionEnviada(estado, p, COND, "2026-11-19").completarCierre).toEqual({ texto: "Completar el cierre", href: "#/parte/ZK214BD/2026-11-18", primario: true });
+    const deAyer = panelDeRevisionEnviada(estado, p, COND, "2026-11-19");
+    expect(deAyer.completarCierre).toEqual({ texto: "Completar el cierre", href: "#/parte/ZK214BD/2026-11-18", primario: true });
+    // C4: un parte de un día pasado no dice «al terminar la jornada»: la jornada ya terminó
+    expect(deAyer.parrafo).toBe("Falta cerrar este parte con el kilometraje y el combustible de esa jornada.");
   });
 
   it("C1 (S1): con documentación vencida aceptada la línea no dice «puede salir» y el panel lo marca; fuera de plazo también", () => {
@@ -799,7 +818,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     const panel = panelDeRevisionEnviada(uso.estado, conAviso, COND, H);
     expect(panel.conDocumentacionVencida).toBe(true);
     expect(panel.linea).toBe("ZK 214 BD: revisión enviada a las 12:00. Sale con documentación vencida: quedó registrado.");
-    expect(panel.advertencias).toEqual(["El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado."]);
+    expect(panel.advertencias).toEqual([{ tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." }]);
     const tarde = { ...conAviso, fecha: "2026-11-17", revisado: "2026-11-18T08:10:00.000Z" };
     expect(panelDeRevisionEnviada(uso.estado, tarde, COND, H).linea).toBe("Revisión del 17/11/2026 enviada el 18/11/2026 a las 05:10 (fuera de plazo). Salió con documentación vencida: quedó registrado.");
     // sin documentación vencida, como siempre
@@ -928,11 +947,21 @@ describe("pantalla del parte y licencia (L1, P13; 17.5)", () => {
     expect(vistaDeParte(flotaDePrueba(), H, ENC, "ZK214BD", H)).toMatchObject({ valoresIniciales: { conductorId: "c1" } });
   });
 
-  it("C13: la opción del `select` dice el dato primero y la patente al final: «{Nombre} (sin licencia vigente) · {P}»", () => {
+  it("C13 y QA B5: la opción del `select` dice el dato primero: «{Nombre} · {P}», o «{Nombre} (sin licencia)» sin patente; ninguna del ejemplo pasa de 30 caracteres (entra a 360 px)", () => {
     const v = vistaDeParte(sinLicencia(flotaDePrueba()), H, ENC, "ZK214BD", H);
     expect(v.tipo).toBe("edicion");
     if (v.tipo !== "edicion" || v.conductor.tipo !== "elegir") return;
-    expect(v.conductor.opciones.map((o) => o.textoDeOpcion)).toEqual(["Elija quién conduce", "Luis Ferreyra (sin licencia vigente) · ZK 214 BD", "Rosa Quiroga · ZKB 482"]);
+    expect(v.conductor.opciones.map((o) => o.textoDeOpcion)).toEqual(["Elija quién conduce", "Luis Ferreyra (sin licencia)", "Rosa Quiroga · ZKB 482"]);
+  });
+
+  it("QA B5: con el ejemplo del generador, ninguna opción del select de conductor pasa de 30 caracteres, y la que no tiene licencia lo dice", () => {
+    const e = generar(SEMILLA_POR_DEFECTO, H);
+    const v = vistaDeParte(e, H, ENC, "ZPA505", H);
+    expect(v.tipo).toBe("edicion");
+    if (v.tipo !== "edicion" || v.conductor.tipo !== "elegir") return;
+    const textos = v.conductor.opciones.map((o) => o.textoDeOpcion);
+    for (const t of textos) expect(t.length, t).toBeLessThanOrEqual(30);
+    expect(textos).toContain("Ivana Aguirre (sin licencia)");
   });
 
   it("B5: las opciones de conductor evalúan la licencia solo con la fecha y los documentos juntos; sin ellos no se evalúa (todas vigentes)", () => {

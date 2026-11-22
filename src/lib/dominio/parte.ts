@@ -4,7 +4,7 @@ import { diasEntre, parsearFechaCivil, parsearInstante } from "./fechas.ts";
 import { KM_MAXIMO, advertenciasDeSalida } from "./kilometraje.ts";
 import { largoEnCaracteres, normalizarTexto } from "./texto.ts";
 import { formatearPatente } from "./patente.ts";
-import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos, textoAdvertenciaAceptada, type ContextoDeDocumentacion } from "./textos.ts";
+import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos, renglonesDeAvisoAceptado, type ContextoDeDocumentacion, type RenglonDeAviso } from "./textos.ts";
 import { estadoDeLicencia, hayDocumentoQueAmpare, inicioDeDocumento, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 import {
   fallo,
@@ -225,10 +225,39 @@ export function contextoDeDocumentacion(documentos: readonly Documento[], unidad
   return { patente: formatearPatente(unidad.patente), venceron };
 }
 
-/** Los avisos que se aceptaron al enviar un parte, ya en texto (C6): los de documentación dicen cómo estaba cada documento de la unidad el día del parte. */
-export function textosDeAvisosAceptados(parte: Pick<Parte, "advertenciasAceptadas" | "fecha">, unidad: Pick<Unidad, "id" | "patente"> | undefined, documentos: readonly Documento[]): string[] {
+/**
+ * P19: el parte de hoy de la unidad si quedó cerrado sin salida (novedad crítica en la revisión). Ese parte cierra el día de la unidad: aunque el encargado resuelva la novedad y la
+ * devuelva a servicio, no sale hasta mañana. Es el ÚNICO lugar que lo decide: la aptitud lo lee (y con ella la ficha, la flota y el centro de alertas), igual que el inicio del
+ * conductor y los diálogos de resolver y de volver a servicio. Los registros rotos se ignoran.
+ */
+export function parteSinSalidaDeHoy(partes: readonly Parte[], unidadId: string, hoy: FechaCivil): Parte | undefined {
+  for (const cruda of partes) {
+    // Primero lo barato, con el registro como llegó: son cientos de partes y esto corre por cada unidad en cada cálculo.
+    if (!esObjeto(cruda) || cruda["unidadId"] !== unidadId || cruda["fecha"] !== hoy) continue;
+    const p = parteLegible(cruda);
+    if (p !== null && p.estado === "enviado" && p.sinSalida) return p;
+  }
+  return undefined;
+}
+
+/**
+ * P19 ampliada (QA D2, decisión de Matías del 22/11/2026): ¿la unidad no sale hoy porque hoy tuvo una novedad crítica? Vale para toda crítica, venga de la revisión del conductor (el
+ * parte cerrado sin salida) o la cargue el encargado a mano con «Impide usar la unidad»: aunque se repare ese mismo día, la unidad vuelve a salir recién mañana. Una crítica abierta
+ * ya impide salir por sí sola (A1); esto agrega lo que queda después de repararla. Es el lugar único que decide el estado: la aptitud lo lee (y con ella la ficha, la flota y el
+ * centro de alertas) y los diálogos de resolver y de volver a servicio también.
+ */
+export function unidadSinSalidaHoy(estado: Pick<Estado, "partes" | "novedades">, unidadId: string, hoy: FechaCivil): boolean {
+  if (parteSinSalidaDeHoy(estado.partes, unidadId, hoy) !== undefined) return true;
+  return estado.novedades.some((n) => n.unidadId === unidadId && n.gravedad === "critica" && n.fecha === hoy);
+}
+
+/**
+ * Los avisos que se aceptaron al enviar un parte, ya en renglones con su tono (C6, M2): un renglón por documento vencido y uno por cada aviso de kilómetros. Los de documentación
+ * dicen cómo estaba cada documento de la unidad el día del parte.
+ */
+export function renglonesDeAvisosAceptados(parte: Pick<Parte, "advertenciasAceptadas" | "fecha">, unidad: Pick<Unidad, "id" | "patente"> | undefined, documentos: readonly Documento[]): RenglonDeAviso[] {
   const contexto = unidad === undefined ? undefined : contextoDeDocumentacion(documentos, unidad, parte.fecha);
-  return parte.advertenciasAceptadas.map((a) => textoAdvertenciaAceptada(a, contexto));
+  return parte.advertenciasAceptadas.flatMap((a) => renglonesDeAvisoAceptado(a, contexto));
 }
 
 /** K6 y P9: lo que hay que aceptar antes de enviar la revisión. */

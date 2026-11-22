@@ -3,7 +3,7 @@
 import { diasEntre, parsearFechaCivil, sumarAnios } from "./fechas.ts";
 import { KM_MAXIMO } from "./kilometraje.ts";
 import { formatearPatente, validarPatente } from "./patente.ts";
-import { largoEnCaracteres, limpiarTexto, normalizarTexto } from "./texto.ts";
+import { largoDeTexto, largoEnCaracteres, limpiarTexto, normalizarTexto } from "./texto.ts";
 import {
   ERRORES,
   TEXTOS_DE_CAMPO,
@@ -69,7 +69,7 @@ export const REGLAS = {
 /** Texto de un ítem del parte mientras es borrador: se guarda como se escribió (sin recortar), pero sin caracteres de control; solo se controla el tope (500 caracteres). */
 export function validarTextoDeBorrador(valor: string, campo: string): Resultado<string> {
   const texto = limpiarTexto(valor);
-  if (largoEnCaracteres(texto) > REGLAS.novedad.max) {
+  if (largoDeTexto(texto) > REGLAS.novedad.max) {
     return fallo("texto-largo", errTextoLargo(REGLAS.novedad.nombre, REGLAS.novedad.max), { campo });
   }
   return ok(texto);

@@ -221,7 +221,7 @@
     patente={vista.patente}
     interno={vista.interno}
     descripcion={vista.descripcion}
-    avisoFueraDeTermino={vista.tipo === "edicion" ? vista.avisoFueraDeTermino : null}
+    avisoFueraDePlazo={vista.tipo === "edicion" ? vista.avisoFueraDePlazo : null}
     avisoAptitud={vista.tipo === "edicion" ? vista.avisoAptitud : null}
     indicador={textoIndicador}
     {indicadorConError}
@@ -324,7 +324,7 @@
   />
 </div>
 
-<DialogoAntesDeEnviar bind:abierto={dialogoAbierto} {paso} {advertencias} {enviando} {mostrarEnviando} alEnviarIgual={() => enviar(aceptables)} focoDestino={focoDelDialogo} />
+<DialogoAntesDeEnviar bind:abierto={dialogoAbierto} {paso} {advertencias} {enviando} {mostrarEnviando} alAceptarAvisos={() => enviar(aceptables)} focoDestino={focoDelDialogo} />
 
 <style>
   .parte {

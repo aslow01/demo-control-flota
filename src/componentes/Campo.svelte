@@ -10,6 +10,7 @@
   // El valor es siempre texto (`bind:valor`): convertirlo y validarlo es del dominio, no del componente.
   import type { Snippet } from "svelte";
   import { reformatearKm } from "../lib/dominio/kilometraje.ts";
+  import { largoDeTexto } from "../lib/dominio/texto.ts";
   import Icono from "./Icono.svelte";
 
   let {
@@ -67,7 +68,9 @@
   const idContador = $derived(`${idControl}-contador`);
 
   const unidad = $derived(sufijo ?? (tipo === "km" ? "km" : tipo === "litros" ? "litros" : ""));
-  const mostrarContador = $derived(tipo === "area" && valor.length >= 400);
+  // B2: el contador cuenta lo mismo que la regla del tope (caracteres, no unidades UTF-16): 300 emojis son 300, no 600.
+  const largo = $derived(tipo === "area" ? largoDeTexto(valor) : 0);
+  const mostrarContador = $derived(tipo === "area" && largo >= 400);
   // El mensaje de error va primero en aria-describedby (se lee antes que la ayuda).
   const descripcion = $derived(
     [error !== "" ? idError : "", ayuda !== "" ? idAyuda : "", mostrarContador ? idContador : ""].filter((s) => s !== "").join(" ") ||
@@ -127,7 +130,7 @@
     {#if unidad !== ""}<span class="sufijo">{unidad}</span>{/if}
   </div>
   {#if mostrarContador}
-    <p class="contador num" id={idContador}>{valor.length} de {maximo}</p>
+    <p class="contador num" id={idContador}>{largo} de {maximo}</p>
   {/if}
 </div>
 

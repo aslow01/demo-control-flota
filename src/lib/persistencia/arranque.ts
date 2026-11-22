@@ -26,7 +26,9 @@ export type Aviso =
   /** D5: hay cambios del visitante sobre un ejemplo de otra fecha. */
   | { tipo: "datos-de-otra-fecha"; fechaBase: FechaCivil }
   /** D8: sin IndexedDB, la demo funciona en memoria y los cambios se pierden al cerrar la pestaña. */
-  | { tipo: "sin-almacenamiento" };
+  | { tipo: "sin-almacenamiento" }
+  /** QA B2: la base se borró o se cambió desde otra pestaña con la demo abierta; sigue en memoria con lo que tenía. */
+  | { tipo: "almacenamiento-perdido" };
 
 export interface OpcionesArranque {
   /** Fecha civil de hoy en Argentina (la calcula el reloj). */

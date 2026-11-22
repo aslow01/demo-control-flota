@@ -17,10 +17,15 @@ import {
   errNovedadesCriticasAbiertas,
   errParteDuplicado,
   errUnidadFueraDeServicio,
+  MOTIVO_NOVEDAD_CRITICA,
+  errConductorConParteSinCerrar,
+  errParteAnteriorSinCerrar,
+  textoParteSinCerrarDeLaUnidad,
   formatearKm,
   pluralizar,
   textoAdvertencia,
-  textoAdvertenciaAceptada,
+  renglonesDeAvisoAceptado,
+  tonoDeAdvertencia,
   textoOpcionDeConductor,
   textoDisponibles,
   textoEmpresa,
@@ -151,10 +156,10 @@ describe("otros textos de la interfaz", () => {
 });
 
 describe("opción del conductor en el parte (C13)", () => {
-  it("«{Nombre} · {P}»; sin licencia vigente, «{Nombre} (sin licencia vigente) · {P}»; sin unidad, solo el nombre", () => {
+  it("«{Nombre} · {P}»; sin licencia vigente, «{Nombre} (sin licencia)» (sin la patente: cabe en el campo a 360 px); sin unidad, solo el nombre", () => {
     expect(textoOpcionDeConductor("Tamara Olivera", "ZK 214 BD", false)).toBe("Tamara Olivera · ZK 214 BD");
-    expect(textoOpcionDeConductor("Ivana Aguirre", "ZPA 505", true)).toBe("Ivana Aguirre (sin licencia vigente) · ZPA 505");
-    expect(textoOpcionDeConductor("Ivana Aguirre", null, true)).toBe("Ivana Aguirre (sin licencia vigente)");
+    expect(textoOpcionDeConductor("Ivana Aguirre", "ZPA 505", true)).toBe("Ivana Aguirre (sin licencia)");
+    expect(textoOpcionDeConductor("Ivana Aguirre", null, true)).toBe("Ivana Aguirre (sin licencia)");
     expect(textoOpcionDeConductor("Luis Ferreyra", null, false)).toBe("Luis Ferreyra");
   });
 });
@@ -186,18 +191,59 @@ describe("advertencias antes de enviar (K6, K7, P9)", () => {
     );
   });
 
-  it("registro de una revisión enviada (C6): en pasado, un renglón por documento y la cola «Se envió de todos modos»; los otros avisos no cambian", () => {
-    expect(textoAdvertenciaAceptada({ tipo: "documentacion-vencida", documentos: ["seguro"] }, CTX)).toBe(
-      "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado.",
+  it("registro de una revisión enviada (M2): un renglón por documento, cada uno con su tono, y la cola «Se envió de todos modos» una sola vez, en el último", () => {
+    expect(renglonesDeAvisoAceptado({ tipo: "documentacion-vencida", documentos: ["seguro"] }, CTX)).toEqual([
+      { tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." },
+    ]);
+    expect(renglonesDeAvisoAceptado({ tipo: "documentacion-vencida", documentos: ["revision-tecnica", "matafuego"] }, CTX)).toEqual([
+      { tono: "critico", texto: "La revisión técnica de ZK 214 BD venció el 01/11/2026." },
+      { tono: "critico", texto: "Faltaba cargar la carga del matafuego de ZK 214 BD. Se envió de todos modos: quedó registrado." },
+    ]);
+    const tres = renglonesDeAvisoAceptado({ tipo: "documentacion-vencida", documentos: ["seguro", "revision-tecnica", "matafuego"] }, CTX);
+    expect(tres).toHaveLength(3);
+    expect(tres.filter((r) => r.texto.includes("Se envió de todos modos"))).toHaveLength(1);
+    expect(tres.at(-1)?.texto).toMatch(/Se envió de todos modos: quedó registrado.$/);
+  });
+
+  it("registro de una revisión enviada (M2): sin datos de la unidad es un solo renglón; los avisos de kilómetros son tono semana y se leen igual que en el diálogo", () => {
+    expect(renglonesDeAvisoAceptado({ tipo: "documentacion-vencida", documentos: ["seguro", "licencia"] })).toEqual([
+      { tono: "critico", texto: "Seguro, Licencia de conducir: vencidos o sin cargar. Se envió de todos modos: quedó registrado." },
+    ]);
+    expect(renglonesDeAvisoAceptado({ tipo: "documentacion-vencida", documentos: [] }, CTX)).toEqual([{ tono: "critico", texto: "Se envió de todos modos: quedó registrado." }]);
+    expect(renglonesDeAvisoAceptado({ tipo: "recorrido-largo", km: 1350 })).toEqual([{ tono: "semana", texto: textoAdvertencia({ tipo: "recorrido-largo", km: 1350 }) }]);
+    expect(renglonesDeAvisoAceptado({ tipo: "salto-km", km: 1180 })).toEqual([{ tono: "semana", texto: textoAdvertencia({ tipo: "salto-km", km: 1180 }) }]);
+  });
+
+  it("el tono de cada advertencia: crítico la documentación vencida, semana los kilómetros (lo usan el diálogo y el registro)", () => {
+    expect(tonoDeAdvertencia({ tipo: "documentacion-vencida", documentos: ["seguro"] })).toBe("critico");
+    expect(tonoDeAdvertencia({ tipo: "salto-km", km: 1 })).toBe("semana");
+    expect(tonoDeAdvertencia({ tipo: "recorrido-largo", km: 1 })).toBe("semana");
+  });
+});
+
+describe("«Cerrar antes» y P20: un parte de hoy está en uso, no «quedó sin cerrar» (QA B1 de la etapa 7)", () => {
+  it("el parte de otro día sigue diciendo que quedó sin cerrar, con el día de la semana", () => {
+    expect(textoParteSinCerrarDeLaUnidad("ZI 442 TU", "2026-11-21", "2026-11-22")).toBe("ZI 442 TU: el parte del sábado 21/11/2026 quedó sin cerrar.");
+    expect(errParteAnteriorSinCerrar("ZI 442 TU", "2026-11-21", "2026-11-22")).toBe(
+      "ZI 442 TU: el parte del sábado 21/11/2026 quedó sin cerrar. Ciérrelo primero; después se puede empezar la revisión del 22/11/2026.",
     );
-    expect(textoAdvertenciaAceptada({ tipo: "documentacion-vencida", documentos: ["revision-tecnica", "matafuego"] }, CTX)).toBe(
-      "La revisión técnica de ZK 214 BD venció el 01/11/2026. Faltaba cargar la carga del matafuego de ZK 214 BD. Se envió de todos modos: quedó registrado.",
+    expect(errConductorConParteSinCerrar("Luis Ferreyra", "ZKB 482", "2026-11-17", "2026-11-18")).toBe(
+      "Luis Ferreyra tiene sin cerrar el parte del martes 17/11/2026 de ZKB 482. Ciérrelo primero; después se puede enviar esta revisión.",
     );
-    expect(textoAdvertenciaAceptada({ tipo: "documentacion-vencida", documentos: ["seguro", "licencia"] })).toBe(
-      "Seguro, Licencia de conducir: vencidos o sin cargar. Se envió de todos modos: quedó registrado.",
+  });
+
+  it("el parte de hoy está en uso", () => {
+    expect(textoParteSinCerrarDeLaUnidad("ZI 442 TU", "2026-11-22", "2026-11-22")).toBe("ZI 442 TU: el parte de hoy está en uso.");
+    expect(errConductorConParteSinCerrar("Luis Ferreyra", "ZKB 482", "2026-11-18", "2026-11-18")).toBe(
+      "Luis Ferreyra tiene en uso el parte de hoy de ZKB 482. Ciérrelo primero; después se puede enviar esta revisión.",
     );
-    expect(textoAdvertenciaAceptada({ tipo: "recorrido-largo", km: 1350 })).toBe(textoAdvertencia({ tipo: "recorrido-largo", km: 1350 }));
-    expect(textoAdvertenciaAceptada({ tipo: "salto-km", km: 1180 })).toBe(textoAdvertencia({ tipo: "salto-km", km: 1180 }));
+  });
+});
+
+describe("motivo de fuera de servicio por una novedad crítica (C3)", () => {
+  it("el parte se nombra solo si es de otro día que el «Desde»", () => {
+    expect(MOTIVO_NOVEDAD_CRITICA.delParte("2026-11-20", "Frenos", "2026-11-20")).toBe("Novedad crítica en Frenos");
+    expect(MOTIVO_NOVEDAD_CRITICA.delParte("2026-11-19", "Frenos, Dirección", "2026-11-20")).toBe("Novedad crítica en Frenos, Dirección, parte del 19/11/2026");
   });
 });
 
@@ -325,6 +371,6 @@ describe("revisión de textos del 18/11/2026 (redactor-ux)", () => {
   });
 
   it("ningún error de ERRORES usa voseo", () => {
-    for (const [clave, texto] of Object.entries(ERRORES)) expect(texto, clave).not.toMatch(/vos|podés|sos|hacé|tenés|cambiá|elegí/i);
+    for (const [clave, texto] of Object.entries(ERRORES)) expect(texto, clave).not.toMatch(/(?<!\p{L})(?:vos|podés|sos|hacé|tenés|cambiá|elegí)(?!\p{L})/iu);
   });
 });

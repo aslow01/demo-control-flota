@@ -1,14 +1,3 @@
-<script lang="ts" module>
-  /**
-   * El aviso compacto de dos renglones (5.18, C10) a partir de una sola cadena: el hecho («ZK 214 BD no puede salir: Seguro vencido hace 1 día.») y, en la última frase, lo que hay que
-   * hacer («Avise al encargado antes de usarla.»). Es el único lugar donde se corta. Sin «. » adentro, queda todo como titular y sin segundo renglón.
-   */
-  export function partirAviso(texto: string): { titular: string; accion: string } {
-    const corte = texto.lastIndexOf(". ");
-    return corte < 0 ? { titular: texto, accion: "" } : { titular: texto.slice(0, corte + 1), accion: texto.slice(corte + 2) };
-  }
-</script>
-
 <script lang="ts">
   // 5.18 Aviso global: franja a lo ancho del contenido, con borde izquierdo del tono, ícono, texto y, a la derecha
   // (o debajo a menos de 40 rem), su acción. No lleva rol propio: va dentro del contenedor `role="status"` de la cabecera

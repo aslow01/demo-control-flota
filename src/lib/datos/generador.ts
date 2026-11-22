@@ -4,10 +4,10 @@
 // El ORDEN de las llamadas al azar es parte del contrato: si se cambia, cambian los datos y hay que actualizar
 // el hash del test del generador a propósito (con una línea en docs/registro.md).
 
-import { sumarAnios, sumarDias, formatearFecha } from "../dominio/fechas.ts";
+import { sumarAnios, sumarDias } from "../dominio/fechas.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import { ITEMS_CHECKLIST } from "../dominio/parte.ts";
-import { NOMBRES_DOCUMENTO, RESUMEN_EVENTO } from "../dominio/textos.ts";
+import { MOTIVO_NOVEDAD_CRITICA, NOMBRES_DOCUMENTO, RESUMEN_EVENTO } from "../dominio/textos.ts";
 import type {
   Advertencia,
   Conductor,
@@ -635,7 +635,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
 
       if (frenosCriticos) {
         const nov = abrir("frenos", "ruido al frenar en bajada", "critica");
-        const motivo = `Novedad crítica en Frenos, parte del ${formatearFecha(fecha)}`;
+        const motivo = MOTIVO_NOVEDAD_CRITICA.delParte(fecha, "Frenos", fecha);
         u.estado = { tipo: "fuera-de-servicio", desde: fecha, motivo, origen: "novedad-critica", novedadIds: [nov.id] };
         evento({
           instante: revisado,

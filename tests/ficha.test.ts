@@ -263,7 +263,7 @@ describe("C11 (ZU 899 QE): A4 y N2 a la vista", () => {
 
   it("está fuera de servicio por la novedad de frenos: etiqueta, motivo y estado operativo", () => {
     expect(f.aptitud).toMatchObject({ categoria: "fuera-de-servicio", etiqueta: "Fuera de servicio" });
-    expect(f.aptitud.linea).toBe("Desde el 16/11/2026: novedad crítica en Frenos, parte del 16/11/2026");
+    expect(f.aptitud.linea).toBe("Desde el 16/11/2026: novedad crítica en Frenos");
     expect(f.estadoOperativo).toMatchObject({ tipo: "fuera-de-servicio", desde: "16/11/2026", origen: "novedad-critica" });
   });
 
@@ -417,7 +417,7 @@ describe("panel Historial (5.16, H3, H4)", () => {
     expect(ev?.detalle).toMatchObject({
       tipo: "parte",
       href: "#/parte/ZK214BD/2026-11-17",
-      fueraDeTermino: false,
+      fueraDePlazo: false,
       advertencias: [],
     });
     if (ev?.detalle?.tipo !== "parte") throw new Error("falta el detalle del parte");

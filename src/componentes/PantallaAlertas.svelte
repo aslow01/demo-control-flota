@@ -9,7 +9,7 @@
   //    diaria» si el detalle quedó vacío). "Abrir el parte diario" cambia la vista a Conductor con el diálogo ya existente (`alAbrirParte`, que lo abre el marco).
   //  - Cambiar el filtro anuncia "Mostrando 4 de 11 vencimientos." en una región `role="status"` aparte (la barra de estado del panel es para lo que pasó).
   //  - «Conductores que no pueden manejar hoy» (L6): dentro del protagonista, debajo de las unidades, una fila por conductor con «Renovar» (o «Cargar» si falta la licencia). El botón abre
-  //    el MISMO diálogo de la fila de su licencia en Vencimientos (mismo `alertaId`); al guardar, el foco va al `h2` del protagonista y su barra de estado dice «Licencia de … renovada.».
+  //    el diálogo de la acción completa que trae la fila (`FilaDeConductorSinLicencia.accion`: Renovar, Cargar o Corregir); al guardar, el foco va al `h2` del protagonista y su barra de estado dice «Licencia de … renovada.».
   //    La cifra no cambia (cuenta unidades, A8).
   import { formatearFecha } from "../lib/dominio/fechas.ts";
   import { contextoDeCargar, contextoDeCorregir, contextoDeRenovar, type CampoDocumento, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";

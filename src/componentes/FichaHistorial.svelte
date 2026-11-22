@@ -109,7 +109,7 @@
                       {#each d.advertencias as advertencia (advertencia)}
                         <p class="advertencia"><Icono nombre="alerta" />{advertencia}</p>
                       {/each}
-                      {#if d.fueraDeTermino}<p>{T.historial.fueraDePlazo}</p>{/if}
+                      {#if d.fueraDePlazo}<p>{T.historial.fueraDePlazo}</p>{/if}
                       <p><a class="enlace-parte" href={d.href} aria-label={T.historial.verParteEnviado(TEXTO_FICHA.historial.verParte, e.instante)}>{TEXTO_FICHA.historial.verParte}</a></p>
                     </Detalles>
                   {:else}

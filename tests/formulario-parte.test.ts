@@ -355,17 +355,17 @@ describe("5.15: el resumen de errores al enviar", () => {
   it("D1: con más de 3 puntos sin responder el resumen es un solo enlace al primero; con 3 o menos, uno por punto", () => {
     const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
     expect(e?.lista).toHaveLength(10); // el mensaje por campo no cambia: cada punto sigue diciendo qué le falta
-    expect(e?.resumen).toEqual([{ campo: "frenos", mensaje: "Faltan 10 puntos de la revisión" }]);
+    expect(agruparResumen(e?.lista ?? [])).toEqual([{ campo: "frenos", mensaje: "Faltan 10 puntos de la revisión" }]);
 
     const tres = completos();
     for (const c of ["frenos", "luces", "cabina"] as const) tres.checklist[c] = { respuesta: "", descripcion: "", impideUso: false };
     const t = validarParaEnviar(tres);
-    expect(t?.resumen).toEqual(t?.lista);
-    expect(t?.resumen.map((x) => x.campo)).toEqual(["frenos", "luces", "cabina"]);
+    expect(agruparResumen(t?.lista ?? [])).toEqual(t?.lista);
+    expect(agruparResumen(t?.lista ?? []).map((x) => x.campo)).toEqual(["frenos", "luces", "cabina"]);
 
     const cuatro = completos();
     for (const c of ["frenos", "luces", "cabina", "niveles"] as const) cuatro.checklist[c] = { respuesta: "", descripcion: "", impideUso: false };
-    expect(validarParaEnviar(cuatro)?.resumen).toEqual([{ campo: "frenos", mensaje: "Faltan 4 puntos de la revisión" }]);
+    expect(agruparResumen(validarParaEnviar(cuatro)?.lista ?? [])).toEqual([{ campo: "frenos", mensaje: "Faltan 4 puntos de la revisión" }]);
   });
 
   it("D1: lo que no es un punto sin completar sigue en su lugar, uno por campo, y el enlace agrupado va donde estaba el primer punto", () => {
@@ -373,7 +373,7 @@ describe("5.15: el resumen de errores al enviar", () => {
     v.kmInicio = "";
     v.otraNovedad = { descripcion: "", impideUso: true };
     const e = validarParaEnviar(v);
-    expect(e?.resumen.map((x) => [x.campo, x.mensaje])).toEqual([
+    expect(agruparResumen(e?.lista ?? []).map((x) => [x.campo, x.mensaje])).toEqual([
       ["conductor", "Elija quién conduce la unidad."],
       ["kmInicio", "Escriba el kilometraje al iniciar."],
       ["frenos", "Faltan 10 puntos de la revisión"],
@@ -386,7 +386,7 @@ describe("5.15: el resumen de errores al enviar", () => {
     v.checklist.frenos = { respuesta: "con-novedad", descripcion: "", impideUso: false };
     v.checklist.luces = { respuesta: "con-novedad", descripcion: "x".repeat(501), impideUso: false };
     const e = validarParaEnviar(v);
-    expect(e?.resumen).toEqual([
+    expect(agruparResumen(e?.lista ?? [])).toEqual([
       { campo: "frenos", mensaje: "Faltan 9 puntos de la revisión" },
       { campo: "luces", mensaje: "La descripción no puede superar 500 caracteres." },
     ]);

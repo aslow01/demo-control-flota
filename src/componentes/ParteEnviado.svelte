@@ -73,13 +73,13 @@
     <div class="aceptados">
       <p class="rotulo-chico">{T.enviado.avisosAceptados}</p>
       <ul>
-        {#each panel.advertencias as a (a)}
-          <li><span class="icono-aviso"><Icono nombre="vencido" /></span><span>{a}</span></li>
+        {#each panel.advertencias as a, i (i)}
+          <li data-tono={a.tono}><span class="icono-aviso"><Icono nombre={a.tono === "critico" ? "vencido" : "alerta"} /></span><span>{a.texto}</span></li>
         {/each}
       </ul>
     </div>
   {/if}
-  {#if panel.fueraDeTermino !== null}<p class="nota">{panel.fueraDeTermino}</p>{/if}
+  {#if panel.fueraDePlazo !== null}<p class="nota">{panel.fueraDePlazo}</p>{/if}
   {#if panel.parrafo !== null}<p class="parrafo">{panel.parrafo}</p>{/if}
   {#if cuerpo !== undefined}{@render cuerpo()}{/if}
   {#if acciones !== undefined}<div class="acciones">{@render acciones()}</div>{/if}
@@ -168,7 +168,7 @@
     display: inline-flex;
     flex: none;
     margin-top: 0.1rem;
-    color: var(--c-critico-t);
+    color: var(--tono-t);
   }
   .acciones {
     display: flex;

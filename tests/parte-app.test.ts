@@ -103,7 +103,7 @@ describe("las vistas según la ruta y el perfil", () => {
     expect(v).toMatchObject({
       unidad: { patenteTexto: "ZK 214 BD", interno: "Int. 07" },
       hoyEstado: { tipo: "sin-parte", primario: { texto: "Empezar la revisión", href: "#/parte/ZK214BD/2026-11-18" } },
-      avisoAptitud: "ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.",
+      avisoAptitud: { titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día.", accion: "Avise al encargado antes de usarla." },
     });
     expect(app.inicioDelConductor("u-01")?.unidad?.patenteTexto).toBe("ZYN 469");
   });
@@ -493,6 +493,27 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(app.parteDeLaRuta).toMatchObject({ tipo: "lectura", sinSalida: true });
   });
 
+  it("P19 en todas las vistas: el encargado resuelve la novedad y devuelve la unidad el mismo día, y la ficha, la flota y el centro de alertas siguen diciendo que no sale hoy", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    const v = completo(edicion(app).valoresIniciales);
+    v.checklist.frenos = { respuesta: "con-novedad", descripcion: "Pedal blando y ruido al frenar", impideUso: false };
+    await app.enviarRevisionDeParte(idDe(app, "ZYN469"), H, v);
+    await app.cambiarPerfil({ tipo: "encargado" });
+    const novedadId = estadoDe(app).novedades.find((n) => n.estado === "abierta" && n.gravedad === "critica" && n.unidadId === idDe(app, "ZYN469"))!.id;
+
+    const r = await app.resolverNovedad(novedadId, { texto: "Se cambiaron las pastillas", volverAServicio: true }, "ficha");
+    expect(r).toMatchObject({ ok: true, mensaje: "Novedad resuelta: Frenos. ZYN 469 vuelve a servicio, pero no sale hasta mañana." });
+
+    const motivo = "Sin salida hasta mañana (novedad crítica de hoy)";
+    app.irA({ tipo: "unidad", patente: "ZYN469" });
+    const ficha = app.fichaDeUnidad;
+    expect(ficha && ficha.encontrada && ficha.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir", motivos: [motivo] });
+    expect(app.panelDeFlota?.filas.find((f) => f.patente === "ZYN469")?.estado).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir" });
+    expect(app.centroDeAlertas?.protagonista.items.find((i) => i.patente === "ZYN469")).toMatchObject({ categoria: "no-puede-salir", motivo });
+    await app.cambiarPerfil(C01);
+    expect(app.inicioDelConductor()?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: expect.stringContaining("recién mañana") });
+  });
+
   it("un punto no crítico con «Impide usar la unidad» también deja la unidad fuera de servicio y el parte sin salida (P11)", async () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
     const v = completo(edicion(app).valoresIniciales);
@@ -556,7 +577,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
 
     const e = await app.enviarRevisionDeParte(uid, H, v, r.aceptables);
     expect(e.tipo).toBe("enviado");
-    expect(e.tipo === "enviado" && e.panel.advertencias).toEqual(["1.089 km sin registrar desde el último parte"]);
+    expect(e.tipo === "enviado" && e.panel.advertencias).toEqual([{ tono: "semana", texto: "1.089 km sin registrar desde el último parte" }]);
   });
 
   it("P9: con el seguro vencido (ZK 214 BD) se pide aceptar; aceptado, el parte queda en uso con la documentación vencida y aparece la alerta «Circuló…»", async () => {
@@ -576,7 +597,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(segunda.tipo === "enviado" && segunda.panel).toMatchObject({
       variante: "revision-enviada",
       conDocumentacionVencida: true,
-      advertencias: ["El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado."],
+      advertencias: [{ tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." }],
     });
     expect(segunda.tipo === "enviado" && segunda.panel.linea).toMatch(/^ZK 214 BD: revisión enviada a las \d\d:\d\d\. Sale con documentación vencida: quedó registrado\.$/);
     expect(parteDeHoy(app, "ZK214BD")).toMatchObject({ estado: "en-uso", documentacionVencida: ["seguro"] });
@@ -598,6 +619,24 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     if (r.tipo !== "errores") return;
     expect(r.errores.lista).toEqual([{ campo: "conductor", mensaje: expect.stringMatching(/ tiene sin cerrar el parte del martes 17\/11\/2026 de ZYN 469\. Ciérrelo primero; después se puede enviar esta revisión\.$/) }]);
     expect(r.primerCampo).toBe("conductor");
+  });
+
+  it("a11y m3: un kilometraje que retrocede se lista junto con los puntos sin responder, en el orden del formulario, no recién al corregir los otros", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    const uid = idDe(app, "ZYN469");
+    const v = completo(edicion(app).valoresIniciales, { kmInicio: "1" });
+    for (const punto of ["frenos", "luces"] as const) v.checklist[punto] = { respuesta: "", descripcion: "", impideUso: false };
+    const r = await app.enviarRevisionDeParte(uid, H, v);
+    expect(r.tipo).toBe("errores");
+    if (r.tipo !== "errores") return;
+    expect(r.errores.lista.map((x) => x.campo)).toEqual(["kmInicio", "frenos", "luces"]);
+    expect(r.errores.lista[0]?.mensaje).toMatch(/141\.711 km/);
+    expect(r.errores.titulo).toBe("Revise 3 datos para enviar la revisión");
+    expect(r.primerCampo).toBe("kmInicio");
+    // con el kilometraje bien, el resumen vuelve a decir solo lo que falta
+    const bien = await app.enviarRevisionDeParte(uid, H, { ...v, kmInicio: "141.800" });
+    expect(bien.tipo === "errores" && bien.errores.lista.map((x) => x.campo)).toEqual(["frenos", "luces"]);
+    expect(bien.tipo === "errores" && bien.errores.titulo).toBe("Faltan 2 datos para enviar la revisión");
   });
 
   it("L1: un conductor sin licencia vigente no puede enviar la revisión (error en el campo Conductor del encargado); el borrador queda", async () => {
@@ -700,7 +739,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const uid = idDe(app, "ZW749JE");
     expect(app.alertas?.alertas.some((a) => a.tipo === "parte-sin-enviar" && a.unidadId === uid && a.etapaParte === "borrador")).toBe(true);
     const v = edicion(app);
-    expect(v).toMatchObject({ parteId: "pt-0579", avisoFueraDeTermino: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo." });
+    expect(v).toMatchObject({ parteId: "pt-0579", avisoFueraDePlazo: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo." });
     const r = await app.enviarRevisionDeParte(uid, "2026-11-17", completo(v.valoresIniciales));
     expect(r.tipo).toBe("enviado");
     if (r.tipo !== "enviado") return;
@@ -840,7 +879,7 @@ describe("cerrar el parte (P3, P4, P12, P15, K2, K4, K7)", () => {
     if (r.tipo !== "advertencias") return;
     expect(r.aceptables).toEqual(["recorrido-largo"]);
     const e = await app.enviarCierreDeParte(uid, H, v, r.aceptables);
-    expect(e.tipo === "enviado" && e.panel.advertencias).toEqual(["Recorrido del día inusualmente largo: 1.201 km"]);
+    expect(e.tipo === "enviado" && e.panel.advertencias).toEqual([{ tono: "semana", texto: "Recorrido del día inusualmente largo: 1.201 km" }]);
   });
 
   it("P12: si falla la escritura del cierre no queda nada a medias: el parte sigue en uso y el mensaje lo dice", async () => {

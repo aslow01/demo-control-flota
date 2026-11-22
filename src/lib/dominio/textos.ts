@@ -87,6 +87,9 @@ export const ERRORES = {
   noPudoReiniciar: "No se pudo reiniciar la demo. Se conservaron los datos que tenía. Intente de nuevo.",
   noPudoCambiarVista: "No se pudo cambiar la vista. Intente de nuevo.",
   /** `cambiarPerfil` mientras hay cambios de otra pestaña sin actualizar (D9): guardaría el `meta` viejo de esta pestaña sobre el nuevo. */
+  /** QA B2: la base se borró o se cambió desde otra pestaña con la demo abierta; la demo sigue en memoria. */
+  almacenamientoPerdido:
+    "Los datos guardados de la demo ya no están disponibles: se borraron o se cambiaron desde otra pestaña. Puede seguir usándola, pero los cambios se pierden al cerrar o recargar la página.",
   cambiosEnOtraPestana: "Hay cambios hechos en otra pestaña. Pulse «Actualizar» en el aviso y vuelva a cambiar la vista.",
   sinPermiso: "Esta acción es solo del encargado. En «Ver como», elija «Encargado».",
   sinDatos: "La demo todavía no terminó de cargar. Espere un momento e intente de nuevo.",
@@ -171,6 +174,8 @@ export const MOTIVO_APTITUD = {
   fueraDeServicio: (desde: FechaCivil, motivo: string) => `Desde el ${formatearFecha(desde)}: ${minuscula(motivo)}`,
   documentoFaltante: (nombre: string) => `${TEXTO_FALTA_CARGAR}: ${nombre}`,
   novedadCritica: (rotulo: string, origen: string) => `Novedad crítica abierta: ${rotulo} (${origen})`,
+  /** P19: hoy hubo una novedad crítica (en la revisión o cargada a mano); aunque se resuelva, la unidad sale recién mañana. */
+  sinSalidaHoy: "Sin salida hasta mañana (novedad crítica de hoy)",
 } as const;
 
 /** Textos de las alertas de operación (sección 7). */
@@ -187,7 +192,8 @@ export const TEXTO_ALERTA = {
 
 /** Motivo con que una novedad crítica deja la unidad fuera de servicio (A3). */
 export const MOTIVO_NOVEDAD_CRITICA = {
-  delParte: (fecha: FechaCivil, items: string) => `Novedad crítica en ${items}, parte del ${formatearFecha(fecha)}`,
+  /** El parte se nombra solo si es de otro día que el «Desde» del motivo (`desde`): «Desde el 20/11/2026: novedad crítica en Frenos» no repite la fecha (C3 de la revisión visual). */
+  delParte: (fecha: FechaCivil, items: string, desde: FechaCivil) => `Novedad crítica en ${items}${fecha === desde ? "" : `, parte del ${formatearFecha(fecha)}`}`,
   cargada: (fecha: FechaCivil, descripcion: string) => `Novedad crítica cargada el ${formatearFecha(fecha)}: ${descripcion}`,
 } as const;
 
@@ -224,6 +230,11 @@ export function errAnioFueraDeRango(minimo: number, maximo: number): string {
 
 export function errRenovacionNoPosterior(vigenteVence: FechaCivil): string {
   return `La renovación tiene que vencer después del ${formatearFecha(vigenteVence)}.`;
+}
+
+/** Corregir el vencimiento de un documento que reemplazó a otro (V9, V10): tiene que seguir siendo posterior al del anterior. No habla de «renovación»: se está corrigiendo, no renovando. */
+export function errVenceNoPosteriorAlAnterior(anteriorVence: FechaCivil): string {
+  return `El vencimiento tiene que ser posterior al del documento anterior (${formatearFecha(anteriorVence)}).`;
 }
 
 export function errVenceAntesQueSuRenovacion(venceRenovacion: FechaCivil): string {
@@ -265,8 +276,12 @@ export function errKmCorreccionAnterior(registro: "parte" | "correccion", fecha:
   return `Ya hay ${que}, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha ${cual} o una posterior.`;
 }
 
-/** «ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar.» Renglón 1 del aviso «Cerrar antes» (inicio y pantalla E) y del error de A1. */
-export function textoParteSinCerrarDeLaUnidad(patente: string, fecha: FechaCivil): string {
+/**
+ * «ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar.» Renglón 1 del aviso «Cerrar antes» (inicio y pantalla E) y del error de A1. Un parte de hoy (P20: el conductor lo
+ * tiene en otra unidad) no «quedó» sin cerrar, sigue en curso: «ZK 214 BD: el parte de hoy está en uso.». `hoy` es `null` si no se sabe (el parte de A1 es siempre anterior a la revisión).
+ */
+export function textoParteSinCerrarDeLaUnidad(patente: string, fecha: FechaCivil, hoy: FechaCivil | null): string {
+  if (fecha === hoy) return `${patente}: el parte de hoy está en uso.`;
   return `${patente}: el parte del ${diaDeLaSemana(fecha)} ${formatearFecha(fecha)} quedó sin cerrar.`;
 }
 
@@ -277,12 +292,13 @@ export function textoCerrarAntesDeLaRevision(fechaDeLaRevision: FechaCivil): str
 
 /** A1: la unidad tiene un parte en uso de una fecha anterior: hay que cerrarlo antes de empezar la revisión de una fecha posterior. */
 export function errParteAnteriorSinCerrar(patente: string, fecha: FechaCivil, fechaDeLaRevision: FechaCivil): string {
-  return `${textoParteSinCerrarDeLaUnidad(patente, fecha)} ${textoCerrarAntesDeLaRevision(fechaDeLaRevision)}`;
+  return `${textoParteSinCerrarDeLaUnidad(patente, fecha, null)} ${textoCerrarAntesDeLaRevision(fechaDeLaRevision)}`;
 }
 
-/** P20: el conductor tiene un parte en uso en otra unidad: hay que cerrarlo antes de enviar esta revisión. */
-export function errConductorConParteSinCerrar(nombre: string, patente: string, fecha: FechaCivil): string {
-  return `${nombre} tiene sin cerrar el parte del ${diaDeLaSemana(fecha)} ${formatearFecha(fecha)} de ${patente}. Ciérrelo primero; después se puede enviar esta revisión.`;
+/** P20: el conductor tiene un parte en uso en otra unidad: hay que cerrarlo antes de enviar esta revisión. Si el parte es de hoy, «tiene en uso el parte de hoy» (no «sin cerrar»). */
+export function errConductorConParteSinCerrar(nombre: string, patente: string, fecha: FechaCivil, hoy: FechaCivil): string {
+  const parte = fecha === hoy ? `tiene en uso el parte de hoy de ${patente}` : `tiene sin cerrar el parte del ${diaDeLaSemana(fecha)} ${formatearFecha(fecha)} de ${patente}`;
+  return `${nombre} ${parte}. Ciérrelo primero; después se puede enviar esta revisión.`;
 }
 
 /** M1 (revisión de código): no se corrige el kilometraje desde la fecha de un parte en uso; su cierre quedaría imposible. */
@@ -315,8 +331,8 @@ export const RESUMEN_EVENTO = {
     `Renovación de ${nombre} (${titular}): vencía el ${formatearFecha(anterior)}, ahora vence el ${formatearFecha(nuevo)}`,
   documentoCorregido: (nombre: string, titular: string, campos: readonly string[]) =>
     `Corrección de ${nombre} (${titular}): ${campos.join(", ")}`,
-  revisionEnviada: (patente: string, fecha: FechaCivil, fueraDeTermino: boolean, kmInicio: number, sinSalida: boolean) =>
-    `Revisión del ${formatearFecha(fecha)} de ${patente} enviada${fueraDeTermino ? " fuera de plazo" : ""}: ${sinSalida ? "la unidad no salió por una novedad crítica" : `sale con ${formatearKm(kmInicio)} km`}`,
+  revisionEnviada: (patente: string, fecha: FechaCivil, fueraDePlazo: boolean, kmInicio: number, sinSalida: boolean) =>
+    `Revisión del ${formatearFecha(fecha)} de ${patente} enviada${fueraDePlazo ? " fuera de plazo" : ""}: ${sinSalida ? "la unidad no salió por una novedad crítica" : `sale con ${formatearKm(kmInicio)} km`}`,
   parteCerrado: (patente: string, fecha: FechaCivil, kmInicio: number, kmFin: number) => {
     const recorrido = kmFin - kmInicio;
     const texto = recorrido === 0 ? "sin uso" : `${formatearKm(recorrido)} km`;
@@ -429,18 +445,21 @@ function conArticulo(tipo: TipoDocumento): string {
 
 /**
  * Un renglón por documento (C6): «El seguro de ZK 214 BD venció el 17/11/2026.» o «Falta cargar el seguro de ZK 214 BD.» (en pasado, «Faltaba cargar…»). Sin datos de la
- * unidad (no debería pasar) se nombran los documentos y se dice que están vencidos o sin cargar, sin inventar fechas.
+ * unidad (no debería pasar) se nombran los documentos y se dice que están vencidos o sin cargar, sin inventar fechas: un solo renglón.
  */
-function renglonesDeDocumentacion(documentos: readonly TipoDocumento[], contexto: ContextoDeDocumentacion | undefined, enPasado: boolean): string {
-  if (contexto === undefined) return estadoDeDocumentos(documentos);
-  return documentos
-    .map((tipo) => {
-      const vencio = contexto.venceron[tipo] ?? null;
-      const que = conArticulo(tipo);
-      if (vencio !== null) return `${que.charAt(0).toUpperCase()}${que.slice(1)} de ${contexto.patente} venció el ${formatearFecha(vencio)}.`;
-      return `${enPasado ? "Faltaba" : "Falta"} cargar ${que} de ${contexto.patente}.`;
-    })
-    .join(" ");
+function renglonesDeDocumentacion(documentos: readonly TipoDocumento[], contexto: ContextoDeDocumentacion | undefined, enPasado: boolean): string[] {
+  if (contexto === undefined) return [estadoDeDocumentos(documentos)];
+  return documentos.map((tipo) => {
+    const vencio = contexto.venceron[tipo] ?? null;
+    const que = conArticulo(tipo);
+    if (vencio !== null) return `${que.charAt(0).toUpperCase()}${que.slice(1)} de ${contexto.patente} venció el ${formatearFecha(vencio)}.`;
+    return `${enPasado ? "Faltaba" : "Falta"} cargar ${que} de ${contexto.patente}.`;
+  });
+}
+
+/** El tono de cada advertencia (K6, K7, P9): crítico la documentación vencida (la unidad salió sin papeles), semana los kilómetros inusuales. */
+export function tonoDeAdvertencia(a: Advertencia): "critico" | "semana" {
+  return a.tipo === "documentacion-vencida" ? "critico" : "semana";
 }
 
 /**
@@ -455,19 +474,31 @@ export function textoAdvertencia(a: Advertencia, contexto?: ContextoDeDocumentac
       return `Recorrido del día inusualmente largo: ${formatearKm(a.km)} km`;
     case "documentacion-vencida":
       return (
-        `${renglonesDeDocumentacion(a.documentos, contexto, false)} ` +
+        `${renglonesDeDocumentacion(a.documentos, contexto, false).join(" ")} ` +
         "Puede enviar la revisión de todos modos: quedará registrado que la unidad salió con documentación vencida."
       );
   }
 }
 
+/** Un renglón de «Avisos aceptados» (C3 y lectura de un parte): su texto y el tono con que se pinta (la vista elige el ícono por el tono). */
+export interface RenglonDeAviso {
+  tono: "critico" | "semana";
+  texto: string;
+}
+
 /**
- * El mismo aviso ya aceptado, como queda en el registro de una revisión enviada («Avisos aceptados» y el historial): en pasado y sin la invitación a enviar, que solo
- * tiene sentido en el diálogo «Antes de enviar». Los otros dos avisos se leen igual en los dos lugares.
+ * El mismo aviso ya aceptado, como queda en el registro de una revisión enviada («Avisos aceptados»): en pasado y sin la invitación a enviar, que solo tiene sentido en el
+ * diálogo «Antes de enviar». Un renglón por documento (M2), cada uno con el tono de la advertencia; la cola «Se envió de todos modos: quedó registrado.» va una sola vez, al
+ * final del último. Los avisos de kilómetros son un renglón y se leen igual que en el diálogo.
  */
-export function textoAdvertenciaAceptada(a: Advertencia, contexto?: ContextoDeDocumentacion): string {
-  if (a.tipo !== "documentacion-vencida") return textoAdvertencia(a);
-  return `${renglonesDeDocumentacion(a.documentos, contexto, true)} Se envió de todos modos: quedó registrado.`;
+export function renglonesDeAvisoAceptado(a: Advertencia, contexto?: ContextoDeDocumentacion): RenglonDeAviso[] {
+  const tono = tonoDeAdvertencia(a);
+  if (a.tipo !== "documentacion-vencida") return [{ tono, texto: textoAdvertencia(a) }];
+  const renglones = renglonesDeDocumentacion(a.documentos, contexto, true);
+  // Un aviso de documentación sin ningún documento (un dato roto) no pierde la cola: queda como único renglón.
+  if (renglones.length === 0) return [{ tono, texto: "Se envió de todos modos: quedó registrado." }];
+  const ultimo = renglones.length - 1;
+  return renglones.map((texto, i) => ({ tono, texto: i === ultimo ? `${texto} Se envió de todos modos: quedó registrado.` : texto }));
 }
 
 /** Avisos globales del arranque y de la sincronización entre pestañas (D4, D5, D7, D8, D9). */
@@ -475,6 +506,9 @@ export const TEXTO_AVISO = {
   preparando: "Preparando la flota de ejemplo…",
   esquemaActualizado: "La demo se actualizó. Se cargó de nuevo la flota de ejemplo y no se conservaron los datos anteriores.",
   sinAlmacenamiento: "Este navegador no permite guardar datos. Puede usar la demo, pero los cambios se pierden al cerrar o recargar la página.",
+  /** QA B2: la base se borró o se cambió desde otra pestaña con la demo abierta; la demo sigue en memoria. */
+  almacenamientoPerdido:
+    "Los datos guardados de la demo ya no están disponibles: se borraron o se cambiaron desde otra pestaña. Puede seguir usándola, pero los cambios se pierden al cerrar o recargar la página.",
   cambiosEnOtraPestana: "Se hicieron cambios en otra pestaña. Esta pantalla sigue mostrando los datos anteriores hasta que actualice.",
 } as const;
 
@@ -951,12 +985,12 @@ export function textoKmEnUso(km: number): string {
  * Evento «revision-enviada» en el historial: «Revisión antes de salir · 84.320 km · sin novedades» · «… · 1 novedad: Niveles de aceite y agua» ·
  * «… · novedad crítica en Frenos: la unidad no salió», y «(fuera de plazo)» al final.
  */
-export function textoRevisionEnHistorial(r: { kmInicio: number; normales: readonly string[]; criticas: readonly string[]; fueraDeTermino: boolean }): string {
+export function textoRevisionEnHistorial(r: { kmInicio: number; normales: readonly string[]; criticas: readonly string[]; fueraDePlazo: boolean }): string {
   const partes = ["Revisión antes de salir", `${formatearKm(r.kmInicio)} km`];
   if (r.criticas.length > 0) partes.push(`novedad crítica en ${r.criticas.join(", ")}: la unidad no salió`);
   else if (r.normales.length === 0) partes.push("sin novedades");
   else partes.push(`${pluralizar(r.normales.length, "novedad", "novedades")}: ${r.normales.join(", ")}`);
-  return `${partes.join(" · ")}${r.fueraDeTermino ? " (fuera de plazo)" : ""}`;
+  return `${partes.join(" · ")}${r.fueraDePlazo ? " (fuera de plazo)" : ""}`;
 }
 
 /** Evento «parte-enviado» (el cierre) en el historial: «Parte cerrado · 132 km (84.320 → 84.452) · combustible 3/4». */
@@ -993,6 +1027,10 @@ export const TEXTO_DIALOGOS_FICHA = {
     primario: "Marcar como resuelta",
     volverEtiqueta: "Volver a servicio ahora",
     volverNota: (patente: string) => `${patente} está fuera de servicio por esta novedad. Con la casilla marcada, vuelve a servicio al resolverla.`,
+    /** P19: hoy hubo una novedad crítica; el diálogo no promete que la unidad vuelve a salir ese día. */
+    volverEtiquetaHastaManana: "Volver a servicio (sale recién mañana)",
+    volverNotaHastaManana: (patente: string) =>
+      `${patente} está fuera de servicio por esta novedad. Con la casilla marcada, queda en servicio, pero no sale hoy: vuelve a salir recién mañana.`,
   },
   cargarNovedad: {
     titulo: (patente: string) => `Cargar novedad de ${patente}`,
@@ -1015,6 +1053,9 @@ export const TEXTO_DIALOGOS_FICHA = {
       const accion = aRenovar.length > 0 && aCargar.length > 0 ? "renovar o cargar" : aCargar.length > 0 ? "cargar" : "renovar";
       return `La unidad vuelve a servicio, pero no puede salir hasta ${accion}: ${[...aRenovar, ...aCargar].join(", ")}.`;
     },
+    /** P19: la unidad vuelve, pero el parte de hoy quedó sin salida. Solo, y sumado a lo de los documentos. */
+    hastaManana: "La unidad vuelve a servicio, pero no vuelve a salir hasta mañana: hoy tuvo una novedad crítica.",
+    ademasHastaManana: "Además, no vuelve a salir hasta mañana: hoy tuvo una novedad crítica.",
   },
   baja: {
     titulo: (patente: string) => `Dar de baja: ${patente}`,
@@ -1059,8 +1100,9 @@ export function textoDocumentoRenovadoEnFicha(tipo: TipoDocumento, titular: stri
  * Después de resolver una novedad: «Novedad resuelta: Frenos.», y si la unidad volvió, lo dice. Desde el centro de alertas (donde hay
  * muchas unidades) también nombra la unidad: «Novedad resuelta: Frenos (ZU 899 QE).»
  */
-export function textoNovedadResuelta(rotulo: string, patente: string, volvio: boolean, nombraLaUnidad = false): string {
-  return `Novedad resuelta: ${rotulo}${nombraLaUnidad ? ` (${patente})` : ""}.${volvio ? ` ${patente} vuelve a servicio.` : ""}`;
+export function textoNovedadResuelta(rotulo: string, patente: string, volvio: boolean, nombraLaUnidad = false, hastaManana = false): string {
+  const vuelta = volvio ? ` ${patente} vuelve a servicio${hastaManana ? ", pero no sale hasta mañana" : ""}.` : "";
+  return `Novedad resuelta: ${rotulo}${nombraLaUnidad ? ` (${patente})` : ""}.${vuelta}`;
 }
 
 /** Después de cargar una novedad a mano. */
@@ -1132,7 +1174,7 @@ export const TEXTO_FORMULARIO_PARTE = {
   ayudaPrimerRegistro: "Es el primer registro de esta unidad.",
   ayudaKmFin: "Lo que marca el tablero al terminar la jornada.",
   ayudaLitros: "Déjelo vacío si no cargó.",
-  fueraDeTermino: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: la revisión se enviará fuera de plazo.`,
+  fueraDePlazo: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: la revisión se enviará fuera de plazo.`,
   borradorDescartado: "Borrador descartado.",
 } as const;
 
@@ -1199,12 +1241,13 @@ export function textoCerrarElParteDel(fecha: FechaCivil): string {
 }
 
 /**
- * La opción del `select` Conductor del encargado en el parte (C13): el dato primero y la patente al final, porque en el celular lo que se corta es el final.
- * «Tamara Olivera · ZK 214 BD», «Ivana Aguirre (sin licencia vigente) · ZPA 505»; sin unidad asignada, solo el nombre.
+ * La opción del `select` Conductor del encargado en el parte (C13, QA B5): el dato primero y la patente al final, porque en el celular lo que se corta es el final.
+ * «Tamara Olivera · ZK 214 BD»; sin unidad asignada, solo el nombre. Sin licencia vigente: «Ivana Aguirre (sin licencia)», sin la patente, para que entre en el campo a 360 px
+ * (unos 240 px, 30 caracteres); a quien no tiene licencia no se le puede asignar el parte (L1), así que la patente ahí no ayuda a elegir, y el motivo lo explica el error al elegirla.
  */
 export function textoOpcionDeConductor(nombre: string, patente: string | null, sinLicencia: boolean): string {
-  const quien = sinLicencia ? `${nombre} (sin licencia vigente)` : nombre;
-  return patente === null ? quien : `${quien} · ${patente}`;
+  if (sinLicencia) return `${nombre} (sin licencia)`;
+  return patente === null ? nombre : `${nombre} · ${patente}`;
 }
 
 /** «Hoy, miércoles 18/11/2026». */
@@ -1255,10 +1298,15 @@ export function textoSinParteFueraDeServicio(patente: string, desde: FechaCivil,
   return `${patente} está fuera de servicio desde el ${formatearFecha(desde)} (${motivo}). No hace falta parte.`;
 }
 
-/** Aviso sobre una unidad que está en servicio pero no puede salir (documentos): «Seguro vencido hace 1 día; …». */
-export function textoUnidadNoPuedeSalir(patente: string, motivos: readonly string[], alConductor: boolean): string {
-  const base = `${patente} no puede salir: ${motivos.join("; ")}.`;
-  return alConductor ? `${base} Avise al encargado antes de usarla.` : base;
+/** El aviso compacto de dos renglones: el hecho (`titular`, firme) y lo que hay que hacer (`accion`, más chico; vacío si no hay nada que hacer). Lo arma la lógica: la vista no corta ningún texto. */
+export interface AvisoDeAptitud {
+  titular: string;
+  accion: string;
+}
+
+/** Aviso sobre una unidad que está en servicio pero no puede salir (documentos): «ZK 214 BD no puede salir: Seguro vencido hace 1 día.» y, solo al conductor, «Avise al encargado antes de usarla.». */
+export function textoUnidadNoPuedeSalir(patente: string, motivos: readonly string[], alConductor: boolean): AvisoDeAptitud {
+  return { titular: `${patente} no puede salir: ${motivos.join("; ")}.`, accion: alConductor ? "Avise al encargado antes de usarla." : "" };
 }
 
 export function textoPendienteBorrador(fecha: FechaCivil, patente: string): string {
@@ -1307,13 +1355,15 @@ export const TEXTO_PANTALLA_PARTE = {
   verLaRevision: "Ver la revisión",
   encargadoLaVe: "El encargado la ve en el centro de alertas.",
   alTerminarVuelva: "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible.",
+  /** C1 de un parte de un día pasado: la jornada ya terminó (C4 de la revisión visual). */
+  faltaCerrarJornadaPasada: "Falta cerrar este parte con el kilometraje y el combustible de esa jornada.",
   siTieneQueSalir: "Si tiene que salir, elija otra unidad desde el inicio.",
   sinLicenciaVigente: "sin licencia vigente",
   sinUsoSinSalida: "Sin uso: la unidad no salió",
   noSeRegistroSinSalida: "No se registró: la unidad no salió",
   sinNovedades: "Sin novedades",
   noCargo: "No cargó",
-  fueraDeTermino: "Revisión enviada fuera de plazo.",
+  fueraDePlazo: "Revisión enviada fuera de plazo.",
   rotulos: { alIniciar: "Al iniciar", recorrido: "Recorrido", combustible: "Combustible", litros: "Combustible cargado", novedades: "Novedades", avisos: "Avisos aceptados", revision: "Revisión", cierre: "Cierre" },
 } as const;
 

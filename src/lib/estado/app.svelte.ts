@@ -32,9 +32,9 @@ import {
 } from "../dominio/formulario-documento.ts";
 import { formatearHora } from "../dominio/fechas.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
-import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
-import { kmDeRegistro, registroAnterior } from "../dominio/kilometraje.ts";
-import { advertenciasLegibles, contextoDeDocumentacion, esBorradorVacio } from "../dominio/parte.ts";
+import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, sumarErrorDeRegla, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
+import { kmDeRegistro, registroAnterior, validarKmDeSalida } from "../dominio/kilometraje.ts";
+import { advertenciasLegibles, contextoDeDocumentacion, esBorradorVacio, unidadSinSalidaHoy } from "../dominio/parte.ts";
 import {
   comandoDeAsignacion,
   comandoDeBaja,
@@ -91,6 +91,7 @@ import {
   TEXTO_ERROR_ARRANQUE,
   TEXTO_FORMULARIO_PARTE,
   textoAdvertencia,
+  tonoDeAdvertencia,
   textoAsignacionCambiada,
   textoDocumentoCargado,
   textoDocumentoCorregido,
@@ -109,7 +110,8 @@ import { fallo, ok, type Advertencia, type ErrorDeNegocio, type Estado, type Fec
 import { esTipoDocumento } from "../dominio/vencimientos.ts";
 import { arrancar, cambiarPerfil as guardarPerfil, partesLegibles, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
-import type { Repositorio } from "../persistencia/repositorio.ts";
+import { RepositorioMemoria } from "../persistencia/memoria.ts";
+import { ErrorDeRepositorio, type Repositorio } from "../persistencia/repositorio.ts";
 import { crearAutoguardado, type Autoguardado, type DependenciasAutoguardado, type IndicadorDeGuardado, type ResultadoDeBorrador } from "./autoguardado.ts";
 import { centroDeAlertas, contarVencimientos, type CentroDeAlertas } from "./centro-alertas.ts";
 import { aHash, nombreDePantalla, resolverRuta, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
@@ -195,7 +197,7 @@ export interface AdvertenciaDeEnvio {
  *   devuelve el mismo panel.
  * - `errores`: faltan datos o falla una regla (P4, K2 a K4, P2, P8, escritura): resumen de errores arriba del formulario con el foco (`foco`) y enlaces a cada campo.
  *   Lo escrito se guardó como borrador (si se podía): no se pierde.
- * - `advertencias`: el parte está completo pero hay que aceptar algo (K6, K7, P9): abrir «Antes de enviar». Al elegir «Enviar igual» se vuelve a llamar con
+ * - `advertencias`: el parte está completo pero hay que aceptar algo (K6, K7, P9): abrir «Antes de enviar». Al elegir «Enviar de todos modos» (o «Cerrar de todos modos») se vuelve a llamar con
  *   `aceptables` como `aceptadas`.
  */
 export type ResultadoDeEnvio =
@@ -354,6 +356,32 @@ export class EstadoApp {
     this.repositorio = null;
   }
 
+  /**
+   * Corre `accion` sobre el almacenamiento. Si la conexión está cerrada (QA B2: la base se borró o se cambió desde otra pestaña con la demo abierta) ningún reintento puede
+   * funcionar sobre ella: se sigue con un repositorio en memoria que arranca con `estado` (lo último que se guardó bien, o sea lo que se ve en pantalla), se avisa que los cambios
+   * ya no se guardan y se repite la acción una vez. Así lo escrito no se pierde y el reintento anda; cualquier otro error sube tal cual.
+   */
+  private async conAlmacenamiento<T>(estado: Estado, accion: (repositorio: Repositorio) => Promise<T>): Promise<T> {
+    const repositorio = this.repositorio;
+    if (repositorio === null) throw new Error(ERRORES.sinDatos);
+    try {
+      return await accion(repositorio);
+    } catch (error) {
+      if (!(error instanceof ErrorDeRepositorio) || error.codigo !== "conexion-cerrada") throw error;
+      const enMemoria = new RepositorioMemoria();
+      await enMemoria.reemplazarTodo(estado);
+      repositorio.cerrar?.();
+      this.repositorio = enMemoria;
+      this.enMemoria = true;
+      // Sin almacenamiento no hay nada que compartir con otras pestañas.
+      this.pestanas?.cerrar();
+      this.pestanas = null;
+      this.hayCambiosEnOtraPestana = false;
+      if (!this.avisos.some((a) => a.tipo === "almacenamiento-perdido")) this.avisos = [...this.avisos, { tipo: "almacenamiento-perdido" }];
+      return await accion(enMemoria);
+    }
+  }
+
   // --- Navegación ----------------------------------------------------------------------------------
 
   /** Lee la barra de direcciones, deja el hash en su forma canónica y avisa si se llegó a otra pantalla. */
@@ -440,7 +468,7 @@ export class EstadoApp {
     });
     if (!resultado.ok) return resultado;
     try {
-      await repositorio.escribir(resultado.valor.cambios, resultado.valor.eventos);
+      await this.conAlmacenamiento(estado, (r) => r.escribir(resultado.valor.cambios, resultado.valor.eventos));
     } catch {
       return fallo("escritura-fallida", COMANDOS_DEL_PARTE_A_GUARDAR.has(comando.tipo) ? ERRORES.noPudoGuardarElParte : ERRORES.noPudoGuardar);
     }
@@ -569,8 +597,10 @@ export class EstadoApp {
         const n = e.estado.novedades.find((x) => x.id === novedadId);
         const patente = n === undefined ? "" : this.patenteDe(e.estado, n.unidadId);
         const volvio = e.eventos.some((ev) => ev.tipo === "vuelta-a-servicio");
+        // P19: con una novedad crítica de hoy (del parte o cargada a mano), vuelve a servicio pero no sale hasta mañana.
+        const hastaManana = volvio && n !== undefined && unidadSinSalidaHoy(e.estado, n.unidadId, this.hoy);
         return {
-          mensaje: textoNovedadResuelta(n === undefined ? "" : rotuloNovedad(n), patente, volvio, donde === "centro"),
+          mensaje: textoNovedadResuelta(n === undefined ? "" : rotuloNovedad(n), patente, volvio, donde === "centro", hastaManana),
           foco: donde === "centro" ? "titulo-del-panel" : "titulo-de-novedades",
         };
       },
@@ -800,7 +830,7 @@ export class EstadoApp {
     const contexto = parte === undefined || unidad === undefined || this.estado === null ? undefined : contextoDeDocumentacion(this.estado.documentos, unidad, parte.fecha);
     return {
       tipo: "advertencias",
-      advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a, contexto), tono: a.tipo === "documentacion-vencida" ? "critico" : "semana" })),
+      advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a, contexto), tono: tonoDeAdvertencia(a) })),
       aceptables: pendientes.map((a) => a.tipo),
       foco: "dialogo-antes-de-enviar",
     };
@@ -847,7 +877,7 @@ export class EstadoApp {
     const r = await this.ejecutarAhora({ tipo: "enviarRevision", parteId: borrador.id, advertenciasAceptadas: aceptadas }, perfil);
     if (!r.ok) {
       if (r.error.codigo === "licencia-no-vigente" || r.error.codigo === "parte-anterior-sin-cerrar" || r.error.codigo === "escritura-fallida") return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
-      if (previos !== null) return this.erroresDeEnvio(previos);
+      if (previos !== null) return this.erroresDeEnvio(this.conErrorDeKilometraje(previos, v, borrador));
       if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error, borrador);
       return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
     }
@@ -855,6 +885,15 @@ export class EstadoApp {
     if (enviado === undefined) return this.erroresDeEnvio(errorGeneralParte(ERRORES.parteInexistente)); // no pasa: el comando acaba de escribirlo
     const hecho = this.resultadoYaHecho(r.valor.estado, enviado, perfil);
     return hecho.tipo === "enviado" ? { ...hecho, yaEnviado: false } : hecho;
+  }
+
+  /** m3: lo que impide enviar más el kilometraje de salida si retrocede o pasa al parte siguiente (K3, K4), que el comando no llega a decir mientras falten datos. */
+  private conErrorDeKilometraje(previos: ErroresDeParte, valores: ValoresParte, borrador: Parte): ErroresDeParte {
+    const estado = this.estado;
+    const unidad = estado?.unidades.find((u) => u.id === borrador.unidadId);
+    if (estado === null || unidad === undefined || borrador.kmInicio === null) return previos;
+    const km = validarKmDeSalida({ unidad, fecha: borrador.fecha, kmInicio: borrador.kmInicio, partes: estado.partes, correcciones: estado.correccionesKm });
+    return km.ok ? previos : sumarErrorDeRegla(valores, previos, km.error);
   }
 
   /**
@@ -936,7 +975,7 @@ export class EstadoApp {
         return fallo("conductor-inexistente", ERRORES.conductorInexistente);
       }
       try {
-        this.estado = await guardarPerfil(repositorio, estado, perfil);
+        this.estado = await this.conAlmacenamiento(estado, (r) => guardarPerfil(r, estado, perfil));
       } catch {
         return fallo("escritura-fallida", ERRORES.noPudoCambiarVista);
       }
@@ -958,12 +997,12 @@ export class EstadoApp {
       if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
       try {
         const momento = this.deps.reloj.momento();
-        this.estado = await reiniciarDemo(repositorio, estado, momento.hoy);
+        this.estado = await this.conAlmacenamiento(estado, (r) => reiniciarDemo(r, estado, momento.hoy));
         this.hoy = momento.hoy;
       } catch {
         return fallo("escritura-fallida", ERRORES.noPudoReiniciar);
       }
-      this.avisos = this.avisos.filter((a) => a.tipo === "sin-almacenamiento");
+      this.avisos = this.avisos.filter((a) => a.tipo === "sin-almacenamiento" || a.tipo === "almacenamiento-perdido");
       this.hayCambiosEnOtraPestana = false;
       this.pestanas?.avisarCambio();
       this.irA(rutaPorDefecto(this.perfil));
@@ -978,7 +1017,7 @@ export class EstadoApp {
       if (repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
       let nuevo: Estado | null;
       try {
-        nuevo = await repositorio.cargar();
+        nuevo = this.estado === null ? await repositorio.cargar() : await this.conAlmacenamiento(this.estado, (r) => r.cargar());
       } catch {
         return fallo("lectura-fallida", ERRORES.noPudoActualizar);
       }

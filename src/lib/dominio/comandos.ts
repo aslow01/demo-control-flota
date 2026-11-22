@@ -21,7 +21,7 @@ import {
 } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
 import { limpiarTexto, normalizarTexto } from "./texto.ts";
-import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errKmCorreccionParteEnUso, errLicenciaNoVigente, errConductorConParteSinCerrar, errNovedadesCriticasAbiertas, errParteAnteriorSinCerrar, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadConParteEnUso, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
+import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errKmCorreccionParteEnUso, errLicenciaNoVigente, errConductorConParteSinCerrar, errNovedadesCriticasAbiertas, errParteAnteriorSinCerrar, errParteDuplicado, errRenovacionNoPosterior, errVenceNoPosteriorAlAnterior, errTipoDeDocumentoNoCorresponde, errUnidadConParteEnUso, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
 import {
   fallo,
   ok,
@@ -725,7 +725,7 @@ function corregirDocumento(
     // V9 y V10: corregir no puede dar vuelta el orden entre un documento y su renovación.
     const anterior = actual.reemplazaA === null ? undefined : estado.documentos.find((d) => d.id === actual.reemplazaA);
     if (anterior !== undefined && diasEntre(anterior.vence, vence) <= 0) {
-      return fallo("renovacion-no-posterior", errRenovacionNoPosterior(anterior.vence), { campo: "vence" });
+      return fallo("renovacion-no-posterior", errVenceNoPosteriorAlAnterior(anterior.vence), { campo: "vence" });
     }
     const renovacion = estado.documentos.find((d) => d.reemplazaA === actual.id);
     if (renovacion !== undefined && diasEntre(vence, renovacion.vence) <= 0) {
@@ -1101,7 +1101,7 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
     const suyo = parteEnUsoDelConductor(estado, conductor.valor.id, u.id);
     const suUnidad = suyo === undefined ? undefined : estado.unidades.find((x) => x.id === suyo.unidadId);
     if (suyo !== undefined && suUnidad !== undefined) {
-      return fallo("parte-anterior-sin-cerrar", errConductorConParteSinCerrar(conductor.valor.nombre, pat(suUnidad), suyo.fecha), {
+      return fallo("parte-anterior-sin-cerrar", errConductorConParteSinCerrar(conductor.valor.nombre, pat(suUnidad), suyo.fecha, ctx.hoy), {
         campo: "conductorId",
         detalle: { parteId: suyo.id, fecha: suyo.fecha, unidadId: suyo.unidadId },
       });
@@ -1110,8 +1110,10 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
 
   // P4: lo que falta de la revisión, en el orden del formulario.
   const faltan = faltantesDeRevision(borrador);
+  if (faltan.length > 0) return fallo("faltan-datos", textoFaltantes(faltan.length), { detalle: { faltan } });
+  // `faltantesDeRevision` ya incluye `kmInicio` (lo fija tests/parte.test.ts): esto solo acota el tipo.
   const kmInicio = borrador.kmInicio;
-  if (faltan.length > 0 || kmInicio === null) return fallo("faltan-datos", textoFaltantes(Math.max(faltan.length, 1)), { detalle: { faltan } });
+  if (kmInicio === null) return fallo("faltan-datos", textoFaltantes(1), { detalle: { faltan: ["kmInicio"] } });
 
   // K3 y K4 bloquean; K6 es una advertencia.
   const km = validarKmDeSalida({ unidad: u, fecha: borrador.fecha, kmInicio, partes: estado.partes, correcciones: estado.correccionesKm });
@@ -1155,14 +1157,15 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
     resolucion: null,
   }));
 
-  const fueraDeTermino = diasEntre(parte.fecha, ctx.hoy) > 0;
+  // El texto dice «fuera de plazo»; la clave `fueraDeTermino` del evento es un dato guardado en la base de la persona y se conserva con ese nombre.
+  const fueraDePlazo = diasEntre(parte.fecha, ctx.hoy) > 0;
   const eventos: EventoNuevo[] = [
     {
       tipo: "revision-enviada",
       unidadId: u.id,
       conductorId: parte.conductorId,
-      resumen: RESUMEN_EVENTO.revisionEnviada(pat(u), parte.fecha, fueraDeTermino, kmInicio, hayCritica),
-      datos: { parteId: parte.id, fecha: parte.fecha, kmInicio, fueraDeTermino, sinSalida: hayCritica, advertencias: requeridas },
+      resumen: RESUMEN_EVENTO.revisionEnviada(pat(u), parte.fecha, fueraDePlazo, kmInicio, hayCritica),
+      datos: { parteId: parte.id, fecha: parte.fecha, kmInicio, fueraDeTermino: fueraDePlazo, sinSalida: hayCritica, advertencias: requeridas },
     },
     ...novedades.map((n) => eventoDeNovedadAbierta(u, n)),
   ];
@@ -1173,7 +1176,7 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
   const criticas = novedades.filter((n) => n.gravedad === "critica");
   if (criticas.length > 0) {
     const nombres = criticas.map((n) => rotuloNovedad(n)).join(", ");
-    const efecto = efectoDeNovedadCritica(u, criticas, MOTIVO_NOVEDAD_CRITICA.delParte(parte.fecha, nombres), ctx);
+    const efecto = efectoDeNovedadCritica(u, criticas, MOTIVO_NOVEDAD_CRITICA.delParte(parte.fecha, nombres, ctx.hoy), ctx);
     if (efecto.unidad !== null) cambios.unidades = [efecto.unidad];
     if (efecto.evento !== null) eventos.push(efecto.evento);
   }
@@ -1216,8 +1219,10 @@ function enviarCierre(estado: Estado, c: Extract<Comando, { tipo: "enviarCierre"
   const parte = p.valor;
 
   const faltan = faltantesDeCierre(parte);
+  if (faltan.length > 0) return fallo("faltan-datos", textoFaltantes(faltan.length), { detalle: { faltan } });
   const { kmInicio, kmFin } = parte;
-  if (faltan.length > 0 || kmFin === null) return fallo("faltan-datos", textoFaltantes(Math.max(faltan.length, 1)), { detalle: { faltan } });
+  // `faltantesDeCierre` ya incluye `kmFin`: esto solo acota el tipo.
+  if (kmFin === null) return fallo("faltan-datos", textoFaltantes(1), { detalle: { faltan: ["kmFin"] } });
   // Un parte en uso siempre tiene su kilometraje de salida (la revisión lo exige); uno con la forma rota (datos viejos) no se cierra a ciegas.
   if (kmInicio === null) return fallo("faltan-datos", textoFaltantes(1), { detalle: { faltan: ["kmInicio"] } });
 

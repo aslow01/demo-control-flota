@@ -1,12 +1,13 @@
 // Aptitud de una unidad para salir hoy (A1, A2, A8). Se calcula, no se guarda.
 
 import { novedadesCriticasAbiertas, rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
+import { unidadSinSalidaHoy } from "./parte.ts";
 import { MOTIVO_APTITUD } from "./textos.ts";
 import type { Estado, FechaCivil, TipoDocumento, Unidad } from "./tipos.ts";
 import { NOMBRES_DOCUMENTO, documentoVigente, evaluarObligatorio, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 
 export interface Motivo {
-  tipo: "baja" | "fuera-de-servicio" | "documento-vencido" | "documento-faltante" | "novedad-critica";
+  tipo: "baja" | "fuera-de-servicio" | "documento-vencido" | "documento-faltante" | "novedad-critica" | "sin-salida-hoy";
   texto: string;
   /** Solo en los motivos de documento (vencido o faltante): de cuál. */
   documento?: TipoDocumento;
@@ -18,9 +19,12 @@ export interface Aptitud {
   motivos: Motivo[];
 }
 
-type DatosDeAptitud = Pick<Estado, "documentos" | "novedades" | "proyectos">;
+type DatosDeAptitud = Pick<Estado, "documentos" | "novedades" | "partes" | "proyectos">;
 
-/** A1: puede salir = en servicio, sin obligatorios vencidos o faltantes y sin novedades críticas abiertas. */
+/**
+ * A1: puede salir = en servicio, sin obligatorios vencidos o faltantes, sin novedades críticas abiertas y (P19) sin una novedad crítica de hoy (la de un parte cerrado sin salida o una
+ * cargada a mano): aunque se resuelva y la unidad vuelva a servicio, ese día no sale.
+ */
 export function aptitud(unidad: Unidad, estado: DatosDeAptitud, hoy: FechaCivil): Aptitud {
   const e = unidad.estado;
   if (e.tipo === "baja") {
@@ -58,6 +62,8 @@ export function aptitud(unidad: Unidad, estado: DatosDeAptitud, hoy: FechaCivil)
       texto: MOTIVO_APTITUD.novedadCritica(rotuloNovedad(n), textoOrigenNovedad(n)),
     });
   }
+
+  if (unidadSinSalidaHoy(estado, unidad.id, hoy)) motivos.push({ tipo: "sin-salida-hoy", texto: MOTIVO_APTITUD.sinSalidaHoy });
 
   const puedeSalir = motivos.length === 0;
   return { categoria: puedeSalir ? "puede-salir" : "no-puede-salir", puedeSalir, motivos };

@@ -63,9 +63,13 @@ function crearEsquema(db: IDBDatabase): void {
   }
 }
 
+const MENSAJE_CONEXION_CERRADA = "La conexión con el almacenamiento está cerrada.";
+
 function aErrorDeRepositorio(e: unknown): ErrorDeRepositorio {
   if (e instanceof ErrorDeRepositorio) return e;
   const nombre = e instanceof Error ? e.name : "";
+  // Una conexión que el navegador cerró (la base se borró, se actualizó o se limpiaron los datos del sitio) no se puede usar más.
+  if (nombre === "InvalidStateError") return new ErrorDeRepositorio("conexion-cerrada", MENSAJE_CONEXION_CERRADA);
   if (nombre === "QuotaExceededError") {
     return new ErrorDeRepositorio("escritura-fallida", "No hay lugar para guardar más datos en este navegador. No se aplicó ningún cambio.");
   }
@@ -145,8 +149,11 @@ export class RepositorioIndexedDB implements Repositorio {
 
   constructor(db: IDBDatabase) {
     this.db = db;
-    // Si otra pestaña pide actualizar la base, se cierra la conexión para no bloquearla.
+    // Si otra pestaña pide actualizar o borrar la base, se cierra la conexión para no bloquearla; si el navegador la cierra solo, se deja de usarla.
     db.onversionchange = () => this.cerrar();
+    db.onclose = () => {
+      this.db = null;
+    };
   }
 
   /** Cierra la conexión. Después, toda operación falla con un error claro. */
@@ -158,7 +165,7 @@ export class RepositorioIndexedDB implements Repositorio {
   private transaccion<T>(modo: IDBTransactionMode, trabajo: (t: Trabajo) => void, resultado: () => T): Promise<T> {
     return new Promise<T>((resolver, rechazar) => {
       if (this.db === null) {
-        rechazar(new ErrorDeRepositorio("escritura-fallida", "La conexión con el almacenamiento está cerrada."));
+        rechazar(new ErrorDeRepositorio("conexion-cerrada", MENSAJE_CONEXION_CERRADA));
         return;
       }
       let t: Trabajo;
