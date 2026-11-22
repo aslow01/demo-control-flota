@@ -11,24 +11,23 @@ import { diaDeLaSemana, diasEntre, fechaEnArgentina, formatearFecha, formatearHo
 import { opcionesDeConductor, type OpcionDeConductor } from "../dominio/formulario.ts";
 import { OPCIONES_COMBUSTIBLE, faltantesDeValores, valoresDeParte, valoresIniciales, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { describirRegistro, kmDeRegistro, registroAnterior, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
-import { ITEMS_CHECKLIST, conductorParaParte, novedadesDelParte, parteLegible, partePendienteDeCierre, validarFechaParte } from "../dominio/parte.ts";
+import { ITEMS_CHECKLIST, conductorParaParte, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, validarFechaParte } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import {
   NOMBRES_COMBUSTIBLE,
   TEXTO_BORRADOR_CONSERVADO,
+  TEXTO_CERRAR_ANTES,
   TEXTO_FORMULARIO_PARTE,
   TEXTO_GUARDADO,
   TEXTO_INICIO_CONDUCTOR as TI,
   TEXTO_PANTALLA_PARTE as TP,
   TEXTO_PARTE,
-  errParteAnteriorSinCerrar,
   errUnidadDeBaja,
   errUnidadFueraDeServicio,
   formatearKm,
   textoAdvertenciaAceptada,
   textoBorradorDelConductor,
-  textoCerrarElParteDel,
-  textoCierrePendiente,
+  textoCerrarAntesDeLaRevision,
   textoDescripcionUnidad,
   textoEnUsoDesde,
   textoEnviadoALas,
@@ -40,6 +39,7 @@ import {
   textoLineaSinSalida,
   textoLitros,
   textoNoPuedeManejarHoy,
+  textoParteSinCerrarDeLaUnidad,
   textoNovedadesDelParte,
   textoPendienteBorrador,
   textoPendienteSinCerrar,
@@ -82,7 +82,7 @@ type Tono = "critico" | "semana" | "quincena" | "mes";
 /**
  * Lo que dice el panel «Hoy». Se decide en este orden (docs/diseno.md, 17.5; el primero que aplica gana): sin unidad → `sin-unidad`; parte de hoy cerrado →
  * `enviado`; en uso → `en-uso` (la licencia no se mira: L3); unidad fuera de servicio → `fuera-de-servicio`; licencia que no ampara hoy → `licencia-no-vigente`;
- * un parte anterior de la unidad en uso → `cierre-pendiente` (A1); borrador → `borrador`; si no, `sin-parte`.
+ * un parte anterior de la unidad en uso, o del conductor en otra unidad → `cierre-pendiente` (estado 5 bis, A1 y P20); borrador → `borrador`; si no, `sin-parte`.
  */
 export type EstadoDelDia =
   /** «Antes de salir, revise la unidad y envíe la revisión.» + «Empezar la revisión». */
@@ -93,9 +93,10 @@ export type EstadoDelDia =
   | { tipo: "en-uso"; etiqueta: string; texto: string; primario: EnlaceDeParte }
   /**
    * Parte cerrado: «Cerrado a las 18:42» + «Ver el parte». Un parte cerrado sin salida (P16) trae `sinSalida`: «Revisión de las 06:52: novedad crítica en Frenos. La
-   * unidad no salió.»; la vista lo muestra en lugar de la etiqueta.
+   * unidad no salió.»; la vista lo muestra en lugar de la etiqueta. Con `sinSalida`, `hastaManana` (P19) dice que la unidad no vuelve a salir hoy aunque se resuelva la
+   * novedad: «Aunque el encargado resuelva la novedad hoy, la unidad vuelve a salir recién mañana.»; `null` si el parte salió.
    */
-  | { tipo: "enviado"; etiqueta: string; sinSalida: string | null; enlace: EnlaceDeParte }
+  | { tipo: "enviado"; etiqueta: string; sinSalida: string | null; hastaManana: string | null; enlace: EnlaceDeParte }
   | { tipo: "fuera-de-servicio"; aviso: string }
   /**
    * L1, segunda persona: `renglon1` «No puede manejar hoy: su licencia de conducir venció el 15/11/2026.» y `renglon2` «Avise al encargado…». Sin «Usar otra unidad» (no
@@ -108,11 +109,18 @@ export type EstadoDelDia =
       borrador: { texto: string; descartar: { texto: string; parteId: string } } | null;
     }
   /**
-   * A1: la unidad tiene un parte anterior en uso (sin cerrar) y la revisión de hoy no se puede empezar hasta cerrarlo. `texto` «Antes de empezar la revisión de hoy, cierre el
-   * parte del 17/11/2026.»; `primario` «Cerrar el parte del 17/11/2026» (lleva al cierre de ese día, el más antiguo si hay varios). Sin «Empezar la revisión». Con un
-   * borrador de hoy, se conserva y se puede descartar (como en `licencia-no-vigente`).
+   * Estado 5 bis, «Cerrar antes» (A1, P20): la unidad tiene un parte anterior en uso, o el conductor tiene uno en otra unidad, y la revisión de hoy no se puede empezar hasta
+   * cerrarlo. `renglon1` «ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar.» y `renglon2` «Ciérrelo primero; después podrá empezar la revisión de hoy.»;
+   * `primario` «Cerrar el parte anterior» lleva al cierre de ese parte (el más antiguo si hay varios). Sin «Empezar la revisión». Con un borrador de hoy, se conserva y se
+   * puede descartar (como en `licencia-no-vigente`).
    */
-  | { tipo: "cierre-pendiente"; texto: string; primario: EnlaceDeParte; borrador: { texto: string; descartar: { texto: string; parteId: string } } | null }
+  | {
+      tipo: "cierre-pendiente";
+      renglon1: string;
+      renglon2: string;
+      primario: EnlaceDeParte;
+      borrador: { texto: string; descartar: { texto: string; parteId: string } } | null;
+    }
   /** Sin unidad asignada (o de baja): hay que elegir una. */
   | { tipo: "sin-unidad" };
 
@@ -231,7 +239,9 @@ export function inicioDelConductor(
     const delDia = parteDe(estado, unidad.id, hoy);
     const href = hrefDelParte(unidad, hoy);
     const patente = formatearPatente(unidad.patente);
-    const sinCerrar = partePendienteDeCierre(estado.partes.flatMap((p) => parteLegible(p) ?? []), unidad.id, hoy);
+    const legibles = { partes: estado.partes.flatMap((p) => parteLegible(p) ?? []), unidades: estado.unidades };
+    const sinCerrar = partePendienteDeCierre(legibles.partes, unidad.id, hoy) ?? parteEnUsoDelConductor(legibles, conductor.id, unidad.id);
+    const unidadSinCerrar = sinCerrar === undefined ? undefined : estado.unidades.find((u) => u.id === sinCerrar.unidadId);
     if (delDia?.estado === "enviado") {
       const hora = horaDe(delDia.enviado ?? delDia.actualizado);
       const criticas = novedadesDelParte(delDia).filter((n) => n.gravedad === "critica").map((n) => nombreDelPunto(n.item));
@@ -239,6 +249,7 @@ export function inicioDelConductor(
         tipo: "enviado",
         etiqueta: hora === null ? TI.enviado : textoEnviadoALas(hora),
         sinSalida: delDia.sinSalida ? textoSinSalidaDelConductor(horaDe(delDia.revisado), criticas) : null,
+        hastaManana: delDia.sinSalida ? TI.sinSalidaHastaManana : null,
         enlace: { texto: TI.verParte, href },
       };
     } else if (delDia?.estado === "en-uso") {
@@ -253,11 +264,12 @@ export function inicioDelConductor(
         renglon2: TI.licenciaAvise,
         borrador: delDia === undefined ? null : { texto: TI.revisionConservada, descartar: { texto: TI.descartar, parteId: delDia.id } },
       };
-    } else if (sinCerrar !== undefined) {
+    } else if (sinCerrar !== undefined && unidadSinCerrar !== undefined) {
       hoyEstado = {
         tipo: "cierre-pendiente",
-        texto: textoCierrePendiente(sinCerrar.fecha),
-        primario: { texto: textoCerrarElParteDel(sinCerrar.fecha), href: hrefDelParte(unidad, sinCerrar.fecha) },
+        renglon1: textoParteSinCerrarDeLaUnidad(formatearPatente(unidadSinCerrar.patente), sinCerrar.fecha),
+        renglon2: TEXTO_CERRAR_ANTES.inicioRenglon2,
+        primario: { texto: TEXTO_CERRAR_ANTES.primario, href: hrefDelParte(unidadSinCerrar, sinCerrar.fecha) },
         borrador: delDia === undefined ? null : { texto: TI.revisionConservada, descartar: { texto: TI.descartar, parteId: delDia.id } },
       };
     } else if (delDia !== undefined) {
@@ -411,7 +423,7 @@ export interface ParteNoEncontrada {
   enlace: EnlaceDeParte;
 }
 
-/** No se puede cargar (P2, P8, baja, L1): el mensaje de la regla. Con un borrador, se ofrece descartarlo (P5: es la salida). */
+/** No se puede cargar (P2, P8, baja, L1, «Cerrar antes»): el mensaje de la regla. Con un borrador, se ofrece descartarlo (P5: es la salida). */
 export interface ParteNoDisponible {
   tipo: "no-disponible";
   titulo: string;
@@ -420,6 +432,12 @@ export interface ParteNoDisponible {
   nota: string | null;
   borrador: { parteId: string; descartar: string } | null;
   enlace: EnlaceDeParte;
+  /**
+   * «Cerrar antes» (A1, P20; pantalla E): la unidad tiene un parte anterior en uso, o el conductor (perfil Conductor) tiene uno en otra unidad. `renglon1` «ZK 214 BD: el
+   * parte del martes 17/11/2026 quedó sin cerrar.», `renglon2` «Ciérrelo primero; después se puede empezar la revisión del 18/11/2026.» (`mensaje` es los dos juntos) y
+   * `primario` «Cerrar el parte anterior» hacia el cierre. Con un borrador de esta fecha, `nota` dice que se conserva. `null` en los demás motivos.
+   */
+  cerrarAntes: { renglon1: string; renglon2: string; primario: EnlaceDeParte } | null;
 }
 
 export interface PuntoDelFormulario {
@@ -723,6 +741,7 @@ export function vistaDeParte(estado: Estado, hoy: FechaCivil, perfil: Perfil, pa
     nota,
     borrador: existente === undefined || !conBorrador ? null : { parteId: existente.id, descartar: TP.descartar },
     enlace: enlaceAlInicio(perfil),
+    cerrarAntes: null,
   });
 
   // Un parte en uso: el cierre. Con la unidad de baja no se puede (A7) y no hay nada que descartar (P7).
@@ -735,16 +754,23 @@ export function vistaDeParte(estado: Estado, hoy: FechaCivil, perfil: Perfil, pa
   const bloqueo = motivoDeBloqueo(unidad, fecha, hoy);
   if (bloqueo !== null) return noDisponible(bloqueo);
 
-  // A1: con un parte anterior en uso, primero hay que cerrarlo; el enlace de la pantalla lleva a ese cierre.
-  const sinCerrar = partePendienteDeCierre(estado.partes.flatMap((p) => parteLegible(p) ?? []), unidad.id, fecha);
-  if (sinCerrar !== undefined) {
-    return { ...noDisponible(errParteAnteriorSinCerrar(formatearPatente(unidad.patente), sinCerrar.fecha)), enlace: { texto: textoCerrarElParteDel(sinCerrar.fecha), href: hrefDelParte(unidad, sinCerrar.fecha) } };
-  }
-
   // L1: el conductor del perfil sin licencia vigente para la fecha del parte.
   if (perfil.tipo === "conductor") {
     const licencia = estadoDeLicencia(estado.documentos, perfil.conductorId, fecha);
     if (!licencia.vigente) return noDisponible(textoLicenciaDelConductorNoAmpara(fecha, licencia), existente !== undefined && fecha === hoy ? TEXTO_BORRADOR_CONSERVADO : null);
+  }
+
+  // «Cerrar antes»: un parte anterior de la unidad en uso (A1) o, con el perfil Conductor, uno suyo en otra unidad (P20): primero hay que cerrarlo. Si además la licencia
+  // bloquea, gana la licencia (arriba). Con el perfil Encargado el conductor se elige en el formulario y P20 llega al enviar.
+  const legibles = { partes: estado.partes.flatMap((p) => parteLegible(p) ?? []), unidades: estado.unidades };
+  const sinCerrar =
+    partePendienteDeCierre(legibles.partes, unidad.id, fecha) ?? (perfil.tipo === "conductor" ? parteEnUsoDelConductor(legibles, perfil.conductorId, unidad.id) : undefined);
+  const deLaUnidad = sinCerrar === undefined ? undefined : estado.unidades.find((u) => u.id === sinCerrar.unidadId);
+  if (sinCerrar !== undefined && deLaUnidad !== undefined) {
+    const renglon1 = textoParteSinCerrarDeLaUnidad(formatearPatente(deLaUnidad.patente), sinCerrar.fecha);
+    const renglon2 = textoCerrarAntesDeLaRevision(fecha);
+    const primario = { texto: TEXTO_CERRAR_ANTES.primario, href: hrefDelParte(deLaUnidad, sinCerrar.fecha) };
+    return { ...noDisponible(`${renglon1} ${renglon2}`, existente === undefined ? null : TEXTO_CERRAR_ANTES.borradorEnPantalla(fecha)), cerrarAntes: { renglon1, renglon2, primario } };
   }
 
   const previo = registroAnterior(unidad.id, fecha, estado.partes, estado.correccionesKm);

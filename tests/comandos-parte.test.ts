@@ -410,7 +410,7 @@ describe("enviarRevision: cerrar antes (A1)", () => {
     const { estado, parteId } = conBorrador(conParteDeAyerEnUso(), listo());
     const err = ejecutarError(estado, revision(parteId));
     expect(err.codigo).toBe("parte-anterior-sin-cerrar");
-    expect(err.mensaje).toBe("El parte del 17/11/2026 de ZK 214 BD quedó sin cerrar. Ciérrelo antes de empezar la revisión de una fecha posterior.");
+    expect(err.mensaje).toBe("ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar. Ciérrelo primero; después se puede empezar la revisión del 18/11/2026.");
     expect(err.detalle).toEqual({ parteId: "uso-ayer", fecha: "2026-11-17" });
     expect(parteDe(estado, parteId).estado).toBe("borrador");
   });
@@ -441,11 +441,19 @@ describe("enviarRevision: cerrar antes (A1)", () => {
     expect(parteDe(ejecutarOk(estado, revision(parteId)).estado, parteId).estado).toBe("en-uso");
   });
 
-  it("A1 va después de P8 y P2 y antes de L1: una licencia vencida con el parte anterior sin cerrar dice primero lo del cierre", () => {
+  it("A1 va después de L1 (si la licencia también bloquea, gana la licencia) y antes de los faltantes", () => {
     const e = conParteDeAyerEnUso();
     const sinLicencia: Estado = { ...e, documentos: e.documentos.filter((d) => d.tipo !== "licencia" || d.titular.id !== "c1") };
-    const { estado, parteId } = conBorrador(sinLicencia, listo());
-    expect(ejecutarError(estado, revision(parteId)).codigo).toBe("parte-anterior-sin-cerrar");
+    const a = conBorrador(sinLicencia, listo());
+    expect(ejecutarError(a.estado, revision(a.parteId)).codigo).toBe("licencia-no-vigente");
+    const incompleto = conBorrador(e, borrador({ kmInicio: 84320 }));
+    expect(ejecutarError(incompleto.estado, revision(incompleto.parteId)).codigo).toBe("parte-anterior-sin-cerrar");
+  });
+
+  it("A1 no mira la licencia al cerrar: un conductor sin licencia vigente puede cerrar el parte anterior (L3)", () => {
+    const e = conParteDeAyerEnUso();
+    const sinLicencia: Estado = { ...e, documentos: e.documentos.filter((d) => d.tipo !== "licencia" || d.titular.id !== "c1"), partes: e.partes.map((p) => (p.id === "uso-ayer" ? { ...p, kmFin: 84400, combustible: "medio" as const } : p)) };
+    expect(ejecutarOk(sinLicencia, { tipo: "enviarCierre", parteId: "uso-ayer", advertenciasAceptadas: [] }).estado.partes.find((p) => p.id === "uso-ayer")?.estado).toBe("enviado");
   });
 
   it("A1 (QA, A1 de código): la revisión con el número precargado no se puede enviar, así que el cierre del parte anterior sigue siendo posible con el kilometraje real", () => {
@@ -453,6 +461,48 @@ describe("enviarRevision: cerrar antes (A1)", () => {
     expect(ejecutarError(estado, revision(parteId)).codigo).toBe("parte-anterior-sin-cerrar");
     const cierre = ejecutarOk(estado, { tipo: "guardarCierre", parteId: "uso-ayer", kmFin: 84452, combustible: "medio", litrosCargados: null }).estado;
     expect(ejecutarOk(cierre, { tipo: "enviarCierre", parteId: "uso-ayer", advertenciasAceptadas: [] }).estado.partes.find((p) => p.id === "uso-ayer")?.kmFin).toBe(84452);
+  });
+});
+
+describe("enviarRevision: el mismo conductor con un parte en uso en otra unidad (P20)", () => {
+  /** Luis (c1) salió ayer con la u2 y no cerró el parte. */
+  function conLuisEnLaOtra(fecha = "2026-11-17"): Estado {
+    const base = flotaDePrueba();
+    return { ...base, partes: [...base.partes, parte({ id: "uso-otra", unidadId: "u2", fecha, conductorId: "c1", estado: "en-uso", kmInicio: 5100, kmFin: null, combustible: null, enviado: null })] };
+  }
+
+  it("P20: no envía la revisión de otra unidad hasta cerrar el parte anterior: mismo código que A1, en el campo Conductor, con el parte a cerrar", () => {
+    const { estado, parteId } = conBorrador(conLuisEnLaOtra(), listo());
+    const err = ejecutarError(estado, revision(parteId));
+    expect(err.codigo).toBe("parte-anterior-sin-cerrar");
+    expect(err.campo).toBe("conductorId");
+    expect(err.mensaje).toBe("Luis Ferreyra tiene sin cerrar el parte del martes 17/11/2026 de ZKB 482. Ciérrelo primero; después se puede enviar esta revisión.");
+    expect(err.detalle).toEqual({ parteId: "uso-otra", fecha: "2026-11-17", unidadId: "u2" });
+  });
+
+  it("P20: también si el otro parte en uso es de hoy", () => {
+    const { estado, parteId } = conBorrador(conLuisEnLaOtra(H), listo());
+    expect(ejecutarError(estado, revision(parteId)).codigo).toBe("parte-anterior-sin-cerrar");
+  });
+
+  it("P20: otro conductor en la otra unidad no bloquea; cerrado el parte, se envía; una unidad de baja no deja al conductor trabado", () => {
+    const e = conLuisEnLaOtra();
+    const deOtro = { ...e, partes: e.partes.map((p) => (p.id === "uso-otra" ? { ...p, conductorId: "c2" } : p)) };
+    const a = conBorrador(deOtro, listo());
+    expect(parteDe(ejecutarOk(a.estado, revision(a.parteId)).estado, a.parteId).estado).toBe("en-uso");
+    const cerrado = { ...e, partes: e.partes.map((p) => (p.id === "uso-otra" ? { ...p, estado: "enviado" as const, kmFin: 5200, combustible: "medio" as const, enviado: "2026-11-17T18:00:00.000Z" } : p)) };
+    const b = conBorrador(cerrado, listo());
+    expect(parteDe(ejecutarOk(b.estado, revision(b.parteId)).estado, b.parteId).estado).toBe("en-uso");
+    const deBajaLaOtra = deBaja(e, "u2");
+    const c = conBorrador(deBajaLaOtra, listo());
+    expect(parteDe(ejecutarOk(c.estado, revision(c.parteId)).estado, c.parteId).estado).toBe("en-uso");
+  });
+
+  it("P20 va después de L1 y de A1 de la unidad", () => {
+    const e = conLuisEnLaOtra();
+    const sinLicencia: Estado = { ...e, documentos: e.documentos.filter((d) => d.tipo !== "licencia" || d.titular.id !== "c1") };
+    const a = conBorrador(sinLicencia, listo());
+    expect(ejecutarError(a.estado, revision(a.parteId)).codigo).toBe("licencia-no-vigente");
   });
 });
 

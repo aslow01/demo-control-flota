@@ -115,7 +115,7 @@ describe("inicio del conductor (6.4)", () => {
   it("parte de hoy cerrado: «Cerrado a las 18:42» y «Ver el parte»", () => {
     const e = flotaDePrueba();
     e.partes.push(parte({ id: "pe", fecha: H, enviado: "2026-11-18T21:42:00.000Z" }));
-    expect(inicio(e)?.hoyEstado).toEqual({ tipo: "enviado", etiqueta: "Cerrado a las 18:42", sinSalida: null, enlace: { texto: "Ver el parte", href: "#/parte/ZK214BD/2026-11-18" } });
+    expect(inicio(e)?.hoyEstado).toEqual({ tipo: "enviado", etiqueta: "Cerrado a las 18:42", sinSalida: null, hastaManana: null, enlace: { texto: "Ver el parte", href: "#/parte/ZK214BD/2026-11-18" } });
   });
 
   it("unidad fuera de servicio: aviso con el motivo y «No hace falta parte»; se puede usar otra", () => {
@@ -264,6 +264,11 @@ describe("inicio del conductor: el orden de los siete estados y la licencia (17.
     expect(sinSalida.unidades[0]?.estado.tipo).toBe("fuera-de-servicio");
     const h = inicio(sinSalida)?.hoyEstado;
     expect(h).toMatchObject({ tipo: "enviado", sinSalida: expect.stringMatching(/^Revisión de las \d\d:\d\d: novedad crítica en Frenos\. La unidad no salió\.$/) });
+    // P19: aunque se resuelva la novedad y la unidad vuelva a servicio, hoy no sale: el inicio lo dice
+    expect(h).toMatchObject({ hastaManana: "Aunque el encargado resuelva la novedad hoy, la unidad vuelve a salir recién mañana." });
+    const resuelta = ejecutarOk(sinSalida, { tipo: "resolverNovedad", novedadId: sinSalida.novedades[0]!.id, texto: "Se cambiaron las pastillas", volverAServicio: true }).estado;
+    expect(resuelta.unidades[0]?.estado.tipo).toBe("en-servicio");
+    expect(inicio(resuelta)?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: expect.any(String) });
   });
 
   it("3. un parte en uso -> en-uso con «Cerrar el parte»; la licencia no se mira (L3): licencia vencida con parte en uso -> en-uso", () => {
@@ -347,7 +352,7 @@ describe("inicio del conductor: el orden de los siete estados y la licencia (17.
   });
 });
 
-describe("cerrar antes (A1): un parte anterior en uso bloquea el de hoy", () => {
+describe("cerrar antes (A1, P20): un parte anterior en uso bloquea el de hoy", () => {
   /** u1 con el parte de ayer en uso (sin cerrar) y nada hoy. */
   function conUsoDeAyer(): Estado {
     const e = flotaDePrueba();
@@ -360,12 +365,14 @@ describe("cerrar antes (A1): un parte anterior en uso bloquea el de hoy", () => 
     };
   }
   const sinLicencia = (e: Estado): Estado => ({ ...e, documentos: e.documentos.map((d) => (d.id === "c1-licencia" ? { ...d, vence: "2026-11-15" } : d)) });
+  const RENGLON_1 = "ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar.";
 
-  it("inicio: sin parte de hoy y con uno de ayer en uso -> cierre-pendiente, que lleva al cierre y no ofrece empezar la revisión", () => {
+  it("inicio (estado 5 bis): sin parte de hoy y con uno de ayer en uso -> cierre-pendiente, que lleva al cierre y no ofrece empezar la revisión", () => {
     expect(inicio(conUsoDeAyer())?.hoyEstado).toEqual({
       tipo: "cierre-pendiente",
-      texto: "Antes de empezar la revisión de hoy, cierre el parte del 17/11/2026.",
-      primario: { texto: "Cerrar el parte del 17/11/2026", href: "#/parte/ZK214BD/2026-11-17" },
+      renglon1: RENGLON_1,
+      renglon2: "Ciérrelo primero; después podrá empezar la revisión de hoy.",
+      primario: { texto: "Cerrar el parte anterior", href: "#/parte/ZK214BD/2026-11-17" },
       borrador: null,
     });
   });
@@ -385,7 +392,7 @@ describe("cerrar antes (A1): un parte anterior en uso bloquea el de hoy", () => 
   it("inicio: con varios sin cerrar lleva al más antiguo", () => {
     const e = conUsoDeAyer();
     e.partes.push(parte({ id: "pu2", estado: "en-uso", enviado: null, kmFin: null, combustible: null, fecha: "2026-11-15", unidadId: "u1", conductorId: "c1", revisado: "2026-11-15T09:00:00.000Z" }));
-    expect(inicio(e)?.hoyEstado).toMatchObject({ tipo: "cierre-pendiente", primario: { href: "#/parte/ZK214BD/2026-11-15" } });
+    expect(inicio(e)?.hoyEstado).toMatchObject({ tipo: "cierre-pendiente", renglon1: "ZK 214 BD: el parte del domingo 15/11/2026 quedó sin cerrar.", primario: { href: "#/parte/ZK214BD/2026-11-15" } });
   });
 
   it("inicio: el orden — fuera de servicio y licencia ganan; un parte de hoy en uso o cerrado también", () => {
@@ -406,32 +413,52 @@ describe("cerrar antes (A1): un parte anterior en uso bloquea el de hoy", () => 
     expect(inicio(cerrado)?.hoyEstado.tipo).toBe("sin-parte");
   });
 
-  it("inicio: con otra unidad elegida, vale el estado de esa unidad", () => {
-    expect(inicio(conUsoDeAyer(), COND, "u2")?.hoyEstado.tipo).toBe("sin-parte");
+  it("inicio (P20): el conductor con un parte en uso en una unidad, al elegir otra, ve el aviso con el parte de la primera", () => {
+    expect(inicio(conUsoDeAyer(), COND, "u2")?.hoyEstado).toMatchObject({
+      tipo: "cierre-pendiente",
+      renglon1: RENGLON_1,
+      primario: { texto: "Cerrar el parte anterior", href: "#/parte/ZK214BD/2026-11-17" },
+    });
   });
 
-  it("pantalla del parte: la revisión de hoy no se puede cargar y el enlace lleva al cierre pendiente (los dos perfiles)", () => {
+  it("pantalla del parte: la revisión de hoy no se puede cargar y el aviso lleva al cierre pendiente (los dos perfiles)", () => {
     for (const perfil of [COND, ENC]) {
-      expect(vistaDeParte(conUsoDeAyer(), H, perfil, "ZK214BD", H), perfil.tipo).toEqual({
+      const v = vistaDeParte(conUsoDeAyer(), H, perfil, "ZK214BD", H);
+      expect(v, perfil.tipo).toMatchObject({
         tipo: "no-disponible",
         titulo: "No se puede cargar este parte",
-        mensaje: "El parte del 17/11/2026 de ZK 214 BD quedó sin cerrar. Ciérrelo antes de empezar la revisión de una fecha posterior.",
+        mensaje: `${RENGLON_1} Ciérrelo primero; después se puede empezar la revisión del 18/11/2026.`,
         nota: null,
         borrador: null,
-        enlace: { texto: "Cerrar el parte del 17/11/2026", href: "#/parte/ZK214BD/2026-11-17" },
+        cerrarAntes: {
+          renglon1: RENGLON_1,
+          renglon2: "Ciérrelo primero; después se puede empezar la revisión del 18/11/2026.",
+          primario: { texto: "Cerrar el parte anterior", href: "#/parte/ZK214BD/2026-11-17" },
+        },
       });
     }
   });
 
-  it("pantalla del parte: con un borrador se ofrece descartarlo; el parte en uso de ayer sigue abriéndose en su cierre", () => {
+  it("pantalla del parte: con un borrador se conserva y se puede descartar; el parte en uso de ayer sigue abriéndose en su cierre", () => {
     const e = conUsoDeAyer();
     e.partes.push(parte({ id: "pb", estado: "borrador", enviado: null, revisado: null, fecha: H, unidadId: "u1" }));
-    expect(vistaDeParte(e, H, ENC, "ZK214BD", H)).toMatchObject({ tipo: "no-disponible", borrador: { parteId: "pb", descartar: "Descartar borrador" } });
+    expect(vistaDeParte(e, H, ENC, "ZK214BD", H)).toMatchObject({ tipo: "no-disponible", nota: "Tiene una revisión empezada para el 18/11/2026: se conserva.", borrador: { parteId: "pb", descartar: "Descartar borrador" } });
     expect(vistaDeParte(e, H, ENC, "ZK214BD", "2026-11-17").tipo).toBe("cierre");
   });
 
-  it("pantalla del parte: un día anterior al parte en uso no queda bloqueado", () => {
+  it("pantalla del parte: si la licencia también bloquea, gana la licencia (perfil Conductor); un día anterior al parte en uso no queda bloqueado", () => {
+    expect(vistaDeParte(sinLicencia(conUsoDeAyer()), H, COND, "ZK214BD", H)).toMatchObject({ cerrarAntes: null, mensaje: expect.stringContaining("no tiene licencia de conducir vigente") });
     expect(vistaDeParte(conUsoDeAyer(), H, ENC, "ZK214BD", "2026-11-16").tipo).toBe("edicion");
+  });
+
+  it("pantalla del parte (P20): el conductor con un parte en uso en otra unidad no puede cargar la revisión de esta, y el aviso lleva a ese cierre", () => {
+    const e = conUsoDeAyer();
+    expect(vistaDeParte(e, H, COND, "ZKB482", H)).toMatchObject({
+      tipo: "no-disponible",
+      cerrarAntes: { renglon1: RENGLON_1, primario: { texto: "Cerrar el parte anterior", href: "#/parte/ZK214BD/2026-11-17" } },
+    });
+    // el encargado elige al conductor en el formulario: ahí el error llega al enviar
+    expect(vistaDeParte(e, H, ENC, "ZKB482", H).tipo).toBe("edicion");
   });
 });
 
@@ -601,6 +628,7 @@ describe("pantalla del parte, lo que no se puede cargar (P2, P8)", () => {
       nota: null,
       borrador: null,
       enlace: { texto: "Ir a Parte diario", href: "#/conductor" },
+      cerrarAntes: null,
     });
   });
 
@@ -834,6 +862,7 @@ describe("pantalla del parte y licencia (L1, P13; 17.5)", () => {
       nota: null,
       borrador: null,
       enlace: { texto: "Ir a Parte diario", href: "#/conductor" },
+      cerrarAntes: null,
     });
   });
 

@@ -572,6 +572,23 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(app.alertas?.alertas.some((a) => a.tipo === "uso-con-documentacion-vencida" && a.unidadId === uid)).toBe(true);
   });
 
+  it("P20: el conductor con un parte en uso en otra unidad no envía la revisión de esta (error en el campo Conductor, antes que los faltantes); el borrador queda", async () => {
+    const repo = await repoCon((e) => {
+      const otra = e.unidades.find((u) => u.patente === "ZYN469")!;
+      const suyo = { ...e.partes[0]!, id: "uso-de-c02", unidadId: otra.id, fecha: "2026-11-17", conductorId: "c-02", estado: "en-uso" as const, kmFin: null, combustible: null, enviado: null };
+      return { ...e, partes: [...e.partes.filter((p) => !(p.unidadId === otra.id && p.fecha === "2026-11-17")), suyo] };
+    });
+    const { app } = await iniciada({ repo, patente: "ZW827VD" });
+    const uid = idDe(app, "ZW827VD");
+    const inicial = edicion(app).valoresIniciales;
+    // con un solo punto respondido: faltan nueve, pero el parte anterior sin cerrar va antes
+    const r = await app.enviarRevisionDeParte(uid, H, { ...inicial, conductorId: "c-02", checklist: { ...inicial.checklist, frenos: { respuesta: "en-orden", descripcion: "", impideUso: false } } });
+    expect(r.tipo).toBe("errores");
+    if (r.tipo !== "errores") return;
+    expect(r.errores.lista).toEqual([{ campo: "conductor", mensaje: expect.stringMatching(/ tiene sin cerrar el parte del martes 17\/11\/2026 de ZYN 469\. Ciérrelo primero; después se puede enviar esta revisión\.$/) }]);
+    expect(r.primerCampo).toBe("conductor");
+  });
+
   it("L1: un conductor sin licencia vigente no puede enviar la revisión (error en el campo Conductor del encargado); el borrador queda", async () => {
     const repo = await repoCon((e) => ({ ...e, documentos: e.documentos.map((d) => (d.tipo === "licencia" && d.titular.id === "c-02" ? { ...d, vence: "2026-11-15" } : d)) }));
     const { app } = await iniciada({ repo, patente: "ZW827VD" });
@@ -791,7 +808,7 @@ describe("cerrar el parte (P3, P4, P12, P15, K2, K4, K7)", () => {
     expect(eventos(app).at(-1)).toBe("parte-enviado");
     expect(parteDeHoy(app, "ZYN469")).toMatchObject({ estado: "enviado", autor: "Andrés Echegaray", conductorId: "c-01", enviado: MEDIODIA });
     expect(app.parteDeLaRuta?.tipo).toBe("lectura");
-    expect(app.inicioDelConductor()?.hoyEstado).toEqual({ tipo: "enviado", etiqueta: "Cerrado a las 12:00", sinSalida: null, enlace: { texto: "Ver el parte", href: "#/parte/ZYN469/2026-11-18" } });
+    expect(app.inicioDelConductor()?.hoyEstado).toEqual({ tipo: "enviado", etiqueta: "Cerrado a las 12:00", sinSalida: null, hastaManana: null, enlace: { texto: "Ver el parte", href: "#/parte/ZYN469/2026-11-18" } });
     expect(app.inicioDelConductor()?.ultimosPartes.filas[0]).toMatchObject({ fecha: "18/11/2026", recorrido: "100 km" });
     expect(app.inicioDelConductor()?.unidad?.ultimoRegistro).toBe("Último registro: 141.811 km (parte del 18/11/2026).");
   });

@@ -265,9 +265,24 @@ export function errKmCorreccionAnterior(registro: "parte" | "correccion", fecha:
   return `Ya hay ${que}, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha ${cual} o una posterior.`;
 }
 
+/** «ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar.» Renglón 1 del aviso «Cerrar antes» (inicio y pantalla E) y del error de A1. */
+export function textoParteSinCerrarDeLaUnidad(patente: string, fecha: FechaCivil): string {
+  return `${patente}: el parte del ${diaDeLaSemana(fecha)} ${formatearFecha(fecha)} quedó sin cerrar.`;
+}
+
+/** Renglón 2 del aviso «Cerrar antes» en la pantalla E y en el error de A1: «Ciérrelo primero; después se puede empezar la revisión del 18/11/2026.» */
+export function textoCerrarAntesDeLaRevision(fechaDeLaRevision: FechaCivil): string {
+  return `Ciérrelo primero; después se puede empezar la revisión del ${formatearFecha(fechaDeLaRevision)}.`;
+}
+
 /** A1: la unidad tiene un parte en uso de una fecha anterior: hay que cerrarlo antes de empezar la revisión de una fecha posterior. */
-export function errParteAnteriorSinCerrar(patente: string, fecha: FechaCivil): string {
-  return `El parte del ${formatearFecha(fecha)} de ${patente} quedó sin cerrar. Ciérrelo antes de empezar la revisión de una fecha posterior.`;
+export function errParteAnteriorSinCerrar(patente: string, fecha: FechaCivil, fechaDeLaRevision: FechaCivil): string {
+  return `${textoParteSinCerrarDeLaUnidad(patente, fecha)} ${textoCerrarAntesDeLaRevision(fechaDeLaRevision)}`;
+}
+
+/** P20: el conductor tiene un parte en uso en otra unidad: hay que cerrarlo antes de enviar esta revisión. */
+export function errConductorConParteSinCerrar(nombre: string, patente: string, fecha: FechaCivil): string {
+  return `${nombre} tiene sin cerrar el parte del ${diaDeLaSemana(fecha)} ${formatearFecha(fecha)} de ${patente}. Ciérrelo primero; después se puede enviar esta revisión.`;
 }
 
 /** M1 (revisión de código): no se corrige el kilometraje desde la fecha de un parte en uso; su cierre quedaría imposible. */
@@ -1127,17 +1142,22 @@ export const TEXTO_INICIO_CONDUCTOR = {
   /** Estado 5: la licencia no ampara hoy (L1, segunda persona). */
   licenciaAvise: "Avise al encargado: cuando cargue una licencia vigente, podrá empezar la revisión.",
   revisionConservada: "Tiene una revisión empezada: se conserva.",
+  /** P19: un parte sin salida (novedad crítica en la revisión) cierra el día de esa unidad, aunque se resuelva la novedad. */
+  sinSalidaHastaManana: "Aunque el encargado resuelva la novedad hoy, la unidad vuelve a salir recién mañana.",
   licenciaTitulo: "Su licencia",
   ultimosTitulo: "Mis últimos partes",
   ultimosVacio: "Todavía no cerró partes. Los últimos cinco aparecerán aquí.",
 } as const;
 
-/** Estado 5b del panel «Hoy» (A1): hay un parte anterior de la unidad sin cerrar; hay que cerrarlo antes de empezar la revisión de hoy. */
-export function textoCierrePendiente(fecha: FechaCivil): string {
-  return `Antes de empezar la revisión de hoy, cierre el parte del ${formatearFecha(fecha)}.`;
-}
+/** Aviso «Cerrar antes» (estado 5 bis del inicio y pantalla E): el primario y el renglón 2 del inicio. */
+export const TEXTO_CERRAR_ANTES = {
+  primario: "Cerrar el parte anterior",
+  inicioRenglon2: "Ciérrelo primero; después podrá empezar la revisión de hoy.",
+  /** Pantalla E con un borrador de esa fecha: «Tiene una revisión empezada para el 18/11/2026: se conserva.» */
+  borradorEnPantalla: (fechaDelBorrador: FechaCivil) => `Tiene una revisión empezada para el ${formatearFecha(fechaDelBorrador)}: se conserva.`,
+} as const;
 
-/** El botón del estado 5b y el enlace de la pantalla «No se puede cargar este parte» con un parte anterior sin cerrar: «Cerrar el parte del 17/11/2026». */
+/** El primer botón de la ficha con un parte anterior en uso (C16): «Cerrar el parte del 17/11/2026». */
 export function textoCerrarElParteDel(fecha: FechaCivil): string {
   return `Cerrar el parte del ${formatearFecha(fecha)}`;
 }

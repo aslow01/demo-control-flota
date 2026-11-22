@@ -15,12 +15,13 @@ import {
   faltantesDeRevision,
   validarLitros,
   novedadesDelParte,
+  parteEnUsoDelConductor,
   partePendienteDeCierre,
   validarFechaParte,
 } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
 import { limpiarTexto, normalizarTexto } from "./texto.ts";
-import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errKmCorreccionParteEnUso, errLicenciaNoVigente, errNovedadesCriticasAbiertas, errParteAnteriorSinCerrar, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadConParteEnUso, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
+import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errKmCorreccionParteEnUso, errLicenciaNoVigente, errConductorConParteSinCerrar, errNovedadesCriticasAbiertas, errParteAnteriorSinCerrar, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadConParteEnUso, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
 import {
   fallo,
   ok,
@@ -1076,12 +1077,6 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
   const fecha = validarFechaParte(borrador.fecha, ctx.hoy);
   if (!fecha.ok) return fecha;
 
-  // A1: con un parte en uso anterior de la misma unidad, primero hay que cerrarlo (si no, la revisión de hoy arrancaría con el kilometraje de salida de ayer).
-  const sinCerrar = partePendienteDeCierre(estado.partes, u.id, borrador.fecha);
-  if (sinCerrar !== undefined) {
-    return fallo("parte-anterior-sin-cerrar", errParteAnteriorSinCerrar(pat(u), sinCerrar.fecha), { detalle: { parteId: sinCerrar.id, fecha: sinCerrar.fecha } });
-  }
-
   const conductor = buscarConductorActivo(estado, borrador.conductorId, "conductorId");
   if (!conductor.ok) return conductor;
 
@@ -1092,6 +1087,23 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
       return fallo("licencia-no-vigente", errLicenciaNoVigente(conductor.valor.nombre, borrador.fecha, licencia), {
         campo: "conductorId",
         detalle: detalleDeLicencia(licencia),
+      });
+    }
+  }
+
+  // A1: con un parte en uso anterior de la misma unidad, primero hay que cerrarlo (si no, la revisión de hoy arrancaría con el kilometraje de salida de ayer).
+  const sinCerrar = partePendienteDeCierre(estado.partes, u.id, borrador.fecha);
+  if (sinCerrar !== undefined) {
+    return fallo("parte-anterior-sin-cerrar", errParteAnteriorSinCerrar(pat(u), sinCerrar.fecha, borrador.fecha), { detalle: { parteId: sinCerrar.id, fecha: sinCerrar.fecha } });
+  }
+  // P20: un conductor con un parte en uso en otra unidad tampoco empieza otra revisión: primero cierra el anterior.
+  if (conductor.valor !== null) {
+    const suyo = parteEnUsoDelConductor(estado, conductor.valor.id, u.id);
+    const suUnidad = suyo === undefined ? undefined : estado.unidades.find((x) => x.id === suyo.unidadId);
+    if (suyo !== undefined && suUnidad !== undefined) {
+      return fallo("parte-anterior-sin-cerrar", errConductorConParteSinCerrar(conductor.valor.nombre, pat(suUnidad), suyo.fecha), {
+        campo: "conductorId",
+        detalle: { parteId: suyo.id, fecha: suyo.fecha, unidadId: suyo.unidadId },
       });
     }
   }

@@ -10,6 +10,7 @@ import {
   ok,
   type Advertencia,
   type Documento,
+  type Estado,
   type FechaCivil,
   type Instante,
   type ItemChecklist,
@@ -168,6 +169,20 @@ export function partePendienteDeCierre(partes: readonly Parte[], unidadId: strin
   let mas: Parte | undefined;
   for (const p of partes) {
     if (p.unidadId !== unidadId || p.estado !== "en-uso" || (fecha !== undefined && p.fecha >= fecha)) continue;
+    if (mas === undefined || p.fecha < mas.fecha) mas = p;
+  }
+  return mas;
+}
+
+/**
+ * P20: el parte en uso más antiguo de un conductor en una unidad que no es `exceptoUnidadId` (de cualquier fecha), sin contar las unidades de baja (su parte ya no se puede
+ * cerrar, A7). Mientras exista, el conductor no puede enviar la revisión de otra unidad: primero cierra el parte anterior.
+ */
+export function parteEnUsoDelConductor(estado: Pick<Estado, "partes" | "unidades">, conductorId: string, exceptoUnidadId: string): Parte | undefined {
+  const deBaja = new Set(estado.unidades.filter((u) => u.estado.tipo === "baja").map((u) => u.id));
+  let mas: Parte | undefined;
+  for (const p of estado.partes) {
+    if (p.conductorId !== conductorId || p.estado !== "en-uso" || p.unidadId === exceptoUnidadId || deBaja.has(p.unidadId)) continue;
     if (mas === undefined || p.fecha < mas.fecha) mas = p;
   }
   return mas;

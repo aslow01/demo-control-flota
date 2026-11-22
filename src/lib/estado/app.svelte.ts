@@ -840,10 +840,10 @@ export class EstadoApp {
     const borrador = this.estado?.partes.find((p) => donde(p));
     // Abrir el formulario y enviarlo vacío no crea un borrador (D11): lo que falta se dice igual.
     if (borrador === undefined) return this.erroresDeEnvio(previos ?? errorGeneralParte(ERRORES.parteInexistente));
-    // L1 va antes que los faltantes (como en el comando): a quien no puede manejar no se le piden los diez puntos.
+    // L1, A1 y P20 van antes que los faltantes (como en el comando): a quien no puede manejar, o tiene un parte anterior sin cerrar, no se le piden los diez puntos.
     const r = await this.ejecutarAhora({ tipo: "enviarRevision", parteId: borrador.id, advertenciasAceptadas: aceptadas }, perfil);
     if (!r.ok) {
-      if (r.error.codigo === "licencia-no-vigente" || r.error.codigo === "escritura-fallida") return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
+      if (r.error.codigo === "licencia-no-vigente" || r.error.codigo === "parte-anterior-sin-cerrar" || r.error.codigo === "escritura-fallida") return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
       if (previos !== null) return this.erroresDeEnvio(previos);
       if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error);
       return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
