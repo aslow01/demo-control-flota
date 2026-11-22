@@ -249,6 +249,18 @@
   .interno {
     font-weight: 600;
   }
+  /* C9 y m1 de la etapa 7: con el texto agrandado (el interior mide 17 rem o menos) la patente grande, que no se parte, sale de su caja; pasa a su tamaño chico (5.5). */
+  @container interior (max-width: 17rem) {
+    .identidad :global(.patente[data-tamano="grande"]) {
+      --alto: 1.5rem;
+      --relleno: 0.375rem;
+      --tam: var(--t-patente-chica);
+    }
+    .pendiente :global(.enlace-accion) {
+      grid-column: 1 / -1;
+      padding-inline: var(--e-1);
+    }
+  }
   .descripcion {
     overflow-wrap: anywhere;
   }

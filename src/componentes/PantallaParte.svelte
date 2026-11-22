@@ -143,6 +143,8 @@
 
 <style>
   .pantalla {
+    /* Las reglas de texto agrandado de los resultados y de la lectura miden el ancho de esta pantalla (S5 de la etapa 7). */
+    container: pagina-parte / inline-size;
     display: flex;
     flex-direction: column;
     gap: var(--e-4);

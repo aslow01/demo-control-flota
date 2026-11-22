@@ -411,6 +411,14 @@
       align-items: center;
       column-gap: var(--e-2);
     }
+    /* C2 de la etapa 7: «59.413 km» es una celda y «· último parte 21/11/2026» otra; el kilometraje se alinea arriba, en la línea de «· último parte», y no al centro del bloque
+       (la etiqueta del último parte, si no entra, baja debajo de «· último parte»). */
+    [data-variante="flota"] .fila :global(td[data-col="km"]) {
+      align-self: start;
+    }
+    [data-variante="flota"] .fila :global(td[data-col="parte"]) {
+      align-self: start;
+    }
     /* `nowrap` solo mientras la tarjeta es ancha en `rem` (texto normal): con el texto agrandado la tarjeta mide pocos rem y el renglón puede partirse en lugar de ensanchar la página. */
     @container lista (min-width: 17rem) {
       [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte) {
@@ -433,6 +441,11 @@
           "parte"
           "novedades"
           "proyecto";
+      }
+      /* Con el kilometraje arriba y el último parte debajo, el «·» del principio quedaría suelto. */
+      [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte)::before {
+        content: "último parte ";
+        content: "último parte " / "";
       }
     }
     /* Con el próximo vencimiento crítico, la tarjeta no lo repite: ya lo dice «No puede salir · Seguro vencido hace 1 día». */
@@ -506,6 +519,34 @@
         "numero vence"
         "accion accion"
         "anteriores anteriores";
+    }
+  }
+
+  /* Texto agrandado (la lista mide 17 rem o menos): la tarjeta pierde parte del relleno para que una palabra larga («Habilitaciones») entre entera. */
+  @container lista (max-width: 17rem) {
+    .fila {
+      padding: var(--e-2) var(--e-2) var(--e-2) var(--e-3);
+    }
+  }
+  /* Documentos de la ficha con el texto agrandado (la tarjeta mide 17 rem o menos): «número» y «vence» dejan de ser dos columnas de 80 px y quedan uno debajo del otro (S5). */
+  @container lista (max-width: 17rem) {
+    [data-variante="documentos"] .fila {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "documento"
+        "estado"
+        "numero"
+        "vence"
+        "accion";
+    }
+    [data-variante="documentos"] .fila:has(:global(td[data-col="anteriores"])) {
+      grid-template-areas:
+        "documento"
+        "estado"
+        "numero"
+        "vence"
+        "accion"
+        "anteriores";
     }
   }
 

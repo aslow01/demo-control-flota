@@ -336,6 +336,7 @@
   }
 
   .caja {
+    container: dialogo / inline-size;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -397,6 +398,16 @@
     font-size: var(--t-chico);
     font-weight: 600;
     color: var(--c-texto);
+  }
+
+  /* Texto agrandado (el diálogo mide 17 rem o menos): menos relleno a los lados, así las palabras largas no se parten (S5 de la etapa 7). */
+  @container dialogo (max-width: 17rem) {
+    .cuerpo {
+      padding-inline: var(--e-2);
+    }
+    .pie {
+      padding-inline: var(--e-2);
+    }
   }
 
   /* Escritorio: centrado, con el pie a la izquierda y el primario primero. */

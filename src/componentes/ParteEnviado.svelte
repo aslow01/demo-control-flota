@@ -176,4 +176,19 @@
     align-items: center;
     gap: var(--e-3);
   }
+  /* Texto agrandado (la pantalla mide 17 rem o menos): menos relleno a los lados y botones con menos aire, así las palabras largas no se parten (S5 de la etapa 7). */
+  @container pagina-parte (max-width: 17rem) {
+    .resultado {
+      padding: var(--e-3) var(--e-2);
+    }
+    .acciones :global(.enlace-accion:not([data-variante="texto"])) {
+      padding-inline: var(--e-2);
+    }
+  }
+  /* 320 px con el texto agrandado (la pantalla mide 8 rem): el relleno baja otro escalón, para que «Documentación» (7 rem) entre entera. */
+  @container pagina-parte (max-width: 8.5rem) {
+    .resultado {
+      padding-inline: var(--e-1);
+    }
+  }
 </style>

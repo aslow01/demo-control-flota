@@ -196,6 +196,16 @@
       grid-template-areas: "hora icono cuerpo autor";
     }
   }
+  /* Texto agrandado (el interior mide 17 rem o menos): el resumen y el detalle del evento toman el ancho de la fila; solo el ícono queda a la izquierda de la hora y del autor (S5 de la etapa 7). */
+  @container interior (max-width: 17rem) {
+    .evento {
+      grid-template-columns: 1.25rem minmax(0, 1fr);
+      grid-template-areas:
+        "icono hora"
+        "icono autor"
+        "cuerpo cuerpo";
+    }
+  }
   .hora {
     grid-area: hora;
     font-family: var(--t-mono);
