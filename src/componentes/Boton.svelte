@@ -118,7 +118,8 @@
 
   /* Texto: sin fondo, acento, subrayado de 1 px (2 px con el cursor encima). */
   .boton[data-variante="texto"] {
-    padding: 0 var(--e-2);
+    /* C12: sin relleno horizontal, así empieza en la misma columna que el primario de arriba; el alto de 44 px lo da `min-height`. */
+    padding-inline: 0;
     background: none;
     color: var(--c-acento);
     text-decoration: underline;

@@ -56,7 +56,8 @@
   }
   /* Texto: sin fondo, acento, subrayado de 1 px (2 px con el cursor encima), como el botón-texto. */
   .enlace-accion[data-variante="texto"] {
-    padding: 0 var(--e-2);
+    /* C12: sin relleno horizontal (ver `Boton.svelte`); el alto de 44 px lo da `min-height`. */
+    padding-inline: 0;
     background: none;
     border-color: transparent;
     color: var(--c-acento);
