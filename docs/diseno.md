@@ -451,7 +451,7 @@ No es seguridad (no hay servidor): es la perspectiva de la demo, y la interfaz s
   verificar el dato antes de publicar y decirlo en el README). Unidades de 2016 en adelante con formato Mercosur;
   anteriores, con el formato anterior.
 - **Personas:** nombre y apellido combinados de dos listas inventadas (16 conductores y la encargada "Rocío Medina").
-  Se rotulan "(ficticio)" en la ficha de persona y en el pie.
+  Se rotulan "(persona ficticia)" en la barra del perfil, la ficha y el historial (decisión del 22/11/2026: no depende del género del nombre); las empresas, "(ficticia)".
 - **Aseguradoras y plantas de revisión:** "Aseguradora del Sur Demo", "Seguros Puna Demo", "Planta de Revisión Técnica
   Demo N.º 3". Números de póliza inventados con prefijo `DEMO-`.
 - **Marcas y modelos:** modelos comunes del mercado (pickup 4x4, utilitario, camión liviano, minibús); ver decisión D6.
@@ -1239,6 +1239,11 @@ Cada nombre lleva el identificador de la regla. Archivos probables entre parént
 64. A7: dar de baja una unidad con un parte en uso → `unidad-con-parte-en-uso` (`tests/comandos-unidades.test.ts`).
 65. U7: `limpiarTexto`, `normalizarTexto` y `largoEnCaracteres`; el tope de 500 cuenta caracteres (300 emojis pasan, 501 no) y los textos de novedades, motivos y borradores se guardan sin caracteres de control ni de dirección (`tests/texto.test.ts`).
 66. D1 de la revisión de diseño: el resumen de errores agrupa los puntos sin completar (más de 3 → un solo enlace «Faltan 10 puntos de la revisión» al primero; 3 o menos, uno por punto) y `agruparResumen` se puede volver a aplicar a lo que sigue vigente; C5: la barra dice «Revise N datos» con un error de reglas vigente del último intento (`tests/formulario-parte.test.ts`).
+67. C1 (S1): `PanelParteEnviado.conDocumentacionVencida` y la línea «Sale con documentación vencida: quedó registrado.» (con y sin fuera de plazo); C6: un renglón por documento en el aviso y en «Avisos aceptados», con la fecha en que venció o «Falta cargar» (`contextoDeDocumentacion`, `tests/textos.test.ts`, `tests/parte.test.ts`, `tests/parte-vista.test.ts`, `tests/parte-app.test.ts`).
+68. C2: la fecha de «Último parte» de la flota es la del parte que nombra la etiqueta (`tests/flota.test.ts`).
+69. M2 y B2: toda fila de «Conductores que no pueden manejar hoy» trae su acción completa (renovar, cargar o corregir una emisión futura); corregida la emisión, la fila desaparece (`tests/centro-alertas.test.ts`).
+70. C16: el primer botón de la ficha según el parte (cargar, cerrar, cerrar el anterior, ver; sin salida hasta mañana) (`tests/ficha.test.ts`); P19: `hastaManana` en el inicio (`tests/parte-vista.test.ts`).
+71. C13 y B5: `textoOpcionDeConductor` y la licencia de las opciones evaluada con fecha y documentos juntos; B1: `parteLegible` con un cierre de kilometraje final menor que el inicial (`tests/textos.test.ts`, `tests/parte-vista.test.ts`, `tests/parte.test.ts`).
 
 ### 17.9 Tareas del programador (en orden)
 
@@ -1289,3 +1294,32 @@ Respuestas a las preguntas: Q1 no (el cierre no tiene campo de novedad), Q2 no (
   alias del ancho hasta que la vista deje de importarlo. El kilometraje de la ficha suma filas `tipo: "salida"` («84.452 → en uso»).
 - **`parteLegible`.** Un `revisado` ilegible queda `null` y el parte en uso se sigue leyendo como en uso; `sinSalida` solo vale con `true`. En el arranque, `FORMA_DE_ELEMENTO` de los
   partes pide `estado` en los tres valores.
+
+### 17.12 Decisiones de la revisión del 22/11/2026 (programador, segunda tanda)
+
+Después de las cuatro revisiones de la etapa 6 (código, QA, diseño y accesibilidad) y de las decisiones de Matías del 22/11/2026:
+
+- **«Cerrar antes» (P18) y un conductor, un parte en uso (P20).** Las dos usan el mismo código, `parte-anterior-sin-cerrar`, y las mismas funciones de dominio
+  (`partePendienteDeCierre`, `parteEnUsoDelConductor`). Orden del comando: P8, P2, conductor activo, **L1**, P18, P20, faltantes (P4). La licencia gana sobre el aviso
+  «Cerrar antes» (en el comando, en el inicio y en la pantalla del parte) y el cierre no la mira (L3). Un borrador anterior no bloquea; una unidad de baja no cuenta para P20 (su
+  parte no se puede cerrar, A7). Con el perfil Encargado P20 solo se ve al enviar (el conductor se elige en el formulario): error en el campo Conductor y antes de los faltantes.
+- **M1 del código: una corrección desde la fecha de un parte en uso se rechaza** (`km-correccion-parte-en-uso`, K5); desde una fecha anterior sigue el rechazo de M3. **Baja con un
+  parte en uso: rechazada** (`unidad-con-parte-en-uso`, A7).
+- **P19, sin salida hasta mañana.** Es una regla, no un límite. El comando no cambia (P1 ya impide un segundo parte de la unidad ese día); lo nuevo es lo que se ofrece: la ficha
+  dice «Ver el parte» y el inicio del conductor trae `hastaManana`. «Puede salir» de la flota y la etiqueta de aptitud no cambian: la aptitud sigue siendo de documentos y novedades.
+- **M2 del QA (licencia con emisión futura): no se rechaza al cargarla.** La especificación de documentos la permite (L5, 17.7) y es el caso de un cambio de día o de una licencia
+  que empieza a valer más tarde. La salida es que la fila del conductor siempre traiga una acción: «Corregir» (el diálogo de corregir de la ficha, sobre la licencia vigente) cuando la
+  licencia vale desde una fecha futura; «Renovar» o «Cargar» en los otros dos motivos. `FilaDeConductorSinLicencia.accion` ya no es `null` ni lleva `alertaId`: es una `AccionDeDocumento` completa
+  (o la variante «Corregir»).
+- **D1: el resumen de errores agrupa los puntos sin completar.** Más de 3 → un solo enlace «Faltan N puntos de la revisión» al primero; `ErroresDeParte.resumen` lo trae armado y
+  `agruparResumen` se vuelve a aplicar a lo que sigue vigente. El mensaje sobre cada campo no cambia.
+- **C5: la barra de envío.** `barraDeEnvio(valores, paso, camposDelIntento)`: con un error de reglas vigente del último intento dice «Revise N datos» y no «Listo».
+- **C1 y C6.** `PanelParteEnviado.conDocumentacionVencida` (la especificación lo llama `conAvisos`: se eligió el nombre exacto porque K6 también es un aviso). Los avisos de documentación
+  se escriben con `contextoDeDocumentacion(documentos, unidad, fecha)`: la fecha en que venció cada documento **como estaba el día del parte** (M1), no según el vigente de hoy. Los
+  textos son los de la especificación visual (`diseno-ui.md`, sección 7), con «de todos modos» y el artículo del documento («El seguro de ZK 214 BD venció…», «Falta cargar la revisión técnica…»).
+- **C2.** La fecha de «Último parte» es la del parte que nombra la etiqueta: el más reciente de su clase. Con una etiqueta de partes sin enviar y otra de sin cerrar a la vez, vale la de «Sin enviar».
+- **C13 y B5.** `opcionesDeConductor` recibe `licencia: { fecha, documentos }` (los dos juntos); en el parte, cada opción trae `textoDeOpcion` («{Nombre} (sin licencia vigente) · {P}»).
+- **U7.** `limpiarTexto` saca por categoría Unicode los de control (`Cc`) y los de formato (`Cf`), salvo tabulación, saltos de línea y U+200D. Un emoji compuesto se conserva; las marcas de
+  dirección de un solo carácter (U+200E, U+200F), el espacio de ancho cero (U+200B) y el BOM (U+FEFF) se pierden. También se pierden las etiquetas de bandera de región (`Cf`, U+E0020 a U+E007F).
+- **B1.** Un cierre con el kilometraje final menor que el inicial sigue sin leerse (`kmFin` queda `null`): es deliberado, para no dibujar un recorrido negativo; ahora hay un test que lo fija.
+  **B3.** Sin casts en la revisión y el cierre; `advertenciasDeCierre` se borra (sus tests ya estaban en `advertenciasDeRecorrido`). **B4, B6 y B7: sin cambios** (B7 es un límite declarado en el README).
