@@ -1,13 +1,14 @@
 <script lang="ts">
-  // Panel «Historial» de la ficha (5.16 y 6.3): filtros con conteo, los eventos agrupados por día (el más nuevo arriba), de a 30 con «Ver 30 más».
+  // Panel «Historial» de la ficha (5.16 y 6.3): filtros con conteo, los eventos agrupados por día (el más nuevo arriba), de a 10 (menos de 40rem) o de a 30 (desde 40rem) con «Ver 10 más» / «Ver 30 más» (D2).
   // No tiene reglas: todo lo arma `vistaDeHistorial(historial, filtro, límite)` (lib/estado/ficha.ts); el filtro y el límite son estado de este panel.
   //  - Cada evento: hora · ícono del tipo · resumen y autor. El parte enviado es un `details` (resumen corto; al abrir: kilometraje, combustible, litros,
   //    puntos con novedad, «8 puntos en orden», advertencias y el enlace al parte); el documento corregido muestra «Antes / Después» por campo.
-  //  - «Ver 30 más»: el foco va al primer evento nuevo (`ids[límiteAnterior]`). Cambiar el filtro vuelve al primer tramo de 30.
+  //  - El paso (10 o 30) se lee una sola vez con `matchMedia("(min-width: 40rem)")` al crearse el panel (la pantalla de la ficha se recrea en cada unidad): si después
+  //    cambia el ancho de la ventana no se esconde nada de lo que ya se ve. «Ver N más»: el foco va al primer evento nuevo (`ids[límiteAnterior]`). Cambiar el filtro vuelve al primer tramo.
   //  - La barra de estado del panel dice «Mostrando 30 de 128 eventos.» y es la región viva: se actualiza al elegir un filtro y al pedir más.
   import { tick } from "svelte";
-  import { vistaDeHistorial, PASO_HISTORIAL, type IdFiltroHistorial, type PanelHistorial } from "../lib/estado/ficha.ts";
-  import { TEXTO_FICHA } from "../lib/dominio/textos.ts";
+  import { vistaDeHistorial, type IdFiltroHistorial, type PanelHistorial } from "../lib/estado/ficha.ts";
+  import { TEXTO_FICHA, textoVerMasEventos } from "../lib/dominio/textos.ts";
   import { textoAnunciado } from "./anuncio.svelte.ts";
   import Boton from "./Boton.svelte";
   import Detalles from "./Detalles.svelte";
@@ -18,9 +19,14 @@
 
   let { historial, idTitulo }: { historial: PanelHistorial; idTitulo: string } = $props();
 
+  // 5.16 / D2: 10 eventos por tramo en pantallas angostas (< 40rem), 30 desde 40rem. Se mide una vez, al abrir la ficha.
+  const PASO = typeof matchMedia === "function" && matchMedia("(min-width: 40rem)").matches ? 30 : 10;
+
   let filtro = $state<IdFiltroHistorial>("todo");
-  let limite = $state(PASO_HISTORIAL);
+  let limite = $state(PASO);
   const vista = $derived(vistaDeHistorial(historial, filtro, limite));
+  // `vistaDeHistorial` arma el texto del botón con su paso fijo (30): acá se rehace con el paso de este panel («Ver 10 más», o «Ver 4 más» si quedan menos).
+  const textoVerMas = $derived(vista.hayMas ? textoVerMasEventos(Math.min(PASO, vista.total - vista.mostrados)) : null);
 
   // La barra de estado muestra siempre el conteo de ahora (texto simple, sin `role="status"`: cuando cambian los datos por una acción de otro panel no se anuncia, para no
   // pisar el mensaje de esa acción). Lo que sí se dice es lo que hace la persona en este panel (elegir un filtro, pedir más), en una región aparte que existe desde el principio.
@@ -29,13 +35,13 @@
 
   function elegirFiltro(id: IdFiltroHistorial): void {
     filtro = id;
-    limite = PASO_HISTORIAL;
-    accion = { texto: vistaDeHistorial(historial, id, PASO_HISTORIAL).anuncio };
+    limite = PASO;
+    accion = { texto: vistaDeHistorial(historial, id, PASO).anuncio };
   }
 
   async function verMas(): Promise<void> {
     const antes = limite;
-    limite = antes + PASO_HISTORIAL;
+    limite = antes + PASO;
     await tick();
     accion = { texto: vista.anuncio };
     const primeroNuevo = vista.ids[antes];
@@ -139,8 +145,8 @@
         </div>
       {/each}
     </div>
-    {#if vista.botonVerMas !== null}
-      <div class="mas"><Boton variante="secundario" onclick={verMas}>{vista.botonVerMas}</Boton></div>
+    {#if textoVerMas !== null}
+      <div class="mas"><Boton variante="secundario" onclick={verMas}>{textoVerMas}</Boton></div>
     {/if}
   {/if}
 </Panel>
