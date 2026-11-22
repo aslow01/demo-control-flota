@@ -91,5 +91,5 @@ export type {
   RevisionEnLectura,
   VistaDeParte,
 } from "../lib/estado/parte.ts";
-export type { FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
+export type { AccionDeConductorSinLicencia, FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
 export type { PasoDelParte } from "../lib/dominio/formulario-parte.ts";

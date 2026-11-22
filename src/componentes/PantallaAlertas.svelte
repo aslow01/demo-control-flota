@@ -12,14 +12,14 @@
   //    el MISMO diálogo de la fila de su licencia en Vencimientos (mismo `alertaId`); al guardar, el foco va al `h2` del protagonista y su barra de estado dice «Licencia de … renovada.».
   //    La cifra no cambia (cuenta unidades, A8).
   import { formatearFecha } from "../lib/dominio/fechas.ts";
-  import { contextoDeCargar, contextoDeRenovar, type CampoDocumento, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
+  import { contextoDeCargar, contextoDeCorregir, contextoDeRenovar, type CampoDocumento, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
   import { contextoDeResolver } from "../lib/dominio/formulario-novedad.ts";
   import { TEXTO_CONDUCTORES_SIN_LICENCIA as TCL } from "../lib/dominio/textos.ts";
   import type { TipoAlertaOperacion } from "../lib/dominio/alertas.ts";
   import type { ResultadoGuardado } from "../lib/estado/app.svelte.ts";
   import {
     vencimientosVisibles,
-    type AccionDeDocumento,
+    type AccionDeConductorSinLicencia,
     type FilaOperacion,
     type FilaVencimiento,
     type IdFiltro,
@@ -129,10 +129,10 @@
   let origenDelDialogo = $state<"vencimientos" | "protagonista">("vencimientos");
   let estadoProtagonista = $state({ texto: "" });
   /** El conductor cuya licencia se está renovando o cargando desde el protagonista: la barra dice «Licencia de {Nombre} renovada.» (y no el mensaje general del diálogo). */
-  let conductorDelDialogo: { nombre: string; tipo: "renovar" | "cargar" } | null = null;
+  let conductorDelDialogo: { nombre: string; tipo: "renovar" | "cargar" | "corregir" } | null = null;
   const anunciadoProtagonista = textoAnunciado(() => ({ texto: estadoProtagonista.texto, repetir: estadoProtagonista }));
 
-  function abrirDialogo(accion: AccionDeDocumento, origen: "vencimientos" | "protagonista" = "vencimientos"): void {
+  function abrirDialogo(accion: AccionDeConductorSinLicencia, origen: "vencimientos" | "protagonista" = "vencimientos"): void {
     const estado = app.estado;
     if (estado === null) return;
     origenDelDialogo = origen;
@@ -140,7 +140,17 @@
       if (origen === "protagonista") estadoProtagonista = { texto: T.yaNoPendiente };
       else estadoVencimientos = { texto: T.yaNoPendiente };
     };
-    if (accion.tipo === "renovar" && accion.documentoId !== null) {
+    if (accion.tipo === "corregir") {
+      // M2 (ajuste mínimo de la lógica, el maquetador lo afina): la licencia con una emisión futura se corrige con el diálogo de la ficha.
+      const documentoId = accion.documentoId;
+      const ctx = documentoId === null ? null : contextoDeCorregir(estado, documentoId);
+      if (documentoId === null || ctx === null) {
+        yaNoPendiente();
+        return;
+      }
+      contextoDialogo = { titulo: ctx.titulo, contexto: ctx.nota, primario: ctx.primario, valoresIniciales: ctx.valoresIniciales };
+      guardarDocumento = (valores) => app.corregirDocumento(documentoId, valores);
+    } else if (accion.tipo === "renovar" && accion.documentoId !== null) {
       const documentoId = accion.documentoId;
       const ctx = contextoDeRenovar(estado, documentoId, app.hoy);
       if (ctx === null) {
@@ -164,21 +174,14 @@
   function alGuardar(r: { mensaje: string }): void {
     if (origenDelDialogo === "protagonista") {
       const k = conductorDelDialogo;
-      estadoProtagonista = { texto: k === null ? r.mensaje : k.tipo === "renovar" ? TCL.licenciaRenovada(k.nombre) : TCL.licenciaCargada(k.nombre) };
+      estadoProtagonista = { texto: k === null || k.tipo === "corregir" ? r.mensaje : k.tipo === "renovar" ? TCL.licenciaRenovada(k.nombre) : TCL.licenciaCargada(k.nombre) };
     } else estadoVencimientos = { texto: r.mensaje };
   }
 
-  /** «Renovar» / «Cargar» de un conductor sin licencia: abre el diálogo de la fila de su licencia en Vencimientos (el mismo `alertaId`). */
+  /** «Renovar», «Cargar» o «Corregir» de un conductor sin licencia: la fila trae la acción completa (B2), ya no se busca en Vencimientos. */
   function abrirLicencia(conductor: FilaDeConductorSinLicencia): void {
-    const alertaId = conductor.accion?.alertaId;
-    const fila = c === null || alertaId === undefined ? undefined : c.vencimientos.grupos.flatMap((g) => g.filas).find((f) => f.alertaId === alertaId);
-    if (fila === undefined) {
-      origenDelDialogo = "protagonista";
-      estadoProtagonista = { texto: T.yaNoPendiente };
-      return;
-    }
-    conductorDelDialogo = conductor.accion === null ? null : { nombre: conductor.nombre, tipo: conductor.accion.tipo };
-    abrirDialogo(fila.accion, "protagonista");
+    conductorDelDialogo = { nombre: conductor.nombre, tipo: conductor.accion.tipo };
+    abrirDialogo(conductor.accion, "protagonista");
   }
 
   // ---------- Diálogo Resolver (novedades) ----------

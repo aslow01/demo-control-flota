@@ -566,8 +566,10 @@ export const TEXTO_CONDUCTORES_SIN_LICENCIA = {
   unidad: "Unidad",
   renovar: "Renovar",
   cargar: "Cargar",
+  /** M2: la licencia cargada con una emisión futura (un error de tipeo) se corrige; no hay otra salida. */
+  corregir: "Corregir",
   /** Nombre accesible del botón: «Renovar licencia de Luis Ferreyra». */
-  nombreAccesible: (accion: "Renovar" | "Cargar", nombre: string) => `${accion} licencia de ${nombre}`,
+  nombreAccesible: (accion: "Renovar" | "Cargar" | "Corregir", nombre: string) => `${accion} licencia de ${nombre}`,
   /** Para lectores, después de la cifra del protagonista. */
   lector: (n: number) => (n === 1 ? "1 conductor no puede manejar hoy." : `${n} conductores no pueden manejar hoy.`),
   /** Barra de estado al guardar la licencia. */

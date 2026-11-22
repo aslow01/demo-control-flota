@@ -2,9 +2,10 @@
 import { describe, expect, it } from "vitest";
 import { SEMILLA_POR_DEFECTO, generar } from "../src/lib/datos/generador.ts";
 import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
+import { ejecutar } from "../src/lib/dominio/comandos.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { MAX_PROTAGONISTA, centroDeAlertas, vencimientosVisibles, type CentroDeAlertas } from "../src/lib/estado/centro-alertas.ts";
-import { flotaDePrueba, parte } from "./ayuda.ts";
+import { contexto, flotaDePrueba, parte } from "./ayuda.ts";
 
 const H = "2026-11-18";
 const EMPRESA = "Logística Andina Demo S.A.";
@@ -373,9 +374,13 @@ describe("conductores que no pueden manejar hoy (L6, L7; diseno.md 17.5)", () =>
     const fila = p.conductores[0]!;
     expect(fila.motivo).toBe("Licencia vencida hace 3 días");
     expect(fila.unidad).toMatchObject({ patenteTexto: expect.stringMatching(/^[A-Z]{2,3} \d{3}( [A-Z]{2})?$/) });
-    expect(fila.accion).toMatchObject({ tipo: "renovar", etiqueta: "Renovar", nombreAccesible: `Renovar licencia de ${fila.nombre}` });
-    const alerta = calcularAlertas(e, H).alertas.find((a) => a.id === fila.accion?.alertaId);
-    expect(alerta).toMatchObject({ tipoDocumento: "licencia", conductorId: fila.conductorId });
+    // B2: la acción viene completa (el documento a renovar y su titular): la vista no tiene que buscarla en otro lado
+    expect(fila.accion).toMatchObject({ tipo: "renovar", etiqueta: "Renovar", nombreAccesible: `Renovar licencia de ${fila.nombre}`, tipoDocumento: "licencia", titular: { tipo: "conductor", id: fila.conductorId } });
+    const documento = e.documentos.find((d) => d.id === fila.accion.documentoId);
+    expect(documento).toMatchObject({ tipo: "licencia", titular: { tipo: "conductor", id: fila.conductorId } });
+    // es la misma acción que la de la fila de su licencia en Vencimientos (el nombre accesible de la fila del conductor es el de la especificación: «Renovar licencia de {Nombre}»)
+    const deVencimientos = c.vencimientos.grupos.flatMap((g) => g.filas).find((f) => f.accion.documentoId === fila.accion.documentoId);
+    expect(deVencimientos?.accion).toMatchObject({ tipo: fila.accion.tipo, documentoId: fila.accion.documentoId, titular: fila.accion.titular, tipoDocumento: fila.accion.tipoDocumento });
     // no cambia la cifra del protagonista (A8)
     expect(p.cifra).toBe(4);
   });
@@ -386,17 +391,40 @@ describe("conductores que no pueden manejar hoy (L6, L7; diseno.md 17.5)", () =>
     expect(p.textoLectorConductores).toBeNull();
   });
 
-  it("los motivos: «hace 1 día», «Falta cargar la licencia» (acción «Cargar») y «Licencia válida desde el 20/11/2026» (sin alerta de vencimiento: sin acción)", () => {
+  it("los motivos: «hace 1 día», «Falta cargar la licencia» (acción «Cargar») y «Licencia válida desde el 20/11/2026» (acción «Corregir»: M2 del QA)", () => {
     const base = flotaDePrueba();
     const sin = { ...base, documentos: base.documentos.filter((d) => d.id !== "c1-licencia") };
-    expect(centroDe(sin).protagonista.conductores[0]).toMatchObject({ motivo: "Falta cargar la licencia", accion: { tipo: "cargar", etiqueta: "Cargar", nombreAccesible: "Cargar licencia de Luis Ferreyra" } });
+    expect(centroDe(sin).protagonista.conductores[0]).toMatchObject({
+      motivo: "Falta cargar la licencia",
+      accion: { tipo: "cargar", etiqueta: "Cargar", nombreAccesible: "Cargar licencia de Luis Ferreyra", documentoId: null, tipoDocumento: "licencia", titular: { tipo: "conductor", id: "c1" } },
+    });
     const ayer = { ...base, documentos: base.documentos.map((d) => (d.id === "c1-licencia" ? { ...d, vence: "2026-11-17" } : d)) };
     expect(centroDe(ayer).protagonista.conductores[0]?.motivo).toBe("Licencia vencida hace 1 día");
     const nueva = {
       ...ayer,
       documentos: [...ayer.documentos, { ...ayer.documentos.find((d) => d.id === "c1-licencia")!, id: "c1-nueva", vence: "2031-01-01", emitido: "2026-11-20", reemplazaA: "c1-licencia" }],
     };
-    expect(centroDe(nueva).protagonista.conductores[0]).toMatchObject({ motivo: "Licencia válida desde el 20/11/2026", accion: null });
+    // la licencia cargada con una emisión futura (un error de tipeo) no puede dejar al conductor sin remedio: la acción es corregir esa licencia
+    expect(centroDe(nueva).protagonista.conductores[0]).toMatchObject({
+      motivo: "Licencia válida desde el 20/11/2026",
+      accion: { tipo: "corregir", etiqueta: "Corregir", nombreAccesible: "Corregir licencia de Luis Ferreyra", documentoId: "c1-nueva", tipoDocumento: "licencia", titular: { tipo: "conductor", id: "c1" } },
+    });
+  });
+
+  it("M2: toda fila trae una acción, en los tres motivos y también con el ejemplo completo", () => {
+    expect(c.protagonista.conductores.every((f) => f.accion !== null && f.accion.documentoId !== undefined)).toBe(true);
+  });
+
+  it("M2: corregida la emisión, el conductor puede manejar y la fila desaparece (con el comando de corrección real)", () => {
+    const base = flotaDePrueba();
+    const ayer = { ...base, documentos: base.documentos.map((d) => (d.id === "c1-licencia" ? { ...d, vence: "2026-11-17" } : d)) };
+    const nueva: Estado = { ...ayer, documentos: [...ayer.documentos, { ...ayer.documentos.find((d) => d.id === "c1-licencia")!, id: "c1-nueva", vence: "2031-01-01", emitido: "2026-11-25", reemplazaA: "c1-licencia" }] };
+    const accion = centroDe(nueva).protagonista.conductores[0]?.accion;
+    expect(accion?.documentoId).toBe("c1-nueva");
+    const r = ejecutar(nueva, { tipo: "corregirDocumento", documentoId: accion?.documentoId ?? "", emitido: "2026-11-18" }, contexto());
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(centroDe(r.valor.estado).protagonista.conductores).toEqual([]);
   });
 });
 

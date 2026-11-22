@@ -38,7 +38,7 @@ import {
   textoVerTodasEnLaFlota,
 } from "../dominio/textos.ts";
 import type { Conductor, Estado, FechaCivil, Novedad, Parte, TipoDocumento, Titular, Unidad } from "../dominio/tipos.ts";
-import type { Grupo } from "../dominio/vencimientos.ts";
+import { documentoVigente, type Grupo } from "../dominio/vencimientos.ts";
 import { horizonteCompleto, type Horizonte } from "../dominio/horizonte.ts";
 import { aHash } from "./enrutador.ts";
 
@@ -101,7 +101,16 @@ export interface Protagonista {
   tituloConductores: string;
 }
 
-/** Un conductor que no puede manejar hoy (L6). `accion` abre el diálogo de la alerta de vencimiento de su licencia («Renovar» si tiene una cargada, «Cargar» si no); `null` si esa alerta no existe. */
+/**
+ * La acción de la fila de un conductor sin licencia (L6, M2, B2): la misma `AccionDeDocumento` de la fila de su licencia en Vencimientos, o «Corregir» (la licencia
+ * cargada con una emisión futura, que sigue sin alertar como vencimiento).
+ */
+export type AccionDeConductorSinLicencia = AccionDeDocumento | (Omit<AccionDeDocumento, "tipo" | "etiqueta"> & { tipo: "corregir"; etiqueta: "Corregir" });
+
+/**
+ * Un conductor que no puede manejar hoy (L6). `accion` nunca es `null` (M2): «Renovar» (venció; `documentoId` es la licencia), «Cargar» (falta; `documentoId` es `null`) o
+ * «Corregir» (la licencia vale desde una fecha futura: se corrige la emisión; `documentoId` es esa licencia). La trae completa: la vista no la busca en Vencimientos (B2).
+ */
 export interface FilaDeConductorSinLicencia {
   conductorId: string;
   nombre: string;
@@ -109,7 +118,7 @@ export interface FilaDeConductorSinLicencia {
   motivo: string;
   /** Su unidad asignada (no de baja), con el enlace a su ficha. */
   unidad: { patenteTexto: string; href: string } | null;
-  accion: { tipo: "renovar" | "cargar"; alertaId: string; etiqueta: string; nombreAccesible: string } | null;
+  accion: AccionDeConductorSinLicencia;
 }
 
 export interface FilaOperacionDiaria {
@@ -305,18 +314,23 @@ function armarConductoresSinLicencia(estado: Estado, r: ResultadoAlertas, hoy: F
   return r.resumen.conductoresSinLicencia.map((c) => {
     const unidad = estado.unidades.find((u) => u.conductorId === c.conductorId && u.estado.tipo !== "baja");
     const m = c.motivo;
-    const accion = c.alertaId === null ? null : m.motivo === "faltante" ? "cargar" : "renovar";
+    const titular: Titular = { tipo: "conductor", id: c.conductorId };
+    const vigente = documentoVigente(estado.documentos, titular, "licencia");
+    const base = { titular, tipoDocumento: "licencia" as const };
+    let accion: AccionDeConductorSinLicencia;
+    if (m.motivo === "faltante" || vigente === undefined) {
+      accion = { ...base, tipo: "cargar", etiqueta: "Cargar", nombreAccesible: TCL.nombreAccesible("Cargar", c.nombre), documentoId: null };
+    } else if (m.motivo === "vencida") {
+      accion = { ...base, tipo: "renovar", etiqueta: "Renovar", nombreAccesible: TCL.nombreAccesible("Renovar", c.nombre), documentoId: vigente.id };
+    } else {
+      accion = { ...base, tipo: "corregir", etiqueta: "Corregir", nombreAccesible: TCL.nombreAccesible("Corregir", c.nombre), documentoId: vigente.id };
+    }
     return {
       conductorId: c.conductorId,
       nombre: c.nombre,
       motivo: textoMotivoSinLicencia(m.motivo === "vencida" ? { motivo: "vencida", diasVencida: diasEntre(m.vence, hoy) } : m),
       unidad: unidad === undefined ? null : { patenteTexto: formatearPatente(unidad.patente), href: href(unidad.patente) },
-      accion:
-        c.alertaId === null || accion === null
-          ? null
-          : accion === "cargar"
-            ? { tipo: "cargar", alertaId: c.alertaId, etiqueta: TCL.cargar, nombreAccesible: TCL.nombreAccesible("Cargar", c.nombre) }
-            : { tipo: "renovar", alertaId: c.alertaId, etiqueta: TCL.renovar, nombreAccesible: TCL.nombreAccesible("Renovar", c.nombre) },
+      accion,
     };
   });
 }
