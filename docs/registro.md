@@ -1135,3 +1135,25 @@ campos del cierre se ven pero no se piden); `npm audit` no se corrió (sin depen
 **Verificación.** `npm test` 1489 (también `test:tz`); `npm run check` 0 errores y 0 avisos; `npm run contraste` 174 mediciones, 0 fallan; `npm run buscar` sin hallazgos; `npm run build` JS 114,7 KB gzip (tope 120).
 Navegador (Playwright, compilación servida con `npm run servir`): recorrido completo del conductor con teclado (revisión vacía con foco en el resumen, enlace al campo, diez puntos con Espacio, diálogo, C1, cierre, C3, vuelta al inicio); C2 con Frenos, inicio sin salida y lectura; caso C21 (inicio, pantalla E, «Renovar» como encargado con el foco en el `h2` y vuelta al estado 7); encargado con el `select` (L1 al enviar, borrador recuperado tras recargar, «En uso» en flota, «→ en uso» y revisión en la ficha). 320, 360, 768 y 1280 px, claro y oscuro: sin desborde, nada pulsable de menos de 44 px, sin mensajes en la consola ni violaciones de CSP. «Al iniciar» a 360 × 780: 590 px (con el aviso de la unidad); «Al terminar»: 585 px. Evento cerrado del historial a 360: 88 px.
 **Sin verificar:** axe-core (no está instalado y no se suman dependencias); lector de pantalla; colores forzados; zoom 200 % y 400 %; celular real; IndexedDB bloqueado; dos pestañas. Queda a `qa-destructor`, `auditor-accesibilidad` (D3) y `disenador-ui`.
+
+## 22/11/2026 (rama `interfaz-etapa-0`) — Correcciones de la revisión de la etapa 6: lógica (programador)
+
+**Qué se hizo.** La parte de lógica de las cuatro revisiones (código, QA, diseño y accesibilidad) y de las decisiones de Matías del 22/11, con TDD y un commit por tema (sin push). Reglas nuevas en `docs/diseno.md`: P18 (cerrar antes), P19 (sin salida, hasta mañana), P20 (un conductor, un parte en uso) y la sección 17.12.
+
+| Hallazgo | Qué quedó |
+| --- | --- |
+| A1 (código) y decisión «Cerrar antes» | `enviarRevision` rechaza con `parte-anterior-sin-cerrar` si la unidad tiene un parte en uso de una fecha anterior (después de L1, antes de los faltantes). Inicio del conductor: estado `cierre-pendiente` (5 bis). Pantalla del parte: `ParteNoDisponible.cerrarAntes`. Ficha: «Cerrar el parte del {F}». |
+| M1 (código) y baja (QA) | `corregirKilometraje` rechaza desde la fecha de un parte en uso; `darDeBaja` rechaza con un parte en uso. |
+| P20 (QA, dudoso) | Mismo código y mismo aviso: el conductor con un parte en uso en otra unidad no envía la revisión de una nueva. |
+| M1 (QA) → P19 | «Hasta mañana»: ficha con «Ver el parte» e inicio con `hastaManana`. |
+| M2 (QA), B2 (código) | La fila de «Conductores que no pueden manejar hoy» trae siempre la acción completa; con una emisión futura, «Corregir». No se rechaza la emisión futura (la especificación la permite). |
+| B1, B3, B5 (código) | Test que fija el `kmFin` menor; sin casts y sin `advertenciasDeCierre`; `opcionesDeConductor` con `licencia: { fecha, documentos }`. B4: no. B7: no tocar (límite del README). |
+| B3 (QA), B4 (QA) y seguridad | Tope de 500 en caracteres (puntos de código) y `limpiarTexto` (`texto.ts`) por categoría Unicode `Cc` y `Cf`, salvo `\t`, `\n`, `\r` y U+200D. Se aplica a novedades, motivos, borradores y a la revisión enviada. |
+| D1, C5, C1, C2, C6, C13, C15, C16 (diseño) | Resumen agrupado (`agruparResumen`), barra «Revise N datos» (`barraDeEnvio`), `conDocumentacionVencida` y línea de C1, fecha de «Último parte» del parte que nombra la etiqueta, un renglón por documento (`contextoDeDocumentacion`), `textoDeOpcion`, nota del punto crítico, primer botón de la ficha. |
+| D2, «fuera de plazo» | Nada en `src/lib/` para D2 (la marca está en `textos-marco.ts` y las vistas). «Fuera de término» pasó a «fuera de plazo» en textos, tests y especificación (identificadores `fueraDeTermino` sin cambios: están en los eventos guardados). |
+
+**Ajustes mínimos en la vista** (para que compile y no quede una pantalla rota; el maquetador los rehace): `PantallaConductor.svelte` (rama `cierre-pendiente`, con los dos renglones en un párrafo) y `PantallaAlertas.svelte` (`abrirLicencia` usa la acción de la fila y `abrirDialogo` suma el diálogo de corregir).
+
+**Lo que queda para el maquetador.** Estado 5 bis y pantalla E «Cerrar antes» con sus dos renglones y el primario; `hastaManana` en el inicio; `conDocumentacionVencida` en `ParteEnviado.svelte`; `agruparResumen` y `barraDeEnvio` en `ParteFormulario.svelte`; `textoDeOpcion` en el `select`; recorrido «—» en la fila «en uso» del kilometraje de la ficha (`recorrido` viene `null`); «Corregir» en el bloque de conductores; `textos-marco.ts` (D2 y «fuera de plazo» de la línea 243).
+
+**Verificación.** `npm test` 1555 (1489 al empezar), también con `npm run test:tz`; `npm run check` 0 errores y 0 avisos; `npm run buscar` sin hallazgos; `npm run build` JS 116,6 KB gzip (tope 120). **Sin verificar:** nada en el navegador.
