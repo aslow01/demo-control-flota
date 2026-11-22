@@ -566,8 +566,19 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const primera = await app.enviarRevisionDeParte(uid, H, v);
     expect(primera.tipo === "advertencias" && primera.aceptables).toEqual(["documentacion-vencida"]);
     expect(primera.tipo === "advertencias" && primera.advertencias.map((a) => a.tono)).toEqual(["critico"]);
+    // C6: un renglón por documento, con la fecha en que venció, y la cola de la revisión
+    expect(primera.tipo === "advertencias" && primera.advertencias.map((a) => a.texto)).toEqual([
+      "El seguro de ZK 214 BD venció el 17/11/2026. Puede enviar la revisión de todos modos: quedará registrado que la unidad salió con documentación vencida.",
+    ]);
     const segunda = await app.enviarRevisionDeParte(uid, H, v, ["documentacion-vencida"]);
     expect(segunda.tipo).toBe("enviado");
+    // C1 y C6: el panel de la revisión enviada con documentación vencida lo dice (no «puede salir») y el aviso aceptado va en pasado
+    expect(segunda.tipo === "enviado" && segunda.panel).toMatchObject({
+      variante: "revision-enviada",
+      conDocumentacionVencida: true,
+      advertencias: ["El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado."],
+    });
+    expect(segunda.tipo === "enviado" && segunda.panel.linea).toMatch(/^ZK 214 BD: revisión enviada a las \d\d:\d\d\. Sale con documentación vencida: quedó registrado\.$/);
     expect(parteDeHoy(app, "ZK214BD")).toMatchObject({ estado: "en-uso", documentacionVencida: ["seguro"] });
     expect(app.alertas?.alertas.some((a) => a.tipo === "uso-con-documentacion-vencida" && a.unidadId === uid)).toBe(true);
   });

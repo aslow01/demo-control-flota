@@ -3,8 +3,9 @@
 import { diasEntre, parsearFechaCivil, parsearInstante } from "./fechas.ts";
 import { KM_MAXIMO, advertenciasDeRecorrido, advertenciasDeSalida } from "./kilometraje.ts";
 import { largoEnCaracteres, normalizarTexto } from "./texto.ts";
-import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos } from "./textos.ts";
-import { estadoDeLicencia, hayDocumentoQueAmpare, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
+import { formatearPatente } from "./patente.ts";
+import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos, textoAdvertenciaAceptada, type ContextoDeDocumentacion } from "./textos.ts";
+import { estadoDeLicencia, hayDocumentoQueAmpare, inicioDeDocumento, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 import {
   fallo,
   ok,
@@ -202,6 +203,32 @@ export interface EntradaDocumentacion {
 export function documentacionVencidaEn(entrada: EntradaDocumentacion): TipoDocumento[] {
   const { fecha, unidad, proyecto, documentos } = entrada;
   return tiposObligatoriosDeUnidad(proyecto).filter((tipo) => !hayDocumentoQueAmpare(documentos, { tipo: "unidad", id: unidad.id }, tipo, fecha));
+}
+
+/** Los documentos obligatorios de una unidad, en el orden en que se muestran: los que puede decir un aviso de P9. */
+const TIPOS_DE_DOCUMENTO_DE_UNIDAD: readonly TipoDocumento[] = ["seguro", "revision-tecnica", "matafuego", "habilitacion-proyecto"];
+
+/**
+ * C6: cómo estaba cada documento de la unidad el día del parte, para los textos de P9: la fecha en que venció (la más tardía de los documentos que ya valían ese día y ya
+ * habían vencido) o `null` si no había ninguno. Como `documentacionVencidaEn`, mira los documentos como estaban ese día (M1): una renovación cargada después no borra el hecho.
+ */
+export function contextoDeDocumentacion(documentos: readonly Documento[], unidad: Pick<Unidad, "id" | "patente">, fecha: FechaCivil): ContextoDeDocumentacion {
+  const venceron: Partial<Record<TipoDocumento, FechaCivil | null>> = {};
+  for (const tipo of TIPOS_DE_DOCUMENTO_DE_UNIDAD) {
+    let vencio: FechaCivil | null = null;
+    for (const d of documentos) {
+      if (d.tipo !== tipo || d.titular.tipo !== "unidad" || d.titular.id !== unidad.id) continue;
+      if (inicioDeDocumento(d) <= fecha && d.vence < fecha && (vencio === null || d.vence > vencio)) vencio = d.vence;
+    }
+    venceron[tipo] = vencio;
+  }
+  return { patente: formatearPatente(unidad.patente), venceron };
+}
+
+/** Los avisos que se aceptaron al enviar un parte, ya en texto (C6): los de documentación dicen cómo estaba cada documento de la unidad el día del parte. */
+export function textosDeAvisosAceptados(parte: Pick<Parte, "advertenciasAceptadas" | "fecha">, unidad: Pick<Unidad, "id" | "patente"> | undefined, documentos: readonly Documento[]): string[] {
+  const contexto = unidad === undefined ? undefined : contextoDeDocumentacion(documentos, unidad, parte.fecha);
+  return parte.advertenciasAceptadas.map((a) => textoAdvertenciaAceptada(a, contexto));
 }
 
 /** K6 y P9: lo que hay que aceptar antes de enviar la revisión. */

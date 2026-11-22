@@ -11,7 +11,7 @@ import { diaDeLaSemana, diasEntre, fechaEnArgentina, formatearFecha, formatearHo
 import { opcionesDeConductor, type OpcionDeConductor } from "../dominio/formulario.ts";
 import { OPCIONES_COMBUSTIBLE, faltantesDeValores, valoresDeParte, valoresIniciales, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { describirRegistro, kmDeRegistro, registroAnterior, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
-import { ITEMS_CHECKLIST, conductorParaParte, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, validarFechaParte } from "../dominio/parte.ts";
+import { ITEMS_CHECKLIST, conductorParaParte, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, textosDeAvisosAceptados, validarFechaParte } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import {
   NOMBRES_COMBUSTIBLE,
@@ -25,7 +25,6 @@ import {
   errUnidadDeBaja,
   errUnidadFueraDeServicio,
   formatearKm,
-  textoAdvertenciaAceptada,
   textoBorradorDelConductor,
   textoCerrarAntesDeLaRevision,
   textoDescripcionUnidad,
@@ -403,6 +402,11 @@ export interface PanelParteEnviado {
   avisoCritica: string | null;
   /** Las advertencias que se aceptaron al enviar (K6, K7, P9), ya en texto (C3 y lectura: las de la revisión y las del cierre). */
   advertencias: string[];
+  /**
+   * C1 (S1): la revisión se envió con documentación vencida de la unidad aceptada (P9). La vista no puede decir «puede salir»: el panel va en tono semana, con `i-alerta`, y
+   * `linea` ya dice «Sale con documentación vencida: quedó registrado.». Es `false` en los demás paneles.
+   */
+  conDocumentacionVencida: boolean;
   /** «Revisión enviada fuera de plazo.» (P5) o `null`. */
   fueraDeTermino: string | null;
   /** C1: «El encargado la ve en el centro de alertas.» si la revisión abrió novedades normales. */
@@ -621,7 +625,8 @@ export function panelDeParteEnviado(estado: Estado, entrada: Parte, perfil: Perf
     linea: textoLineaParteCerrado(patente, parte.fecha, horaDe(revision), parte.sinSalida ? null : horaDe(parte.enviado ?? (parte.actualizado === "" ? null : parte.actualizado))),
     filas,
     avisoCritica: criticas.length > 0 && unidad?.estado.tipo === "fuera-de-servicio" && parte.sinSalida ? TEXTO_PARTE.enviadoConCritica : null,
-    advertencias: parte.advertenciasAceptadas.map(textoAdvertenciaAceptada),
+    advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
+    conDocumentacionVencida: false,
     fueraDeTermino: diaDeRevision !== null && diasEntre(parte.fecha, diaDeRevision) > 0 ? TP.fueraDeTermino : null,
     notaEncargado: null,
     parrafo: null,
@@ -643,13 +648,14 @@ export function panelDeRevisionEnviada(estado: Estado, entrada: Parte, perfil: P
   return {
     variante: "revision-enviada",
     titulo: TP.tituloRevisionEnviada,
-    linea: textoLineaRevisionEnviada(patente, parte.fecha, diaDeEnvio, hora),
+    linea: textoLineaRevisionEnviada(patente, parte.fecha, diaDeEnvio, hora, parte.documentacionVencida.length > 0),
     filas: [
       { rotulo: TP.rotulos.alIniciar, valor: parte.kmInicio === null ? TEXTO_FORMULARIO_PARTE.sinRecorrido : `${formatearKm(parte.kmInicio)} km` },
       { rotulo: TP.rotulos.novedades, valor: textoNovedadesDelParte(criticas, normales) },
     ],
     avisoCritica: null,
-    advertencias: parte.advertenciasAceptadas.map(textoAdvertenciaAceptada),
+    advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
+    conDocumentacionVencida: parte.documentacionVencida.length > 0,
     // El texto de «fuera de plazo» ya va en la línea (C1).
     fueraDeTermino: null,
     notaEncargado: normales.length > 0 ? TP.encargadoLaVe : null,
@@ -662,7 +668,7 @@ export function panelDeRevisionEnviada(estado: Estado, entrada: Parte, perfil: P
 /** C2: el panel «La unidad no puede salir» (la revisión informó una novedad crítica y el parte quedó cerrado sin uso). */
 export function panelDeSinSalida(estado: Estado, entrada: Parte, perfil: Perfil): PanelParteEnviado {
   const parte = parteLegible(entrada) ?? entrada;
-  const { patente, volverAlInicio } = panelBase(estado, parte, perfil);
+  const { patente, unidad, volverAlInicio } = panelBase(estado, parte, perfil);
   const { criticas } = novedadesPorGravedad(parte);
   return {
     variante: "sin-salida",
@@ -670,7 +676,8 @@ export function panelDeSinSalida(estado: Estado, entrada: Parte, perfil: Perfil)
     linea: textoLineaSinSalida(horaDe(parte.revisado), criticas),
     filas: [],
     avisoCritica: textoUnidadQuedoFueraDeServicio(patente),
-    advertencias: parte.advertenciasAceptadas.map(textoAdvertenciaAceptada),
+    advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
+    conDocumentacionVencida: false,
     fueraDeTermino: null,
     notaEncargado: null,
     parrafo: TP.siTieneQueSalir,

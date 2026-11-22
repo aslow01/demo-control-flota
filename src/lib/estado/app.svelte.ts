@@ -34,7 +34,7 @@ import { formatearHora } from "../dominio/fechas.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
 import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { kmDeRegistro, registroAnterior } from "../dominio/kilometraje.ts";
-import { advertenciasLegibles, esBorradorVacio } from "../dominio/parte.ts";
+import { advertenciasLegibles, contextoDeDocumentacion, esBorradorVacio } from "../dominio/parte.ts";
 import {
   comandoDeAsignacion,
   comandoDeBaja,
@@ -793,11 +793,14 @@ export class EstadoApp {
   }
 
   /** Las advertencias que hay que aceptar (K6, K7, P9), listas para el diálogo «Antes de enviar». */
-  private advertenciasPendientes(error: ErrorDeNegocio): ResultadoDeEnvio {
+  private advertenciasPendientes(error: ErrorDeNegocio, parte?: Parte): ResultadoDeEnvio {
     const pendientes = advertenciasLegibles(error.detalle?.["advertencias"]);
+    // Los avisos de documentación dicen cómo estaba cada documento de la unidad el día del parte (C6).
+    const unidad = parte === undefined ? undefined : this.estado?.unidades.find((u) => u.id === parte.unidadId);
+    const contexto = parte === undefined || unidad === undefined || this.estado === null ? undefined : contextoDeDocumentacion(this.estado.documentos, unidad, parte.fecha);
     return {
       tipo: "advertencias",
-      advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a), tono: a.tipo === "documentacion-vencida" ? "critico" : "semana" })),
+      advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a, contexto), tono: a.tipo === "documentacion-vencida" ? "critico" : "semana" })),
       aceptables: pendientes.map((a) => a.tipo),
       foco: "dialogo-antes-de-enviar",
     };
@@ -845,7 +848,7 @@ export class EstadoApp {
     if (!r.ok) {
       if (r.error.codigo === "licencia-no-vigente" || r.error.codigo === "parte-anterior-sin-cerrar" || r.error.codigo === "escritura-fallida") return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
       if (previos !== null) return this.erroresDeEnvio(previos);
-      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error);
+      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error, borrador);
       return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
     }
     const enviado = r.valor.estado.partes.find((p) => p.id === borrador.id);
@@ -881,7 +884,7 @@ export class EstadoApp {
 
     const r = await this.ejecutarAhora({ tipo: "enviarCierre", parteId: parte.id, advertenciasAceptadas: aceptadas }, perfil);
     if (!r.ok) {
-      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error);
+      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error, parte);
       return this.erroresDeEnvio(erroresDeNegocioParte(r.error, "cierre"));
     }
     const cerrado = r.valor.estado.partes.find((p) => p.id === parte.id);

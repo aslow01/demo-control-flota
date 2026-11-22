@@ -4,6 +4,7 @@ import {
   advertenciasDeCierre,
   advertenciasDeRevision,
   conductorParaParte,
+  contextoDeDocumentacion,
   documentacionVencidaEn,
   esBorradorVacio,
   faltantesDeCierre,
@@ -324,6 +325,34 @@ describe("advertencias de la revisión (K6, P9) y del cierre (K7)", () => {
   it("el cierre avisa solo del recorrido largo (K7)", () => {
     expect(advertenciasDeCierre({ kmInicio: 0, kmFin: 1201 })).toEqual([{ tipo: "recorrido-largo", km: 1201 }]);
     expect(advertenciasDeCierre({ kmInicio: 0, kmFin: 1200 })).toEqual([]);
+  });
+});
+
+describe("C6: cómo estaba cada documento de la unidad el día del parte", () => {
+  const u = unidad({ id: "u1", patente: "ZK214BD" });
+  const doc = (parcial: Partial<Documento>) => documento({ titular: { tipo: "unidad", id: "u1" }, tipo: "seguro", cargado: "2026-01-02T12:00:00.000Z", ...parcial });
+
+  it("la patente con espacios y, por tipo, la fecha en que venció (la más tardía de las que ya valían) o null si no había ninguno", () => {
+    const c = contextoDeDocumentacion([doc({ vence: "2026-11-17" }), doc({ id: "viejo", vence: "2026-05-01" })], u, "2026-11-18");
+    expect(c).toEqual({ patente: "ZK 214 BD", venceron: { seguro: "2026-11-17", "revision-tecnica": null, matafuego: null, "habilitacion-proyecto": null } });
+  });
+
+  it("una renovación cargada después del parte no borra el hecho de que estaba vencido; un documento de otra unidad no cuenta", () => {
+    const tarde = doc({ id: "nuevo", vence: "2027-11-17", cargado: "2026-11-20T12:00:00.000Z", reemplazaA: "viejo" });
+    const viejo = doc({ id: "viejo", vence: "2026-11-17" });
+    const ajeno = doc({ id: "otro", titular: { tipo: "unidad", id: "u2" }, vence: "2026-11-10" });
+    expect(contextoDeDocumentacion([viejo, tarde, ajeno], u, "2026-11-18").venceron.seguro).toBe("2026-11-17");
+    // la emisión cargada con fecha anterior al parte sí lo ampara: ya no hay «venció»
+    expect(contextoDeDocumentacion([viejo, { ...tarde, emitido: "2026-11-18" }], u, "2026-11-19").venceron.seguro).toBe("2026-11-17");
+  });
+});
+
+describe("parteLegible: un cierre con el kilometraje final menor que el inicial (B1)", () => {
+  it("el valor imposible no se lee: queda null, para no dibujar un recorrido negativo; el resto del parte se conserva", () => {
+    const p = parteLegible({ ...parte({ estado: "en-uso", enviado: null }), kmInicio: 84400, kmFin: 84000, combustible: "medio" });
+    expect(p).toMatchObject({ estado: "en-uso", kmInicio: 84400, kmFin: null, combustible: "medio" });
+    expect(parteLegible({ ...parte({ estado: "en-uso", enviado: null }), kmInicio: 84400, kmFin: 84400 })?.kmFin).toBe(84400);
+    expect(parteLegible({ ...parte({ estado: "en-uso", enviado: null }), kmInicio: null, kmFin: 84000 })?.kmFin).toBe(84000);
   });
 });
 

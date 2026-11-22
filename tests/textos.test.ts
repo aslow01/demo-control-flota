@@ -158,15 +158,33 @@ describe("advertencias antes de enviar (K6, K7, P9)", () => {
     expect(textoAdvertencia({ tipo: "recorrido-largo", km: 1350 })).toBe("Recorrido del día inusualmente largo: 1.350 km");
   });
 
-  it("P9: documentación vencida, con los nombres", () => {
-    expect(textoAdvertencia({ tipo: "documentacion-vencida", documentos: ["seguro", "licencia"] })).toBe(
-      "Seguro, Licencia de conducir: vencidos o sin cargar. Puede enviar el parte igual: quedará registrado que la unidad circuló con documentación vencida.",
+  const CTX = { patente: "ZK 214 BD", venceron: { seguro: "2026-11-17", "revision-tecnica": "2026-11-01", matafuego: null, "habilitacion-proyecto": null } } as const;
+
+  it("P9 (C6): un renglón por documento, con la fecha en que venció o «Falta cargar», y la cola de la revisión", () => {
+    expect(textoAdvertencia({ tipo: "documentacion-vencida", documentos: ["seguro"] }, CTX)).toBe(
+      "El seguro de ZK 214 BD venció el 17/11/2026. Puede enviar la revisión de todos modos: quedará registrado que la unidad salió con documentación vencida.",
+    );
+    expect(textoAdvertencia({ tipo: "documentacion-vencida", documentos: ["seguro", "revision-tecnica", "matafuego", "habilitacion-proyecto"] }, CTX)).toBe(
+      "El seguro de ZK 214 BD venció el 17/11/2026. La revisión técnica de ZK 214 BD venció el 01/11/2026. Falta cargar la carga del matafuego de ZK 214 BD. " +
+        "Falta cargar la habilitación de ingreso al proyecto de ZK 214 BD. Puede enviar la revisión de todos modos: quedará registrado que la unidad salió con documentación vencida.",
     );
   });
 
-  it("registro de un parte enviado: la documentación vencida en pasado y sin la invitación; los otros avisos no cambian", () => {
+  it("P9: sin datos de la unidad (no debería pasar) dice los nombres, sin inventar fechas", () => {
+    expect(textoAdvertencia({ tipo: "documentacion-vencida", documentos: ["seguro", "revision-tecnica"] })).toBe(
+      "Seguro, Revisión técnica: vencidos o sin cargar. Puede enviar la revisión de todos modos: quedará registrado que la unidad salió con documentación vencida.",
+    );
+  });
+
+  it("registro de una revisión enviada (C6): en pasado, un renglón por documento y la cola «Se envió de todos modos»; los otros avisos no cambian", () => {
+    expect(textoAdvertenciaAceptada({ tipo: "documentacion-vencida", documentos: ["seguro"] }, CTX)).toBe(
+      "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado.",
+    );
+    expect(textoAdvertenciaAceptada({ tipo: "documentacion-vencida", documentos: ["revision-tecnica", "matafuego"] }, CTX)).toBe(
+      "La revisión técnica de ZK 214 BD venció el 01/11/2026. Faltaba cargar la carga del matafuego de ZK 214 BD. Se envió de todos modos: quedó registrado.",
+    );
     expect(textoAdvertenciaAceptada({ tipo: "documentacion-vencida", documentos: ["seguro", "licencia"] })).toBe(
-      "Seguro, Licencia de conducir: vencidos o sin cargar. Se envió igual: quedó registrado que la unidad circuló con documentación vencida.",
+      "Seguro, Licencia de conducir: vencidos o sin cargar. Se envió de todos modos: quedó registrado.",
     );
     expect(textoAdvertenciaAceptada({ tipo: "recorrido-largo", km: 1350 })).toBe(textoAdvertencia({ tipo: "recorrido-largo", km: 1350 }));
     expect(textoAdvertenciaAceptada({ tipo: "salto-km", km: 1180 })).toBe(textoAdvertencia({ tipo: "salto-km", km: 1180 }));

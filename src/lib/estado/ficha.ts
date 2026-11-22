@@ -15,7 +15,7 @@ import { historialDeUnidad } from "../dominio/historial.ts";
 import { horizonteDeUnidad, type Horizonte } from "../dominio/horizonte.ts";
 import { kmActual, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
 import { rotuloNovedad, criticasAbiertasDeUnidad, type CriticaAbierta } from "../dominio/novedades.ts";
-import { ITEMS_CHECKLIST, novedadesDelParte, parteLegible, partePendienteDeCierre } from "../dominio/parte.ts";
+import { ITEMS_CHECKLIST, novedadesDelParte, parteLegible, partePendienteDeCierre, textosDeAvisosAceptados } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import {
   NOMBRES_COMBUSTIBLE,
@@ -28,7 +28,6 @@ import {
   formatearKm,
   textoAccionDocumento,
   textoAdvertencia,
-  textoAdvertenciaAceptada,
   textoCerrarElParteDel,
   textoAnteriores,
   textoCorreccionKm,
@@ -617,7 +616,7 @@ function panelDeKilometraje(estado: Estado, unidad: Unidad, km: FichaDeUnidad["d
           fecha: formatearFecha(r.fecha),
           texto: textoRangoKm(r.kmInicio, r.kmFin),
           recorrido: textoRecorrido(r.kmFin - r.kmInicio),
-          advertencias: delKm.map(textoAdvertencia),
+          advertencias: delKm.map((a) => textoAdvertencia(a)),
           motivo: null,
           href: aHash({ tipo: "parte", patente: unidad.patente, fecha: r.fecha }),
         };
@@ -726,7 +725,7 @@ function detalleDeParte(estado: Estado, unidad: Unidad, datos: Record<string, un
     litros: textoLitros(parte.litrosCargados),
     novedades,
     puntosEnOrden: enOrden === 0 ? null : textoPuntosEnOrden(enOrden),
-    advertencias: parte.advertenciasAceptadas.map(textoAdvertenciaAceptada),
+    advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
     fueraDeTermino: datos["fueraDeTermino"] === true,
     href: aHash({ tipo: "parte", patente: unidad.patente, fecha: parte.fecha }),
   };

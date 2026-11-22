@@ -412,8 +412,42 @@ function estadoDeDocumentos(documentos: readonly TipoDocumento[]): string {
   return `${nombres}: ${documentos.length === 1 ? "vencido o sin cargar" : "vencidos o sin cargar"}.`;
 }
 
-/** K6, K7 y P9: cada advertencia que se acepta antes de enviar el parte. */
-export function textoAdvertencia(a: Advertencia): string {
+/**
+ * Cómo estaba la documentación de la unidad el día del parte (P9): la patente con espacios y, por tipo, la fecha en que venció o `null` si no había ninguna cargada.
+ * La arma `contextoDeDocumentacion` (parte.ts) con los documentos y la fecha del parte; así el texto dice lo que pasaba ese día aunque después se haya renovado.
+ */
+export interface ContextoDeDocumentacion {
+  patente: string;
+  venceron: Partial<Record<TipoDocumento, FechaCivil | null>>;
+}
+
+/** «el seguro», «la revisión técnica», «la carga del matafuego»: el nombre en minúscula con su artículo. */
+function conArticulo(tipo: TipoDocumento): string {
+  const nombre = NOMBRES_DOCUMENTO[tipo];
+  return `${concordar(tipo, "el", "la")} ${nombre.charAt(0).toLowerCase()}${nombre.slice(1)}`;
+}
+
+/**
+ * Un renglón por documento (C6): «El seguro de ZK 214 BD venció el 17/11/2026.» o «Falta cargar el seguro de ZK 214 BD.» (en pasado, «Faltaba cargar…»). Sin datos de la
+ * unidad (no debería pasar) se nombran los documentos y se dice que están vencidos o sin cargar, sin inventar fechas.
+ */
+function renglonesDeDocumentacion(documentos: readonly TipoDocumento[], contexto: ContextoDeDocumentacion | undefined, enPasado: boolean): string {
+  if (contexto === undefined) return estadoDeDocumentos(documentos);
+  return documentos
+    .map((tipo) => {
+      const vencio = contexto.venceron[tipo] ?? null;
+      const que = conArticulo(tipo);
+      if (vencio !== null) return `${que.charAt(0).toUpperCase()}${que.slice(1)} de ${contexto.patente} venció el ${formatearFecha(vencio)}.`;
+      return `${enPasado ? "Faltaba" : "Falta"} cargar ${que} de ${contexto.patente}.`;
+    })
+    .join(" ");
+}
+
+/**
+ * K6, K7 y P9: cada advertencia que se acepta antes de enviar. La de documentación dice un renglón por documento y que se puede enviar la revisión de todos modos (con
+ * `contexto`, que arma `contextoDeDocumentacion`).
+ */
+export function textoAdvertencia(a: Advertencia, contexto?: ContextoDeDocumentacion): string {
   switch (a.tipo) {
     case "salto-km":
       return `${formatearKm(a.km)} km sin registrar desde el último parte`;
@@ -421,22 +455,19 @@ export function textoAdvertencia(a: Advertencia): string {
       return `Recorrido del día inusualmente largo: ${formatearKm(a.km)} km`;
     case "documentacion-vencida":
       return (
-        `${estadoDeDocumentos(a.documentos)} ` +
-        "Puede enviar el parte igual: quedará registrado que la unidad circuló con documentación vencida."
+        `${renglonesDeDocumentacion(a.documentos, contexto, false)} ` +
+        "Puede enviar la revisión de todos modos: quedará registrado que la unidad salió con documentación vencida."
       );
   }
 }
 
 /**
- * El mismo aviso ya aceptado, como queda en el registro de un parte enviado («Avisos aceptados al enviar» y el historial): en pasado y sin la invitación a enviar igual,
- * que solo tiene sentido en el diálogo «Antes de enviar». Los otros dos avisos se leen igual en los dos lugares.
+ * El mismo aviso ya aceptado, como queda en el registro de una revisión enviada («Avisos aceptados» y el historial): en pasado y sin la invitación a enviar, que solo
+ * tiene sentido en el diálogo «Antes de enviar». Los otros dos avisos se leen igual en los dos lugares.
  */
-export function textoAdvertenciaAceptada(a: Advertencia): string {
+export function textoAdvertenciaAceptada(a: Advertencia, contexto?: ContextoDeDocumentacion): string {
   if (a.tipo !== "documentacion-vencida") return textoAdvertencia(a);
-  return (
-    `${estadoDeDocumentos(a.documentos)} ` +
-    "Se envió igual: quedó registrado que la unidad circuló con documentación vencida."
-  );
+  return `${renglonesDeDocumentacion(a.documentos, contexto, true)} Se envió de todos modos: quedó registrado.`;
 }
 
 /** Avisos globales del arranque y de la sincronización entre pestañas (D4, D5, D7, D8, D9). */
@@ -1275,11 +1306,20 @@ export const TEXTO_PANTALLA_PARTE = {
   rotulos: { alIniciar: "Al iniciar", recorrido: "Recorrido", combustible: "Combustible", litros: "Combustible cargado", novedades: "Novedades", avisos: "Avisos aceptados", revision: "Revisión", cierre: "Cierre" },
 } as const;
 
-/** C1: «ZK 214 BD puede salir. Revisión enviada a las 06:52.»; fuera de plazo: «Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de plazo).» */
-export function textoLineaRevisionEnviada(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil | null, hora: string | null): string {
-  if (diaDeEnvio === null || hora === null) return `${patente} puede salir. Revisión enviada.`;
-  if (fecha === diaDeEnvio) return `${patente} puede salir. Revisión enviada a las ${hora}.`;
-  return `Revisión del ${formatearFecha(fecha)} enviada el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de plazo).`;
+/**
+ * C1: «ZK 214 BD puede salir. Revisión enviada a las 06:52.»; fuera de plazo: «Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de plazo).» Con documentación
+ * vencida aceptada (P9) no dice «puede salir» de una unidad que no puede: «ZK 214 BD: revisión enviada a las 06:52. Sale con documentación vencida: quedó registrado.» y, fuera
+ * de plazo, «Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de plazo). Salió con documentación vencida: quedó registrado.»
+ */
+export function textoLineaRevisionEnviada(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil | null, hora: string | null, conDocumentacionVencida = false): string {
+  if (diaDeEnvio === null || hora === null) return conDocumentacionVencida ? `${patente}: revisión enviada. Sale con documentación vencida: quedó registrado.` : `${patente} puede salir. Revisión enviada.`;
+  if (fecha === diaDeEnvio) {
+    return conDocumentacionVencida
+      ? `${patente}: revisión enviada a las ${hora}. Sale con documentación vencida: quedó registrado.`
+      : `${patente} puede salir. Revisión enviada a las ${hora}.`;
+  }
+  const enviada = `Revisión del ${formatearFecha(fecha)} enviada el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de plazo).`;
+  return conDocumentacionVencida ? `${enviada} Salió con documentación vencida: quedó registrado.` : enviada;
 }
 
 /** C2: «Revisión enviada a las 06:52 con una novedad crítica: Frenos.» / «… con 2 novedades críticas: Frenos, Dirección.» */
