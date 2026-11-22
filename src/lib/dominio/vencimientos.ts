@@ -81,8 +81,41 @@ export function documentoVigente(
  * tarde, sin emisión o con emisión posterior, no borra el hecho de que el parte se hizo con el documento vencido.
  */
 export function amparaLaFecha(d: Documento, fecha: FechaCivil): boolean {
-  const desde = d.emitido ?? fechaEnArgentina(d.cargado);
-  return d.vence >= fecha && desde <= fecha;
+  return d.vence >= fecha && inicioDeDocumento(d) <= fecha;
+}
+
+/** M1: desde cuándo vale un documento: su emisión o, si no se cargó, el día (en Argentina) en que se cargó. */
+export function inicioDeDocumento(d: Documento): FechaCivil {
+  return d.emitido ?? fechaEnArgentina(d.cargado);
+}
+
+/** L5: cómo está la licencia de un conductor para la fecha de un parte. Con `vigente: false` dice por qué (el texto del bloqueo). */
+export type EstadoLicencia =
+  | { vigente: true; vence: FechaCivil }
+  | { vigente: false; motivo: "faltante" }
+  | { vigente: false; motivo: "vencida"; vence: FechaCivil }
+  | { vigente: false; motivo: "posterior"; desde: FechaCivil };
+
+/**
+ * L1, L2, L5: la licencia del conductor a la fecha `fecha`. Se miran todas sus licencias (no solo la de vencimiento más tardío) con el criterio de
+ * `amparaLaFecha`. Vigente si alguna ampara la fecha (`vence` = la más tardía de esas). Si no: sin licencias, `faltante`; alguna que vence en la fecha o
+ * después pero empieza a valer más tarde, `posterior` (`desde` = el menor de esos inicios); si no, `vencida` (`vence` = la más tardía de todas).
+ * Invariante: `vigente` es lo mismo que `hayDocumentoQueAmpare(documentos, conductor, 'licencia', fecha)`.
+ */
+export function estadoDeLicencia(documentos: readonly Documento[], conductorId: string, fecha: FechaCivil): EstadoLicencia {
+  const licencias = documentos.filter((d) => d.tipo === "licencia" && d.titular.tipo === "conductor" && d.titular.id === conductorId);
+  if (licencias.length === 0) return { vigente: false, motivo: "faltante" };
+  const masTardia = (lista: readonly Documento[]): FechaCivil => lista.reduce((v, d) => (d.vence > v ? d.vence : v), lista[0]?.vence ?? "");
+
+  const amparan = licencias.filter((d) => amparaLaFecha(d, fecha));
+  if (amparan.length > 0) return { vigente: true, vence: masTardia(amparan) };
+
+  const posteriores = licencias.filter((d) => d.vence >= fecha);
+  if (posteriores.length > 0) {
+    const desde = posteriores.reduce((m, d) => (inicioDeDocumento(d) < m ? inicioDeDocumento(d) : m), inicioDeDocumento(posteriores[0] as Documento));
+    return { vigente: false, motivo: "posterior", desde };
+  }
+  return { vigente: false, motivo: "vencida", vence: masTardia(licencias) };
 }
 
 /** M1: hay algún documento del titular y el tipo que ampare la fecha (se miran todos, no solo el vigente de hoy). */
