@@ -211,7 +211,7 @@
             </td>
             <td {...CELDA} data-col="estado">
               <span class="apilado">
-                <Etiqueta tono={aspecto.tono} icono={aspecto.icono}>{f.estado.etiqueta}</Etiqueta>
+                <Etiqueta tono={aspecto.tono} icono={aspecto.icono} variante={f.estado.categoria === "puede-salir" ? "texto" : "relleno"}>{f.estado.etiqueta}</Etiqueta>
                 {#if f.estado.motivo !== null}
                   <span class="nota">{f.estado.motivo}{#if f.estado.motivosMas !== null}{" "}{f.estado.motivosMas}{/if}</span>
                 {/if}

@@ -8,15 +8,18 @@
   let {
     tono,
     icono,
+    variante = "relleno",
     children,
   }: {
     tono: Tono;
     icono: NombreIcono;
+    /** «texto» (D1, solo «Puede salir»): sin fondo ni borde, mismas medidas e ícono; el texto y el ícono van en el color del tono. */
+    variante?: "relleno" | "texto";
     children: Snippet;
   } = $props();
 </script>
 
-<span class="etiqueta" data-tono={tono}><Icono nombre={icono} />{@render children()}</span>
+<span class="etiqueta" class:texto={variante === "texto"} data-tono={tono}><Icono nombre={icono} />{@render children()}</span>
 
 <style>
   .etiqueta {
@@ -37,5 +40,9 @@
     vertical-align: middle;
     /* Un solo renglón: las columnas se dimensionan para que la etiqueta entre entera. */
     white-space: nowrap;
+  }
+  /* Variante texto (5.7, D1): el borde sigue ahí (transparente) para que el ícono quede en la misma columna que el de las etiquetas con fondo. */
+  .texto {
+    background: transparent;
   }
 </style>

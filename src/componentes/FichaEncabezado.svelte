@@ -63,7 +63,7 @@
   <div class="titular">
     <h1 tabindex="-1"><Patente patente={ficha.patente} tamano="grande" /></h1>
     <div class="aptitud">
-      <Etiqueta tono={aspecto.tono} icono={aspecto.icono}>{ficha.aptitud.etiqueta}</Etiqueta>
+      <Etiqueta tono={aspecto.tono} icono={aspecto.icono} variante={ficha.aptitud.categoria === "puede-salir" ? "texto" : "relleno"}>{ficha.aptitud.etiqueta}</Etiqueta>
       {#if ficha.aptitud.linea !== null}<span class="linea-aptitud">{ficha.aptitud.linea}</span>{/if}
     </div>
   </div>
