@@ -47,7 +47,8 @@
   }
   .opciones {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* Dos columnas en el teléfono; con el texto agrandado (el rem crece) pasa a una sola en lugar de ensanchar la página. */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
     gap: var(--e-2);
   }
   .opcion {

@@ -38,8 +38,8 @@
     font-weight: 600;
     line-height: 1.2;
     vertical-align: middle;
-    /* Un solo renglón: las columnas se dimensionan para que la etiqueta entre entera. */
-    white-space: nowrap;
+    /* Las columnas se dimensionan para que la etiqueta entre en un renglón; con el texto agrandado (1.4.4) baja de renglón en lugar de empujar la página. */
+    max-width: 100%;
   }
   /* Variante texto (5.7, D1): el borde sigue ahí (transparente) para que el ícono quede en la misma columna que el de las etiquetas con fondo. */
   .texto {

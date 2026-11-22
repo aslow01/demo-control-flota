@@ -78,8 +78,11 @@
     line-height: var(--alto-tactil);
     color: var(--c-texto-2);
   }
+  /* Texto agrandado (1.4.4): si los dos segmentos no entran juntos, el segundo baja en lugar de ensanchar la página. */
   .segmentos {
     display: flex;
+    flex-wrap: wrap;
+    max-width: 100%;
   }
 
   .segmento {
@@ -87,7 +90,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 6.5rem;
+    min-width: min(6.5rem, 100%);
     min-height: var(--alto-tactil);
     padding: 0 var(--e-4);
     background: var(--c-superficie);

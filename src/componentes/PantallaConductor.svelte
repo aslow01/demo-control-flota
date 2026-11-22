@@ -381,6 +381,17 @@
       text-align: left;
     }
   }
+  /* Desvío de la especificación: al 200 % con 360 px la lista mide unos 9 rem y la fecha más la patente (que no se parte) no entran juntas: tres renglones en vez de dos. */
+  @container partes (max-width: 12rem) {
+    .fila-parte {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "fecha"
+        "patente"
+        "recorrido";
+      justify-items: start;
+    }
+  }
   @media (hover: hover) {
     .fila-parte:hover .fecha {
       text-decoration-thickness: 2px;

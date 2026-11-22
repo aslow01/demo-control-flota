@@ -411,12 +411,29 @@
       align-items: center;
       column-gap: var(--e-2);
     }
-    [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte) {
-      white-space: nowrap;
+    /* `nowrap` solo mientras la tarjeta es ancha en `rem` (texto normal): con el texto agrandado la tarjeta mide pocos rem y el renglón puede partirse en lugar de ensanchar la página. */
+    @container lista (min-width: 17rem) {
+      [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte) {
+        white-space: nowrap;
+      }
     }
     [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte)::before {
       content: "· último parte ";
       content: "· último parte " / "";
+    }
+    /* Texto agrandado (la tarjeta mide pocos rem): el kilometraje y el último parte, uno debajo del otro. */
+    @container lista (max-width: 17rem) {
+      [data-variante="flota"] .fila {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+          "unidad"
+          "estado"
+          "proximo"
+          "km"
+          "parte"
+          "novedades"
+          "proyecto";
+      }
     }
     /* Con el próximo vencimiento crítico, la tarjeta no lo repite: ya lo dice «No puede salir · Seguro vencido hace 1 día». */
     [data-variante="flota"] .fila :global(td[data-col="proximo"][data-critico]) {

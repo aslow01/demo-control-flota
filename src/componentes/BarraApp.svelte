@@ -92,6 +92,10 @@
   nav li {
     display: flex;
   }
+  /* Texto agrandado (1.4.4): si las pestañas no entran en una fila, la última baja en lugar de ensanchar la página. */
+  nav ul {
+    flex-wrap: wrap;
+  }
   .pestana {
     display: inline-flex;
     align-items: center;
