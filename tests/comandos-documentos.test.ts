@@ -219,7 +219,11 @@ describe("corregirDocumento", () => {
     const r = ejecutarOk(e, { tipo: "renovarDocumento", documentoId: "u1-seguro", numero: "N2", emisor: "", vence: "2028-06-30", emitido: null }).estado;
     const renovado = r.documentos.find((d) => d.reemplazaA === "u1-seguro")!;
     // la renovación no puede pasar a vencer antes que el original
-    expect(ejecutarError(r, { tipo: "corregirDocumento", documentoId: renovado.id, vence: "2027-06-30" }).codigo).toBe("renovacion-no-posterior");
+    const alReves = ejecutarError(r, { tipo: "corregirDocumento", documentoId: renovado.id, vence: "2027-06-30" });
+    expect(alReves.codigo).toBe("renovacion-no-posterior");
+    // QA B6: corregir no renueva nada; el mensaje dice lo que la regla controla
+    expect(alReves.mensaje).toBe("El vencimiento tiene que ser posterior al del documento anterior (30/06/2027).");
+    expect(alReves.campo).toBe("vence");
     // y el original no puede pasar a vencer después que su renovación
     expect(ejecutarError(r, { tipo: "corregirDocumento", documentoId: "u1-seguro", vence: "2028-06-30" }).codigo).toBe("vence-posterior-a-renovacion");
     expect(ejecutarOk(r, { tipo: "corregirDocumento", documentoId: "u1-seguro", vence: "2028-06-29" }).estado.documentos.length).toBe(r.documentos.length);

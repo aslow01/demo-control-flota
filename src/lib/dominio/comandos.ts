@@ -21,7 +21,7 @@ import {
 } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
 import { limpiarTexto, normalizarTexto } from "./texto.ts";
-import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errKmCorreccionParteEnUso, errLicenciaNoVigente, errConductorConParteSinCerrar, errNovedadesCriticasAbiertas, errParteAnteriorSinCerrar, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadConParteEnUso, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
+import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errKmCorreccionParteEnUso, errLicenciaNoVigente, errConductorConParteSinCerrar, errNovedadesCriticasAbiertas, errParteAnteriorSinCerrar, errParteDuplicado, errRenovacionNoPosterior, errVenceNoPosteriorAlAnterior, errTipoDeDocumentoNoCorresponde, errUnidadConParteEnUso, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
 import {
   fallo,
   ok,
@@ -725,7 +725,7 @@ function corregirDocumento(
     // V9 y V10: corregir no puede dar vuelta el orden entre un documento y su renovación.
     const anterior = actual.reemplazaA === null ? undefined : estado.documentos.find((d) => d.id === actual.reemplazaA);
     if (anterior !== undefined && diasEntre(anterior.vence, vence) <= 0) {
-      return fallo("renovacion-no-posterior", errRenovacionNoPosterior(anterior.vence), { campo: "vence" });
+      return fallo("renovacion-no-posterior", errVenceNoPosteriorAlAnterior(anterior.vence), { campo: "vence" });
     }
     const renovacion = estado.documentos.find((d) => d.reemplazaA === actual.id);
     if (renovacion !== undefined && diasEntre(vence, renovacion.vence) <= 0) {
@@ -1101,7 +1101,7 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
     const suyo = parteEnUsoDelConductor(estado, conductor.valor.id, u.id);
     const suUnidad = suyo === undefined ? undefined : estado.unidades.find((x) => x.id === suyo.unidadId);
     if (suyo !== undefined && suUnidad !== undefined) {
-      return fallo("parte-anterior-sin-cerrar", errConductorConParteSinCerrar(conductor.valor.nombre, pat(suUnidad), suyo.fecha), {
+      return fallo("parte-anterior-sin-cerrar", errConductorConParteSinCerrar(conductor.valor.nombre, pat(suUnidad), suyo.fecha, ctx.hoy), {
         campo: "conductorId",
         detalle: { parteId: suyo.id, fecha: suyo.fecha, unidadId: suyo.unidadId },
       });

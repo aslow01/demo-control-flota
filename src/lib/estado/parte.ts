@@ -273,7 +273,7 @@ export function inicioDelConductor(
     } else if (sinCerrar !== undefined && unidadSinCerrar !== undefined) {
       hoyEstado = {
         tipo: "cierre-pendiente",
-        renglon1: textoParteSinCerrarDeLaUnidad(formatearPatente(unidadSinCerrar.patente), sinCerrar.fecha),
+        renglon1: textoParteSinCerrarDeLaUnidad(formatearPatente(unidadSinCerrar.patente), sinCerrar.fecha, hoy),
         renglon2: TEXTO_CERRAR_ANTES.inicioRenglon2,
         primario: { texto: TEXTO_CERRAR_ANTES.primario, href: hrefDelParte(unidadSinCerrar, sinCerrar.fecha) },
         borrador: delDia === undefined ? null : { texto: TI.revisionConservada, descartar: { texto: TI.descartar, parteId: delDia.id } },
@@ -790,7 +790,7 @@ export function vistaDeParte(estado: Estado, hoy: FechaCivil, perfil: Perfil, pa
     partePendienteDeCierre(legibles.partes, unidad.id, fecha) ?? (perfil.tipo === "conductor" ? parteEnUsoDelConductor(legibles, perfil.conductorId, unidad.id) : undefined);
   const deLaUnidad = sinCerrar === undefined ? undefined : estado.unidades.find((u) => u.id === sinCerrar.unidadId);
   if (sinCerrar !== undefined && deLaUnidad !== undefined) {
-    const renglon1 = textoParteSinCerrarDeLaUnidad(formatearPatente(deLaUnidad.patente), sinCerrar.fecha);
+    const renglon1 = textoParteSinCerrarDeLaUnidad(formatearPatente(deLaUnidad.patente), sinCerrar.fecha, hoy);
     const renglon2 = textoCerrarAntesDeLaRevision(fecha);
     const primario = { texto: TEXTO_CERRAR_ANTES.primario, href: hrefDelParte(deLaUnidad, sinCerrar.fecha) };
     return { ...noDisponible(`${renglon1} ${renglon2}`, existente === undefined ? null : TEXTO_CERRAR_ANTES.borradorEnPantalla(fecha)), cerrarAntes: { renglon1, renglon2, primario } };

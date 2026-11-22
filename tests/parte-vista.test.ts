@@ -452,6 +452,21 @@ describe("cerrar antes (A1, P20): un parte anterior en uso bloquea el de hoy", (
     expect(vistaDeParte(conUsoDeAyer(), H, ENC, "ZK214BD", "2026-11-16").tipo).toBe("edicion");
   });
 
+  it("QA B1 (P20): si el parte en uso de la otra unidad es de hoy, el aviso dice que está en uso y no que «quedó sin cerrar»", () => {
+    const { estado } = enUso(flotaDePrueba());
+    expect(inicio(estado, COND, "u2")?.hoyEstado).toMatchObject({
+      tipo: "cierre-pendiente",
+      renglon1: "ZK 214 BD: el parte de hoy está en uso.",
+      renglon2: "Ciérrelo primero; después podrá empezar la revisión de hoy.",
+      primario: { texto: "Cerrar el parte anterior", href: "#/parte/ZK214BD/2026-11-18" },
+    });
+    expect(vistaDeParte(estado, H, COND, "ZKB482", H)).toMatchObject({
+      tipo: "no-disponible",
+      mensaje: "ZK 214 BD: el parte de hoy está en uso. Ciérrelo primero; después se puede empezar la revisión del 18/11/2026.",
+      cerrarAntes: { renglon1: "ZK 214 BD: el parte de hoy está en uso." },
+    });
+  });
+
   it("pantalla del parte (P20): el conductor con un parte en uso en otra unidad no puede cargar la revisión de esta, y el aviso lleva a ese cierre", () => {
     const e = conUsoDeAyer();
     expect(vistaDeParte(e, H, COND, "ZKB482", H)).toMatchObject({

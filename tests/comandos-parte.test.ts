@@ -490,7 +490,10 @@ describe("enviarRevision: el mismo conductor con un parte en uso en otra unidad 
 
   it("P20: también si el otro parte en uso es de hoy", () => {
     const { estado, parteId } = conBorrador(conLuisEnLaOtra(H), listo());
-    expect(ejecutarError(estado, revision(parteId)).codigo).toBe("parte-anterior-sin-cerrar");
+    const err = ejecutarError(estado, revision(parteId));
+    expect(err.codigo).toBe("parte-anterior-sin-cerrar");
+    // QA B1: el parte de hoy no «quedó sin cerrar»: está en uso
+    expect(err.mensaje).toBe("Luis Ferreyra tiene en uso el parte de hoy de ZKB 482. Ciérrelo primero; después se puede enviar esta revisión.");
   });
 
   it("P20: otro conductor en la otra unidad no bloquea; cerrado el parte, se envía; una unidad de baja no deja al conductor trabado", () => {

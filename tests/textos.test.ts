@@ -18,6 +18,9 @@ import {
   errParteDuplicado,
   errUnidadFueraDeServicio,
   MOTIVO_NOVEDAD_CRITICA,
+  errConductorConParteSinCerrar,
+  errParteAnteriorSinCerrar,
+  textoParteSinCerrarDeLaUnidad,
   formatearKm,
   pluralizar,
   textoAdvertencia,
@@ -215,6 +218,25 @@ describe("advertencias antes de enviar (K6, K7, P9)", () => {
     expect(tonoDeAdvertencia({ tipo: "documentacion-vencida", documentos: ["seguro"] })).toBe("critico");
     expect(tonoDeAdvertencia({ tipo: "salto-km", km: 1 })).toBe("semana");
     expect(tonoDeAdvertencia({ tipo: "recorrido-largo", km: 1 })).toBe("semana");
+  });
+});
+
+describe("«Cerrar antes» y P20: un parte de hoy está en uso, no «quedó sin cerrar» (QA B1 de la etapa 7)", () => {
+  it("el parte de otro día sigue diciendo que quedó sin cerrar, con el día de la semana", () => {
+    expect(textoParteSinCerrarDeLaUnidad("ZI 442 TU", "2026-11-21", "2026-11-22")).toBe("ZI 442 TU: el parte del sábado 21/11/2026 quedó sin cerrar.");
+    expect(errParteAnteriorSinCerrar("ZI 442 TU", "2026-11-21", "2026-11-22")).toBe(
+      "ZI 442 TU: el parte del sábado 21/11/2026 quedó sin cerrar. Ciérrelo primero; después se puede empezar la revisión del 22/11/2026.",
+    );
+    expect(errConductorConParteSinCerrar("Luis Ferreyra", "ZKB 482", "2026-11-17", "2026-11-18")).toBe(
+      "Luis Ferreyra tiene sin cerrar el parte del martes 17/11/2026 de ZKB 482. Ciérrelo primero; después se puede enviar esta revisión.",
+    );
+  });
+
+  it("el parte de hoy está en uso", () => {
+    expect(textoParteSinCerrarDeLaUnidad("ZI 442 TU", "2026-11-22", "2026-11-22")).toBe("ZI 442 TU: el parte de hoy está en uso.");
+    expect(errConductorConParteSinCerrar("Luis Ferreyra", "ZKB 482", "2026-11-18", "2026-11-18")).toBe(
+      "Luis Ferreyra tiene en uso el parte de hoy de ZKB 482. Ciérrelo primero; después se puede enviar esta revisión.",
+    );
   });
 });
 

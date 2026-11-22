@@ -229,6 +229,11 @@ export function errRenovacionNoPosterior(vigenteVence: FechaCivil): string {
   return `La renovación tiene que vencer después del ${formatearFecha(vigenteVence)}.`;
 }
 
+/** Corregir el vencimiento de un documento que reemplazó a otro (V9, V10): tiene que seguir siendo posterior al del anterior. No habla de «renovación»: se está corrigiendo, no renovando. */
+export function errVenceNoPosteriorAlAnterior(anteriorVence: FechaCivil): string {
+  return `El vencimiento tiene que ser posterior al del documento anterior (${formatearFecha(anteriorVence)}).`;
+}
+
 export function errVenceAntesQueSuRenovacion(venceRenovacion: FechaCivil): string {
   return `El vencimiento tiene que ser anterior al de su renovación (${formatearFecha(venceRenovacion)}).`;
 }
@@ -268,8 +273,12 @@ export function errKmCorreccionAnterior(registro: "parte" | "correccion", fecha:
   return `Ya hay ${que}, posterior a la fecha elegida: la corrección no cambiaría el kilometraje actual. Use la fecha ${cual} o una posterior.`;
 }
 
-/** «ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar.» Renglón 1 del aviso «Cerrar antes» (inicio y pantalla E) y del error de A1. */
-export function textoParteSinCerrarDeLaUnidad(patente: string, fecha: FechaCivil): string {
+/**
+ * «ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar.» Renglón 1 del aviso «Cerrar antes» (inicio y pantalla E) y del error de A1. Un parte de hoy (P20: el conductor lo
+ * tiene en otra unidad) no «quedó» sin cerrar, sigue en curso: «ZK 214 BD: el parte de hoy está en uso.». `hoy` es `null` si no se sabe (el parte de A1 es siempre anterior a la revisión).
+ */
+export function textoParteSinCerrarDeLaUnidad(patente: string, fecha: FechaCivil, hoy: FechaCivil | null): string {
+  if (fecha === hoy) return `${patente}: el parte de hoy está en uso.`;
   return `${patente}: el parte del ${diaDeLaSemana(fecha)} ${formatearFecha(fecha)} quedó sin cerrar.`;
 }
 
@@ -280,12 +289,13 @@ export function textoCerrarAntesDeLaRevision(fechaDeLaRevision: FechaCivil): str
 
 /** A1: la unidad tiene un parte en uso de una fecha anterior: hay que cerrarlo antes de empezar la revisión de una fecha posterior. */
 export function errParteAnteriorSinCerrar(patente: string, fecha: FechaCivil, fechaDeLaRevision: FechaCivil): string {
-  return `${textoParteSinCerrarDeLaUnidad(patente, fecha)} ${textoCerrarAntesDeLaRevision(fechaDeLaRevision)}`;
+  return `${textoParteSinCerrarDeLaUnidad(patente, fecha, null)} ${textoCerrarAntesDeLaRevision(fechaDeLaRevision)}`;
 }
 
-/** P20: el conductor tiene un parte en uso en otra unidad: hay que cerrarlo antes de enviar esta revisión. */
-export function errConductorConParteSinCerrar(nombre: string, patente: string, fecha: FechaCivil): string {
-  return `${nombre} tiene sin cerrar el parte del ${diaDeLaSemana(fecha)} ${formatearFecha(fecha)} de ${patente}. Ciérrelo primero; después se puede enviar esta revisión.`;
+/** P20: el conductor tiene un parte en uso en otra unidad: hay que cerrarlo antes de enviar esta revisión. Si el parte es de hoy, «tiene en uso el parte de hoy» (no «sin cerrar»). */
+export function errConductorConParteSinCerrar(nombre: string, patente: string, fecha: FechaCivil, hoy: FechaCivil): string {
+  const parte = fecha === hoy ? `tiene en uso el parte de hoy de ${patente}` : `tiene sin cerrar el parte del ${diaDeLaSemana(fecha)} ${formatearFecha(fecha)} de ${patente}`;
+  return `${nombre} ${parte}. Ciérrelo primero; después se puede enviar esta revisión.`;
 }
 
 /** M1 (revisión de código): no se corrige el kilometraje desde la fecha de un parte en uso; su cierre quedaría imposible. */
