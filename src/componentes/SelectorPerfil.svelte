@@ -4,7 +4,7 @@
   // golpe (WCAG 3.2.2). Con botones se cambia activando (Enter, Espacio o toque), y la leyenda se describe con un aviso previo.
   // Es solo un punto de vista de la demo (no hay usuarios ni contraseñas).
   // El componente no decide nada: avisa lo que se eligió y refleja el perfil que recibe (sin parpadeos: no hay estado propio).
-  // Con conductor elegido, a continuación del selector va "{nombre} (ficticia)" y el botón-texto "Cambiar" (con poco ancho, en su propio renglón debajo). Van separados
+  // Con conductor elegido, a continuación del selector va "{nombre} (persona ficticia)" y el botón-texto "Cambiar" (con poco ancho, en su propio renglón debajo). Van separados
   // por un espacio (`gap`) y no por un "·" en el texto: un separador de texto queda colgando al final del renglón cuando la línea se parte.
   import Boton from "./Boton.svelte";
   import { TEXTO_MARCO } from "./textos-marco.ts";

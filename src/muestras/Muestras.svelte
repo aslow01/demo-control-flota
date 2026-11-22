@@ -400,7 +400,7 @@
       <Campo etiqueta="Kilometraje (campo del parte, 48 px)" tipo="km" grande bind:valor={grande} />
       <dl class="solo-lectura">
         <Dato etiqueta="Unidad" valor="Toyota Hilux 2022 · Camioneta" />
-        <Dato etiqueta="Conductor">Lucía Ferreyra (ficticia)</Dato>
+        <Dato etiqueta="Conductor">Lucía Ferreyra (persona ficticia)</Dato>
         <Dato etiqueta="Estado"><Etiqueta tono="vigente" icono="check">Enviado</Etiqueta></Dato>
       </dl>
     </div>

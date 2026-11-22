@@ -23,8 +23,8 @@ export const TEXTO_MARCO = {
   verComo: "Ver como",
   perfilEncargado: "Encargado",
   perfilConductor: "Conductor",
-  /** Junto al selector: «Tamara Olivera (ficticia)»; el lector de pantalla antepone «Conductor: ». */
-  conductorElegido: (nombre: string) => `${nombre} (ficticia)`,
+  /** Junto al selector: «Tamara Olivera (persona ficticia)» (D2); el lector de pantalla antepone «Conductor: ». */
+  conductorElegido: (nombre: string) => `${nombre} (persona ficticia)`,
   /** Aviso previo (descripción del grupo "Ver como"): elegir Conductor abre un diálogo (WCAG 3.2.2). */
   ayudaPerfilConductor: "Al elegir «Conductor» se abre una lista para elegir quién completa el parte.",
   /** Nombre accesible del botón «Cambiar» (el texto visible es más corto). */
@@ -93,7 +93,7 @@ export const TEXTO_COMO_FUNCIONA = {
   ],
   tituloParte: "El parte diario",
   parte:
-    "Está pensado para usarse desde el celular y tiene dos pasos. Antes de salir, el conductor carga el kilometraje y completa 10 puntos de revisión de la unidad. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio en ese momento, y la unidad no sale hasta que el encargado resuelva la novedad. Al terminar la jornada, cierra el parte con el kilometraje final y el combustible. Sin licencia de conducir vigente no puede enviar la revisión.",
+    "Está pensado para usarse desde el celular y tiene dos pasos. Antes de salir, el conductor carga el kilometraje y controla 10 puntos de revisión de la unidad. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio en ese momento, y la unidad no sale hasta que el encargado resuelva la novedad. Al terminar la jornada, cierra el parte con el kilometraje final y el combustible. Sin licencia de conducir vigente no puede enviar la revisión.",
   tituloDatos: "Dónde se guardan los datos",
   datos:
     "Los datos que usted carga quedan solo en este navegador y no se envían a ningún servidor. «Reiniciar demo» borra esos cambios y vuelve a la flota de ejemplo con las fechas de hoy.",
@@ -126,8 +126,8 @@ export const TEXTO_ALERTAS = {
   /** Texto oculto de las celdas que muestran «—» (un lector de pantalla diría «raya» o nada). */
   sinFecha: "Sin fecha",
   sinProyecto: "Sin proyecto",
-  /** L6: «Luis Ferreyra (ficticia)» en la fila de un conductor sin licencia vigente, y el rótulo de su unidad. */
-  conductorFicticio: (nombre: string) => `${nombre} (ficticia)`,
+  /** L6: «Luis Ferreyra (persona ficticia)» en la fila de un conductor sin licencia vigente (D2), y el rótulo de su unidad. */
+  conductorFicticio: (nombre: string) => `${nombre} (persona ficticia)`,
   unidadDelConductor: "Unidad",
   /** Lo que se dice cuando la fila que se quiso abrir ya no está pendiente (se renovó o se cargó mientras tanto). */
   yaNoPendiente: "Ese documento ya no está pendiente. La lista está al día.",
@@ -168,6 +168,8 @@ export const TEXTO_FLOTA_VISTA = {
     estado: "Estado hoy",
     proximo: "Próximo vencimiento",
     km: "Kilometraje",
+    /** Lo que se ve en la cabecera de la tabla completa (5.10): «Km»; el nombre completo queda para los lectores y para el rótulo de la tarjeta. */
+    kmCorto: "Km",
     parte: "Último parte",
     novedades: "Novedades",
     proyecto: "Proyecto y conductor",
@@ -240,7 +242,7 @@ export const TEXTO_FICHA_VISTA = {
     litros: "Litros",
     novedades: "Novedades",
     critica: "crítica",
-    fueraDeTermino: "Enviado fuera de término.",
+    fueraDePlazo: "Enviado fuera de plazo.",
     campo: "Campo",
     /** Nombre accesible de «Ver el parte completo» (hay uno por parte enviado): el texto visible, y cuándo se envió. `instante` es `dd/mm/aaaa hh:mm`. */
     verParteEnviado: (visible: string, instante: string) => {
@@ -305,6 +307,8 @@ export const TEXTO_CONDUCTOR_VISTA = {
   sinUnidad: "No tiene una unidad asignada. Elija la que va a usar hoy.",
   /** Primera opción del `select` cuando la unidad de hoy no se puede usar (fuera de servicio). */
   elegirOtra: "Elija otra unidad",
+  /** Primera opción del `select` cuando todavía no hay unidad (estado 1); «Elija otra unidad» queda para «Usar otra unidad» y la unidad fuera de servicio (C14). */
+  elegirUna: "Elija una unidad",
   /** Se anuncia en la barra de estado del panel «Hoy» al elegir una unidad con «Usar otra unidad» (el panel cambia de unidad y de destino sin otro aviso). */
   unidadElegida: (patente: string, interno: string) => `Unidad elegida: ${patente} (${interno}).`,
   confirmarDescartar: "Confirmar descarte",
@@ -346,10 +350,10 @@ export const TEXTO_PARTE_VISTA = {
   /** Diálogo «Antes de enviar» (K6, K7, P9): lo que explica cada aviso viene de `textoAdvertencia` (dominio). */
   antesDeEnviar: {
     titulo: "Antes de enviar",
-    introRevision: "La revisión está completa, pero hay avisos que conviene leer antes de enviarla.",
-    introCierre: "El parte está completo, pero hay avisos que conviene leer antes de cerrarlo.",
-    enviarIgual: "Enviar igual",
-    cerrarIgual: "Cerrar igual",
+    introRevision: "Antes de enviar la revisión, lea esto.",
+    introCierre: "Antes de cerrar el parte, lea esto.",
+    enviarDeTodosModos: "Enviar de todos modos",
+    cerrarDeTodosModos: "Cerrar de todos modos",
     volver: "Volver al parte",
   },
   enviado: { avisosAceptados: "Avisos aceptados" },

@@ -1,7 +1,7 @@
 <script lang="ts">
   // 4.2 Barra de la aplicación (fondo de superficie, borde inferior, 52 px): navegación por pestañas-enlace a la izquierda y
   // selector de perfil a la derecha (a menos de 40 rem, en una fila propia debajo de la navegación: así el orden visual es el del foco).
-  // Con perfil Conductor el selector lleva además «{nombre} (ficticia) · Cambiar» a su lado: hasta 48 rem la fila del selector también va debajo, para que la barra
+  // Con perfil Conductor el selector lleva además «{nombre} (persona ficticia) · Cambiar» a su lado: hasta 48 rem la fila del selector también va debajo, para que la barra
   // de una sola fila (52 px) solo exista cuando todo entra.
   //  - Encargado: "Alertas" (con insignia de alertas críticas) · "Flota".  Conductor: "Parte diario".
   //  - Pestaña activa: aria-current="page" (la sección que contiene la pantalla actual lleva aria-current="true").

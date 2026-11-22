@@ -1,7 +1,7 @@
 <script lang="ts">
   // Diálogo «Antes de enviar» (5.17): el paso está completo pero hay avisos que conviene leer antes de seguir. En la revisión (`paso="revision"`) son K6 y P9 (solo documentos de la
   // unidad); en el cierre (`paso="cierre"`), K7. Nunca hay una advertencia por la licencia: la licencia bloquea (L1). Cada aviso va con su ícono y su tono (crítico para la
-  // documentación vencida, semana para los kilómetros inusuales). «Enviar igual» (revisión) o «Cerrar igual» (cierre) acepta esos avisos; «Volver al parte» cierra el diálogo y devuelve
+  // documentación vencida, semana para los kilómetros inusuales). «Enviar de todos modos» (revisión) o «Cerrar de todos modos» (cierre) acepta esos avisos; «Volver al parte» cierra el diálogo y devuelve
   // el foco al botón de la barra de envío. No tiene reglas: la lista y los tonos los arma `app.enviarRevisionDeParte` o `app.enviarCierreDeParte`.
   //  - Foco al abrir: «Volver al parte» (el diálogo no tiene campos; enviar no es lo que se pide por defecto).
   //  - Enviando: el botón queda con aria-disabled y no repite el pedido; el texto «Enviando…» («Cerrando…» en el cierre) aparece solo si tarda más de 200 ms (5.19). No se puede cerrar mientras tanto.
@@ -47,7 +47,7 @@
   </ul>
   {#snippet pie()}
     <Boton cargando={enviando} onclick={alEnviarIgual}>
-      {#if paso === "cierre"}{mostrarEnviando ? T.cerrando : T.antesDeEnviar.cerrarIgual}{:else}{mostrarEnviando ? T.enviando : T.antesDeEnviar.enviarIgual}{/if}
+      {#if paso === "cierre"}{mostrarEnviando ? T.cerrando : T.antesDeEnviar.cerrarDeTodosModos}{:else}{mostrarEnviando ? T.enviando : T.antesDeEnviar.enviarDeTodosModos}{/if}
     </Boton>
   {/snippet}
 </Dialogo>
