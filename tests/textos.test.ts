@@ -325,6 +325,6 @@ describe("revisión de textos del 18/11/2026 (redactor-ux)", () => {
   });
 
   it("ningún error de ERRORES usa voseo", () => {
-    for (const [clave, texto] of Object.entries(ERRORES)) expect(texto, clave).not.toMatch(/vos|podés|sos|hacé|tenés|cambiá|elegí/i);
+    for (const [clave, texto] of Object.entries(ERRORES)) expect(texto, clave).not.toMatch(/(?<!\p{L})(?:vos|podés|sos|hacé|tenés|cambiá|elegí)(?!\p{L})/iu);
   });
 });
