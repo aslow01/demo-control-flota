@@ -20,7 +20,8 @@ import {
   formatearKm,
   pluralizar,
   textoAdvertencia,
-  textoAdvertenciaAceptada,
+  renglonesDeAvisoAceptado,
+  tonoDeAdvertencia,
   textoOpcionDeConductor,
   textoDisponibles,
   textoEmpresa,
@@ -186,18 +187,33 @@ describe("advertencias antes de enviar (K6, K7, P9)", () => {
     );
   });
 
-  it("registro de una revisión enviada (C6): en pasado, un renglón por documento y la cola «Se envió de todos modos»; los otros avisos no cambian", () => {
-    expect(textoAdvertenciaAceptada({ tipo: "documentacion-vencida", documentos: ["seguro"] }, CTX)).toBe(
-      "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado.",
-    );
-    expect(textoAdvertenciaAceptada({ tipo: "documentacion-vencida", documentos: ["revision-tecnica", "matafuego"] }, CTX)).toBe(
-      "La revisión técnica de ZK 214 BD venció el 01/11/2026. Faltaba cargar la carga del matafuego de ZK 214 BD. Se envió de todos modos: quedó registrado.",
-    );
-    expect(textoAdvertenciaAceptada({ tipo: "documentacion-vencida", documentos: ["seguro", "licencia"] })).toBe(
-      "Seguro, Licencia de conducir: vencidos o sin cargar. Se envió de todos modos: quedó registrado.",
-    );
-    expect(textoAdvertenciaAceptada({ tipo: "recorrido-largo", km: 1350 })).toBe(textoAdvertencia({ tipo: "recorrido-largo", km: 1350 }));
-    expect(textoAdvertenciaAceptada({ tipo: "salto-km", km: 1180 })).toBe(textoAdvertencia({ tipo: "salto-km", km: 1180 }));
+  it("registro de una revisión enviada (M2): un renglón por documento, cada uno con su tono, y la cola «Se envió de todos modos» una sola vez, en el último", () => {
+    expect(renglonesDeAvisoAceptado({ tipo: "documentacion-vencida", documentos: ["seguro"] }, CTX)).toEqual([
+      { tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." },
+    ]);
+    expect(renglonesDeAvisoAceptado({ tipo: "documentacion-vencida", documentos: ["revision-tecnica", "matafuego"] }, CTX)).toEqual([
+      { tono: "critico", texto: "La revisión técnica de ZK 214 BD venció el 01/11/2026." },
+      { tono: "critico", texto: "Faltaba cargar la carga del matafuego de ZK 214 BD. Se envió de todos modos: quedó registrado." },
+    ]);
+    const tres = renglonesDeAvisoAceptado({ tipo: "documentacion-vencida", documentos: ["seguro", "revision-tecnica", "matafuego"] }, CTX);
+    expect(tres).toHaveLength(3);
+    expect(tres.filter((r) => r.texto.includes("Se envió de todos modos"))).toHaveLength(1);
+    expect(tres.at(-1)?.texto).toMatch(/Se envió de todos modos: quedó registrado.$/);
+  });
+
+  it("registro de una revisión enviada (M2): sin datos de la unidad es un solo renglón; los avisos de kilómetros son tono semana y se leen igual que en el diálogo", () => {
+    expect(renglonesDeAvisoAceptado({ tipo: "documentacion-vencida", documentos: ["seguro", "licencia"] })).toEqual([
+      { tono: "critico", texto: "Seguro, Licencia de conducir: vencidos o sin cargar. Se envió de todos modos: quedó registrado." },
+    ]);
+    expect(renglonesDeAvisoAceptado({ tipo: "documentacion-vencida", documentos: [] }, CTX)).toEqual([{ tono: "critico", texto: "Se envió de todos modos: quedó registrado." }]);
+    expect(renglonesDeAvisoAceptado({ tipo: "recorrido-largo", km: 1350 })).toEqual([{ tono: "semana", texto: textoAdvertencia({ tipo: "recorrido-largo", km: 1350 }) }]);
+    expect(renglonesDeAvisoAceptado({ tipo: "salto-km", km: 1180 })).toEqual([{ tono: "semana", texto: textoAdvertencia({ tipo: "salto-km", km: 1180 }) }]);
+  });
+
+  it("el tono de cada advertencia: crítico la documentación vencida, semana los kilómetros (lo usan el diálogo y el registro)", () => {
+    expect(tonoDeAdvertencia({ tipo: "documentacion-vencida", documentos: ["seguro"] })).toBe("critico");
+    expect(tonoDeAdvertencia({ tipo: "salto-km", km: 1 })).toBe("semana");
+    expect(tonoDeAdvertencia({ tipo: "recorrido-largo", km: 1 })).toBe("semana");
   });
 });
 

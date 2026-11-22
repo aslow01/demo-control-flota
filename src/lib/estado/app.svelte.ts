@@ -91,6 +91,7 @@ import {
   TEXTO_ERROR_ARRANQUE,
   TEXTO_FORMULARIO_PARTE,
   textoAdvertencia,
+  tonoDeAdvertencia,
   textoAsignacionCambiada,
   textoDocumentoCargado,
   textoDocumentoCorregido,
@@ -800,7 +801,7 @@ export class EstadoApp {
     const contexto = parte === undefined || unidad === undefined || this.estado === null ? undefined : contextoDeDocumentacion(this.estado.documentos, unidad, parte.fecha);
     return {
       tipo: "advertencias",
-      advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a, contexto), tono: a.tipo === "documentacion-vencida" ? "critico" : "semana" })),
+      advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a, contexto), tono: tonoDeAdvertencia(a) })),
       aceptables: pendientes.map((a) => a.tipo),
       foco: "dialogo-antes-de-enviar",
     };

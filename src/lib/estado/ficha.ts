@@ -15,7 +15,7 @@ import { historialDeUnidad } from "../dominio/historial.ts";
 import { horizonteDeUnidad, type Horizonte } from "../dominio/horizonte.ts";
 import { kmActual, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
 import { rotuloNovedad, criticasAbiertasDeUnidad, type CriticaAbierta } from "../dominio/novedades.ts";
-import { ITEMS_CHECKLIST, novedadesDelParte, parteLegible, partePendienteDeCierre, textosDeAvisosAceptados } from "../dominio/parte.ts";
+import { ITEMS_CHECKLIST, novedadesDelParte, parteLegible, partePendienteDeCierre, renglonesDeAvisosAceptados } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import {
   NOMBRES_COMBUSTIBLE,
@@ -725,7 +725,7 @@ function detalleDeParte(estado: Estado, unidad: Unidad, datos: Record<string, un
     litros: textoLitros(parte.litrosCargados),
     novedades,
     puntosEnOrden: enOrden === 0 ? null : textoPuntosEnOrden(enOrden),
-    advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
+    advertencias: renglonesDeAvisosAceptados(parte, unidad, estado.documentos).map((r) => r.texto),
     fueraDePlazo: datos["fueraDeTermino"] === true,
     href: aHash({ tipo: "parte", patente: unidad.patente, fecha: parte.fecha }),
   };

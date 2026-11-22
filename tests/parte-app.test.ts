@@ -103,7 +103,7 @@ describe("las vistas según la ruta y el perfil", () => {
     expect(v).toMatchObject({
       unidad: { patenteTexto: "ZK 214 BD", interno: "Int. 07" },
       hoyEstado: { tipo: "sin-parte", primario: { texto: "Empezar la revisión", href: "#/parte/ZK214BD/2026-11-18" } },
-      avisoAptitud: "ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.",
+      avisoAptitud: { titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día.", accion: "Avise al encargado antes de usarla." },
     });
     expect(app.inicioDelConductor("u-01")?.unidad?.patenteTexto).toBe("ZYN 469");
   });
@@ -556,7 +556,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
 
     const e = await app.enviarRevisionDeParte(uid, H, v, r.aceptables);
     expect(e.tipo).toBe("enviado");
-    expect(e.tipo === "enviado" && e.panel.advertencias).toEqual(["1.089 km sin registrar desde el último parte"]);
+    expect(e.tipo === "enviado" && e.panel.advertencias).toEqual([{ tono: "semana", texto: "1.089 km sin registrar desde el último parte" }]);
   });
 
   it("P9: con el seguro vencido (ZK 214 BD) se pide aceptar; aceptado, el parte queda en uso con la documentación vencida y aparece la alerta «Circuló…»", async () => {
@@ -576,7 +576,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(segunda.tipo === "enviado" && segunda.panel).toMatchObject({
       variante: "revision-enviada",
       conDocumentacionVencida: true,
-      advertencias: ["El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado."],
+      advertencias: [{ tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." }],
     });
     expect(segunda.tipo === "enviado" && segunda.panel.linea).toMatch(/^ZK 214 BD: revisión enviada a las \d\d:\d\d\. Sale con documentación vencida: quedó registrado\.$/);
     expect(parteDeHoy(app, "ZK214BD")).toMatchObject({ estado: "en-uso", documentacionVencida: ["seguro"] });
@@ -840,7 +840,7 @@ describe("cerrar el parte (P3, P4, P12, P15, K2, K4, K7)", () => {
     if (r.tipo !== "advertencias") return;
     expect(r.aceptables).toEqual(["recorrido-largo"]);
     const e = await app.enviarCierreDeParte(uid, H, v, r.aceptables);
-    expect(e.tipo === "enviado" && e.panel.advertencias).toEqual(["Recorrido del día inusualmente largo: 1.201 km"]);
+    expect(e.tipo === "enviado" && e.panel.advertencias).toEqual([{ tono: "semana", texto: "Recorrido del día inusualmente largo: 1.201 km" }]);
   });
 
   it("P12: si falla la escritura del cierre no queda nada a medias: el parte sigue en uso y el mensaje lo dice", async () => {

@@ -4,7 +4,7 @@ import { diasEntre, parsearFechaCivil, parsearInstante } from "./fechas.ts";
 import { KM_MAXIMO, advertenciasDeSalida } from "./kilometraje.ts";
 import { largoEnCaracteres, normalizarTexto } from "./texto.ts";
 import { formatearPatente } from "./patente.ts";
-import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos, textoAdvertenciaAceptada, type ContextoDeDocumentacion } from "./textos.ts";
+import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos, renglonesDeAvisoAceptado, type ContextoDeDocumentacion, type RenglonDeAviso } from "./textos.ts";
 import { estadoDeLicencia, hayDocumentoQueAmpare, inicioDeDocumento, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 import {
   fallo,
@@ -225,10 +225,13 @@ export function contextoDeDocumentacion(documentos: readonly Documento[], unidad
   return { patente: formatearPatente(unidad.patente), venceron };
 }
 
-/** Los avisos que se aceptaron al enviar un parte, ya en texto (C6): los de documentación dicen cómo estaba cada documento de la unidad el día del parte. */
-export function textosDeAvisosAceptados(parte: Pick<Parte, "advertenciasAceptadas" | "fecha">, unidad: Pick<Unidad, "id" | "patente"> | undefined, documentos: readonly Documento[]): string[] {
+/**
+ * Los avisos que se aceptaron al enviar un parte, ya en renglones con su tono (C6, M2): un renglón por documento vencido y uno por cada aviso de kilómetros. Los de documentación
+ * dicen cómo estaba cada documento de la unidad el día del parte.
+ */
+export function renglonesDeAvisosAceptados(parte: Pick<Parte, "advertenciasAceptadas" | "fecha">, unidad: Pick<Unidad, "id" | "patente"> | undefined, documentos: readonly Documento[]): RenglonDeAviso[] {
   const contexto = unidad === undefined ? undefined : contextoDeDocumentacion(documentos, unidad, parte.fecha);
-  return parte.advertenciasAceptadas.map((a) => textoAdvertenciaAceptada(a, contexto));
+  return parte.advertenciasAceptadas.flatMap((a) => renglonesDeAvisoAceptado(a, contexto));
 }
 
 /** K6 y P9: lo que hay que aceptar antes de enviar la revisión. */

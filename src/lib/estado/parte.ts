@@ -11,10 +11,12 @@ import { diaDeLaSemana, diasEntre, fechaEnArgentina, formatearFecha, formatearHo
 import { opcionesDeConductor, type OpcionDeConductor } from "../dominio/formulario.ts";
 import { OPCIONES_COMBUSTIBLE, faltantesDeValores, valoresDeParte, valoresIniciales, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { describirRegistro, kmDeRegistro, registroAnterior, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
-import { ITEMS_CHECKLIST, conductorParaParte, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, textosDeAvisosAceptados, validarFechaParte } from "../dominio/parte.ts";
+import { ITEMS_CHECKLIST, conductorParaParte, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, renglonesDeAvisosAceptados, validarFechaParte } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import {
   NOMBRES_COMBUSTIBLE,
+  type AvisoDeAptitud,
+  type RenglonDeAviso,
   TEXTO_BORRADOR_CONSERVADO,
   TEXTO_CERRAR_ANTES,
   TEXTO_FORMULARIO_PARTE,
@@ -160,8 +162,11 @@ export interface InicioDelConductor {
     ultimoRegistro: string;
   } | null;
   hoyEstado: EstadoDelDia;
-  /** «ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.» Solo en los estados `borrador` y `sin-parte` (arriba del botón, que sigue disponible: P9). */
-  avisoAptitud: string | null;
+  /**
+   * «ZK 214 BD no puede salir: Seguro vencido hace 1 día.» (`titular`) y «Avise al encargado antes de usarla.» (`accion`), ya partido en dos renglones por la lógica: la vista no corta nada.
+   * Solo en los estados `borrador` y `sin-parte` (arriba del botón, que sigue disponible: P9).
+   */
+  avisoAptitud: AvisoDeAptitud | null;
   /** `modo: "otra"` = botón-texto «Usar otra unidad» que abre el `select`; `"elegir"` = el `select` «Elija la unidad» ya a la vista. Solo unidades en servicio. */
   elegirUnidad: { modo: "otra" | "elegir"; etiqueta: string; opciones: OpcionDeUnidad[] };
   /** Panel «Pendientes»: solo si hay. */
@@ -192,7 +197,7 @@ function horaDe(instante: string | null): string | null {
   return instante !== null && parsearInstante(instante) !== null ? formatearHora(instante) : null;
 }
 
-function textoDeNoPuedeSalir(estado: Estado, unidad: Unidad, hoy: FechaCivil, alConductor: boolean): string | null {
+function textoDeNoPuedeSalir(estado: Estado, unidad: Unidad, hoy: FechaCivil, alConductor: boolean): AvisoDeAptitud | null {
   const a = aptitud(unidad, estado, hoy);
   return a.categoria === "no-puede-salir" ? textoUnidadNoPuedeSalir(formatearPatente(unidad.patente), a.motivos.map((m) => m.texto), alConductor) : null;
 }
@@ -401,8 +406,11 @@ export interface PanelParteEnviado {
   filas: { rotulo: string; valor: string }[];
   /** Aviso en tono semana si hubo una novedad crítica y la unidad está fuera de servicio (A3): en C2 y, mientras siga así, en la lectura de un parte sin salida. */
   avisoCritica: string | null;
-  /** Las advertencias que se aceptaron al enviar (K6, K7, P9), ya en texto (C3 y lectura: las de la revisión y las del cierre). */
-  advertencias: string[];
+  /**
+   * Los avisos que se aceptaron al enviar (K6, K7, P9), uno por renglón y con su tono (C3 y lectura: los de la revisión y los del cierre): un renglón por documento vencido y uno por cada
+   * aviso de kilómetros. La vista elige el ícono por el `tono` y usa el índice como clave (dos renglones pueden decir lo mismo).
+   */
+  advertencias: RenglonDeAviso[];
   /**
    * C1 (S1): la revisión se envió con documentación vencida de la unidad aceptada (P9). La vista no puede decir «puede salir»: el panel va en tono semana, con `i-alerta`, y
    * `linea` ya dice «Sale con documentación vencida: quedó registrado.». Es `false` en los demás paneles.
@@ -505,7 +513,8 @@ export interface ParteEnEdicion {
   fecha: FechaCivil;
   /** «Este parte es del 17/11/2026: la revisión se va a enviar fuera de plazo.» */
   avisoFueraDePlazo: string | null;
-  avisoAptitud: string | null;
+  /** El mismo aviso de «no puede salir» del inicio (con la acción solo para el conductor). */
+  avisoAptitud: AvisoDeAptitud | null;
   /** El id del borrador guardado; `null` si todavía no se guardó nada (se crea con el primer cambio). */
   parteId: string | null;
   /** Un borrador que ya existía al abrir (por ejemplo, tras recargar): cuándo se guardó. */
@@ -631,7 +640,7 @@ export function panelDeParteEnviado(estado: Estado, entrada: Parte, perfil: Perf
     linea: textoLineaParteCerrado(patente, parte.fecha, horaDe(revision), parte.sinSalida ? null : horaDe(parte.enviado ?? (parte.actualizado === "" ? null : parte.actualizado))),
     filas,
     avisoCritica: criticas.length > 0 && unidad?.estado.tipo === "fuera-de-servicio" && parte.sinSalida ? TEXTO_PARTE.enviadoConCritica : null,
-    advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
+    advertencias: renglonesDeAvisosAceptados(parte, unidad, estado.documentos),
     conDocumentacionVencida: false,
     fueraDePlazo: diaDeRevision !== null && diasEntre(parte.fecha, diaDeRevision) > 0 ? TP.fueraDePlazo : null,
     notaEncargado: null,
@@ -660,7 +669,7 @@ export function panelDeRevisionEnviada(estado: Estado, entrada: Parte, perfil: P
       { rotulo: TP.rotulos.novedades, valor: textoNovedadesDelParte(criticas, normales) },
     ],
     avisoCritica: null,
-    advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
+    advertencias: renglonesDeAvisosAceptados(parte, unidad, estado.documentos),
     conDocumentacionVencida: parte.documentacionVencida.length > 0,
     // El texto de «fuera de plazo» ya va en la línea (C1).
     fueraDePlazo: null,
@@ -682,7 +691,7 @@ export function panelDeSinSalida(estado: Estado, entrada: Parte, perfil: Perfil)
     linea: textoLineaSinSalida(horaDe(parte.revisado), criticas),
     filas: [],
     avisoCritica: textoUnidadQuedoFueraDeServicio(patente),
-    advertencias: textosDeAvisosAceptados(parte, unidad, estado.documentos),
+    advertencias: renglonesDeAvisosAceptados(parte, unidad, estado.documentos),
     conDocumentacionVencida: false,
     fueraDePlazo: null,
     notaEncargado: null,

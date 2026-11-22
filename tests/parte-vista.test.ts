@@ -148,14 +148,14 @@ describe("inicio del conductor (6.4)", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
     const v = inicio(e);
-    expect(v?.avisoAptitud).toBe("ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla.");
+    expect(v?.avisoAptitud).toEqual({ titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día.", accion: "Avise al encargado antes de usarla." });
     expect(v?.hoyEstado).toMatchObject({ tipo: "sin-parte" });
   });
 
   it("varios motivos se separan con punto y coma", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.filter((d) => d.id !== "u1-matafuego").map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
-    expect(inicio(e)?.avisoAptitud).toBe("ZK 214 BD no puede salir: Seguro vencido hace 1 día; Falta cargar: Carga del matafuego. Avise al encargado antes de usarla.");
+    expect(inicio(e)?.avisoAptitud).toEqual({ titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día; Falta cargar: Carga del matafuego.", accion: "Avise al encargado antes de usarla." });
   });
 
   it("pendientes: un borrador de ayer sin enviar y un día sin parte, con «Continuarlo» y «Cargarlo»", () => {
@@ -598,13 +598,13 @@ describe("pantalla del parte, edición (6.5)", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
     const v = ver(e, COND);
-    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: "ZK 214 BD no puede salir: Seguro vencido hace 1 día. Avise al encargado antes de usarla." });
+    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: { titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día.", accion: "Avise al encargado antes de usarla." } });
   });
   it("el aviso de aptitud no le dice «avise al encargado» al propio encargado, y concuerda en género (QA M-2)", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.map((d) => (d.id === "u1-revision-tecnica" ? { ...d, vence: "2026-11-17" } : d));
     const v = ver(e, ENC);
-    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: "ZK 214 BD no puede salir: Revisión técnica vencida hace 1 día." });
+    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: { titular: "ZK 214 BD no puede salir: Revisión técnica vencida hace 1 día.", accion: "" } });
   });
 
   it("una patente que no existe: «No se encontró la unidad»", () => {
@@ -754,9 +754,9 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     const { estado, parte: p } = enviado(e, { kmInicio: 85500, kmFin: 86800 }, ["salto-km", "documentacion-vencida", "recorrido-largo"]);
     const panel = panelDeParteEnviado(estado, p, COND);
     expect(panel.advertencias).toEqual([
-      "1.180 km sin registrar desde el último parte",
-      "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado.",
-      "Recorrido del día inusualmente largo: 1.300 km",
+      { tono: "semana", texto: "1.180 km sin registrar desde el último parte" },
+      { tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." },
+      { tono: "semana", texto: "Recorrido del día inusualmente largo: 1.300 km" },
     ]);
     // Fuera de plazo: la revisión del parte de ayer se envió hoy.
     const tarde = { ...p, fecha: "2026-11-17", revisado: "2026-11-18T12:30:00.000Z" };
@@ -799,7 +799,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     const panel = panelDeRevisionEnviada(uso.estado, conAviso, COND, H);
     expect(panel.conDocumentacionVencida).toBe(true);
     expect(panel.linea).toBe("ZK 214 BD: revisión enviada a las 12:00. Sale con documentación vencida: quedó registrado.");
-    expect(panel.advertencias).toEqual(["El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado."]);
+    expect(panel.advertencias).toEqual([{ tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." }]);
     const tarde = { ...conAviso, fecha: "2026-11-17", revisado: "2026-11-18T08:10:00.000Z" };
     expect(panelDeRevisionEnviada(uso.estado, tarde, COND, H).linea).toBe("Revisión del 17/11/2026 enviada el 18/11/2026 a las 05:10 (fuera de plazo). Salió con documentación vencida: quedó registrado.");
     // sin documentación vencida, como siempre

@@ -14,7 +14,7 @@
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import Boton from "./Boton.svelte";
   import Campo from "./Campo.svelte";
-  import Aviso, { partirAviso } from "./Aviso.svelte";
+  import Aviso from "./Aviso.svelte";
   import EnlaceAccion from "./EnlaceAccion.svelte";
   import EtiquetaParte from "./EtiquetaParte.svelte";
   import EtiquetaDemo from "./EtiquetaDemo.svelte";
@@ -96,8 +96,7 @@
       {/if}
 
       {#if inicio.avisoAptitud !== null}
-        {@const a = partirAviso(inicio.avisoAptitud)}
-        <Aviso tono="critico" icono="vencido" accion={a.accion}>{a.titular}</Aviso>
+        <Aviso tono="critico" icono="vencido" accion={inicio.avisoAptitud.accion}>{inicio.avisoAptitud.titular}</Aviso>
       {/if}
 
       {#if inicio.hoyEstado.tipo === "sin-parte"}

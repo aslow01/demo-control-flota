@@ -429,18 +429,21 @@ function conArticulo(tipo: TipoDocumento): string {
 
 /**
  * Un renglón por documento (C6): «El seguro de ZK 214 BD venció el 17/11/2026.» o «Falta cargar el seguro de ZK 214 BD.» (en pasado, «Faltaba cargar…»). Sin datos de la
- * unidad (no debería pasar) se nombran los documentos y se dice que están vencidos o sin cargar, sin inventar fechas.
+ * unidad (no debería pasar) se nombran los documentos y se dice que están vencidos o sin cargar, sin inventar fechas: un solo renglón.
  */
-function renglonesDeDocumentacion(documentos: readonly TipoDocumento[], contexto: ContextoDeDocumentacion | undefined, enPasado: boolean): string {
-  if (contexto === undefined) return estadoDeDocumentos(documentos);
-  return documentos
-    .map((tipo) => {
-      const vencio = contexto.venceron[tipo] ?? null;
-      const que = conArticulo(tipo);
-      if (vencio !== null) return `${que.charAt(0).toUpperCase()}${que.slice(1)} de ${contexto.patente} venció el ${formatearFecha(vencio)}.`;
-      return `${enPasado ? "Faltaba" : "Falta"} cargar ${que} de ${contexto.patente}.`;
-    })
-    .join(" ");
+function renglonesDeDocumentacion(documentos: readonly TipoDocumento[], contexto: ContextoDeDocumentacion | undefined, enPasado: boolean): string[] {
+  if (contexto === undefined) return [estadoDeDocumentos(documentos)];
+  return documentos.map((tipo) => {
+    const vencio = contexto.venceron[tipo] ?? null;
+    const que = conArticulo(tipo);
+    if (vencio !== null) return `${que.charAt(0).toUpperCase()}${que.slice(1)} de ${contexto.patente} venció el ${formatearFecha(vencio)}.`;
+    return `${enPasado ? "Faltaba" : "Falta"} cargar ${que} de ${contexto.patente}.`;
+  });
+}
+
+/** El tono de cada advertencia (K6, K7, P9): crítico la documentación vencida (la unidad salió sin papeles), semana los kilómetros inusuales. */
+export function tonoDeAdvertencia(a: Advertencia): "critico" | "semana" {
+  return a.tipo === "documentacion-vencida" ? "critico" : "semana";
 }
 
 /**
@@ -455,19 +458,31 @@ export function textoAdvertencia(a: Advertencia, contexto?: ContextoDeDocumentac
       return `Recorrido del día inusualmente largo: ${formatearKm(a.km)} km`;
     case "documentacion-vencida":
       return (
-        `${renglonesDeDocumentacion(a.documentos, contexto, false)} ` +
+        `${renglonesDeDocumentacion(a.documentos, contexto, false).join(" ")} ` +
         "Puede enviar la revisión de todos modos: quedará registrado que la unidad salió con documentación vencida."
       );
   }
 }
 
+/** Un renglón de «Avisos aceptados» (C3 y lectura de un parte): su texto y el tono con que se pinta (la vista elige el ícono por el tono). */
+export interface RenglonDeAviso {
+  tono: "critico" | "semana";
+  texto: string;
+}
+
 /**
- * El mismo aviso ya aceptado, como queda en el registro de una revisión enviada («Avisos aceptados» y el historial): en pasado y sin la invitación a enviar, que solo
- * tiene sentido en el diálogo «Antes de enviar». Los otros dos avisos se leen igual en los dos lugares.
+ * El mismo aviso ya aceptado, como queda en el registro de una revisión enviada («Avisos aceptados»): en pasado y sin la invitación a enviar, que solo tiene sentido en el
+ * diálogo «Antes de enviar». Un renglón por documento (M2), cada uno con el tono de la advertencia; la cola «Se envió de todos modos: quedó registrado.» va una sola vez, al
+ * final del último. Los avisos de kilómetros son un renglón y se leen igual que en el diálogo.
  */
-export function textoAdvertenciaAceptada(a: Advertencia, contexto?: ContextoDeDocumentacion): string {
-  if (a.tipo !== "documentacion-vencida") return textoAdvertencia(a);
-  return `${renglonesDeDocumentacion(a.documentos, contexto, true)} Se envió de todos modos: quedó registrado.`;
+export function renglonesDeAvisoAceptado(a: Advertencia, contexto?: ContextoDeDocumentacion): RenglonDeAviso[] {
+  const tono = tonoDeAdvertencia(a);
+  if (a.tipo !== "documentacion-vencida") return [{ tono, texto: textoAdvertencia(a) }];
+  const renglones = renglonesDeDocumentacion(a.documentos, contexto, true);
+  // Un aviso de documentación sin ningún documento (un dato roto) no pierde la cola: queda como único renglón.
+  if (renglones.length === 0) return [{ tono, texto: "Se envió de todos modos: quedó registrado." }];
+  const ultimo = renglones.length - 1;
+  return renglones.map((texto, i) => ({ tono, texto: i === ultimo ? `${texto} Se envió de todos modos: quedó registrado.` : texto }));
 }
 
 /** Avisos globales del arranque y de la sincronización entre pestañas (D4, D5, D7, D8, D9). */
@@ -1255,10 +1270,15 @@ export function textoSinParteFueraDeServicio(patente: string, desde: FechaCivil,
   return `${patente} está fuera de servicio desde el ${formatearFecha(desde)} (${motivo}). No hace falta parte.`;
 }
 
-/** Aviso sobre una unidad que está en servicio pero no puede salir (documentos): «Seguro vencido hace 1 día; …». */
-export function textoUnidadNoPuedeSalir(patente: string, motivos: readonly string[], alConductor: boolean): string {
-  const base = `${patente} no puede salir: ${motivos.join("; ")}.`;
-  return alConductor ? `${base} Avise al encargado antes de usarla.` : base;
+/** El aviso compacto de dos renglones: el hecho (`titular`, firme) y lo que hay que hacer (`accion`, más chico; vacío si no hay nada que hacer). Lo arma la lógica: la vista no corta ningún texto. */
+export interface AvisoDeAptitud {
+  titular: string;
+  accion: string;
+}
+
+/** Aviso sobre una unidad que está en servicio pero no puede salir (documentos): «ZK 214 BD no puede salir: Seguro vencido hace 1 día.» y, solo al conductor, «Avise al encargado antes de usarla.». */
+export function textoUnidadNoPuedeSalir(patente: string, motivos: readonly string[], alConductor: boolean): AvisoDeAptitud {
+  return { titular: `${patente} no puede salir: ${motivos.join("; ")}.`, accion: alConductor ? "Avise al encargado antes de usarla." : "" };
 }
 
 export function textoPendienteBorrador(fecha: FechaCivil, patente: string): string {
