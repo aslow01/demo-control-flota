@@ -53,6 +53,12 @@ export interface ValoresParte {
 export type ErroresDeParte = ErroresDeFormularioDe<CampoParte> & {
   /** El `h2` del resumen de errores: «Faltan 3 datos para enviar el parte». */
   titulo: string;
+  /**
+   * Lo que lista el resumen de errores (5.15): `lista` con los puntos sin completar agrupados (D1). Con más de 3, un solo enlace «Faltan 10 puntos de la revisión» que lleva
+   * al primero; con 3 o menos, uno por campo. `lista` sigue siendo uno por campo: es lo que dice el mensaje sobre cada campo. Mientras se completan los puntos la vista
+   * vuelve a agrupar lo que sigue vigente con `agruparResumen`.
+   */
+  resumen: { campo: CampoParte; mensaje: string }[];
 };
 
 export type ComandoDeBorrador = Extract<Comando, { tipo: "guardarBorrador" }>;
@@ -201,13 +207,40 @@ function enOrden(errores: Map<CampoParte, string>): { campo: CampoParte; mensaje
   return lista;
 }
 
+/** D1: hasta cuántos puntos sin completar se listan uno por uno en el resumen de errores. */
+const PUNTOS_SIN_AGRUPAR = 3;
+
+/**
+ * D1: el resumen de errores con los puntos de la revisión sin completar agrupados. Un punto sin completar es el que no tiene respuesta o el «Con novedad» sin descripción;
+ * un texto demasiado largo es otro error y no se agrupa. Con más de 3, un solo enlace «Faltan 10 puntos de la revisión» (en el lugar del primero y apuntando a él); con 3 o
+ * menos, la lista queda como está.
+ */
+export function agruparResumen(lista: readonly { campo: CampoParte; mensaje: string }[]): { campo: CampoParte; mensaje: string }[] {
+  const esPuntoSinCompletar = (x: { campo: CampoParte; mensaje: string }): boolean => {
+    const punto = ITEMS_CHECKLIST.find((i) => i.id === x.campo);
+    return punto !== undefined && (x.mensaje === T.itemSinResponder(punto.texto) || x.mensaje === T.itemSinDescripcion(punto.texto));
+  };
+  const puntos = lista.filter(esPuntoSinCompletar);
+  if (puntos.length <= PUNTOS_SIN_AGRUPAR) return [...lista];
+  const resumen: { campo: CampoParte; mensaje: string }[] = [];
+  let agrupado = false;
+  for (const x of lista) {
+    if (!esPuntoSinCompletar(x)) resumen.push(x);
+    else if (!agrupado) {
+      resumen.push({ campo: x.campo, mensaje: T.faltanPuntos(puntos.length) });
+      agrupado = true;
+    }
+  }
+  return resumen;
+}
+
 function conTitulo(lista: { campo: CampoParte; mensaje: string }[], general: string | null, faltan: number, tituloGeneral: string = T.tituloGeneral, paso: PasoDelParte = "revision"): ErroresDeParte {
   const base = armarErrores<CampoParte>(lista, general);
   let titulo: string;
   if (lista.length === 0) titulo = tituloGeneral;
   else if (faltan === lista.length) titulo = T.tituloFaltan(faltan, paso);
   else titulo = T.tituloRevise(lista.length, paso);
-  return { ...base, titulo };
+  return { ...base, titulo, resumen: agruparResumen(lista) };
 }
 
 /**
@@ -297,10 +330,23 @@ export function errorGeneralParte(mensaje: string, titulo: string = T.tituloGene
 
 // --- Lo que muestra el formulario ------------------------------------------------------------------
 
-/** Barra de envío (5.14): «Faltan 5 datos» o «Listo para enviar» («Listo para cerrar» en el cierre). Cuenta también lo que tiene un error de formato. */
-export function textoBarraDeEnvio(v: ValoresParte, paso: PasoDelParte = "revision"): string {
-  const n = validarParaEnviar(v, paso)?.lista.length ?? 0;
-  return n === 0 ? (paso === "revision" ? T.barraLista : T.barraListaCierre) : textoFaltantes(n);
+/**
+ * Barra de envío (5.14): «Faltan 5 datos» o «Listo para enviar» («Listo para cerrar» en el cierre). Cuenta también lo que tiene un error de formato.
+ * `camposDelIntento` son los campos con error del último intento de envío que siguen vigentes (la persona no los tocó): si alguno no es un faltante ni un error de
+ * formato (una regla: la licencia, el kilometraje), la barra dice «Revise N datos» —el mismo N que el título del resumen— en lugar de «Listo para enviar». `lista` dice si
+ * la vista puede mostrar el tilde.
+ */
+export function barraDeEnvio(v: ValoresParte, paso: PasoDelParte = "revision", camposDelIntento: readonly CampoParte[] = []): { texto: string; lista: boolean } {
+  const actuales = new Set((validarParaEnviar(v, paso)?.lista ?? []).map((x) => x.campo));
+  const deReglas = new Set(camposDelIntento.filter((c) => !actuales.has(c)));
+  const n = actuales.size + deReglas.size;
+  if (n === 0) return { texto: paso === "revision" ? T.barraLista : T.barraListaCierre, lista: true };
+  return { texto: deReglas.size > 0 ? T.barraRevise(n) : textoFaltantes(n), lista: false };
+}
+
+/** El texto de `barraDeEnvio`. */
+export function textoBarraDeEnvio(v: ValoresParte, paso: PasoDelParte = "revision", camposDelIntento: readonly CampoParte[] = []): string {
+  return barraDeEnvio(v, paso, camposDelIntento).texto;
 }
 
 /** «Respondidos: 3 de 10» (5.12). */

@@ -252,7 +252,7 @@ describe("5.15: el indicador y lo que se anuncia", () => {
   });
 
   it("P3: un dato con formato inválido no se guarda: el indicador pide corregir los campos marcados y devuelve los errores", async () => {
-    const errores = { porCampo: { kmFin: "Escriba el kilometraje solo con números." }, lista: [{ campo: "kmFin" as const, mensaje: "Escriba el kilometraje solo con números." }], general: null, titulo: "Revise 1 dato para enviar el parte" };
+    const errores = { porCampo: { kmFin: "Escriba el kilometraje solo con números." }, lista: [{ campo: "kmFin" as const, mensaje: "Escriba el kilometraje solo con números." }], general: null, titulo: "Revise 1 dato para enviar el parte", resumen: [{ campo: "kmFin" as const, mensaje: "Escriba el kilometraje solo con números." }] };
     const t = armar([{ ok: false, tipo: "campos", errores }]);
     const r = await t.auto.alSalirDelCampo(con({ kmFin: "abc" }));
     expect(r).toEqual({ ok: false, tipo: "campos", errores });
@@ -391,7 +391,7 @@ describe("código M2: un `guardar` que rechaza no cuelga el indicador ni pierde 
 });
 
 describe("accesibilidad N1 y QA B7: no se dice «revise los campos marcados» mientras no haya un campo marcado", () => {
-  const errores = { porCampo: { kmFin: "Escriba el kilometraje solo con números." }, lista: [{ campo: "kmFin" as const, mensaje: "Escriba el kilometraje solo con números." }], general: null, titulo: "Revise 1 dato para enviar el parte" };
+  const errores = { porCampo: { kmFin: "Escriba el kilometraje solo con números." }, lista: [{ campo: "kmFin" as const, mensaje: "Escriba el kilometraje solo con números." }], general: null, titulo: "Revise 1 dato para enviar el parte", resumen: [{ campo: "kmFin" as const, mensaje: "Escriba el kilometraje solo con números." }] };
   const CAMPOS: ResultadoDeBorrador = { ok: false, tipo: "campos", errores };
 
   it("mientras se escribe (el plazo de 500 ms) el indicador dice que lo escrito todavía no es válido y no anuncia nada", async () => {

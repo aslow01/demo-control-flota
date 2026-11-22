@@ -3,6 +3,8 @@
 import { describe, expect, it } from "vitest";
 import {
   CAMPOS_PARTE,
+  agruparResumen,
+  barraDeEnvio,
   OPCIONES_COMBUSTIBLE,
   comandoDeBorrador,
   comandoDeCierre,
@@ -255,6 +257,33 @@ describe("P4: qué falta para enviar la revisión, en el orden del formulario", 
   });
 });
 
+describe("C5: la barra de envío no dice «Listo» con un error de reglas a la vista", () => {
+  it("sin intento previo: igual que siempre", () => {
+    expect(barraDeEnvio(completos())).toEqual({ texto: "Listo para enviar", lista: true });
+    expect(barraDeEnvio(completos({ kmInicio: "" }))).toEqual({ texto: "Falta 1 dato", lista: false });
+  });
+
+  it("con un error de reglas vigente del último intento (L1 en el conductor): «Revise 1 dato», aunque no falte nada", () => {
+    expect(barraDeEnvio(completos(), "revision", ["conductor"])).toEqual({ texto: "Revise 1 dato", lista: false });
+    expect(textoBarraDeEnvio(completos(), "revision", ["conductor"])).toBe("Revise 1 dato");
+  });
+
+  it("un error del último intento que sigue siendo un faltante no se cuenta dos veces", () => {
+    expect(barraDeEnvio(completos({ kmInicio: "" }), "revision", ["kmInicio"])).toEqual({ texto: "Falta 1 dato", lista: false });
+  });
+
+  it("los faltantes y un error de reglas se suman: «Revise 3 datos»", () => {
+    const v = completos({ kmInicio: "" });
+    v.checklist.frenos = { respuesta: "", descripcion: "", impideUso: false };
+    expect(barraDeEnvio(v, "revision", ["conductor"])).toEqual({ texto: "Revise 3 datos", lista: false });
+  });
+
+  it("en el cierre: «Revise 1 dato» con K2 vigente en el kilometraje al terminar, y «Listo para cerrar» sin él", () => {
+    expect(barraDeEnvio(completos(), "cierre", ["kmFin"])).toEqual({ texto: "Revise 1 dato", lista: false });
+    expect(barraDeEnvio(completos(), "cierre")).toEqual({ texto: "Listo para cerrar", lista: true });
+  });
+});
+
 describe("P4: qué falta para cerrar el parte", () => {
   it("un cierre sin nada: kmFin y combustible; «Faltan 2 datos»", () => {
     const v = valoresIniciales({ conductorId: "c1", kmInicio: 84320 });
@@ -321,6 +350,53 @@ describe("5.15: el resumen de errores al enviar", () => {
 
   it("un solo problema: «Revise 1 dato»", () => {
     expect(validarParaEnviar(completos({ kmInicio: "abc" }))?.titulo).toBe("Revise 1 dato para enviar la revisión");
+  });
+
+  it("D1: con más de 3 puntos sin responder el resumen es un solo enlace al primero; con 3 o menos, uno por punto", () => {
+    const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
+    expect(e?.lista).toHaveLength(10); // el mensaje por campo no cambia: cada punto sigue diciendo qué le falta
+    expect(e?.resumen).toEqual([{ campo: "frenos", mensaje: "Faltan 10 puntos de la revisión" }]);
+
+    const tres = completos();
+    for (const c of ["frenos", "luces", "cabina"] as const) tres.checklist[c] = { respuesta: "", descripcion: "", impideUso: false };
+    const t = validarParaEnviar(tres);
+    expect(t?.resumen).toEqual(t?.lista);
+    expect(t?.resumen.map((x) => x.campo)).toEqual(["frenos", "luces", "cabina"]);
+
+    const cuatro = completos();
+    for (const c of ["frenos", "luces", "cabina", "niveles"] as const) cuatro.checklist[c] = { respuesta: "", descripcion: "", impideUso: false };
+    expect(validarParaEnviar(cuatro)?.resumen).toEqual([{ campo: "frenos", mensaje: "Faltan 4 puntos de la revisión" }]);
+  });
+
+  it("D1: lo que no es un punto sin completar sigue en su lugar, uno por campo, y el enlace agrupado va donde estaba el primer punto", () => {
+    const v = valoresIniciales({ conductorId: "", kmInicio: 84320 });
+    v.kmInicio = "";
+    v.otraNovedad = { descripcion: "", impideUso: true };
+    const e = validarParaEnviar(v);
+    expect(e?.resumen.map((x) => [x.campo, x.mensaje])).toEqual([
+      ["conductor", "Elija quién conduce la unidad."],
+      ["kmInicio", "Escriba el kilometraje al iniciar."],
+      ["frenos", "Faltan 10 puntos de la revisión"],
+      ["otraNovedad", "Cuente qué pasó en «Otra novedad» (al menos 3 caracteres) o déjela vacía."],
+    ]);
+  });
+
+  it("D1: un punto con novedad sin descripción cuenta con los sin responder; uno con un texto demasiado largo no (es otro error)", () => {
+    const v = valoresIniciales({ conductorId: "c1", kmInicio: 84320 });
+    v.checklist.frenos = { respuesta: "con-novedad", descripcion: "", impideUso: false };
+    v.checklist.luces = { respuesta: "con-novedad", descripcion: "x".repeat(501), impideUso: false };
+    const e = validarParaEnviar(v);
+    expect(e?.resumen).toEqual([
+      { campo: "frenos", mensaje: "Faltan 9 puntos de la revisión" },
+      { campo: "luces", mensaje: "La descripción no puede superar 500 caracteres." },
+    ]);
+  });
+
+  it("D1: agruparResumen se puede volver a aplicar a la parte que sigue vigente (a medida que se completan los puntos)", () => {
+    const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
+    const quedan = (e?.lista ?? []).slice(6); // quedan 4
+    expect(agruparResumen(quedan)).toEqual([{ campo: "matafuego", mensaje: "Faltan 4 puntos de la revisión" }]);
+    expect(agruparResumen(quedan.slice(1))).toEqual(quedan.slice(1)); // quedan 3: uno por punto
   });
 
   it("CAMPOS_PARTE es el orden del formulario: la revisión y después el cierre", () => {

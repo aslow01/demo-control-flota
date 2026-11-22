@@ -1232,6 +1232,7 @@ Cada nombre lleva el identificador de la regla. Archivos probables entre parént
 63. K5: una corrección desde la fecha de un parte en uso → `km-correccion-parte-en-uso`; desde una fecha anterior sigue valiendo `km-correccion-anterior` (`tests/comandos-unidades.test.ts`).
 64. A7: dar de baja una unidad con un parte en uso → `unidad-con-parte-en-uso` (`tests/comandos-unidades.test.ts`).
 65. U7: `limpiarTexto`, `normalizarTexto` y `largoEnCaracteres`; el tope de 500 cuenta caracteres (300 emojis pasan, 501 no) y los textos de novedades, motivos y borradores se guardan sin caracteres de control ni de dirección (`tests/texto.test.ts`).
+66. D1 de la revisión de diseño: el resumen de errores agrupa los puntos sin completar (más de 3 → un solo enlace «Faltan 10 puntos de la revisión» al primero; 3 o menos, uno por punto) y `agruparResumen` se puede volver a aplicar a lo que sigue vigente; C5: la barra dice «Revise N datos» con un error de reglas vigente del último intento (`tests/formulario-parte.test.ts`).
 
 ### 17.9 Tareas del programador (en orden)
 

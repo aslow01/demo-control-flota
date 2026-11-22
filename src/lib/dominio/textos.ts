@@ -1061,10 +1061,14 @@ export const TEXTO_FORMULARIO_PARTE = {
   },
   itemSinResponder: (punto: string) => `Elija una opción para ${punto}.`,
   itemSinDescripcion: (punto: string) => `Cuente qué encontró en ${punto} (al menos 3 caracteres).`,
+  /** D1: con más de 3 puntos sin completar, el resumen de errores trae un solo enlace, que lleva al primero. */
+  faltanPuntos: (n: number) => `Faltan ${n} puntos de la revisión`,
   /** Título del resumen de errores: todo lo que hay son faltantes (P4), o hay también errores de reglas o de formato. */
   tituloFaltan: (n: number, paso: "revision" | "cierre" = "revision") => `${textoFaltantes(n)} para ${paso === "revision" ? "enviar la revisión" : "cerrar el parte"}`,
   tituloRevise: (n: number, paso: "revision" | "cierre" = "revision") =>
     `Revise ${pluralizar(n, "dato", "datos")} para ${paso === "revision" ? "enviar la revisión" : "cerrar el parte"}`,
+  /** C5: la barra de envío con un error de reglas a la vista (el mismo número que el título del resumen). */
+  barraRevise: (n: number) => `Revise ${pluralizar(n, "dato", "datos")}`,
   tituloGeneral: "No se pudo enviar la revisión",
   tituloGeneralCierre: "No se pudo cerrar el parte",
   /** El resumen cuando falla «Descartar borrador» (QA B2): no es un envío. */
