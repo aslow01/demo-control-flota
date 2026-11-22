@@ -1,7 +1,7 @@
 // Parte diario en dos pasos (P2 a P4, P9 a P11, P13, P16; sección 17): revisión antes de salir y cierre; advertencias (K6, K7, P9).
 
 import { diasEntre, parsearFechaCivil, parsearInstante } from "./fechas.ts";
-import { KM_MAXIMO, advertenciasDeRecorrido, advertenciasDeSalida } from "./kilometraje.ts";
+import { KM_MAXIMO, advertenciasDeSalida } from "./kilometraje.ts";
 import { largoEnCaracteres, normalizarTexto } from "./texto.ts";
 import { formatearPatente } from "./patente.ts";
 import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos, textoAdvertenciaAceptada, type ContextoDeDocumentacion } from "./textos.ts";
@@ -238,11 +238,6 @@ export function advertenciasDeRevision(entrada: { kmAnterior: number | null; kmI
     advertencias.push({ tipo: "documentacion-vencida", documentos: [...entrada.documentacionVencida] });
   }
   return advertencias;
-}
-
-/** K7: lo que hay que aceptar antes de cerrar el parte. */
-export function advertenciasDeCierre(entrada: { kmInicio: number; kmFin: number }): Advertencia[] {
-  return advertenciasDeRecorrido(entrada);
 }
 
 /**

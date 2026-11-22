@@ -1110,8 +1110,8 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
 
   // P4: lo que falta de la revisión, en el orden del formulario.
   const faltan = faltantesDeRevision(borrador);
-  if (faltan.length > 0) return fallo("faltan-datos", textoFaltantes(faltan.length), { detalle: { faltan } });
-  const kmInicio = borrador.kmInicio as number;
+  const kmInicio = borrador.kmInicio;
+  if (faltan.length > 0 || kmInicio === null) return fallo("faltan-datos", textoFaltantes(Math.max(faltan.length, 1)), { detalle: { faltan } });
 
   // K3 y K4 bloquean; K6 es una advertencia.
   const km = validarKmDeSalida({ unidad: u, fecha: borrador.fecha, kmInicio, partes: estado.partes, correcciones: estado.correccionesKm });
@@ -1216,10 +1216,10 @@ function enviarCierre(estado: Estado, c: Extract<Comando, { tipo: "enviarCierre"
   const parte = p.valor;
 
   const faltan = faltantesDeCierre(parte);
-  if (faltan.length > 0) return fallo("faltan-datos", textoFaltantes(faltan.length), { detalle: { faltan } });
-  const kmFin = parte.kmFin as number;
-  if (parte.kmInicio === null) return fallo("faltan-datos", textoFaltantes(1), { detalle: { faltan: ["kmInicio"] } });
-  const kmInicio = parte.kmInicio;
+  const { kmInicio, kmFin } = parte;
+  if (faltan.length > 0 || kmFin === null) return fallo("faltan-datos", textoFaltantes(Math.max(faltan.length, 1)), { detalle: { faltan } });
+  // Un parte en uso siempre tiene su kilometraje de salida (la revisión lo exige); uno con la forma rota (datos viejos) no se cierra a ciegas.
+  if (kmInicio === null) return fallo("faltan-datos", textoFaltantes(1), { detalle: { faltan: ["kmInicio"] } });
 
   const km = validarKmDeCierre({ unidad: u, fecha: parte.fecha, kmInicio, kmFin, partes: estado.partes, correcciones: estado.correccionesKm });
   if (!km.ok) return km;

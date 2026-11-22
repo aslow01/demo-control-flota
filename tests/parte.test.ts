@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   ITEMS_CHECKLIST,
-  advertenciasDeCierre,
   advertenciasDeRevision,
   conductorParaParte,
   contextoDeDocumentacion,
@@ -320,11 +319,6 @@ describe("advertencias de la revisión (K6, P9) y del cierre (K7)", () => {
 
   it("la revisión sin nada para avisar no devuelve nada", () => {
     expect(advertenciasDeRevision({ kmAnterior: 100, kmInicio: 100, documentacionVencida: [] })).toEqual([]);
-  });
-
-  it("el cierre avisa solo del recorrido largo (K7)", () => {
-    expect(advertenciasDeCierre({ kmInicio: 0, kmFin: 1201 })).toEqual([{ tipo: "recorrido-largo", km: 1201 }]);
-    expect(advertenciasDeCierre({ kmInicio: 0, kmFin: 1200 })).toEqual([]);
   });
 });
 
