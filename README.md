@@ -1,7 +1,7 @@
 # Control de flota (demo)
 
 Aplicación web de demostración que responde, en una pantalla, a dos preguntas: **¿qué unidades no pueden salir hoy?
-y ¿qué documentos vencen pronto?** Además, el conductor completa su parte diario desde el celular sin perder lo escrito.
+y ¿qué documentos vencen pronto?** Además, el conductor completa su parte diario desde el celular, en dos pasos y sin perder lo escrito.
 
 Funciona entera en el navegador: sin servidor, sin cuenta y sin conexiones externas. Los datos son ficticios y se guardan
 solo en el navegador de quien la abre. Forma parte del portafolio de Matías Ariel Ormeño.
@@ -19,10 +19,15 @@ La demo muestra cómo se resuelve con tres ideas:
 
 - **Vencimientos con fecha y regla:** cada documento tiene un vencimiento y la aplicación lo clasifica (vencido, vence en
   7, 15 o 30 días, vigente). Un documento renovado reemplaza al anterior, que queda en el historial.
-- **Parte diario del conductor:** kilometraje, revisión de la unidad (diez puntos), combustible y novedades. Se guarda
-  como borrador mientras se escribe.
+- **Parte diario del conductor, en dos pasos:** antes de salir, la **revisión** (kilometraje de salida, diez puntos de la
+  unidad y otra novedad, si la hay); al volver, el **cierre** (kilometraje final y combustible). Se guarda como borrador
+  mientras se escribe. Una falla crítica en la revisión deja la unidad fuera de servicio antes de que salga.
+- **Licencia de conducir que bloquea:** sin una licencia vigente para la fecha del parte, el conductor no puede enviar la
+  revisión. No hay un aviso que se pueda aceptar: el envío se rechaza hasta que el encargado cargue una licencia vigente
+  o tome el parte otro conductor.
 - **Aptitud para salir:** cada unidad aparece como «Puede salir» o «No puede salir» según sus documentos, sus novedades
-  críticas y si está fuera de servicio. La aptitud se calcula siempre; no se guarda ni se edita a mano.
+  críticas y si está fuera de servicio. La aptitud se calcula siempre; no se guarda ni se edita a mano. La licencia es del
+  conductor, no de la unidad: la unidad de un conductor sin licencia puede salir con otro conductor.
 
 ## Qué se puede hacer en la demo
 
@@ -31,15 +36,17 @@ no un control de acceso: no hay cuentas ni contraseñas.
 
 | Pantalla | Perfil | Qué permite |
 | --- | --- | --- |
-| Centro de alertas | Encargado | Ver cuántas unidades no pueden salir hoy, los vencimientos agrupados en 7, 15 y 30 días y los pendientes de operación. Renovar o cargar un documento desde la propia alerta. |
-| Flota | Encargado | Buscar por patente o número interno, filtrar por estado y proyecto, ordenar y agregar una unidad nueva. |
-| Ficha de la unidad | Encargado | Ver documentos, novedades, kilometraje e historial. Renovar documentos, resolver novedades, poner la unidad fuera de servicio o devolverla a servicio, corregir el kilometraje, cambiar la asignación y dar de baja. |
-| Inicio del conductor | Conductor | Ver la unidad de hoy, los partes pendientes, el vencimiento de la propia licencia y los últimos partes. Elegir otra unidad. |
-| Parte diario | Conductor y Encargado | Completar kilometraje, revisión, combustible y novedades; guardado automático de borrador; aviso antes de enviar si falta documentación o hay un salto de kilometraje; parte enviado en solo lectura. |
+| Centro de alertas | Encargado | Ver cuántas unidades no pueden salir hoy y qué conductores no pueden manejar hoy (sin licencia vigente), los vencimientos agrupados en 7, 15 y 30 días y los pendientes de operación (partes sin enviar o sin cerrar, unidades sin parte de ayer). Renovar o cargar un documento, incluida una licencia, desde la propia alerta. |
+| Flota | Encargado | Buscar por patente o número interno, filtrar por estado y proyecto, ordenar y agregar una unidad nueva. Cada fila muestra el último parte («En uso» o «Sin cerrar», según el caso) y marca al conductor sin licencia vigente. |
+| Ficha de la unidad | Encargado | Ver documentos, novedades, kilometraje (con las salidas en curso) e historial (la revisión y el cierre de cada parte). Renovar documentos, resolver novedades, poner la unidad fuera de servicio o devolverla a servicio, corregir el kilometraje, cambiar la asignación y dar de baja. |
+| Inicio del conductor | Conductor | Ver en qué punto está el parte de hoy (sin empezar, borrador, en uso, cerrado o sin salida), los partes sin cerrar, el vencimiento de la propia licencia y los últimos partes. Si la licencia no está vigente, el aviso de bloqueo reemplaza al botón de empezar la revisión. Elegir otra unidad. |
+| Parte diario, paso 1: revisión antes de salir | Conductor y Encargado | Completar kilometraje de salida, diez puntos de revisión y, si hace falta, otra novedad; guardado automático de borrador; aviso antes de enviar si falta documentación de la unidad o hay un salto de kilometraje. Al enviar, la unidad sale de servicio si hay una novedad crítica; si no, queda «En uso». |
+| Parte diario, paso 2: cierre de la jornada | Conductor y Encargado | Completar kilometraje final y combustible, con el resumen de la revisión a la vista. Al cerrar, el parte queda en solo lectura. |
 
 Todo cambio se refleja en las demás pantallas al instante: renovar un documento lo saca de las alertas, mejora el estado
-en la flota y actualiza la insignia de la pestaña «Alertas». Un parte con una novedad crítica en los frenos pone la
-unidad fuera de servicio y la suma a «No pueden salir». El botón **Reiniciar demo** (en la barra de la aplicación y en el
+en la flota y actualiza la insignia de la pestaña «Alertas». Una revisión con una novedad crítica en los frenos pone la
+unidad fuera de servicio, la suma a «No pueden salir» y deja el parte cerrado sin salida (recorrido 0). Una revisión sin
+novedades críticas deja la unidad «En uso» hasta que se cierra el parte. El botón **Reiniciar demo** (en la barra de la aplicación y en el
 menú «Más») borra los cambios y vuelve a cargar la flota de ejemplo con las fechas de hoy.
 
 ## Cómo usarla
@@ -47,9 +54,18 @@ menú «Más») borra los cambios y vuelve a cargar la flota de ejemplo con las 
 1. Abra la demo. Entra como Encargado, en el centro de alertas.
 2. Pruebe renovar el seguro vencido de la unidad ZK 214 BD: la alerta desaparece y la unidad deja de figurar en
    «No pueden salir».
-3. En «Ver como», elija **Conductor** y una persona ficticia. Complete un parte con una novedad crítica en los frenos y
-   envíelo; vuelva al perfil Encargado y verá la unidad en «No pueden salir».
-4. Para empezar de nuevo, use **Reiniciar demo**.
+3. En el mismo centro de alertas, busque «Conductores que no pueden manejar hoy»: aparece una persona ficticia cuya
+   licencia venció hace 3 días (caso C21).
+4. En «Ver como», elija **Conductor** y esa misma persona (en la lista figura «Sin licencia vigente»). En lugar del botón
+   para empezar la revisión, el inicio muestra que no puede manejar hoy y que debe avisar al encargado. Vuelva al perfil
+   Encargado y pulse **Renovar** en esa fila: se carga una licencia vigente y la persona sale de la lista. Si repite el
+   paso anterior con ella, ahora sí puede empezar la revisión.
+5. Con otra persona ficticia, pulse **Empezar la revisión**, complete el kilometraje y los diez puntos, con una novedad
+   crítica en los frenos, y envíe la revisión. La pantalla dice que la unidad no puede salir. Vuelva al perfil Encargado y
+   verá la unidad en «No pueden salir».
+6. Con otra persona y otra unidad, envíe una revisión sin novedades: el inicio muestra «En uso». Pulse **Cerrar el parte**,
+   cargue el kilometraje final y el combustible y ciérrelo: el parte queda en solo lectura.
+7. Para empezar de nuevo, use **Reiniciar demo**.
 
 ## Cómo correrla localmente
 
@@ -79,8 +95,8 @@ npm run servir       # sirve dist/ con las mismas cabeceras de seguridad que se 
   `default-src 'none'`, todo lo demás limitado al propio origen y `connect-src 'none'`, es decir, la página no puede
   conectarse a ningún servidor. No se usa `{@html}`, `innerHTML` ni `eval`; el texto que escribe la persona se muestra
   siempre como texto.
-- **Tamaño medido (`npm run build`):** 360 KB de JavaScript (106 KB comprimido con gzip), 77 KB de CSS (13 KB con gzip)
-  y 6 KB de HTML.
+- **Tamaño medido (`npm run build`, 22/11/2026):** 394 KB de JavaScript (115 KB comprimido con gzip), 87 KB de CSS
+  (14 KB con gzip) y 6 KB de HTML.
 - **Accesibilidad:** pensada para el teclado, con foco visible, controles táctiles de 44 px como mínimo, modo claro y
   oscuro, colores forzados y anchos desde 320 px. Lo que se midió y lo que falta probar está más abajo.
 
@@ -112,26 +128,29 @@ Esta demo se hizo con IA y el repositorio lo muestra tal cual:
 
 ## Cómo se verificó
 
-Cifras medidas el 19/11/2026 sobre la rama `interfaz-etapa-0`:
+Cifras medidas el 22/11/2026 sobre la rama `textos-etapa6` (a partir de `interfaz-etapa-0`):
 
 | Comprobación | Comando | Resultado |
 | --- | --- | --- |
-| Pruebas automáticas | `npm test` | 1.323 pruebas en 54 archivos, todas pasan |
-| Las mismas en tres zonas horarias | `npm run test:tz` | 1.323 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
-| Tipos | `npm run check` | 0 errores y 0 avisos en 327 archivos |
-| Contraste de la paleta | `npm run contraste` | 158 mediciones, 0 fallan, 9 pasan por poco margen |
-| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (8 reglas, 193 archivos): sin `{@html}`, sin `eval`, sin `Math.random` en `src/lib`, sin reloj del sistema fuera de `estado/reloj.ts` |
+| Pruebas automáticas | `npm test` | 1.489 pruebas en 56 archivos, todas pasan |
+| Las mismas en tres zonas horarias | `npm run test:tz` | 1.489 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
+| Tipos | `npm run check` | 0 errores y 0 avisos en 335 archivos |
+| Contraste de la paleta | `npm run contraste` | 174 mediciones, 0 fallan, 9 pasan por poco margen |
+| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (8 reglas, 192 archivos): sin `{@html}`, sin `eval`, sin `Math.random` en `src/lib`, sin reloj del sistema fuera de `estado/reloj.ts` |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
-**Probado en un navegador** (Chromium con Playwright, contra el servidor de desarrollo y contra la compilación servida
-con la CSP real; detalle en `docs/registro.md`): 24 pantallas y estados, a 320, 360, 768 y 1280 px, en modo claro y
-oscuro (192 combinaciones sin problemas de desborde, de tamaño de los controles ni de consola), 0 violaciones de CSP y
-0 violaciones de axe-core (WCAG 2.0 a 2.2, niveles A y AA). También zoom al 200 % y al 400 % en el parte. Los guiones de
-Playwright no están en este repositorio: estas cifras (incluidas las 192 combinaciones) salen del registro (`docs/registro.md`)
-y no se pueden reproducir con un comando del repositorio.
+**Probado en un navegador** (Chromium con Playwright, contra la compilación servida con la CSP real; detalle en
+`docs/registro.md`, entrada del 22/11/2026): el recorrido completo del conductor con teclado (revisión, aviso antes de
+enviar, resultado, cierre y vuelta al inicio), el caso de la novedad crítica, el caso C21 (inicio del conductor y
+renovación de la licencia como encargado) y el encargado con el selector de conductor, a 320, 360, 768 y 1280 px, en modo
+claro y oscuro: sin desbordes, sin controles pulsables de menos de 44 px, sin mensajes en la consola y sin violaciones de
+CSP. Los guiones de Playwright no están en este repositorio: estas comprobaciones salen del registro y no se pueden
+reproducir con un comando del repositorio.
+<!-- revisar: las cifras del barrido anterior (24 pantallas y estados, 192 combinaciones, 0 violaciones de axe-core, zoom al 200 % y 400 % en el parte) eran de la versión de un solo envío y se retiraron. El registro del 22/11/2026 dice que axe-core y el zoom no se volvieron a medir con los dos pasos. Si Matías o `qa-destructor` los repiten, sumar las cifras nuevas aquí. -->
 
 **No se probó:**
 
+- axe-core ni el zoom al 200 % y al 400 % sobre los dos pasos del parte nuevos (no se repitieron tras el cambio);
 - un lector de pantalla real (los avisos llevan su rol, pero el anuncio real no se escuchó);
 - Firefox ni Safari;
 - una pantalla táctil real (solo emulación y clics de mouse);
@@ -149,15 +168,26 @@ El flujo de integración continua (`.github/workflows/ci.yml`) está escrito per
   navegador y una recarga no las espera. Se probó otra forma de guardado al cerrar la página y no alcanzó.
 - **Pestañas desactualizadas:** si el navegador no tiene `BroadcastChannel`, una pestaña abierta antes no se entera de los
   cambios hechos en otra. Donde sí lo tiene, la pestaña vieja pasa a solo lectura hasta que se actualiza.
-- **Requisitos simplificados:** sin exenciones de revisión técnica ni clases de licencia.
-- **Un parte por unidad y por día:** no hay turnos ni relevos de conductor dentro del mismo día.
+- **Requisitos simplificados:** sin exenciones de revisión técnica ni clases de licencia (la licencia vale o no vale, sin
+  distinguir qué categoría de vehículo habilita).
+- **Un registro de parte por unidad y por día, con dos envíos:** la revisión y el cierre son dos envíos sobre el mismo
+  registro. No hay turnos ni relevos de conductor dentro del mismo día. Una jornada que cruza la medianoche pertenece a la
+  fecha de su revisión, y la licencia se mira para esa fecha.
+- **Una revisión o un cierre enviados no se editan ni se reabren:** la revisión de un parte en uso no se modifica y un parte
+  cerrado queda en solo lectura. Un borrador de revisión sí se descarta.
 - **Sin pruebas automáticas de las pantallas:** las pruebas cubren las reglas, el generador, la persistencia y el estado;
   las pantallas se verificaron a mano y con guiones que no forman parte del repositorio.
-- **El checklist del parte es de fin de jornada (decisión de alcance, pendiente de revisión):** la unidad sale de servicio
-  cuando se envía el parte, no cuando se marca la novedad crítica. En una operación real suele haber además un checklist
-  previo al uso, que la demo no modela.
-- **Una licencia vencida no impide salir (decisión de alcance, pendiente de revisión):** solo genera un aviso al enviar el
-  parte, que el conductor puede aceptar. No bloquea la salida de la unidad.
+- **El cierre no pregunta por fallas durante el uso (decisión de alcance del 22/11/2026):** una falla que aparece a mitad
+  de la jornada no tiene campo propio en el cierre. El conductor avisa y el encargado la carga con «Cargar novedad».
+- **La documentación de la unidad no bloquea la revisión (decisión de alcance del 22/11/2026):** un seguro vencido, por
+  ejemplo, genera un aviso que el conductor puede aceptar y queda registrado que la unidad salió con documentación vencida.
+  Solo la licencia del conductor bloquea. Es una asimetría elegida, y cambiarla es sustituir ese aviso por un bloqueo como el
+  de la licencia.
+- **La licencia bloquea también partes de días pasados:** si el conductor no tenía licencia vigente el día del parte, la
+  revisión de ese día tampoco se envía. Queda la alerta «Sin parte de ayer» o «Parte sin enviar», no un registro de que
+  manejó sin licencia.
+- **La habilitación de manejo del proyecto sigue siendo opcional:** exigirla cuando el proyecto pide habilitación de ingreso
+  está pendiente de una próxima tanda.
 - **Imprimir o guardar el parte en PDF:** previsto, todavía no está.
 - **Fotos en el parte (próximo paso):** el papel no deja evidencia y la demo todavía tampoco; adjuntar una foto a una
   novedad es lo siguiente que se va a sumar.
@@ -181,8 +211,10 @@ Todo lo que se ve es inventado y se genera con una semilla fija, de modo que la 
   llevan el prefijo `DEMO-`). Falta verificar que los nombres de proyectos no coincidan con proyectos reales.
 - **Fechas relativas a hoy:** el generador planta casos conocidos a distancias fijas de la fecha de hoy (un seguro vencido
   ayer, una revisión que vence hoy, otra dentro de 30 días, un borrador sin enviar, etc.). Con el ejemplo recién cargado
-  aparecen 4 unidades en «No pueden salir», 2 documentos vencidos o faltantes y 9 vencimientos próximos (4 en hasta
-  7 días, 3 entre 8 y 15 y 2 entre 16 y 30). Una prueba automática fija esos valores.
+  aparecen 4 unidades en «No pueden salir», 3 documentos vencidos o faltantes (un seguro, una habilitación de ingreso que
+  falta y la licencia de la persona del caso C21), 9 vencimientos próximos (4 en hasta 7 días, 3 entre 8 y 15 y 2 entre
+  16 y 30; 12 en total con los vencidos), 5 alertas críticas y 1 conductor que no puede manejar hoy. Una prueba automática
+  fija esos valores (`tests/generador.test.ts`).
 
 ## Origen
 
