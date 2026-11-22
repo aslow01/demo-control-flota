@@ -6,9 +6,12 @@
   //  - Al enviar, `app.parteDeLaRuta` cambia sola (la revisión deja el parte en uso; el cierre lo deja cerrado); esta pantalla se queda en el resultado (C1, C2 o C3, con el `h1` enfocado)
   //    hasta que la persona elige una acción: la vista del resultado es estado de esta pantalla (`recienEnviado`), no de la ruta.
   //  - «Completar el cierre» (C1) lleva a la misma ruta: la dirección no cambia, así que la pantalla suelta el resultado y muestra el cierre (B) con el foco en su `h1`.
-  //  - «Descartar borrador» (de dos pasos) en E es la salida (P5). Después el foco va al título y un `role="status"` dice «Borrador descartado.».
+  //  - «Descartar borrador» (de dos pasos, botón-texto) en E es la salida (P5). Después el foco va al título y un `role="status"` dice «Borrador descartado.».
+  //  - E «Cerrar antes» (A1, P20): en lugar del párrafo de la regla, el aviso compacto en tono semana (una tarea pendiente, no una prohibición) y el primario «Cerrar el parte anterior»;
+  //    «Descartar borrador» (si hay) y el enlace de vuelta quedan como botones-texto. Es la única E con primario: la regla tiene un remedio inmediato y es de la misma persona.
   import { tick } from "svelte";
   import { app } from "../lib/estado/instancia.ts";
+  import Aviso from "./Aviso.svelte";
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import EnlaceAccion from "./EnlaceAccion.svelte";
   import EtiquetaDemo from "./EtiquetaDemo.svelte";
@@ -116,15 +119,22 @@
       <div class="encabezado">
         <div class="solo-angosto"><EtiquetaDemo /></div>
         <h1 tabindex="-1">{vista.titulo}</h1>
-        <p class="parrafo largo">{vista.mensaje}</p>
+        {#if vista.tipo === "no-disponible" && vista.cerrarAntes !== null}
+          <Aviso tono="semana" icono="lapiz" accion={vista.cerrarAntes.renglon2}>{vista.cerrarAntes.renglon1}</Aviso>
+        {:else}
+          <p class="parrafo largo">{vista.mensaje}</p>
+        {/if}
         {#if vista.tipo === "no-disponible" && vista.nota !== null}<p class="parrafo largo">{vista.nota}</p>{/if}
       </div>
+      {#if vista.tipo === "no-disponible" && vista.cerrarAntes !== null}
+        <div class="accion-principal"><EnlaceAccion href={vista.cerrarAntes.primario.href} variante="primario" tamano="grande">{vista.cerrarAntes.primario.texto}</EnlaceAccion></div>
+      {/if}
       <div class="acciones">
         {#if vista.tipo === "no-disponible" && vista.borrador !== null}
           {@const b = vista.borrador}
-          <BotonConfirmar texto={b.descartar} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.parteId)} />
+          <BotonConfirmar variante="texto" texto={b.descartar} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.parteId)} />
         {/if}
-        <EnlaceAccion href={vista.enlace.href}>{vista.enlace.texto}</EnlaceAccion>
+        <EnlaceAccion href={vista.enlace.href} variante={vista.tipo === "no-disponible" && vista.cerrarAntes !== null ? "texto" : "secundario"}>{vista.enlace.texto}</EnlaceAccion>
       </div>
       <p class="nota" role="status">{mensaje}</p>
     </div>
@@ -185,6 +195,21 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--e-3);
+  }
+  /* El primario de «Cerrar antes»: ancho completo con poco ancho; desde 40 rem, el de su texto. */
+  .accion-principal {
+    display: flex;
+  }
+  .accion-principal :global(.enlace-accion) {
+    flex: 1;
+  }
+  @media (min-width: 40rem) {
+    .accion-principal :global(.enlace-accion) {
+      flex: none;
+    }
+  }
+  .encabezado > :global(.aviso) {
+    align-self: stretch;
   }
 
   /* La revisión de la unidad, dentro del panel de lectura: separada de los datos por una línea. */
