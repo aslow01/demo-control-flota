@@ -571,17 +571,22 @@ si se aprueba, con pruebas de punta a punta en una etapa posterior.
   alerta "Sin parte de ayer" o "Parte sin enviar", no un registro de que manejó sin licencia.
 - Lo escrito en el parte se guarda 500 ms después de la última tecla (y al salir del campo, al enviar y al irse de la pantalla). Si se recarga o se cierra la pestaña dentro de esos 500 ms, lo último puede perderse: guardar en IndexedDB son tres idas y vueltas con el navegador y una recarga no las espera (se probó con `pagehide`: no alcanza).
 
-## 15. Decisiones abiertas (resumen; detalle en el informe de diseño)
+## 15. Decisiones de diseño
 
-| # | Pregunta | Recomendación |
-| --- | --- | --- |
-| D1 | Stack | Vite + TypeScript + Svelte 5, sin SvelteKit (ver `stack.md`). |
-| D2 | Perfil por defecto al entrar | Encargado siempre (el centro de alertas lleva el mensaje en 10 segundos). |
-| D3 | Parte de una unidad fuera de servicio | Rechazarlo (P8). Alternativa: aceptarlo con advertencia (traslado al taller). |
-| D4 | "Fecha de consulta" simulada para ver cambiar las alertas | P2: después del mínimo, con aviso fijo mientras está activa. |
-| D5 | Exportar el parte a PDF | P2 con la impresión del navegador (sin dependencias). |
-| D6 | Marcas y modelos | Modelos comunes reales (dan verosimilitud y no identifican a nadie). |
-| D7 | Licencia del repositorio | MIT, como la Demo 1. |
+La IA propuso alternativas con una recomendación; la columna «Quién y cuándo» dice quién decidió. «Regla de operación»
+quiere decir que la regla venía del diseño de Matías y no de una propuesta de la IA.
+
+| # | Pregunta | Decisión | Quién y cuándo |
+| --- | --- | --- | --- |
+| D1 | Stack | Vite + TypeScript + Svelte 5, sin SvelteKit (alternativas en `stack.md`, S1). | Matías, 18/11/2026. |
+| D2 | Perfil por defecto al entrar | Encargado siempre (el centro de alertas lleva el mensaje en 10 segundos). | Matías, regla de operación (confirmada por escrito el 22/11/2026). |
+| D3 | Parte de una unidad fuera de servicio | Rechazarlo (P8). Descartado: aceptarlo con advertencia (traslado al taller). | Matías, regla de operación (confirmada por escrito el 22/11/2026). |
+| D4 | "Fecha de consulta" simulada para ver cambiar las alertas | Después del mínimo, con aviso fijo mientras está activa. | Matías (confirmada por escrito el 22/11/2026). |
+| D5 | Exportar el parte a PDF | Después del mínimo, con la impresión del navegador (sin dependencias). | Matías (confirmada por escrito el 22/11/2026). |
+| D6 | Marcas y modelos | Modelos comunes reales (dan verosimilitud y no identifican a nadie). | Matías (confirmada por escrito el 22/11/2026). |
+| D7 | Licencia del repositorio | MIT, como la Demo 1. | Matías, 19/11/2026. |
+| D8 | Momento del checklist del parte | Revisión antes de salir y cierre al volver (sección 17). Descartado: checklist de fin de jornada. | Matías, regla de operación, 19/11/2026. |
+| D9 | Licencia de conducir vencida o faltante | Bloquea la revisión (L1 a L7). Descartado: solo un aviso que el conductor acepta. | Matías, regla de operación, 19/11/2026. |
 
 ---
 
@@ -701,7 +706,8 @@ convence, se cambia acá y en el código a la vez.
 
 **Correcciones de la revisión del dominio (18/11/2026; informe de proceso fuera del repositorio)**
 
-Estas decisiones las tomó el programador trabajando solo, con el criterio más conservador. **A confirmar por Matías: M1, M3 y M4.**
+Estas decisiones las tomó el agente programador (IA) trabajando solo, con el criterio más conservador. Matías confirmó
+M1, M3 y M4 el 18/11/2026.
 
 | Hallazgo | Qué se hizo |
 | --- | --- |
@@ -1224,9 +1230,11 @@ Cada nombre lleva el identificador de la regla. Archivos probables entre parént
 9. Tipos de las props nuevas para el maquetador — `src/componentes/tipos.ts` (lo escribe el programador primero; sección 11 de `diseno-ui.md`).
 10. Verificación: `npm run check`, `npm test`, `npm run test:tz`, `npm run buscar`; las invariantes de A3 y de L1 sobre el ejemplo después de cada comando.
 
-### 17.10 Preguntas abiertas para Matías
+### 17.10 Preguntas para Matías (resueltas el 22/11/2026)
 
-| # | Pregunta | Recomendación |
+Matías aceptó las cuatro recomendaciones de Q1, Q2, Q4 y Q5 el 22/11/2026. Q3 queda para una tanda aparte.
+
+| # | Pregunta | Recomendación (aceptada salvo Q3) |
 | --- | --- | --- |
 | Q1 | ¿El cierre tiene un campo «¿Pasó algo durante el uso?» (una falla a mitad de la jornada que, con «Impide usar», saque la unidad de servicio al cerrar)? | No por ahora: es un campo y un origen de novedad más. Una falla en ruta se avisa y el encargado la carga con «Cargar novedad» (N3). Queda como límite (sección 14). |
 | Q2 | ¿La documentación vencida **de la unidad** también bloquea la revisión, como la licencia? | No, por ahora: la unidad «No puede salir» ya lo dice en las dos vistas, y P9 deja el registro «Circuló con documentación vencida», que es lo que el encargado usa para pedir explicaciones. Si un gerente lo objeta, es cambiar P9 por un bloqueo igual a L1. |

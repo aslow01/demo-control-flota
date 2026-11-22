@@ -88,16 +88,22 @@ npm run servir       # sirve dist/ con las mismas cabeceras de seguridad que se 
 
 Esta demo se hizo con IA y el repositorio lo muestra tal cual:
 
-- **Matías Ariel Ormeño** definió el problema y el alcance (incluido lo que la demo no hace), tomó las decisiones de
-  diseño y de tecnología (están listadas en [`docs/diseno.md`](docs/diseno.md), sección 15, y en
-  [`docs/stack.md`](docs/stack.md), sección 9), dirigió el trabajo paso a paso y revisó los resultados.
-- **La IA (Claude, de Anthropic) escribió el código, las pruebas y los documentos.** Matías no escribió el código a mano.
+- **Matías Ariel Ormeño** propuso la demo y definió el problema: el parte en papel se daña, tarda en completarse y no
+  deja evidencia. Definió el alcance (incluido lo que la demo no hace) y las reglas de operación: el encargado ve primero
+  qué unidades no pueden salir y qué vence pronto; el conductor hace la revisión en el celular antes de salir y cierra el
+  parte al volver; una unidad fuera de servicio o un conductor sin licencia vigente no salen. En las decisiones técnicas
+  y de alcance comparó las alternativas que propuso la IA y eligió. Cada decisión figura con quién la tomó y cuándo en
+  [`docs/diseno.md`](docs/diseno.md), sección 15, y en [`docs/stack.md`](docs/stack.md), sección 9.
+- **Criterio de calidad:** pidió pruebas destructivas en cada etapa (intentar romper la aplicación, no solo recorrer el
+  camino esperado) y que los errores se corrigieran antes de avanzar.
+- **La IA (Claude, de Anthropic) propuso alternativas y escribió el código, las pruebas y los documentos.** Matías no
+  escribió el código a mano.
 - **El método:** primero se escribió el diseño (modelo de datos, reglas de negocio con un caso de prueba cada una,
   pantallas y accesibilidad); después un plan de pasos chicos ([`docs/plan.md`](docs/plan.md)); la lógica se hizo con
   pruebas primero (TDD: se escribe la prueba que falla y después el código que la hace pasar).
 - **Los roles de `docs/`:** «programador», «QA», «revisor» y «auditor» son agentes de IA con un rol asignado, dirigidos
   por Matías; no son personas del equipo.
-<!-- Matías: confirmar qué decisiones tomó y qué verificó en persona (crítica R1–R3) -->
+<!-- Falta (crítica R2): lo que Matías verificó en persona; la prueba en el celular está pendiente. -->
 - **Revisiones:** al terminar cada etapa, agentes de IA con rol distinto revisaron el código, intentaron romper la
   aplicación (QA adversarial) y auditaron la accesibilidad. Sus hallazgos se corrigieron por gravedad. Son revisiones
   hechas también por IA, no por terceras personas.
@@ -153,7 +159,9 @@ El flujo de integración continua (`.github/workflows/ci.yml`) está escrito per
 - **Una licencia vencida no impide salir (decisión de alcance, pendiente de revisión):** solo genera un aviso al enviar el
   parte, que el conductor puede aceptar. No bloquea la salida de la unidad.
 - **Imprimir o guardar el parte en PDF:** previsto, todavía no está.
-- **Otros extras sin hacer:** fecha de consulta simulada, modo sin conexión y fotos en el parte.
+- **Fotos en el parte (próximo paso):** el papel no deja evidencia y la demo todavía tampoco; adjuntar una foto a una
+  novedad es lo siguiente que se va a sumar.
+- **Otros extras sin hacer:** fecha de consulta simulada y modo sin conexión.
 - **Un hallazgo menor de contraste** de un color de la paleta de neutros (`--c-neutro-r`) sigue sin corregirse; consta
   en el registro.
 

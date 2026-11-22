@@ -1,5 +1,8 @@
 # Registro
 
+Los roles que aparecen en este registro («programador», «maquetador», «diseñador», «redactor», «revisor», «QA»,
+«auditor») son agentes de IA con instrucciones distintas. Matías es el único humano: decide, prioriza y aprueba.
+
 ## 18/11/2026 (noche, 6) — Revisiones de 3.2 a 3.4: segunda tanda de lógica (programador)
 
 **Qué se hizo.** Cinco tareas chicas en `src/lib/` y tests, con TDD (cada test nuevo se vio fallar antes del código; el de «Cómo funciona», al romper a propósito

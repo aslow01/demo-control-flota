@@ -22,7 +22,7 @@ En vivo, cuando esté, en `flota.matiasormeno.com.ar`.
 ## Entorno
 
 - Windows 11, PowerShell 7. Node 24, npm 11, git, `gh` (`aslow01`).
-- Stack recomendado (pendiente de OK, decisión S1): Vite + TypeScript + Svelte 5 sin SvelteKit. Dependencias con
+- Stack (decisión S1 de Matías, 18/11/2026): Vite + TypeScript + Svelte 5 sin SvelteKit. Dependencias con
   versión exacta y ≥ 14 días publicadas; sumar otra requiere justificarla (skill `seguridad-aplicada`).
 - `npm run dev` en el puerto 5173 (si la Demo 1 está corriendo, Vite toma el siguiente libre).
 
