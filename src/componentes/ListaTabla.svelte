@@ -36,7 +36,8 @@
     variante: "vencimientos" | "operacion" | "flota" | "documentos";
     /** Nombre de la tabla para lectores (el `caption` no se ve). */
     titulo: string;
-    columnas: { id: string; titulo: string }[];
+    /** `corto`: lo que se ve en la cabecera (aria-hidden); `titulo` queda solo para los lectores («Km» / «Kilometraje», 5.10). */
+    columnas: { id: string; titulo: string; corto?: string }[];
     grupos: GrupoDeLista<F>[];
     claveDeFila: (f: F) => string;
     /** Tono de la franja de la fila; `undefined` = sin franja (las unidades que pueden salir: un muro verde no informa nada). */
@@ -52,7 +53,9 @@
     <thead {...GRUPO_DE_FILAS}>
       <tr {...FILA}>
         {#each columnas as c (c.id)}
-          <th scope="col" {...ENCABEZADO_DE_COLUMNA} data-col={c.id}>{c.titulo}</th>
+          <th scope="col" {...ENCABEZADO_DE_COLUMNA} data-col={c.id}
+            >{#if c.corto !== undefined}<span aria-hidden="true">{c.corto}</span><span class="solo-lectores">{c.titulo}</span>{:else}{c.titulo}{/if}</th
+          >
         {/each}
       </tr>
     </thead>
@@ -101,6 +104,10 @@
     text-align: left;
     text-transform: uppercase;
     color: var(--c-texto-2);
+    /* Ninguna cabecera se parte dentro de una palabra («KILOMETRA / JE»): si una no entra, que se vea en la revisión. */
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: manual;
   }
   .grupo th {
     padding: var(--e-4) var(--e-3) var(--e-2);
@@ -163,19 +170,19 @@
       width: 11.5rem;
     }
     [data-variante="flota"] th[data-col="estado"] {
-      width: 10.5rem;
+      width: 12.5rem;
     }
     [data-variante="flota"] th[data-col="proximo"] {
-      width: 13.5rem;
+      width: 15rem;
     }
     [data-variante="flota"] th[data-col="km"] {
-      width: 6rem;
+      width: 5.5rem;
     }
     [data-variante="flota"] th[data-col="parte"] {
       width: 6.5rem;
     }
     [data-variante="flota"] th[data-col="novedades"] {
-      width: 6.75rem;
+      width: 6rem;
     }
     [data-variante="flota"] .fila :global(td[data-col="parte"]),
     [data-variante="flota"] .fila :global(td[data-col="novedades"]) {
@@ -388,16 +395,23 @@
       column-gap: var(--e-2);
       row-gap: var(--e-1);
     }
-    [data-variante="flota"] .fila :global(td[data-col="parte"]) {
-      display: flex;
+    /* Renglón de km y parte (C8): «59.413 km», «· último parte 21/11/2026» (la fecha nunca se separa de «último parte») y la etiqueta, que baja entera si no entra. */
+    [data-variante="flota"] .fila :global(td[data-col="parte"] > .apilado) {
+      flex-direction: row;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0 var(--e-1);
+      column-gap: var(--e-2);
     }
-    [data-variante="flota"] .fila :global(td[data-col="parte"])::before {
-      content: "· " attr(data-etiqueta);
-      content: "· " attr(data-etiqueta) / "";
-      text-transform: lowercase;
+    [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte) {
+      white-space: nowrap;
+    }
+    [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte)::before {
+      content: "· último parte ";
+      content: "· último parte " / "";
+    }
+    /* Con el próximo vencimiento crítico, la tarjeta no lo repite: ya lo dice «No puede salir · Seguro vencido hace 1 día». */
+    [data-variante="flota"] .fila :global(td[data-col="proximo"][data-critico]) {
+      display: none;
     }
     [data-variante="flota"] .fila :global(td[data-col="novedades"])::before {
       content: attr(data-etiqueta) ": ";

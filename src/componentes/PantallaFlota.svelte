@@ -115,7 +115,7 @@
     { id: "unidad", titulo: T.columnas.unidad },
     { id: "estado", titulo: T.columnas.estado },
     { id: "proximo", titulo: T.columnas.proximo },
-    { id: "km", titulo: T.columnas.km },
+    { id: "km", titulo: T.columnas.km, corto: T.columnas.kmCorto },
     { id: "parte", titulo: T.columnas.parte },
     { id: "novedades", titulo: T.columnas.novedades },
     { id: "proyecto", titulo: T.columnas.proyecto },
@@ -207,11 +207,10 @@
             {@const aspecto = aspectoDeAptitud(f.estado.categoria)}
             {@const pv = f.proximoVencimiento}
             <td {...CELDA} data-col="unidad">
-              <span class="apilado">
-                <span class="linea-unidad">
-                  <Patente patente={f.patente} href={f.href} /><span class="interno">{f.interno}</span>
-                </span>
-                <span class="nota">{sinTipo(f.descripcion)}</span>
+              <!-- Tabla: la patente y el interno en un renglón, el modelo debajo. Tarjeta (C8): el interno y el modelo van juntos en un solo grupo sin cortes (`grupo-int`) que baja entero si no entra. -->
+              <span class="unidad-celda">
+                <span class="patente-unidad"><Patente patente={f.patente} href={f.href} /></span>
+                <span class="grupo-int"><span class="interno">{f.interno}</span><span class="nota modelo">{sinTipo(f.descripcion)}</span></span>
               </span>
             </td>
             <td {...CELDA} data-col="estado">
@@ -222,7 +221,7 @@
                 {/if}
               </span>
             </td>
-            <td {...CELDA} data-col="proximo" data-etiqueta={T.columnas.proximo}>
+            <td {...CELDA} data-col="proximo" data-etiqueta={T.columnas.proximo} data-critico={pv.tipo === "faltante" || pv.tipo === "vencido" ? "" : undefined}>
               {#if pv.tipo === "faltante" || pv.tipo === "vencido"}
                 <span class="apilado">
                   <Etiqueta tono="critico" icono={pv.tipo === "faltante" ? "faltante" : "vencido"}>{pv.etiqueta ?? ""}</Etiqueta>
@@ -242,7 +241,7 @@
             </td>
             <td {...CELDA} data-col="parte" data-etiqueta={T.columnas.parte}>
               <span class="apilado">
-                <span class="num" class:nota={f.ultimoParte.fecha === null}>{f.ultimoParte.texto}</span>
+                <span class="num fecha-parte" class:nota={f.ultimoParte.fecha === null}>{f.ultimoParte.texto}</span>
                 {#if f.ultimoParte.etiqueta !== null}
                   {@const tipo = ETIQUETA_DE_PARTE[f.ultimoParte.etiqueta]}
                   {#if tipo !== undefined}
@@ -460,34 +459,59 @@
   .apilado .nota {
     line-height: 1.3;
   }
-  .linea-unidad {
-    display: inline-flex;
-    flex-wrap: wrap;
+  /* Celda de la unidad en la tabla: la patente y el interno en un renglón, el modelo debajo; el grupo del interno y el modelo desaparece de la caja (`display: contents`). */
+  .unidad-celda {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "patente interno"
+      "modelo modelo";
     align-items: center;
     gap: var(--e-1) var(--e-2);
+    min-width: 0;
+  }
+  .patente-unidad {
+    grid-area: patente;
   }
   /* El enlace de la patente mide 44 px (su blanco táctil) y la patente 24: lo que sobra no ocupa lugar entre las dos líneas de la celda (C8). */
-  .linea-unidad :global(.enlace-patente) {
+  .patente-unidad :global(.enlace-patente) {
     margin-block: -0.625rem;
   }
-  /* Tarjeta (C7): «[ZZD 563] Int. 10 · Volkswagen Amarok 2015» en un renglón y los datos de abajo, en renglones de dos pasos. */
+  .grupo-int {
+    display: contents;
+  }
+  .unidad-celda .interno {
+    grid-area: interno;
+  }
+  .modelo {
+    grid-area: modelo;
+    line-height: 1.3;
+  }
+  /* Tarjeta (C7, C8): «[ZZD 563] Int. 10 · Volkswagen Amarok 2015»; el interno y el modelo son un solo grupo sin cortes: si no entra junto a la patente, baja entero (nunca un «·» colgado). */
   @container lista (max-width: 39.99rem) {
-    td[data-col="unidad"] .apilado {
-      flex-direction: row;
+    .unidad-celda {
+      display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 0 var(--e-2);
     }
-    /* El punto va pegado al interno (nunca queda solo al principio del renglón de abajo si el modelo no entra). */
-    td[data-col="unidad"] .interno::after {
+    .grupo-int {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--e-2);
+      min-width: 0;
+      max-width: 100%;
+      white-space: nowrap;
+    }
+    .grupo-int .interno::after {
       content: " ·";
       content: " ·" / "";
     }
-    td[data-col="parte"] .apilado {
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0 var(--e-2);
+    /* Un modelo escrito por la persona puede ser larguísimo: nunca ensancha la página (la ficha lo muestra completo). */
+    .modelo {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
   .interno {
