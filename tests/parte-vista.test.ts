@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
 import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
+import { opcionesDeConductor } from "../src/lib/dominio/formulario.ts";
 import { inicioDelConductor, opcionesParaElegirConductor, panelDeParteEnviado, panelDeRevisionEnviada, panelDeSinSalida, vistaDeParte } from "../src/lib/estado/parte.ts";
 import { checklistEnOrden, checklistVacio, documento, ejecutarOk, flotaDePrueba, parte, unidad } from "./ayuda.ts";
 
@@ -523,9 +524,9 @@ describe("pantalla del parte, edición (6.5)", () => {
       tipo: "elegir",
       etiqueta: "Conductor",
       opciones: [
-        { valor: "", etiqueta: "Elija quién conduce", asignadoA: null, licenciaVigente: true },
-        { valor: "c1", etiqueta: "Luis Ferreyra", asignadoA: "ZK 214 BD", licenciaVigente: true },
-        { valor: "c2", etiqueta: "Rosa Quiroga", asignadoA: "ZKB 482", licenciaVigente: true },
+        { valor: "", etiqueta: "Elija quién conduce", asignadoA: null, licenciaVigente: true, textoDeOpcion: "Elija quién conduce" },
+        { valor: "c1", etiqueta: "Luis Ferreyra", asignadoA: "ZK 214 BD", licenciaVigente: true, textoDeOpcion: "Luis Ferreyra · ZK 214 BD" },
+        { valor: "c2", etiqueta: "Rosa Quiroga", asignadoA: "ZKB 482", licenciaVigente: true, textoDeOpcion: "Rosa Quiroga · ZKB 482" },
       ],
     });
     expect(v.valoresIniciales.conductorId).toBe("c1");
@@ -925,6 +926,19 @@ describe("pantalla del parte y licencia (L1, P13; 17.5)", () => {
     expect(v.conductor.tipo === "elegir" && v.conductor.opciones.map((o) => [o.valor, o.licenciaVigente])).toEqual([["", true], ["c1", false], ["c2", true]]);
     // con la licencia al día se precarga como siempre
     expect(vistaDeParte(flotaDePrueba(), H, ENC, "ZK214BD", H)).toMatchObject({ valoresIniciales: { conductorId: "c1" } });
+  });
+
+  it("C13: la opción del `select` dice el dato primero y la patente al final: «{Nombre} (sin licencia vigente) · {P}»", () => {
+    const v = vistaDeParte(sinLicencia(flotaDePrueba()), H, ENC, "ZK214BD", H);
+    expect(v.tipo).toBe("edicion");
+    if (v.tipo !== "edicion" || v.conductor.tipo !== "elegir") return;
+    expect(v.conductor.opciones.map((o) => o.textoDeOpcion)).toEqual(["Elija quién conduce", "Luis Ferreyra (sin licencia vigente) · ZK 214 BD", "Rosa Quiroga · ZKB 482"]);
+  });
+
+  it("B5: las opciones de conductor evalúan la licencia solo con la fecha y los documentos juntos; sin ellos no se evalúa (todas vigentes)", () => {
+    const e = sinLicencia(flotaDePrueba());
+    expect(opcionesDeConductor(e, { licencia: { fecha: H, documentos: e.documentos } }).map((o) => [o.valor, o.licenciaVigente])).toEqual([["", true], ["c1", false], ["c2", true]]);
+    expect(opcionesDeConductor(e).every((o) => o.licenciaVigente)).toBe(true);
   });
 
   it("un parte en uso con la licencia vencida después: se abre el cierre (L3), con el perfil Conductor también", () => {

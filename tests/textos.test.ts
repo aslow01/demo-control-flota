@@ -21,6 +21,7 @@ import {
   pluralizar,
   textoAdvertencia,
   textoAdvertenciaAceptada,
+  textoOpcionDeConductor,
   textoDisponibles,
   textoEmpresa,
   textoFaltantes,
@@ -146,6 +147,15 @@ describe("otros textos de la interfaz", () => {
   it("P4: faltan datos", () => {
     expect(textoFaltantes(1)).toBe("Falta 1 dato");
     expect(textoFaltantes(3)).toBe("Faltan 3 datos");
+  });
+});
+
+describe("opción del conductor en el parte (C13)", () => {
+  it("«{Nombre} · {P}»; sin licencia vigente, «{Nombre} (sin licencia vigente) · {P}»; sin unidad, solo el nombre", () => {
+    expect(textoOpcionDeConductor("Tamara Olivera", "ZK 214 BD", false)).toBe("Tamara Olivera · ZK 214 BD");
+    expect(textoOpcionDeConductor("Ivana Aguirre", "ZPA 505", true)).toBe("Ivana Aguirre (sin licencia vigente) · ZPA 505");
+    expect(textoOpcionDeConductor("Ivana Aguirre", null, true)).toBe("Ivana Aguirre (sin licencia vigente)");
+    expect(textoOpcionDeConductor("Luis Ferreyra", null, false)).toBe("Luis Ferreyra");
   });
 });
 

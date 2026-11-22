@@ -40,6 +40,7 @@ import {
   textoNoPuedeManejarHoy,
   textoParteSinCerrarDeLaUnidad,
   textoNovedadesDelParte,
+  textoOpcionDeConductor,
   textoPendienteBorrador,
   textoPendienteSinCerrar,
   textoPendienteSinParte,
@@ -419,6 +420,11 @@ export interface PanelParteEnviado {
   volverAlInicio: EnlaceDeParte;
 }
 
+/** Una opción del `select` Conductor del parte: `textoDeOpcion` es lo que se escribe en la opción (C13): «{Nombre} (sin licencia vigente) · {P}». */
+export interface OpcionDeConductorDelParte extends OpcionDeConductor {
+  textoDeOpcion: string;
+}
+
 export interface ParteNoEncontrada {
   tipo: "no-encontrada";
   /** El `h1`: «No se encontró la unidad». */
@@ -508,7 +514,7 @@ export interface ParteEnEdicion {
    * Perfil Conductor: el conductor es quien completa (texto fijo). Perfil Encargado: un `select`; cada opción dice si su licencia ampara la fecha del parte
    * (`licenciaVigente`: la vista agrega « (sin licencia vigente)»). El asignado se precarga solo si su licencia ampara la fecha (P13).
    */
-  conductor: { tipo: "fijo"; id: string; nombre: string } | { tipo: "elegir"; etiqueta: string; opciones: OpcionDeConductor[] };
+  conductor: { tipo: "fijo"; id: string; nombre: string } | { tipo: "elegir"; etiqueta: string; opciones: OpcionDeConductorDelParte[] };
   /**
    * Los valores para ARRANCAR el formulario (el borrador guardado o los de P13). La vista los copia a su propio estado y no los vuelve a leer: cada
    * autoguardado cambia el estado de la aplicación y esta vista se recalcula, pero lo que escribe la persona no se pisa.
@@ -795,8 +801,16 @@ export function vistaDeParte(estado: Estado, hoy: FechaCivil, perfil: Perfil, pa
   if (perfil.tipo === "conductor") {
     conductor = { tipo: "fijo", id: perfil.conductorId, nombre: estado.conductores.find((c) => c.id === perfil.conductorId)?.nombre ?? "" };
   } else {
-    const lista = opcionesDeConductor(estado, { conservarId: existente?.conductorId ?? null, fecha });
-    conductor = { tipo: "elegir", etiqueta: TP.conductorEtiqueta, opciones: lista.map((o, i) => (i === 0 ? { ...o, etiqueta: TP.conductorSinElegir } : o)) };
+    const lista = opcionesDeConductor(estado, { conservarId: existente?.conductorId ?? null, licencia: { fecha, documentos: estado.documentos } });
+    conductor = {
+      tipo: "elegir",
+      etiqueta: TP.conductorEtiqueta,
+      opciones: lista.map((o, i) => {
+        const sinElegir = i === 0;
+        const etiqueta = sinElegir ? TP.conductorSinElegir : o.etiqueta;
+        return { ...o, etiqueta, textoDeOpcion: sinElegir ? etiqueta : textoOpcionDeConductor(etiqueta, o.asignadoA, !o.licenciaVigente) };
+      }),
+    };
   }
 
   const aviso = unidad.estado.tipo === "en-servicio" ? textoDeNoPuedeSalir(estado, unidad, hoy, perfil.tipo === "conductor") : null;

@@ -1196,6 +1196,15 @@ export function textoCerrarElParteDel(fecha: FechaCivil): string {
   return `Cerrar el parte del ${formatearFecha(fecha)}`;
 }
 
+/**
+ * La opción del `select` Conductor del encargado en el parte (C13): el dato primero y la patente al final, porque en el celular lo que se corta es el final.
+ * «Tamara Olivera · ZK 214 BD», «Ivana Aguirre (sin licencia vigente) · ZPA 505»; sin unidad asignada, solo el nombre.
+ */
+export function textoOpcionDeConductor(nombre: string, patente: string | null, sinLicencia: boolean): string {
+  const quien = sinLicencia ? `${nombre} (sin licencia vigente)` : nombre;
+  return patente === null ? quien : `${quien} · ${patente}`;
+}
+
 /** «Hoy, miércoles 18/11/2026». */
 export function textoHoyDelConductor(hoy: FechaCivil): string {
   return `Hoy, ${diaDeLaSemana(hoy)} ${formatearFecha(hoy)}`;
