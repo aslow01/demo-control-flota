@@ -1102,3 +1102,33 @@ campos del cierre se ven pero no se piden); `npm audit` no se corrió (sin depen
 **Para el maquetador.** La vista consume los tipos de `src/componentes/tipos.ts` (reexportan `lib/estado/parte.ts`, `centro-alertas.ts` y `formulario-parte.ts`). Lo nuevo: `VistaDeParte` con
 `ParteEnEdicion` (paso 1), `ParteEnCierre` (paso 2), `ParteEnLectura`, `ParteNoDisponible` (con `nota`); `PanelParteEnviado.variante`; `EstadoDelDia` con `en-uso` y `licencia-no-vigente`;
 `FilaDeConductorSinLicencia` en `protagonista.conductores`; `FilaFlota.conductorSinLicencia` y `ultimoParte.etiqueta` con «Sin cerrar» y «En uso».
+
+## 22/11/2026 (rama `interfaz-etapa-0`) — Parte en dos pasos y licencia que bloquea: la vista (maquetador)
+
+**Qué se hizo.** Las tareas 0 y 3 a 14 de `docs/diseno-ui.md` 14.2, sobre la lógica ya hecha. Sin tocar `src/lib/` ni los tests, salvo el alias `PASO_HISTORIAL` (tarea 0).
+
+| Tarea | Qué quedó |
+| --- | --- |
+| 0 · Historial | `FichaHistorial.svelte` pasa el paso (10 o 30, leído una vez con `matchMedia`) a `vistaDeHistorial` y usa `botonVerMas`. Se retira el alias `PASO_HISTORIAL` de `ficha.ts` y de `tests/ficha.test.ts`. El evento `revision-enviada` ya salía en una línea, sin `details`. |
+| 3 · Etiquetas | `EtiquetaParte.svelte` (texto, tono e ícono de `ETIQUETAS_DE_PARTE`; `texto` opcional para «Cerrado a las 18:42»). `i-flecha-der` se lee bien a 14 px: no hizo falta tocar el sprite. |
+| 4 · Inicio del conductor | Siete estados del panel «Hoy»; aviso de bloqueo (estado 5) sin primario ni «Usar otra unidad»; sin salida como aviso crítico compacto; «Cerrar el parte» y pendiente «Cerrarlo». |
+| 5 y 6 · Pasos 1 y 2 | `ParteFormulario.svelte` sirve a los dos pasos (`vista.tipo`), con `ParteEncabezado.svelte` (vuelta, `h1`, «paso N de 2», unidad, avisos, guardado) y `BarraEnvio.svelte`. Paso 2: resumen de la revisión con `details` (`RevisionLeida.svelte`), «Al iniciar» como texto desde 30rem, combustible con asterisco, sin «Descartar». |
+| 7 y 8 · Resultados, lectura y E | `ParteEnviado.svelte` es el panel de resultado (franja vigente o crítica, ícono, acciones); C1 con las dos variantes de acciones, C2, C3 y la lectura D (etiqueta «Cerrado», filas Revisión y Cierre, caso sin salida). E con la nota del borrador conservado. «Completar el cierre» suelta el resultado y muestra el paso 2 con el foco en su `h1`. `EnlaceAccion` suma la variante `texto` y `alActivar`. |
+| 9 · Diálogos | «Antes de enviar» con `paso` («Enviar igual» / «Cerrar igual», «Cerrando…»); «¿Quién completa el parte?» con `i-vencido` + «Sin licencia vigente» en el renglón 2. |
+| 10 · Centro de alertas | Bloque «Conductores que no pueden manejar hoy (N)» dentro del protagonista, con «Renovar» o «Cargar» que abre el diálogo de la fila de la licencia; al guardar, el foco va al `h2` del protagonista y su barra dice «Licencia de … renovada.». Frase para lectores después de la cifra. |
+| 11 · Flota y ficha | «sin licencia vigente» junto al conductor (flota) y etiqueta «Sin licencia vigente» (ficha); «En uso» y «Sin cerrar» en «Último parte». El kilometraje de la ficha ya traía «→ en uso» y «Sin uso» de la lógica. |
+| 12 y 13 | `textos-marco.ts`: regla «Vencido o faltante», «El parte diario», rótulos de los pasos, barra y diálogo. `Muestras.svelte`: etiquetas nuevas (desde `ETIQUETAS_DE_PARTE`), variante texto y avisos de bloqueo. `scripts/contraste.mjs`: 4 pares nuevos (174 mediciones, 0 fallan). |
+
+**Desvíos respecto de la especificación.**
+- «El parte diario» de `TEXTO_COMO_FUNCIONA.parte` dice «completa 10 puntos de revisión de la unidad» y no «revisa 10 puntos de la unidad»: `tests/textos-marco.test.ts` exige la frase «N puntos de revisión» y no se tocan los tests.
+- El nombre en el bloque de conductores del protagonista dice «(ficticia)» y no «(ficticio)» (6.1): es la marca del resto de la demo (barra, ficha, historial) y vale para cualquier nombre.
+- En el paso 2 la nota de obligatorios queda en «Los campos con * son obligatorios.» y el nivel de combustible lleva su asterisco (la frase extra costaba un renglón y la meta de 600 px no se cumplía). En el paso 1 la nota sigue con «También son obligatorios los puntos de revisión.»
+- El mensaje de la barra del protagonista al renovar es el de `TEXTO_CONDUCTORES_SIN_LICENCIA` («Licencia de {Nombre} renovada.»), no el general del diálogo.
+- Textos de mi cosecha, para `redactor-ux`: la frase de arriba de «Antes de enviar» en cada paso («La revisión está completa…», «El parte está completo… cerrarlo»). Opción del `select` Conductor: «Nombre · patente (sin licencia vigente)» (a 360 px la opción elegida se corta en el campo; la lista la muestra entera).
+- Paso 2 en el teléfono: «Al iniciar» no se repite como campo ni como texto (ya está en el resumen); se ve desde 30rem.
+
+**Lo que la lógica no daba.** Nada que haya bloqueado. `PantallaAlertas` busca la fila de la licencia en `centro.vencimientos.grupos` por `alertaId` (la lógica da el id, no el `AccionDeDocumento`).
+
+**Verificación.** `npm test` 1489 (también `test:tz`); `npm run check` 0 errores y 0 avisos; `npm run contraste` 174 mediciones, 0 fallan; `npm run buscar` sin hallazgos; `npm run build` JS 114,7 KB gzip (tope 120).
+Navegador (Playwright, compilación servida con `npm run servir`): recorrido completo del conductor con teclado (revisión vacía con foco en el resumen, enlace al campo, diez puntos con Espacio, diálogo, C1, cierre, C3, vuelta al inicio); C2 con Frenos, inicio sin salida y lectura; caso C21 (inicio, pantalla E, «Renovar» como encargado con el foco en el `h2` y vuelta al estado 7); encargado con el `select` (L1 al enviar, borrador recuperado tras recargar, «En uso» en flota, «→ en uso» y revisión en la ficha). 320, 360, 768 y 1280 px, claro y oscuro: sin desborde, nada pulsable de menos de 44 px, sin mensajes en la consola ni violaciones de CSP. «Al iniciar» a 360 × 780: 590 px (con el aviso de la unidad); «Al terminar»: 585 px. Evento cerrado del historial a 360: 88 px.
+**Sin verificar:** axe-core (no está instalado y no se suman dependencias); lector de pantalla; colores forzados; zoom 200 % y 400 %; celular real; IndexedDB bloqueado; dos pestañas. Queda a `qa-destructor`, `auditor-accesibilidad` (D3) y `disenador-ui`.

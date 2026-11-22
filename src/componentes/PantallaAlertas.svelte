@@ -14,6 +14,7 @@
   import { formatearFecha } from "../lib/dominio/fechas.ts";
   import { contextoDeCargar, contextoDeRenovar, type CampoDocumento, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
   import { contextoDeResolver } from "../lib/dominio/formulario-novedad.ts";
+  import { TEXTO_CONDUCTORES_SIN_LICENCIA as TCL } from "../lib/dominio/textos.ts";
   import type { TipoAlertaOperacion } from "../lib/dominio/alertas.ts";
   import type { ResultadoGuardado } from "../lib/estado/app.svelte.ts";
   import {
@@ -127,6 +128,8 @@
   // L6: el diálogo se puede abrir desde una fila de Vencimientos o desde «Renovar» / «Cargar» de un conductor; de ahí depende a dónde va el foco y dónde se dice lo que pasó.
   let origenDelDialogo = $state<"vencimientos" | "protagonista">("vencimientos");
   let estadoProtagonista = $state({ texto: "" });
+  /** El conductor cuya licencia se está renovando o cargando desde el protagonista: la barra dice «Licencia de {Nombre} renovada.» (y no el mensaje general del diálogo). */
+  let conductorDelDialogo: { nombre: string; tipo: "renovar" | "cargar" } | null = null;
   const anunciadoProtagonista = textoAnunciado(() => ({ texto: estadoProtagonista.texto, repetir: estadoProtagonista }));
 
   function abrirDialogo(accion: AccionDeDocumento, origen: "vencimientos" | "protagonista" = "vencimientos"): void {
@@ -159,8 +162,10 @@
   }
 
   function alGuardar(r: { mensaje: string }): void {
-    if (origenDelDialogo === "protagonista") estadoProtagonista = { texto: r.mensaje };
-    else estadoVencimientos = { texto: r.mensaje };
+    if (origenDelDialogo === "protagonista") {
+      const k = conductorDelDialogo;
+      estadoProtagonista = { texto: k === null ? r.mensaje : k.tipo === "renovar" ? TCL.licenciaRenovada(k.nombre) : TCL.licenciaCargada(k.nombre) };
+    } else estadoVencimientos = { texto: r.mensaje };
   }
 
   /** «Renovar» / «Cargar» de un conductor sin licencia: abre el diálogo de la fila de su licencia en Vencimientos (el mismo `alertaId`). */
@@ -172,6 +177,7 @@
       estadoProtagonista = { texto: T.yaNoPendiente };
       return;
     }
+    conductorDelDialogo = conductor.accion === null ? null : { nombre: conductor.nombre, tipo: conductor.accion.tipo };
     abrirDialogo(fila.accion, "protagonista");
   }
 

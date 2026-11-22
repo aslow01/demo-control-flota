@@ -428,8 +428,8 @@
   @container parte (min-width: 30rem) {
     .km {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      /* La ayuda del campo tiene un largo propio: el texto y el campo quedan abajo, a la misma altura. */
-      align-items: end;
+      /* «Al iniciar» y «Al terminar» arrancan a la misma altura: el rótulo de uno frente al rótulo del otro. */
+      align-items: start;
     }
     .inicio-texto {
       display: block;

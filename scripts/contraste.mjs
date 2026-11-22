@@ -112,6 +112,12 @@ for (const t of tonos) par("Texto / fondos de tono (segmento elegido)", "texto",
 for (const f of ["superficie", "superficie-2", "fondo"]) par("Puede salir (variante texto, D1)", "vigente-t", f, 4.5);
 // D4 (motivos del protagonista en texto normal) y el texto sobre el fondo crítico del aviso de bloqueo.
 par("Texto / fondo crítico (D4, avisos)", "texto", "critico-f", 4.5);
+// Parte en dos pasos y licencia (19/11/2026): «sin licencia vigente» (flota, 5.10) sobre la fila con el cursor encima, el indicador de guardado con error sobre la página,
+// y el renglón de contexto («Parte del … · paso 1 de 2») y el resumen de la revisión sobre el color de la página.
+par("Sin licencia vigente (texto crítico / fila con hover)", "critico-t", "superficie-2", 4.5);
+par("Indicador de guardado con error / fondo", "critico-t", "fondo", 4.5);
+par("Renglón de contexto del parte (texto secundario / fondo)", "texto-2", "fondo", 4.5);
+par("Resumen de la revisión (texto / fondo)", "texto", "fondo", 4.5);
 par("Foco / superficie", "foco", "superficie", 3);
 par("Foco / escritorio", "foco", "escritorio", 3);
 
