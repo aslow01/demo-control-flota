@@ -667,20 +667,20 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(r.tipo === "errores" && r.errores.general).toBe(ERRORES.unidadInexistente);
   });
 
-  it("un parte de otra fecha: C13, el borrador de ayer de ZW 749 JE se completa y se envía «fuera de término»: la alerta pasa de «sin enviar» a «sin cerrar» (P5)", async () => {
+  it("un parte de otra fecha: C13, el borrador de ayer de ZW 749 JE se completa y se envía «fuera de plazo»: la alerta pasa de «sin enviar» a «sin cerrar» (P5)", async () => {
     const { app } = await iniciada({ perfil: { tipo: "conductor", conductorId: "c-13" }, patente: "ZW749JE", fecha: "2026-11-17" });
     const uid = idDe(app, "ZW749JE");
     expect(app.alertas?.alertas.some((a) => a.tipo === "parte-sin-enviar" && a.unidadId === uid && a.etapaParte === "borrador")).toBe(true);
     const v = edicion(app);
-    expect(v).toMatchObject({ parteId: "pt-0579", avisoFueraDeTermino: "Este parte es del 17/11/2026: la revisión se va a enviar fuera de término." });
+    expect(v).toMatchObject({ parteId: "pt-0579", avisoFueraDeTermino: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo." });
     const r = await app.enviarRevisionDeParte(uid, "2026-11-17", completo(v.valoresIniciales));
     expect(r.tipo).toBe("enviado");
     if (r.tipo !== "enviado") return;
-    expect(r.panel.linea).toBe("Revisión del 17/11/2026 enviada el 18/11/2026 a las 12:00 (fuera de término).");
+    expect(r.panel.linea).toBe("Revisión del 17/11/2026 enviada el 18/11/2026 a las 12:00 (fuera de plazo).");
     expect(r.panel.completarCierre).toMatchObject({ texto: "Completar el cierre", primario: true, href: "#/parte/ZW749JE/2026-11-17" });
     expect(app.alertas?.alertas.some((a) => a.tipo === "parte-sin-enviar" && a.unidadId === uid && a.etapaParte === "borrador")).toBe(false);
     expect(app.alertas?.alertas.find((a) => a.tipo === "parte-sin-enviar" && a.unidadId === uid)).toMatchObject({ etapaParte: "en-uso", texto: expect.stringMatching(/^Parte del 17\/11\/2026 sin cerrar \(salió con /) });
-    expect(estadoDe(app).eventos.at(-1)?.resumen).toContain("fuera de término");
+    expect(estadoDe(app).eventos.at(-1)?.resumen).toContain("fuera de plazo");
   });
 });
 

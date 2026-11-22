@@ -318,7 +318,7 @@ describe("enviarRevision: el parte pasa a en uso (P14)", () => {
     const e: Estado = { ...flotaDePrueba(), partes: [] };
     const r = conRevision(e, listo({ fecha: "2026-11-17", kmInicio: 1000 }));
     expect(r.eventos[0]?.datos).toMatchObject({ fueraDeTermino: true });
-    expect(r.eventos[0]?.resumen).toBe("Revisión del 17/11/2026 de ZK 214 BD enviada fuera de término: sale con 1.000 km");
+    expect(r.eventos[0]?.resumen).toBe("Revisión del 17/11/2026 de ZK 214 BD enviada fuera de plazo: sale con 1.000 km");
   });
 
   it("P5: el límite es la medianoche de Argentina: 02:59:59.999Z todavía es el mismo día y 03:00:00.000Z ya no", () => {

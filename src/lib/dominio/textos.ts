@@ -286,7 +286,7 @@ export const RESUMEN_EVENTO = {
   documentoCorregido: (nombre: string, titular: string, campos: readonly string[]) =>
     `Corrección de ${nombre} (${titular}): ${campos.join(", ")}`,
   revisionEnviada: (patente: string, fecha: FechaCivil, fueraDeTermino: boolean, kmInicio: number, sinSalida: boolean) =>
-    `Revisión del ${formatearFecha(fecha)} de ${patente} enviada${fueraDeTermino ? " fuera de término" : ""}: ${sinSalida ? "la unidad no salió por una novedad crítica" : `sale con ${formatearKm(kmInicio)} km`}`,
+    `Revisión del ${formatearFecha(fecha)} de ${patente} enviada${fueraDeTermino ? " fuera de plazo" : ""}: ${sinSalida ? "la unidad no salió por una novedad crítica" : `sale con ${formatearKm(kmInicio)} km`}`,
   parteCerrado: (patente: string, fecha: FechaCivil, kmInicio: number, kmFin: number) => {
     const recorrido = kmFin - kmInicio;
     const texto = recorrido === 0 ? "sin uso" : `${formatearKm(recorrido)} km`;
@@ -883,14 +883,14 @@ export function textoKmEnUso(km: number): string {
 
 /**
  * Evento «revision-enviada» en el historial: «Revisión antes de salir · 84.320 km · sin novedades» · «… · 1 novedad: Niveles de aceite y agua» ·
- * «… · novedad crítica en Frenos: la unidad no salió», y «(fuera de término)» al final.
+ * «… · novedad crítica en Frenos: la unidad no salió», y «(fuera de plazo)» al final.
  */
 export function textoRevisionEnHistorial(r: { kmInicio: number; normales: readonly string[]; criticas: readonly string[]; fueraDeTermino: boolean }): string {
   const partes = ["Revisión antes de salir", `${formatearKm(r.kmInicio)} km`];
   if (r.criticas.length > 0) partes.push(`novedad crítica en ${r.criticas.join(", ")}: la unidad no salió`);
   else if (r.normales.length === 0) partes.push("sin novedades");
   else partes.push(`${pluralizar(r.normales.length, "novedad", "novedades")}: ${r.normales.join(", ")}`);
-  return `${partes.join(" · ")}${r.fueraDeTermino ? " (fuera de término)" : ""}`;
+  return `${partes.join(" · ")}${r.fueraDeTermino ? " (fuera de plazo)" : ""}`;
 }
 
 /** Evento «parte-enviado» (el cierre) en el historial: «Parte cerrado · 132 km (84.320 → 84.452) · combustible 3/4». */
@@ -1062,7 +1062,7 @@ export const TEXTO_FORMULARIO_PARTE = {
   ayudaPrimerRegistro: "Es el primer registro de esta unidad.",
   ayudaKmFin: "Lo que marca el tablero al terminar la jornada.",
   ayudaLitros: "Déjelo vacío si no cargó.",
-  fueraDeTermino: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: la revisión se va a enviar fuera de término.`,
+  fueraDeTermino: (fecha: FechaCivil) => `Este parte es del ${formatearFecha(fecha)}: la revisión se enviará fuera de plazo.`,
   borradorDescartado: "Borrador descartado.",
 } as const;
 
@@ -1219,15 +1219,15 @@ export const TEXTO_PANTALLA_PARTE = {
   noSeRegistroSinSalida: "No se registró: la unidad no salió",
   sinNovedades: "Sin novedades",
   noCargo: "No cargó",
-  fueraDeTermino: "Revisión enviada fuera de término.",
+  fueraDeTermino: "Revisión enviada fuera de plazo.",
   rotulos: { alIniciar: "Al iniciar", recorrido: "Recorrido", combustible: "Combustible", litros: "Combustible cargado", novedades: "Novedades", avisos: "Avisos aceptados", revision: "Revisión", cierre: "Cierre" },
 } as const;
 
-/** C1: «ZK 214 BD puede salir. Revisión enviada a las 06:52.»; fuera de término: «Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de término).» */
+/** C1: «ZK 214 BD puede salir. Revisión enviada a las 06:52.»; fuera de plazo: «Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de plazo).» */
 export function textoLineaRevisionEnviada(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil | null, hora: string | null): string {
   if (diaDeEnvio === null || hora === null) return `${patente} puede salir. Revisión enviada.`;
   if (fecha === diaDeEnvio) return `${patente} puede salir. Revisión enviada a las ${hora}.`;
-  return `Revisión del ${formatearFecha(fecha)} enviada el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de término).`;
+  return `Revisión del ${formatearFecha(fecha)} enviada el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de plazo).`;
 }
 
 /** C2: «Revisión enviada a las 06:52 con una novedad crítica: Frenos.» / «… con 2 novedades críticas: Frenos, Dirección.» */
@@ -1259,11 +1259,11 @@ export function textoResumenDeLaRevision(hora: string | null, kmInicio: number |
   return partes.join(" · ");
 }
 
-/** Línea del panel «Parte enviado»: «ZK 214 BD, 18/11/2026, enviado a las 18:42.»; fuera de término, con el día del envío. Sin hora legible: «ZK 214 BD, 16/11/2026, enviado.» */
+/** Línea del panel «Parte enviado»: «ZK 214 BD, 18/11/2026, enviado a las 18:42.»; fuera de plazo, con el día del envío. Sin hora legible: «ZK 214 BD, 16/11/2026, enviado.» */
 export function textoLineaParteEnviado(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil | null, hora: string | null): string {
   if (diaDeEnvio === null || hora === null) return `${patente}, ${formatearFecha(fecha)}, enviado.`;
   if (fecha === diaDeEnvio) return `${patente}, ${formatearFecha(fecha)}, enviado a las ${hora}.`;
-  return `${patente}, ${formatearFecha(fecha)}, enviado el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de término).`;
+  return `${patente}, ${formatearFecha(fecha)}, enviado el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de plazo).`;
 }
 
 /** Novedades de un parte enviado: «Sin novedades», «1 crítica: Frenos», «2 críticas: Frenos, Dirección; 1 normal: Otra novedad». */

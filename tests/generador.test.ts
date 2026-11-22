@@ -655,7 +655,7 @@ describe("el ejemplo reacciona a los comandos (criterio de la pantalla 4.2)", ()
     expect(r.valor.eventos.map((x) => x.tipo)).toEqual(["novedad-resuelta", "vuelta-a-servicio"]);
   });
 
-  it("completar y enviar la revisión del borrador de ayer (C13): la alerta pasa de «sin enviar» a «sin cerrar», con aviso de fuera de término; al cerrarlo desaparece", () => {
+  it("completar y enviar la revisión del borrador de ayer (C13): la alerta pasa de «sin enviar» a «sin cerrar», con aviso de fuera de plazo; al cerrarlo desaparece", () => {
     const b = e.partes.find((p) => p.estado === "borrador")!;
     const guardado = ejecutar(
       e,

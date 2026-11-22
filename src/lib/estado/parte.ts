@@ -374,7 +374,7 @@ export interface PanelParteEnviado {
   avisoCritica: string | null;
   /** Las advertencias que se aceptaron al enviar (K6, K7, P9), ya en texto (C3 y lectura: las de la revisión y las del cierre). */
   advertencias: string[];
-  /** «Revisión enviada fuera de término.» (P5) o `null`. */
+  /** «Revisión enviada fuera de plazo.» (P5) o `null`. */
   fueraDeTermino: string | null;
   /** C1: «El encargado la ve en el centro de alertas.» si la revisión abrió novedades normales. */
   notaEncargado: string | null;
@@ -458,7 +458,7 @@ export interface ParteEnEdicion {
   interno: string;
   descripcion: string;
   fecha: FechaCivil;
-  /** «Este parte es del 17/11/2026: la revisión se va a enviar fuera de término.» */
+  /** «Este parte es del 17/11/2026: la revisión se va a enviar fuera de plazo.» */
   avisoFueraDeTermino: string | null;
   avisoAptitud: string | null;
   /** El id del borrador guardado; `null` si todavía no se guardó nada (se crea con el primer cambio). */
@@ -615,7 +615,7 @@ export function panelDeRevisionEnviada(estado: Estado, entrada: Parte, perfil: P
     ],
     avisoCritica: null,
     advertencias: parte.advertenciasAceptadas.map(textoAdvertenciaAceptada),
-    // El texto de «fuera de término» ya va en la línea (C1).
+    // El texto de «fuera de plazo» ya va en la línea (C1).
     fueraDeTermino: null,
     notaEncargado: normales.length > 0 ? TP.encargadoLaVe : null,
     parrafo: TP.alTerminarVuelva,

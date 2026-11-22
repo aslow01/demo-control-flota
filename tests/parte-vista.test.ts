@@ -446,7 +446,7 @@ describe("pantalla del parte, edición (6.5)", () => {
     expect(v.borrador).toEqual({ mensaje: "Borrador recuperado, guardado en este equipo el 18/11/2026 a las 12:00." });
   });
 
-  it("un parte de un día pasado (dentro de los 7 días): aviso de fuera de término y el kilometraje inicial sale del registro anterior a esa fecha", () => {
+  it("un parte de un día pasado (dentro de los 7 días): aviso de fuera de plazo y el kilometraje inicial sale del registro anterior a esa fecha", () => {
     const e = flotaDePrueba();
     e.partes.push(parte({ id: "p16", unidadId: "u1", fecha: "2026-11-16", kmInicio: 83800, kmFin: 84000, enviado: "2026-11-16T21:00:00.000Z" }));
     e.partes = e.partes.filter((p) => !(p.unidadId === "u1" && p.fecha === "2026-11-17"));
@@ -458,7 +458,7 @@ describe("pantalla del parte, edición (6.5)", () => {
     const w = ver({ ...e, partes: [...e.partes.filter((p) => p.id !== "p17"), posterior] }, COND, "ZK214BD", "2026-11-17");
     expect(w.tipo).toBe("edicion");
     if (w.tipo !== "edicion") return;
-    expect(w).toMatchObject({ avisoFueraDeTermino: "Este parte es del 17/11/2026: la revisión se va a enviar fuera de término.", contexto: "Parte del martes 17/11/2026 · paso 1 de 2", ayudaKmInicio: "Último registro: 84.000 km (parte del 16/11/2026)." });
+    expect(w).toMatchObject({ avisoFueraDeTermino: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo.", contexto: "Parte del martes 17/11/2026 · paso 1 de 2", ayudaKmInicio: "Último registro: 84.000 km (parte del 16/11/2026)." });
     expect(w.valoresIniciales.kmInicio).toBe("84.000");
   });
 
@@ -630,7 +630,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     expect(panelDeParteEnviado(hecho.estado, hecho.parte, COND).avisoCritica).not.toBeNull();
   });
 
-  it("advertencias aceptadas (K6, P9 de la revisión y K7 del cierre) y revisión fuera de término", () => {
+  it("advertencias aceptadas (K6, P9 de la revisión y K7 del cierre) y revisión fuera de plazo", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
     const { estado, parte: p } = enviado(e, { kmInicio: 85500, kmFin: 86800 }, ["salto-km", "documentacion-vencida", "recorrido-largo"]);
@@ -640,10 +640,10 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       "Seguro: vencido o sin cargar. Se envió igual: quedó registrado que la unidad circuló con documentación vencida.",
       "Recorrido del día inusualmente largo: 1.300 km",
     ]);
-    // Fuera de término: la revisión del parte de ayer se envió hoy.
+    // Fuera de plazo: la revisión del parte de ayer se envió hoy.
     const tarde = { ...p, fecha: "2026-11-17", revisado: "2026-11-18T12:30:00.000Z" };
     const t = panelDeParteEnviado(estado, tarde, COND);
-    expect(t.fueraDeTermino).toBe("Revisión enviada fuera de término.");
+    expect(t.fueraDeTermino).toBe("Revisión enviada fuera de plazo.");
   });
 
   it("C1: «Revisión enviada»: el parte quedó en uso, con «Completar el cierre ahora» (hoy) o «Completar el cierre» como primario (día pasado)", () => {
@@ -668,14 +668,14 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     expect(panelDeRevisionEnviada(estado, p, COND, "2026-11-19").completarCierre).toEqual({ texto: "Completar el cierre", href: "#/parte/ZK214BD/2026-11-18", primario: true });
   });
 
-  it("C1: con una novedad normal la nota dice que el encargado la ve; fuera de término lo dice la línea", () => {
+  it("C1: con una novedad normal la nota dice que el encargado la ve; fuera de plazo lo dice la línea", () => {
     const checklist = { ...checklistEnOrden(), niveles: { estado: "con-novedad" as const, descripcion: "Falta agua", impideUso: false } };
     const { estado, parte: p } = enUso(flotaDePrueba(), { checklist });
     const c1 = panelDeRevisionEnviada(estado, p, COND, H);
     expect(c1.filas[1]).toEqual({ rotulo: "Novedades", valor: "1 normal: Niveles de aceite y agua" });
     expect(c1.notaEncargado).toBe("El encargado la ve en el centro de alertas.");
     const tarde = panelDeRevisionEnviada(estado, { ...p, fecha: "2026-11-17", revisado: "2026-11-18T11:10:00.000Z" }, COND, H);
-    expect(tarde.linea).toBe("Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de término).");
+    expect(tarde.linea).toBe("Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de plazo).");
   });
 
   it("C2: «La unidad no puede salir»: la novedad crítica, el aviso, el párrafo y solo «Volver al inicio»", () => {
