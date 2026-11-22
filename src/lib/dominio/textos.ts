@@ -1128,6 +1128,16 @@ export const TEXTO_INICIO_CONDUCTOR = {
   ultimosVacio: "Todavía no cerró partes. Los últimos cinco aparecerán aquí.",
 } as const;
 
+/** Estado 5b del panel «Hoy» (A1): hay un parte anterior de la unidad sin cerrar; hay que cerrarlo antes de empezar la revisión de hoy. */
+export function textoCierrePendiente(fecha: FechaCivil): string {
+  return `Antes de empezar la revisión de hoy, cierre el parte del ${formatearFecha(fecha)}.`;
+}
+
+/** El botón del estado 5b y el enlace de la pantalla «No se puede cargar este parte» con un parte anterior sin cerrar: «Cerrar el parte del 17/11/2026». */
+export function textoCerrarElParteDel(fecha: FechaCivil): string {
+  return `Cerrar el parte del ${formatearFecha(fecha)}`;
+}
+
 /** «Hoy, miércoles 18/11/2026». */
 export function textoHoyDelConductor(hoy: FechaCivil): string {
   return `Hoy, ${diaDeLaSemana(hoy)} ${formatearFecha(hoy)}`;

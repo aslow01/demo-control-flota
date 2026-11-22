@@ -130,6 +130,17 @@
             <BotonConfirmar texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
           </div>
         {/if}
+      {:else if inicio.hoyEstado.tipo === "cierre-pendiente"}
+        <!-- Estado 5b (A1), ajuste mínimo de la lógica: el maquetador le da su forma final. -->
+        {@const c = inicio.hoyEstado}
+        <p class="estado-dia">{c.texto}</p>
+        <div class="accion-principal"><EnlaceAccion href={c.primario.href} variante="primario" tamano="grande">{c.primario.texto}</EnlaceAccion></div>
+        {#if c.borrador !== null}
+          {@const b = c.borrador}
+          <div class="secundaria">
+            <BotonConfirmar texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
+          </div>
+        {/if}
       {:else}
         <p class="estado-dia">{T.sinUnidad}</p>
       {/if}

@@ -280,7 +280,7 @@ identificador en su nombre (`it('V4: d = 8 cae en el grupo de 15 días')`), así
 | A4 | "Volver a servicio" se rechaza si hay novedades críticas abiertas, y el error las nombra. | Error: "Antes de volver a servicio, resuelva: Frenos (parte del 16/11/2026)." |
 | A5 | Volver a servicio con documentos vencidos **se permite** (el estado no es la aptitud): la unidad queda en servicio y "No puede salir". | Volver a servicio con seguro vencido → estado `en-servicio`, aptitud "No puede salir". |
 | A6 | Poner fuera de servicio a mano exige motivo (5 a 200 caracteres). Una unidad ya fuera de servicio no se vuelve a poner (error). | Motivo vacío → "Escriba el motivo (por ejemplo, «En taller: cambio de embrague»)." |
-| A7 | Dar de baja exige motivo; es **irreversible** en la demo; conserva documentos, partes e historial; la unidad sale de la flota activa, de las alertas y de los totales. No se aceptan partes de una unidad de baja. | Baja → no aparece en "Pueden salir"/"No pueden salir"; su ficha muestra "Dada de baja el 18/11/2026: motivo". |
+| A7 | Dar de baja exige motivo; es **irreversible** en la demo; conserva documentos, partes e historial; la unidad sale de la flota activa, de las alertas y de los totales. No se aceptan partes de una unidad de baja. **No se da de baja una unidad con un parte en uso** (`unidad-con-parte-en-uso`): el cierre se rechaza para una unidad de baja y el parte quedaría huérfano; primero se cierra. | Baja → no aparece en "Pueden salir"/"No pueden salir"; su ficha muestra "Dada de baja el 18/11/2026: motivo". |
 | A8 | **Protagonista del centro de alertas** = cantidad de unidades activas (no de baja) que hoy "no pueden salir" o están "fuera de servicio". "Disponibles: P de T" con T = activas y P = las que pueden salir. | Ejemplo: 23 activas, 2 no pueden salir, 2 fuera de servicio → "4 unidades" y "Disponibles: 19 de 23". |
 
 ### 6.4 Parte diario (P)
@@ -304,6 +304,7 @@ identificador en su nombre (`it('V4: d = 8 cae en el grupo de 15 días')`), así
 | P15 | **Cierre:** solo de un parte en uso. Exige P4 (cierre), K2, K4 y la advertencia K7. Sin límite de fecha (P2 rige para empezar y para la revisión): un parte en uso de hace 10 días todavía se puede cerrar. No vuelve a mirar la licencia (L3) ni P9 (quedó fijado en la revisión). Pasa a `enviado`, `enviado = ahora`, `advertenciasAceptadas` = las de la revisión + las del cierre. Evento `parte-enviado`. | Parte en uso de H con fin 84 452 y combustible 3/4 → cerrado, recorrido 132, `kmActual` = 84 452. Parte en uso de H − 10 → se cierra. |
 | P16 | **Revisión con novedad crítica (sin salida):** en la misma transacción, A3 (fuera de servicio) y el parte se **cierra**: `estado = 'enviado'`, `sinSalida = true`, `kmFin = kmInicio`, `combustible = null`, `litrosCargados = null`, `enviado = revisado = ahora`. No hay cierre aparte ni evento `parte-enviado`. | Revisión con frenos "con novedad" → parte cerrado sin salida, recorrido 0 ("Sin uso"); eventos `revision-enviada`, `novedad-abierta`, `fuera-de-servicio`. |
 | P17 | La alerta "Circuló con documentación vencida" (P9) sale de partes **en uso o cerrados** con `documentacionVencida` no vacía y **sin** `sinSalida`. | Parte en uso de H con seguro vencido aceptado → alerta desde que se envía la revisión. |
+| P18 | **Cerrar antes** (decisión de Matías del 22/11/2026). Si la unidad tiene un parte **en uso** de una fecha anterior, no se envía la revisión de una fecha posterior (`parte-anterior-sin-cerrar`): primero se cierra. Sin esta regla, la revisión de hoy arrancaba con el kilometraje de salida de ayer (el precargado) y el cierre de ayer ya no podía registrar el recorrido real (K4). Se controla después de P8 y P2 y antes de L1. El inicio del conductor lo lleva al cierre (estado `cierre-pendiente`) y la pantalla del parte dice «No se puede cargar este parte» con un enlace a ese cierre. Un borrador anterior sin enviar no bloquea, y un parte en uso de una fecha posterior tampoco. | Parte en uso del 17/11 de ZK 214 BD, revisión del 18/11 → error "El parte del 17/11/2026 de ZK 214 BD quedó sin cerrar. Ciérrelo antes de empezar la revisión de una fecha posterior."; cerrado el del 17/11, la revisión del 18/11 se envía. |
 
 ### 6.5 Kilometraje (K)
 
@@ -313,7 +314,7 @@ identificador en su nombre (`it('V4: d = 8 cae en el grupo de 15 días')`), así
 | K2 | `kmFin ≥ kmInicio`. Igual es válido (recorrido 0: "Sin uso"). | 84 320 → 84 319 → error "El kilometraje al terminar (84.319) es menor que al iniciar (84.320)." · 84 320 → 84 320 → ok, "Sin uso". |
 | K3 | **El kilometraje no retrocede:** `kmInicio ≥` el `kmFin` del último parte enviado de fecha anterior (o el `kmBase` de una corrección posterior a ese parte). Si no, error que bloquea el envío (el borrador queda). | Último parte enviado del 17/11 terminó en 84 320; parte del 18/11 con inicio 84 319 → error "El último registro de ZK 214 BD es 84.320 km (parte del 17/11/2026). Revise el número. Si se cambió el tablero, avise al encargado." |
 | K4 | Partes fuera de orden: un parte de una fecha intermedia tiene que quedar entre sus vecinos: `kmFin ≤ kmInicio` del siguiente parte enviado. | Partes enviados del 15 (fin 80 000) y del 17 (inicio 80 500); se carga el del 16 con fin 80 600 → error "Supera el kilometraje con que empezó el parte del 17/11/2026 (80.500)." |
-| K5 | **Corrección de kilometraje** (solo encargado, motivo de 10 a 200 caracteres): fija `kmBase` desde una fecha. K3 y K4 comparan solo con registros posteriores a la corrección. | Corrección a 120 km desde H − 2 (tablero nuevo) tras 84 320 → parte de H − 1 con inicio 130 → ok. |
+| K5 | **Corrección de kilometraje** (solo encargado, motivo de 10 a 200 caracteres): fija `kmBase` desde una fecha. K3 y K4 comparan solo con registros posteriores a la corrección. **No se corrige desde la fecha de un parte en uso** (`km-correccion-parte-en-uso`, campo `desde`): su kilometraje de salida no cambia (P7) y el cierre quedaría imposible; primero se cierra. | Corrección a 120 km desde H − 2 (tablero nuevo) tras 84 320 → parte de H − 1 con inicio 130 → ok. Parte en uso de H y corrección desde H → error "El parte del 18/11/2026 está en uso. Ciérrelo antes de corregir el kilometraje desde esa fecha." |
 | K6 | **Salto:** `kmInicio − kmAnterior > 1 000` → advertencia (no bloquea), que hay que aceptar al enviar. Se guarda en `advertenciasAceptadas` y se ve en el historial ("1.250 km sin registrar"). | Diferencia 1 001 → advertencia · 1 000 → nada. |
 | K7 | **Recorrido del día > 1 200 km** → advertencia que hay que aceptar. | 1 201 → advertencia · 1 200 → nada. |
 | K8 | `kmActual(unidad)` = el kilometraje del último registro (K10) por fecha y, a igual fecha, por instante: `kmFin` de un parte cerrado, `kmInicio` de un parte en uso o `kmBase` de una corrección. Sin datos: `null` ("Sin registros"). | Parte del 17 (84 320) y corrección del 18 (120) → 120. Parte cerrado del 17 (84 320) y revisión del 18 con inicio 84 330 (en uso) → 84 330. |
@@ -1004,6 +1005,7 @@ a `textos.ts` (lista en `diseno-ui.md`, sección 7).
    `parte-enviado-inmutable`.
 2. P8: unidad activa y en servicio (`unidad-de-baja`, `unidad-fuera-de-servicio`).
 3. P2: `validarFechaParte(parte.fecha, ctx.hoy)`.
+3 bis. **P18:** `partePendienteDeCierre(partes, unidadId, parte.fecha)`; si la unidad tiene un parte `en-uso` de una fecha anterior → `parte-anterior-sin-cerrar` (sin campo), mensaje `errParteAnteriorSinCerrar(patente, fecha)`, `detalle: { parteId, fecha }` del más antiguo. Va antes de L1: es un hecho sobre la unidad, y mientras no se cierre ese parte la revisión de hoy no puede tener un kilometraje de salida coherente.
 4. Conductor del parte activo (`buscarConductorActivo`); sin conductor, va con los faltantes del paso 6.
 5. **L1:** `estadoDeLicencia(documentos, conductorId, parte.fecha)`; si no es vigente → `licencia-no-vigente`, campo
    `conductorId`, `detalle: { motivo, vence?, desde? }`, mensaje `errLicenciaNoVigente(nombre, fecha, estado)` (en tercera
@@ -1065,6 +1067,7 @@ Los nombres son orientativos (los fija el programador sin cambiar el significado
 | `parte.ts` | `advertenciasDeRevision`, `advertenciasDeCierre` | K6 + P9, y K7. Reemplazan a `advertenciasDeEnvio`. |
 | `parte.ts` | `conductorParaParte(perfil, unidad, documentos, fecha)` | P13: perfil Conductor → el del perfil (siempre: el bloqueo se muestra aparte). Perfil Encargado → el asignado solo si su licencia ampara `fecha`; si no, `null`. |
 | `parte.ts` | `nuevoBorrador` | Con `revisado: null` y `sinSalida: false`. |
+| `parte.ts` | `partePendienteDeCierre(partes, unidadId, fecha?)` | P18: el parte `en-uso` más antiguo de la unidad con fecha anterior a `fecha` (sin `fecha`, el más antiguo de todos); `undefined` si no hay. Lo usan `enviarRevision` (con la fecha del parte), `darDeBaja` (sin fecha), el inicio del conductor y la pantalla del parte. |
 | `parte.ts` | `parteLegible` | Acepta `estado` `'en-uso'`; `revisado` = instante legible o `null`; `sinSalida` = `=== true`. Un parte en uso sin `revisado` legible se sigue leyendo como en uso (no se inventa la hora). |
 | `kilometraje.ts` | `RegistroKm` + `{ tipo: 'salida'; fecha; instante; parteId; kmInicio }` | `registrosDeKm` agrega los partes `en-uso` con `kmInicio` y `revisado` legibles (`instante = revisado`). `kmDeRegistro(salida) = kmInicio`. `describirRegistro(salida)` = «revisión del 18/11/2026». Los cerrados siguen como `tipo: 'parte'` (también los sin salida, con recorrido 0). |
 | `kilometraje.ts` | `validarKmDeSalida({ unidad, fecha, kmInicio, partes, correcciones })` | K3 contra `registroAnterior`; K4 de la salida: si `registroSiguiente` es `parte` o `salida` y `kmInicio > siguiente.kmInicio` → error. Devuelve `{ kmAnterior, advertencias: K6 }`. |
@@ -1080,15 +1083,18 @@ Los nombres son orientativos (los fija el programador sin cambiar el significado
   del paso 4.5): (1) sin unidad → `sin-unidad`; (2) hay parte de hoy de esa unidad y está `enviado` → `enviado` (con
   `sinSalida`, el texto de la novedad crítica en lugar de la hora de cierre); (3) está `en-uso` → `en-uso` (primario
   «Cerrar el parte»; la licencia no se mira, L3); (4) unidad fuera de servicio → `fuera-de-servicio` (como hoy); (5) la
-  licencia del conductor del perfil no ampara hoy → `licencia-no-vigente` (con `descartar` si hay borrador); (6) hay
-  borrador → `borrador`; (7) `sin-parte`. Con `licencia-no-vigente`, el panel «Su licencia» es `null` (el aviso ya lo
+  licencia del conductor del perfil no ampara hoy → `licencia-no-vigente` (con `descartar` si hay borrador); (5 bis) la unidad
+  tiene un parte anterior en uso → `cierre-pendiente` (P18: `texto` «Antes de empezar la revisión de hoy, cierre el parte del
+  17/11/2026.», `primario` «Cerrar el parte del 17/11/2026» hacia el cierre de ese día, y `borrador` con `descartar` si hay uno de
+  hoy); (6) hay borrador → `borrador`; (7) `sin-parte`. Con `licencia-no-vigente`, el panel «Su licencia» es `null` (el aviso ya lo
   dice) y `avisoAptitud` también. «Pendientes» suma el tipo `sin-cerrar` (partes en uso de días anteriores de las
   unidades asignadas o empezados por ese conductor) con la acción «Cerrarlo». «Mis últimos partes» sigue mostrando solo
   los cerrados.
 - **`estado/parte.ts`, pantalla del parte (6.5).** Modos: `revision` (sin parte o borrador), `cierre` (en uso, con el
   resumen de la revisión), `lectura` (cerrado), `no-disponible` (P8, P2, unidad de baja y, **con el perfil Conductor, la
-  licencia que no ampara la fecha del parte**, con `descartar` si hay borrador; un parte en uso de una unidad de baja
-  también va acá, sin descartar). Resultado recién enviado: `revision-enviada` (puede salir) o `sin-salida`; después del
+  licencia que no ampara la fecha del parte**, con `descartar` si hay borrador; **un parte anterior de la unidad en uso (P18)**,
+  con el enlace «Cerrar el parte del 17/11/2026» en lugar del de «Ir a…», para los dos perfiles y también con `descartar` si hay
+  borrador; un parte en uso de una unidad de baja también va acá, sin descartar). Resultado recién enviado: `revision-enviada` (puede salir) o `sin-salida`; después del
   cierre, `cerrado`. Con el perfil Encargado y un conductor sin licencia vigente, el formulario se muestra igual y el
   error llega al enviar (en el resumen, primero de la lista, y en el campo Conductor).
 - **`dominio/formulario-parte.ts`.** Valores y faltantes por paso (`faltantesDeValores` de la revisión y del cierre).
@@ -1131,7 +1137,9 @@ Los nombres son orientativos (los fija el programador sin cambiar el significado
 | Conductor inactivo | No aparece en la lista de L6 ni se puede elegir (como hoy). | L6 |
 | Revisión con novedad crítica y seguro vencido | Sin advertencia de P9 ni alerta «Circuló»: la unidad no salió. | P9, P16 |
 | La unidad pasa a fuera de servicio (a mano o por una novedad cargada) mientras el parte está en uso | El cierre se acepta. | P8 |
-| La unidad se da de baja con un parte en uso | El cierre se rechaza (A7); la unidad sale de las alertas, así que el parte en uso no alerta. | A7, P5 |
+| Se intenta dar de baja una unidad con un parte en uso | Se rechaza (`unidad-con-parte-en-uso`): primero se cierra el parte. Un parte en uso de una unidad ya de baja (datos viejos) no se puede cerrar (A7), no alerta y la pantalla dice «No se puede cargar este parte», sin descartar. | A7, P5, P18 |
+| La unidad tiene un parte en uso de ayer y se quiere empezar el de hoy | No se puede (P18): el inicio muestra «Antes de empezar la revisión de hoy, cierre el parte del 17/11/2026.» con el botón «Cerrar el parte del 17/11/2026»; la pantalla del parte de hoy dice «No se puede cargar este parte» con el mismo enlace. Un borrador de hoy se conserva y se puede descartar. | P18 |
+| Se corrige el kilometraje desde la fecha de un parte en uso | Se rechaza (`km-correccion-parte-en-uso`): primero se cierra. | K5 |
 | Parte en uso de hace más de 7 días | Se puede cerrar (P15) y alerta «sin cerrar» mientras exista. | P5, P15 |
 | Dos pestañas: una envía la revisión mientras la otra autoguarda el borrador | La otra recibe `revision-ya-enviada` (o el aviso D9 la pone antes en solo lectura). | P7, D9 |
 
@@ -1216,6 +1224,13 @@ Cada nombre lleva el identificador de la regla. Archivos probables entre parént
 58. P13: con el perfil Encargado, el asignado sin licencia no se precarga.
 59. Centro de alertas: fila de C21 en `protagonista.conductores` con el `alertaId` de su licencia; texto de la fila de operación con borradores, con partes en uso y con ambos.
 60. Flota y ficha: `conductorSinLicencia` de la unidad de C21; historial con paso 10 y 30 («Ver 10 más»).
+
+*Correcciones de la revisión del 22/11/2026 (tests en los mismos archivos)*
+
+61. P18: un parte en uso anterior de la misma unidad bloquea `enviarRevision` (`parte-anterior-sin-cerrar`, el más antiguo si hay varios); no bloquea a otra unidad, ni un parte en uso posterior; va antes de L1; cerrado el anterior, la revisión se envía y el cierre anterior sigue siendo posible con el kilometraje real (`tests/comandos-parte.test.ts`).
+62. P18 en el estado: inicio `cierre-pendiente` (con y sin borrador, el más antiguo, con el orden de 17.5) y pantalla del parte `no-disponible` con el enlace al cierre, para los dos perfiles (`tests/parte-vista.test.ts`).
+63. K5: una corrección desde la fecha de un parte en uso → `km-correccion-parte-en-uso`; desde una fecha anterior sigue valiendo `km-correccion-anterior` (`tests/comandos-unidades.test.ts`).
+64. A7: dar de baja una unidad con un parte en uso → `unidad-con-parte-en-uso` (`tests/comandos-unidades.test.ts`).
 
 ### 17.9 Tareas del programador (en orden)
 
