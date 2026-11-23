@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
 import { kmActual } from "../src/lib/dominio/kilometraje.ts";
-import { sumarDias } from "../src/lib/dominio/fechas.ts";
 import type { Estado, Parte } from "../src/lib/dominio/tipos.ts";
 import { checklistEnOrden, checklistVacio, contexto, documento, ejecutarError, ejecutarOk, flotaDePrueba, parte } from "./ayuda.ts";
 
@@ -585,35 +583,61 @@ describe("enviarRevision: la licencia bloquea (L1 a L5)", () => {
   });
 });
 
-describe("enviarRevision: documentación de la unidad (P9) y novedades (A3, P11, P16)", () => {
-  it("P9: con el seguro vencido hay que aceptar; aceptado queda en uso con ['seguro'] y la alerta crítica dura 30 días", () => {
+describe("enviarRevision: documentación de la unidad (P21) y novedades (A3, P11, P16)", () => {
+  it("P21: con el seguro vencido la revisión no se envía, sin advertencia que aceptar, y el error dice cuál y desde cuándo", () => {
     const e = conSeguroQueVence(flotaDePrueba(), "2026-11-15");
     const { estado, parteId } = conBorrador(e, listo());
-    const err = ejecutarError(estado, revision(parteId));
-    expect(err.detalle).toEqual({ advertencias: [{ tipo: "documentacion-vencida", documentos: ["seguro"] }] });
-    const r = ejecutarOk(estado, revision(parteId, ["documentacion-vencida"]));
-    expect(parteDe(r.estado, parteId)).toMatchObject({ estado: "en-uso", documentacionVencida: ["seguro"] });
-    const alerta = (hoy: string) => calcularAlertas(r.estado, hoy).alertas.filter((a) => a.tipo === "uso-con-documentacion-vencida");
-    expect(alerta(H)).toHaveLength(1);
-    expect(alerta(H)[0]?.gravedad).toBe("critica");
-    expect(alerta(sumarDias(H, 30))).toHaveLength(1);
-    expect(alerta(sumarDias(H, 31))).toHaveLength(0);
+    const err = ejecutarError(estado, revision(parteId, ["documentacion-vencida"]));
+    expect(err.codigo).toBe("documentacion-de-la-unidad-vencida");
+    expect(err.detalle).toEqual({ documentos: ["seguro"] });
+    expect(err.mensaje).toBe("El seguro de ZK 214 BD venció el 15/11/2026. La unidad no puede salir. Renueve la documentación antes de enviar la revisión.");
+    expect(parteDe(estado, parteId).estado).toBe("borrador");
   });
 
-  it("P9 (C01): un seguro que venció ayer todavía valía ayer: la revisión de ayer pasa sin advertencia; la de hoy no", () => {
+  it("P21: un documento faltante (la habilitación del proyecto) también bloquea", () => {
+    const base = flotaDePrueba();
+    const e: Estado = { ...base, documentos: base.documentos.filter((d) => !(d.tipo === "habilitacion-proyecto" && d.titular.id === "u1")) };
+    const { estado, parteId } = conBorrador(e, listo());
+    const err = ejecutarError(estado, revision(parteId));
+    expect(err.codigo).toBe("documentacion-de-la-unidad-vencida");
+    expect(err.detalle).toEqual({ documentos: ["habilitacion-proyecto"] });
+    expect(err.mensaje).toContain("Falta cargar la habilitación");
+  });
+
+  it("P21 (C01): un seguro que venció ayer todavía valía ayer: la revisión de ayer pasa; la de hoy no", () => {
     const base = flotaDePrueba();
     const e: Estado = { ...conSeguroQueVence(base, "2026-11-17"), partes: [] };
     const ayer = conBorrador(e, listo({ fecha: "2026-11-17", kmInicio: 1000 }));
-    expect(parteDe(ejecutarOk(ayer.estado, revision(ayer.parteId)).estado, ayer.parteId).documentacionVencida).toEqual([]);
+    expect(parteDe(ejecutarOk(ayer.estado, revision(ayer.parteId)).estado, ayer.parteId)).toMatchObject({ estado: "en-uso", documentacionVencida: [] });
     const hoy = conBorrador(e, listo({ fecha: H, kmInicio: 1000 }));
-    expect(ejecutarError(hoy.estado, revision(hoy.parteId)).codigo).toBe("advertencias-sin-aceptar");
+    expect(ejecutarError(hoy.estado, revision(hoy.parteId)).codigo).toBe("documentacion-de-la-unidad-vencida");
   });
 
-  it("aceptar solo una de dos advertencias no alcanza", () => {
+  it("P21: la renovación de hoy habilita la revisión de hoy; la de ayer sigue bloqueada (el documento no amparaba ese día)", () => {
+    const e = conSeguroQueVence(flotaDePrueba(), "2026-11-10");
+    const hoy = conBorrador(e, listo());
+    const renovado = ejecutarOk(hoy.estado, { tipo: "renovarDocumento", documentoId: "u1-seguro", numero: "DEMO-N", emisor: "", vence: "2031-01-01", emitido: null }).estado;
+    expect(parteDe(ejecutarOk(renovado, revision(hoy.parteId)).estado, hoy.parteId).estado).toBe("en-uso");
+    const ayer = conBorrador(renovado, listo({ fecha: "2026-11-16", kmInicio: 83000 }));
+    expect(ejecutarError(ayer.estado, revision(ayer.parteId)).codigo).toBe("documentacion-de-la-unidad-vencida");
+  });
+
+  it("P21 va después de L1 (si la licencia también bloquea, gana la licencia) y antes de P18 y de los faltantes", () => {
     const e = conSeguroQueVence(flotaDePrueba(), "2026-11-15");
-    const { estado, parteId } = conBorrador(e, listo({ kmInicio: 85570 }));
-    expect(ejecutarError(estado, revision(parteId, ["salto-km"])).detalle).toEqual({ advertencias: [{ tipo: "documentacion-vencida", documentos: ["seguro"] }] });
-    expect(parteDe(ejecutarOk(estado, revision(parteId, ["salto-km", "documentacion-vencida"])).estado, parteId).advertenciasAceptadas).toHaveLength(2);
+    const sinLicencia = conLicenciaQueVence(e, "2026-11-15");
+    const a = conBorrador(sinLicencia, listo());
+    expect(ejecutarError(a.estado, revision(a.parteId)).codigo).toBe("licencia-no-vigente");
+    const faltan = conBorrador(e, listo({ kmInicio: null }));
+    expect(ejecutarError(faltan.estado, revision(faltan.parteId)).codigo).toBe("documentacion-de-la-unidad-vencida");
+    const anterior = parte({ id: "ant", unidadId: "u1", fecha: "2026-11-17", estado: "en-uso", kmInicio: 84000, kmFin: null, combustible: null, revisado: "2026-11-17T09:00:00.000Z", enviado: null });
+    const conAnterior = conBorrador({ ...e, partes: [...e.partes, anterior] }, listo());
+    expect(ejecutarError(conAnterior.estado, revision(conAnterior.parteId)).codigo).toBe("documentacion-de-la-unidad-vencida");
+  });
+
+  it("P21: ya no hay advertencia de documentación que aceptar: con todo vigente la revisión no pide nada", () => {
+    const { estado, parteId } = conBorrador(flotaDePrueba(), listo());
+    const r = ejecutarOk(estado, revision(parteId));
+    expect(parteDe(r.estado, parteId)).toMatchObject({ estado: "en-uso", documentacionVencida: [], advertenciasAceptadas: [] });
   });
 
   it("P16, A3, H1: una novedad crítica cierra el parte sin salida y deja la unidad fuera de servicio, con los eventos en orden", () => {
@@ -648,12 +672,11 @@ describe("enviarRevision: documentación de la unidad (P9) y novedades (A3, P11,
     expect(kmActual("u1", r.estado.partes, r.estado.correccionesKm)).toBe(84320);
   });
 
-  it("P16 + P9: seguro vencido y frenos con novedad -> sin advertencia de documentación y documentacionVencida vacía", () => {
+  it("P16 + P21: con el seguro vencido y frenos con novedad se bloquea igual: la unidad no sale por los papeles, no por los frenos", () => {
     const e = conSeguroQueVence(flotaDePrueba(), "2026-11-15");
     const checklist = { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "Pedal blando", impideUso: false } };
-    const r = conRevision(e, listo({ checklist }));
-    expect(parteDe(r.estado, r.parteId)).toMatchObject({ sinSalida: true, documentacionVencida: [], advertenciasAceptadas: [] });
-    expect(calcularAlertas(r.estado, H).alertas.some((a) => a.tipo === "uso-con-documentacion-vencida")).toBe(false);
+    const { estado, parteId } = conBorrador(e, listo({ checklist }));
+    expect(ejecutarError(estado, revision(parteId)).codigo).toBe("documentacion-de-la-unidad-vencida");
   });
 
   it("P16 + K6: con salto de kilometraje también hay que aceptar la advertencia, y queda guardada", () => {
@@ -827,16 +850,14 @@ describe("enviarCierre (P15)", () => {
   });
 
   it("K7: un recorrido de 1.201 km pide aceptar; aceptada, advertenciasAceptadas = las de la revisión + las del cierre", () => {
-    const e = conSeguroQueVence(flotaDePrueba(), "2026-11-15");
-    const rev = conRevision(e, listo({ kmInicio: 84320 }), ["documentacion-vencida"]);
-    const estado: Estado = { ...rev.estado, partes: rev.estado.partes.map((p) => (p.id === rev.parteId ? { ...p, kmFin: 85521, combustible: "lleno" as const } : p)) };
+    const rev = conRevision(flotaDePrueba(), listo({ kmInicio: 85570 }), ["salto-km"]);
+    const estado: Estado = { ...rev.estado, partes: rev.estado.partes.map((p) => (p.id === rev.parteId ? { ...p, kmFin: 86771, combustible: "lleno" as const } : p)) };
     const err = ejecutarError(estado, cerrar(rev.parteId), tarde);
     expect(err.codigo).toBe("advertencias-sin-aceptar");
     expect(err.detalle).toEqual({ advertencias: [{ tipo: "recorrido-largo", km: 1201 }] });
     const r = ejecutarOk(estado, cerrar(rev.parteId, ["recorrido-largo"]), tarde);
-    expect(parteDe(r.estado, rev.parteId).advertenciasAceptadas).toEqual([{ tipo: "documentacion-vencida", documentos: ["seguro"] }, { tipo: "recorrido-largo", km: 1201 }]);
+    expect(parteDe(r.estado, rev.parteId).advertenciasAceptadas).toEqual([{ tipo: "salto-km", km: 1250 }, { tipo: "recorrido-largo", km: 1201 }]);
     expect(r.eventos[0]?.datos).toMatchObject({ advertencias: [{ tipo: "recorrido-largo", km: 1201 }] });
-    expect(parteDe(r.estado, rev.parteId).documentacionVencida).toEqual(["seguro"]);
   });
 
   it("K7: 1.200 km justo no avisa", () => {

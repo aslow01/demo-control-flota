@@ -1,9 +1,5 @@
 // Búsqueda de términos prohibidos por huellas (`scripts/prohibidos.mjs`). Los términos de estos tests son inventados:
 // el repositorio público no puede traer los reales ni siquiera en las pruebas.
-import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   correosNoPermitidos,
@@ -14,6 +10,7 @@ import {
   normalizar,
   tokenizar,
 } from "../scripts/prohibidos.mjs";
+import { correrBuscarCon } from "../scripts/ensayo-buscar.mjs";
 import { HUELLAS } from "../scripts/huellas-prohibidas.mjs";
 
 const huellas = [crearHuella("Zorbalux"), crearHuella("Quéntaro Brisa Norte")];
@@ -167,22 +164,6 @@ describe("buscar: «a confirmar» en src/ (decisiones sin confirmar no pueden qu
     expect(marcaPendienteDeConfirmar("// M1 (confirmado por Matías el 18/11/2026)")).toBe(false);
     expect(marcaPendienteDeConfirmar("para confirmar la baja, pulse el botón")).toBe(false);
   });
-
-  /** Copia los scripts a una raíz temporal con un `src/` plantado y corre `buscar-prohibidos.mjs` ahí. */
-  function correrBuscarCon(texto: string) {
-    const raiz = mkdtempSync(join(tmpdir(), "buscar-"));
-    try {
-      mkdirSync(join(raiz, "scripts"));
-      mkdirSync(join(raiz, "src"));
-      for (const nombre of readdirSync("scripts")) {
-        if (nombre.endsWith(".mjs")) copyFileSync(join("scripts", nombre), join(raiz, "scripts", nombre));
-      }
-      writeFileSync(join(raiz, "src", "plantado.ts"), texto);
-      return spawnSync(process.execPath, [join(raiz, "scripts", "buscar-prohibidos.mjs")], { encoding: "utf8" });
-    } finally {
-      rmSync(raiz, { recursive: true, force: true });
-    }
-  }
 
   it("npm run buscar falla con un caso plantado y nombra el archivo y la línea", () => {
     const r = correrBuscarCon("export const x = 1;\n// M9 (a confirmar): no se sabe todavía\n");

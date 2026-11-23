@@ -197,12 +197,22 @@ export interface EntradaDocumentacion {
 }
 
 /**
- * P9: documentos obligatorios **de la unidad** que no amparaban la fecha del parte: vencidos o faltantes **como estaban ese día** (M1), no según el
+ * P21: documentos obligatorios **de la unidad** que no amparaban la fecha del parte: vencidos o faltantes **como estaban ese día** (M1), no según el
  * documento vigente de hoy. Un documento que vence ese mismo día todavía vale (V2). La licencia del conductor ya no entra acá: bloquea la revisión (L1).
  */
 export function documentacionVencidaEn(entrada: EntradaDocumentacion): TipoDocumento[] {
   const { fecha, unidad, proyecto, documentos } = entrada;
   return tiposObligatoriosDeUnidad(proyecto).filter((tipo) => !hayDocumentoQueAmpare(documentos, { tipo: "unidad", id: unidad.id }, tipo, fecha));
+}
+
+/**
+ * P21: la documentación de la unidad que le impide salir a esa fecha (la que `documentacionVencidaEn` encuentra vencida o faltante) y cómo estaba cada documento ese día, para
+ * decirlo; `null` si está en regla. Es el único lugar que lo decide: el comando `enviarRevision`, el inicio del conductor y la pantalla del parte lo leen.
+ */
+export function documentacionQueBloquea(entrada: EntradaDocumentacion): { documentos: TipoDocumento[]; contexto: ContextoDeDocumentacion } | null {
+  const documentos = documentacionVencidaEn(entrada);
+  if (documentos.length === 0) return null;
+  return { documentos, contexto: contextoDeDocumentacion(entrada.documentos, entrada.unidad, entrada.fecha) };
 }
 
 /** Los documentos obligatorios de una unidad, en el orden en que se muestran: los que puede decir un aviso de P9. */
@@ -260,13 +270,9 @@ export function renglonesDeAvisosAceptados(parte: Pick<Parte, "advertenciasAcept
   return parte.advertenciasAceptadas.flatMap((a) => renglonesDeAvisoAceptado(a, contexto));
 }
 
-/** K6 y P9: lo que hay que aceptar antes de enviar la revisión. */
-export function advertenciasDeRevision(entrada: { kmAnterior: number | null; kmInicio: number; documentacionVencida: TipoDocumento[] }): Advertencia[] {
-  const advertencias = advertenciasDeSalida(entrada);
-  if (entrada.documentacionVencida.length > 0) {
-    advertencias.push({ tipo: "documentacion-vencida", documentos: [...entrada.documentacionVencida] });
-  }
-  return advertencias;
+/** K6: lo que hay que aceptar antes de enviar la revisión. La documentación vencida de la unidad ya no se acepta: bloquea (P21). */
+export function advertenciasDeRevision(entrada: { kmAnterior: number | null; kmInicio: number }): Advertencia[] {
+  return advertenciasDeSalida(entrada);
 }
 
 /**

@@ -11,13 +11,17 @@ import { diaDeLaSemana, diasEntre, fechaEnArgentina, formatearFecha, formatearHo
 import { opcionesDeConductor, type OpcionDeConductor } from "../dominio/formulario.ts";
 import { OPCIONES_COMBUSTIBLE, faltantesDeValores, valoresDeParte, valoresIniciales, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { describirRegistro, kmDeRegistro, registroAnterior, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
-import { ITEMS_CHECKLIST, conductorParaParte, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, parteSinSalidaDeHoy, renglonesDeAvisosAceptados, validarFechaParte } from "../dominio/parte.ts";
+import { ITEMS_CHECKLIST, conductorParaParte, documentacionQueBloquea, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, parteSinSalidaDeHoy, renglonesDeAvisosAceptados, validarFechaParte } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import {
   NOMBRES_COMBUSTIBLE,
   type AvisoDeAptitud,
   type RenglonDeAviso,
   TEXTO_BORRADOR_CONSERVADO,
+  TEXTO_BORRADOR_CONSERVADO_POR_DOCUMENTACION,
+  AVISE_AL_ENCARGADO,
+  errDocumentacionDeLaUnidad,
+  textoDocumentacionDeLaUnidad,
   TEXTO_CERRAR_ANTES,
   TEXTO_FORMULARIO_PARTE,
   TEXTO_GUARDADO,
@@ -106,6 +110,16 @@ export type EstadoDelDia =
    */
   | {
       tipo: "licencia-no-vigente";
+      renglon1: string;
+      renglon2: string;
+      borrador: { texto: string; descartar: { texto: string; parteId: string } } | null;
+    }
+  /**
+   * P21: la documentación de la unidad (seguro, revisión técnica…) no está en regla hoy, así que no puede salir y la revisión no se puede empezar. `renglon1` dice qué documento y desde cuándo;
+   * `renglon2` «Avise al encargado.». Sin primario (no se deshabilita nada: se explica); «Usar otra unidad» sigue disponible. Con un borrador de hoy, se conserva y se puede descartar.
+   */
+  | {
+      tipo: "no-puede-salir";
       renglon1: string;
       renglon2: string;
       borrador: { texto: string; descartar: { texto: string; parteId: string } } | null;
@@ -246,6 +260,9 @@ export function inicioDelConductor(
     const patente = formatearPatente(unidad.patente);
     const legibles = { partes: estado.partes.flatMap((p) => parteLegible(p) ?? []), unidades: estado.unidades };
     const sinCerrar = partePendienteDeCierre(legibles.partes, unidad.id, hoy) ?? parteEnUsoDelConductor(legibles, conductor.id, unidad.id);
+    // P21: la documentación de la unidad hoy (el mismo cálculo que el comando, para la fecha de hoy).
+    const proyecto = estado.proyectos.find((p) => p.id === unidad.proyectoId);
+    const sinPapeles = unidad.estado.tipo === "en-servicio" && proyecto !== undefined ? documentacionQueBloquea({ fecha: hoy, unidad, proyecto, documentos: estado.documentos }) : null;
     const unidadSinCerrar = sinCerrar === undefined ? undefined : estado.unidades.find((u) => u.id === sinCerrar.unidadId);
     if (delDia?.estado === "enviado") {
       const hora = horaDe(delDia.enviado ?? delDia.actualizado);
@@ -268,6 +285,13 @@ export function inicioDelConductor(
         tipo: "licencia-no-vigente",
         renglon1: textoNoPuedeManejarHoy(licencia),
         renglon2: TI.licenciaAvise,
+        borrador: delDia === undefined ? null : { texto: TI.revisionConservada, descartar: { texto: TI.descartar, parteId: delDia.id } },
+      };
+    } else if (sinPapeles !== null) {
+      hoyEstado = {
+        tipo: "no-puede-salir",
+        renglon1: textoDocumentacionDeLaUnidad(sinPapeles.documentos, sinPapeles.contexto),
+        renglon2: AVISE_AL_ENCARGADO,
         borrador: delDia === undefined ? null : { texto: TI.revisionConservada, descartar: { texto: TI.descartar, parteId: delDia.id } },
       };
     } else if (sinCerrar !== undefined && unidadSinCerrar !== undefined) {
@@ -783,7 +807,15 @@ export function vistaDeParte(estado: Estado, hoy: FechaCivil, perfil: Perfil, pa
     if (!licencia.vigente) return noDisponible(textoLicenciaDelConductorNoAmpara(fecha, licencia), existente !== undefined && fecha === hoy ? TEXTO_BORRADOR_CONSERVADO : null);
   }
 
-  // «Cerrar antes»: un parte anterior de la unidad en uso (A1) o, con el perfil Conductor, uno suyo en otra unidad (P20): primero hay que cerrarlo. Si además la licencia
+  // P21: la documentación de la unidad a la fecha del parte (M1). Vale para los dos perfiles: es un hecho sobre la unidad, no sobre quién completa. Si además la licencia bloquea,
+  // gana la licencia (arriba, perfil Conductor); con el perfil Encargado la licencia llega al enviar.
+  const proyecto = estado.proyectos.find((p) => p.id === unidad.proyectoId);
+  const sinPapeles = proyecto === undefined ? null : documentacionQueBloquea({ fecha, unidad, proyecto, documentos: estado.documentos });
+  if (sinPapeles !== null) {
+    return noDisponible(errDocumentacionDeLaUnidad(sinPapeles.documentos, sinPapeles.contexto, perfil.tipo === "conductor"), existente !== undefined && fecha === hoy ? TEXTO_BORRADOR_CONSERVADO_POR_DOCUMENTACION : null);
+  }
+
+  // «Cerrar antes»: un parte anterior de la unidad en uso (P18) o, con el perfil Conductor, uno suyo en otra unidad (P20): primero hay que cerrarlo. Si además la licencia
   // bloquea, gana la licencia (arriba). Con el perfil Encargado el conductor se elige en el formulario y P20 llega al enviar.
   const legibles = { partes: estado.partes.flatMap((p) => parteLegible(p) ?? []), unidades: estado.unidades };
   const sinCerrar =

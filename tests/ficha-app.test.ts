@@ -188,10 +188,10 @@ describe("novedades: resolver (N1, N2) y cargar (N3)", () => {
 
   it("desde el centro de alertas: el mensaje nombra la unidad, el foco va al título del panel y la operación diaria baja un pendiente", async () => {
     const { app } = await iniciada("#/alertas");
-    expect(app.centroDeAlertas?.operacion.total).toBe(6);
+    expect(app.centroDeAlertas?.operacion.total).toBe(5);
     const r = await app.resolverNovedad("n-005", { texto: "Se cambiaron las pastillas", volverAServicio: false });
     expect(r).toEqual({ ok: true, mensaje: "Novedad resuelta: Frenos (ZU 899 QE).", foco: "titulo-del-panel" });
-    expect(app.centroDeAlertas?.operacion.total).toBe(5);
+    expect(app.centroDeAlertas?.operacion.total).toBe(4);
   });
 
   it("un texto de menos de 5 caracteres no resuelve nada: error en el campo y el estado no cambia (N1)", async () => {

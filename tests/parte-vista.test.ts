@@ -7,7 +7,7 @@ import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
 import { opcionesDeConductor } from "../src/lib/dominio/formulario.ts";
 import { inicioDelConductor, opcionesParaElegirConductor, panelDeParteEnviado, panelDeRevisionEnviada, panelDeSinSalida, vistaDeParte } from "../src/lib/estado/parte.ts";
 import { SEMILLA_POR_DEFECTO, generar } from "../src/lib/datos/generador.ts";
-import { checklistEnOrden, checklistVacio, documento, ejecutarOk, flotaDePrueba, parte, unidad } from "./ayuda.ts";
+import { checklistEnOrden, checklistVacio, conDocumentacionVencidaAceptada, documento, ejecutarOk, flotaDePrueba, novedad, parte, unidad } from "./ayuda.ts";
 
 const H = "2026-11-18";
 const COND: Perfil = { tipo: "conductor", conductorId: "c1" };
@@ -19,7 +19,7 @@ function borrador(parcial: Partial<Borrador> = {}): Borrador {
   return { tipo: "guardarBorrador", parteId: null, unidadId: "u1", fecha: H, conductorId: "c1", kmInicio: 84320, kmFin: null, combustible: null, litrosCargados: null, checklist: checklistVacio(), otraNovedad: null, ...parcial };
 }
 
-type Aceptable = "salto-km" | "recorrido-largo" | "documentacion-vencida";
+type Aceptable = "salto-km" | "recorrido-largo";
 
 /**
  * Guarda, envía la revisión y cierra un parte con los cambios que se pidan; devuelve el estado y el parte. Los datos del cierre (kmFin, combustible, litros) salen de
@@ -145,18 +145,39 @@ describe("inicio del conductor (6.4)", () => {
     expect(inicio(e)?.hoyEstado).toEqual({ tipo: "sin-unidad" });
   });
 
-  it("unidad que no puede salir (documento vencido): aviso arriba del botón, que sigue disponible (P9)", () => {
+  it("P21: unidad con la documentación vencida: el aviso reemplaza al botón (no se puede empezar la revisión), sin el aviso de aptitud repetido", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
     const v = inicio(e);
-    expect(v?.avisoAptitud).toEqual({ titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día.", accion: "Avise al encargado antes de usarla." });
-    expect(v?.hoyEstado).toMatchObject({ tipo: "sin-parte" });
+    expect(v?.hoyEstado).toEqual({
+      tipo: "no-puede-salir",
+      renglon1: "El seguro de ZK 214 BD venció el 17/11/2026. La unidad no puede salir.",
+      renglon2: "Avise al encargado.",
+      borrador: null,
+    });
+    expect(v?.avisoAptitud).toBeNull();
   });
 
-  it("varios motivos se separan con punto y coma", () => {
+  it("P21: varios documentos, un renglón cada uno; con un borrador de hoy, se conserva y se puede descartar", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.filter((d) => d.id !== "u1-matafuego").map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
-    expect(inicio(e)?.avisoAptitud).toEqual({ titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día; Falta cargar: Carga del matafuego.", accion: "Avise al encargado antes de usarla." });
+    e.partes.push(parte({ id: "bh", estado: "borrador", enviado: null, fecha: H, unidadId: "u1", kmInicio: null }));
+    const v = inicio(e)?.hoyEstado;
+    expect(v).toMatchObject({
+      tipo: "no-puede-salir",
+      renglon1: "El seguro de ZK 214 BD venció el 17/11/2026. Falta cargar la carga del matafuego de ZK 214 BD. La unidad no puede salir.",
+      borrador: { descartar: { parteId: "bh" } },
+    });
+  });
+
+  it("P21: va después de la licencia (si la licencia también bloquea, gana) y antes de «Cerrar antes»", () => {
+    const e = flotaDePrueba();
+    e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
+    const anterior = parte({ id: "ant", unidadId: "u1", fecha: "2026-11-17", estado: "en-uso", enviado: null, kmFin: null });
+    e.partes = [...e.partes.filter((p) => !(p.unidadId === "u1" && p.fecha === "2026-11-17")), anterior];
+    expect(inicio(e)?.hoyEstado.tipo).toBe("no-puede-salir");
+    e.documentos = e.documentos.map((d) => (d.id === "c1-licencia" ? { ...d, vence: "2026-11-10" } : d));
+    expect(inicio(e)?.hoyEstado.tipo).toBe("licencia-no-vigente");
   });
 
   it("pendientes: un borrador de ayer sin enviar y un día sin parte, con «Continuarlo» y «Cargarlo»", () => {
@@ -319,13 +340,14 @@ describe("inicio del conductor: el orden de los siete estados y la licencia (17.
   });
 
   it("6 y 7. con licencia vigente: borrador o sin parte, y el aviso de aptitud solo en esos dos", () => {
+    // un motivo que no impide empezar la revisión pero sí que la unidad salga hoy: una novedad crítica de hoy ya resuelta (P19). La documentación vencida ya no entra acá (P21).
     const e = flotaDePrueba();
-    e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
+    e.novedades.push(novedad({ id: "n19", gravedad: "critica", fecha: H, estado: "resuelta" }));
     expect(inicio(e)?.hoyEstado.tipo).toBe("sin-parte");
     expect(inicio(e)?.avisoAptitud).not.toBeNull();
     const g = ejecutarOk(e, borrador({ checklist: checklistEnOrden() }));
     const id = g.cambios.partes[0]?.id ?? "";
-    const uso = ejecutarOk(g.estado, { tipo: "enviarRevision", parteId: id, advertenciasAceptadas: ["documentacion-vencida"] });
+    const uso = ejecutarOk(g.estado, { tipo: "enviarRevision", parteId: id, advertenciasAceptadas: [] });
     expect(inicio(uso.estado)?.hoyEstado.tipo).toBe("en-uso");
     expect(inicio(uso.estado)?.avisoAptitud).toBeNull();
   });
@@ -610,17 +632,32 @@ describe("pantalla del parte, edición (6.5)", () => {
     expect(v.tipo === "edicion" && v.valoresIniciales.kmInicio).toBe("120");
   });
 
-  it("una unidad que no puede salir (seguro vencido) lo avisa también en el parte, pero se puede cargar (P9)", () => {
+  it("P21: con el seguro vencido la pantalla del parte dice «No se puede cargar» con el motivo (conductor: avisar al encargado)", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
-    const v = ver(e, COND);
-    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: { titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día.", accion: "Avise al encargado antes de usarla." } });
+    expect(ver(e, COND)).toMatchObject({
+      tipo: "no-disponible",
+      titulo: "No se puede cargar este parte",
+      mensaje: "El seguro de ZK 214 BD venció el 17/11/2026. La unidad no puede salir. Avise al encargado.",
+      cerrarAntes: null,
+    });
   });
-  it("el aviso de aptitud no le dice «avise al encargado» al propio encargado, y concuerda en género (QA M-2)", () => {
+  it("P21: al encargado se le dice qué hacer (renovar) y el género concuerda (QA M-2); el motivo mira la fecha del parte, no la de hoy", () => {
     const e = flotaDePrueba();
     e.documentos = e.documentos.map((d) => (d.id === "u1-revision-tecnica" ? { ...d, vence: "2026-11-17" } : d));
-    const v = ver(e, ENC);
-    expect(v).toMatchObject({ tipo: "edicion", avisoAptitud: { titular: "ZK 214 BD no puede salir: Revisión técnica vencida hace 1 día.", accion: "" } });
+    expect(ver(e, ENC)).toMatchObject({
+      tipo: "no-disponible",
+      mensaje: "La revisión técnica de ZK 214 BD venció el 17/11/2026. La unidad no puede salir. Renueve la documentación antes de enviar la revisión.",
+    });
+    // el parte de ayer: ese día la revisión técnica todavía valía (V2), así que se puede cargar
+    e.partes = e.partes.filter((p) => !(p.unidadId === "u1" && p.fecha === "2026-11-17"));
+    expect(ver(e, ENC, "ZK214BD", "2026-11-17")).toMatchObject({ tipo: "edicion" });
+  });
+  it("P21: un borrador de hoy se conserva y se puede descartar (la salida, como en P5)", () => {
+    const e = flotaDePrueba();
+    e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
+    e.partes.push(parte({ id: "bh", estado: "borrador", enviado: null, fecha: H, unidadId: "u1", kmInicio: null }));
+    expect(ver(e, COND)).toMatchObject({ tipo: "no-disponible", borrador: { parteId: "bh" }, nota: "El borrador se conserva: cuando se renueve la documentación, podrá enviarlo." });
   });
 
   it("una patente que no existe: «No se encontró la unidad»", () => {
@@ -765,9 +802,14 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
   });
 
   it("advertencias aceptadas (K6, P9 de la revisión y K7 del cierre) y revisión fuera de plazo", () => {
-    const e = flotaDePrueba();
-    e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
-    const { estado, parte: p } = enviado(e, { kmInicio: 85500, kmFin: 86800 }, ["salto-km", "documentacion-vencida", "recorrido-largo"]);
+    const hecho = enviado(flotaDePrueba(), { kmInicio: 85500, kmFin: 86800 }, ["salto-km", "recorrido-largo"]);
+    // un parte de antes de P21: el seguro venció ayer y se aceptó enviarlo igual
+    const estado = conDocumentacionVencidaAceptada(
+      { ...hecho.estado, documentos: hecho.estado.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d)) },
+      hecho.parte.id,
+      ["seguro"],
+    );
+    const p = estado.partes.find((x) => x.id === hecho.parte.id)!;
     const panel = panelDeParteEnviado(estado, p, COND);
     expect(panel.advertencias).toEqual([
       { tono: "semana", texto: "1.180 km sin registrar desde el último parte" },
@@ -807,14 +849,10 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
   });
 
   it("C1 (S1): con documentación vencida aceptada la línea no dice «puede salir» y el panel lo marca; fuera de plazo también", () => {
-    const e = flotaDePrueba();
-    e.documentos = e.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d));
     const { parte: p, estado } = enUso(flotaDePrueba());
-    // el parte en uso con documentación vencida se arma aceptando el aviso
-    const g = ejecutarOk(e, borrador({ checklist: checklistEnOrden() }));
-    const id = g.cambios.partes[0]?.id ?? "";
-    const uso = ejecutarOk(g.estado, { tipo: "enviarRevision", parteId: id, advertenciasAceptadas: ["documentacion-vencida"] });
-    const conAviso = uso.estado.partes.find((x) => x.id === id)!;
+    // un parte en uso de antes de P21, con la documentación vencida aceptada (los comandos ya no lo pueden armar)
+    const uso = { estado: conDocumentacionVencidaAceptada({ ...estado, documentos: estado.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d)) }, p.id, ["seguro"]) };
+    const conAviso = uso.estado.partes.find((x) => x.id === p.id)!;
     const panel = panelDeRevisionEnviada(uso.estado, conAviso, COND, H);
     expect(panel.conDocumentacionVencida).toBe(true);
     expect(panel.linea).toBe("ZK 214 BD: revisión enviada a las 12:00. Sale con documentación vencida: quedó registrado.");

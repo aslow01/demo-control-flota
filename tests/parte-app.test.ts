@@ -97,13 +97,13 @@ describe("las vistas según la ruta y el perfil", () => {
     expect(v.valoresIniciales.conductorId).toBe("c-01");
   });
 
-  it("el inicio del conductor: su unidad, «Empezar la revisión» y el aviso de que ZK 214 BD no puede salir (C01)", async () => {
+  it("el inicio del conductor: su unidad, el aviso de que ZK 214 BD no puede salir y ningún «Empezar la revisión» (C01, P21)", async () => {
     const { app } = await iniciada({ perfil: C07 });
     const v = app.inicioDelConductor();
     expect(v).toMatchObject({
       unidad: { patenteTexto: "ZK 214 BD", interno: "Int. 07" },
-      hoyEstado: { tipo: "sin-parte", primario: { texto: "Empezar la revisión", href: "#/parte/ZK214BD/2026-11-18" } },
-      avisoAptitud: { titular: "ZK 214 BD no puede salir: Seguro vencido hace 1 día.", accion: "Avise al encargado antes de usarla." },
+      hoyEstado: { tipo: "no-puede-salir", renglon1: "El seguro de ZK 214 BD venció el 17/11/2026. La unidad no puede salir.", renglon2: "Avise al encargado." },
+      avisoAptitud: null,
     });
     expect(app.inicioDelConductor("u-01")?.unidad?.patenteTexto).toBe("ZYN 469");
   });
@@ -580,28 +580,17 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(e.tipo === "enviado" && e.panel.advertencias).toEqual([{ tono: "semana", texto: "1.089 km sin registrar desde el último parte" }]);
   });
 
-  it("P9: con el seguro vencido (ZK 214 BD) se pide aceptar; aceptado, el parte queda en uso con la documentación vencida y aparece la alerta «Circuló…»", async () => {
-    const { app } = await iniciada({ perfil: C07, patente: "ZK214BD" });
-    const uid = idDe(app, "ZK214BD");
+  it("P21: con el seguro vencido (ZK 214 BD) la revisión no se envía ni siquiera completa, antes que los faltantes; no queda parte en uso ni alerta «Circuló…»", async () => {
+    const { app } = await iniciada({ perfil: C07, patente: "ZYN469" });
     const v = completo(edicion(app).valoresIniciales);
-    const primera = await app.enviarRevisionDeParte(uid, H, v);
-    expect(primera.tipo === "advertencias" && primera.aceptables).toEqual(["documentacion-vencida"]);
-    expect(primera.tipo === "advertencias" && primera.advertencias.map((a) => a.tono)).toEqual(["critico"]);
-    // C6: un renglón por documento, con la fecha en que venció, y la cola de la revisión
-    expect(primera.tipo === "advertencias" && primera.advertencias.map((a) => a.texto)).toEqual([
-      "El seguro de ZK 214 BD venció el 17/11/2026. Puede enviar la revisión de todos modos: quedará registrado que la unidad salió con documentación vencida.",
-    ]);
-    const segunda = await app.enviarRevisionDeParte(uid, H, v, ["documentacion-vencida"]);
-    expect(segunda.tipo).toBe("enviado");
-    // C1 y C6: el panel de la revisión enviada con documentación vencida lo dice (no «puede salir») y el aviso aceptado va en pasado
-    expect(segunda.tipo === "enviado" && segunda.panel).toMatchObject({
-      variante: "revision-enviada",
-      conDocumentacionVencida: true,
-      advertencias: [{ tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." }],
-    });
-    expect(segunda.tipo === "enviado" && segunda.panel.linea).toMatch(/^ZK 214 BD: revisión enviada a las \d\d:\d\d\. Sale con documentación vencida: quedó registrado\.$/);
-    expect(parteDeHoy(app, "ZK214BD")).toMatchObject({ estado: "en-uso", documentacionVencida: ["seguro"] });
-    expect(app.alertas?.alertas.some((a) => a.tipo === "uso-con-documentacion-vencida" && a.unidadId === uid)).toBe(true);
+    const uid = idDe(app, "ZK214BD");
+    // la pantalla de ZK 214 BD ya dice que no se puede cargar; el envío directo (otra pestaña, un enlace viejo) recibe el mismo motivo
+    const r = await app.enviarRevisionDeParte(uid, H, { ...v, conductorId: "c-07" });
+    expect(r.tipo).toBe("errores");
+    expect(r.tipo === "errores" && r.errores.general).toBe("El seguro de ZK 214 BD venció el 17/11/2026. La unidad no puede salir. Renueve la documentación antes de enviar la revisión.");
+    expect(r.tipo === "errores" && r.errores.lista).toEqual([]);
+    expect(parteDeHoy(app, "ZK214BD")?.estado).not.toBe("en-uso");
+    expect(app.alertas?.alertas.some((x) => x.tipo === "uso-con-documentacion-vencida")).toBe(false);
   });
 
   it("P20: el conductor con un parte en uso en otra unidad no envía la revisión de esta (error en el campo Conductor, antes que los faltantes); el borrador queda", async () => {

@@ -316,14 +316,13 @@ describe("P9: documentación de la unidad vencida a la fecha del parte", () => {
   });
 });
 
-describe("advertencias de la revisión (K6, P9) y del cierre (K7)", () => {
-  it("la revisión junta la de kilometraje y la de documentación, en ese orden", () => {
-    const a = advertenciasDeRevision({ kmAnterior: 0, kmInicio: 1250, documentacionVencida: ["seguro"] });
-    expect(a).toEqual([{ tipo: "salto-km", km: 1250 }, { tipo: "documentacion-vencida", documentos: ["seguro"] }]);
+describe("advertencias de la revisión (K6) y del cierre (K7)", () => {
+  it("la revisión avisa del salto de kilometraje; la documentación de la unidad ya no es una advertencia (P21: bloquea)", () => {
+    expect(advertenciasDeRevision({ kmAnterior: 0, kmInicio: 1250 })).toEqual([{ tipo: "salto-km", km: 1250 }]);
   });
 
   it("la revisión sin nada para avisar no devuelve nada", () => {
-    expect(advertenciasDeRevision({ kmAnterior: 100, kmInicio: 100, documentacionVencida: [] })).toEqual([]);
+    expect(advertenciasDeRevision({ kmAnterior: 100, kmInicio: 100 })).toEqual([]);
   });
 });
 

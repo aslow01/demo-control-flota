@@ -135,7 +135,7 @@ describe("D7: versión de esquema distinta", () => {
     const repo = await repoCon(viejo);
     const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(repo) });
     expect(r.estado).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
-    expect(r.estado.meta.versionEsquema).toBe(2);
+    expect(r.estado.meta.versionEsquema).toBe(VERSION_ESQUEMA);
     expect(r.avisos).toEqual([{ tipo: "esquema-actualizado" }]);
   });
 

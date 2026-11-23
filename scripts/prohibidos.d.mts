@@ -12,3 +12,4 @@ export function crearHuella(termino: string): Huella;
 export function huellasDeLiterales(contenido: string): Huella[];
 export function contieneProhibido(texto: string, huellas: readonly Huella[]): boolean;
 export function correosNoPermitidos(texto: string): string[];
+export function marcaPendienteDeConfirmar(linea: string): boolean;

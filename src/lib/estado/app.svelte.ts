@@ -213,6 +213,8 @@ const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBo
 
 /** Si no se pueden escribir, el mensaje habla del parte ("lo escrito sigue en pantalla; no cierre la pestaña"). */
 const COMANDOS_DEL_PARTE_A_GUARDAR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarRevision", "guardarCierre", "enviarCierre"]);
+/** Errores del envío de la revisión que se dicen solos: van antes que los faltantes y no se suman a la lista de lo que falta. */
+const ERRORES_QUE_VAN_ANTES_DE_LOS_FALTANTES: ReadonlySet<string> = new Set(["licencia-no-vigente", "documentacion-de-la-unidad-vencida", "parte-anterior-sin-cerrar", "escritura-fallida"]);
 
 /** Dos versiones del mismo borrador son iguales si solo difiere el instante del último guardado. */
 function mismoBorrador(a: Parte, b: Parte): boolean {
@@ -873,10 +875,10 @@ export class EstadoApp {
     const borrador = this.estado?.partes.find((p) => donde(p));
     // Abrir el formulario y enviarlo vacío no crea un borrador (D11): lo que falta se dice igual.
     if (borrador === undefined) return this.erroresDeEnvio(previos ?? errorGeneralParte(ERRORES.parteInexistente));
-    // L1, P18 y P20 van antes que los faltantes (como en el comando): a quien no puede manejar, o tiene un parte anterior sin cerrar, no se le piden los diez puntos.
+    // L1, P21, P18 y P20 van antes que los faltantes (como en el comando): a quien no puede manejar, o la unidad no puede salir, o tiene un parte anterior sin cerrar, no se le piden los diez puntos.
     const r = await this.ejecutarAhora({ tipo: "enviarRevision", parteId: borrador.id, advertenciasAceptadas: aceptadas }, perfil);
     if (!r.ok) {
-      if (r.error.codigo === "licencia-no-vigente" || r.error.codigo === "parte-anterior-sin-cerrar" || r.error.codigo === "escritura-fallida") return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
+      if (ERRORES_QUE_VAN_ANTES_DE_LOS_FALTANTES.has(r.error.codigo)) return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
       if (previos !== null) return this.erroresDeEnvio(this.conErrorDeKilometraje(previos, v, borrador));
       if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error, borrador);
       return this.erroresDeEnvio(erroresDeNegocioParte(r.error));

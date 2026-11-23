@@ -9,7 +9,7 @@ import { criticasAbiertasDeUnidad, rotuloNovedad } from "./novedades.ts";
 import {
   ITEMS_CHECKLIST,
   advertenciasDeRevision,
-  documentacionVencidaEn,
+  documentacionQueBloquea,
   esBorradorVacio,
   faltantesDeCierre,
   faltantesDeRevision,
@@ -21,7 +21,30 @@ import {
 } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
 import { limpiarTexto, normalizarTexto } from "./texto.ts";
-import { ERRORES, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, abreviar, errDocumentoExistente, errKmCorreccionAnterior, errKmCorreccionParteEnUso, errLicenciaNoVigente, errConductorConParteSinCerrar, errNovedadesCriticasAbiertas, errParteAnteriorSinCerrar, errParteDuplicado, errRenovacionNoPosterior, errVenceNoPosteriorAlAnterior, errTipoDeDocumentoNoCorresponde, errUnidadConParteEnUso, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, textoFaltantes } from "./textos.ts";
+import {
+  abreviar,
+  errConductorConParteSinCerrar,
+  errDocumentacionDeLaUnidad,
+  errDocumentoExistente,
+  errKmCorreccionAnterior,
+  errKmCorreccionParteEnUso,
+  errLicenciaNoVigente,
+  errNovedadesCriticasAbiertas,
+  ERRORES,
+  errParteAnteriorSinCerrar,
+  errParteDuplicado,
+  errRenovacionNoPosterior,
+  errTipoDeDocumentoNoCorresponde,
+  errUnidadConParteEnUso,
+  errUnidadDeBaja,
+  errUnidadFueraDeServicio,
+  errVenceAntesQueSuRenovacion,
+  errVenceNoPosteriorAlAnterior,
+  MOTIVO_NOVEDAD_CRITICA,
+  RESUMEN_EVENTO,
+  TEXTO_DIALOGOS_FICHA,
+  textoFaltantes,
+} from "./textos.ts";
 import {
   fallo,
   ok,
@@ -1060,7 +1083,7 @@ function parteEnUso(estado: Estado, parteId: string): Resultado<Parte> {
 
 /**
  * La revisión antes de salir (P14, P16, L1; sección 17.3). El primero que falla corta: parte, unidad (P8), fecha (P2), licencia (L1, antes de pedir los diez
- * puntos: es un hecho sobre quién maneja), faltantes (P4), kilometraje (K3, K4), advertencias (K6, P9). Sin novedad crítica el parte queda en uso; con una, se
+ * puntos: es un hecho sobre quién maneja), documentación de la unidad (P21), cierre pendiente (P18, P20), faltantes (P4), kilometraje (K3, K4), advertencias (K6). Sin novedad crítica el parte queda en uso; con una, se
  * cierra sin salida y la unidad queda fuera de servicio (A3, P16), todo en la misma operación (P12).
  */
 function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevision" }>, ctx: Contexto): Resultado<Parcial> {
@@ -1089,6 +1112,14 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
         detalle: detalleDeLicencia(licencia),
       });
     }
+  }
+
+  // P21: la documentación de la unidad como estaba a la fecha del parte (M1). Es un hecho sobre la unidad, como la licencia lo es sobre quien maneja: va antes de pedir nada más.
+  const proyecto = buscarProyecto(estado, u.proyectoId);
+  if (!proyecto.ok) return proyecto;
+  const sinPapeles = documentacionQueBloquea({ fecha: borrador.fecha, unidad: u, proyecto: proyecto.valor, documentos: estado.documentos });
+  if (sinPapeles !== null) {
+    return fallo("documentacion-de-la-unidad-vencida", errDocumentacionDeLaUnidad(sinPapeles.documentos, sinPapeles.contexto, false), { detalle: { documentos: sinPapeles.documentos } });
   }
 
   // P18: con un parte en uso anterior de la misma unidad, primero hay que cerrarlo (si no, la revisión de hoy arrancaría con el kilometraje de salida de ayer).
@@ -1127,15 +1158,7 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
   const nuevas = novedadesDelParte(recortado);
   const hayCritica = nuevas.some((n) => n.gravedad === "critica");
 
-  // P9: documentación de la unidad vencida o faltante a la fecha del parte; no si la unidad no sale.
-  let documentacionVencida: TipoDocumento[] = [];
-  if (!hayCritica) {
-    const proyecto = buscarProyecto(estado, u.proyectoId);
-    if (!proyecto.ok) return proyecto;
-    documentacionVencida = documentacionVencidaEn({ fecha: borrador.fecha, unidad: u, proyecto: proyecto.valor, documentos: estado.documentos });
-  }
-
-  const requeridas = advertenciasDeRevision({ kmAnterior: km.valor.kmAnterior, kmInicio, documentacionVencida });
+  const requeridas = advertenciasDeRevision({ kmAnterior: km.valor.kmAnterior, kmInicio });
   const pendientes = requeridas.filter((a) => !c.advertenciasAceptadas.includes(a.tipo));
   if (pendientes.length > 0) {
     return fallo("advertencias-sin-aceptar", ERRORES.advertenciasSinAceptar, { detalle: { advertencias: pendientes } });
@@ -1144,7 +1167,7 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
   const base: Parte = { ...recortado, advertenciasAceptadas: requeridas, actualizado: ctx.ahora, autor: ctx.autor, revisado: ctx.ahora };
   const parte: Parte = hayCritica
     ? { ...base, estado: "enviado", sinSalida: true, kmFin: kmInicio, combustible: null, litrosCargados: null, documentacionVencida: [], enviado: ctx.ahora }
-    : { ...base, estado: "en-uso", sinSalida: false, documentacionVencida, enviado: null };
+    : { ...base, estado: "en-uso", sinSalida: false, documentacionVencida: [], enviado: null };
 
   const novedades: Novedad[] = nuevas.map((n) => ({
     id: ctx.nuevoId(),

@@ -268,6 +268,23 @@ export function errLicenciaNoVigente(nombre: string, fecha: FechaCivil, estado: 
   return `${nombre} no tiene licencia vigente para el ${formatearFecha(fecha)}: ${detalle}. Elija otro conductor.`;
 }
 
+/**
+ * P21: la unidad no tiene la documentación en regla a la fecha del parte, así que no puede salir y la revisión no se envía. Un renglón por documento (el mismo que decía P9 en el
+ * aviso, ahora como motivo del bloqueo) y qué hacer: el conductor avisa al encargado, que es quien renueva; el comando, que no sabe quién mira, le habla al encargado.
+ */
+export function errDocumentacionDeLaUnidad(documentos: readonly TipoDocumento[], contexto: ContextoDeDocumentacion | undefined, alConductor: boolean): string {
+  const accion = alConductor ? AVISE_AL_ENCARGADO : "Renueve la documentación antes de enviar la revisión.";
+  return `${textoDocumentacionDeLaUnidad(documentos, contexto)} ${accion}`;
+}
+
+/** P21, sin la indicación de qué hacer: «El seguro de ZK 214 BD venció el 17/11/2026. La unidad no puede salir.» */
+export function textoDocumentacionDeLaUnidad(documentos: readonly TipoDocumento[], contexto: ContextoDeDocumentacion | undefined): string {
+  return `${renglonesDeDocumentacion(documentos, contexto, false).join(" ")} La unidad no puede salir.`;
+}
+
+/** Lo que se le dice al conductor cuando lo que falta lo resuelve el encargado (P21). */
+export const AVISE_AL_ENCARGADO = "Avise al encargado.";
+
 /** M3: la corrección de kilometraje no cambiaría nada porque hay un registro posterior. */
 export function errKmCorreccionAnterior(registro: "parte" | "correccion", fecha: FechaCivil): string {
   // `fecha` es la del registro (la fecha del parte, o desde cuándo vale la corrección), no el día en que se envió.
@@ -1292,6 +1309,9 @@ export function textoLicenciaDelConductorNoAmpara(fecha: FechaCivil, l: MotivoDe
 }
 
 export const TEXTO_BORRADOR_CONSERVADO = "El borrador se conserva: cuando el encargado cargue una licencia vigente, podrá enviarlo.";
+
+/** P21: lo mismo cuando lo que falta es la documentación de la unidad. */
+export const TEXTO_BORRADOR_CONSERVADO_POR_DOCUMENTACION = "El borrador se conserva: cuando se renueve la documentación, podrá enviarlo.";
 
 /** Unidad fuera de servicio, vista del conductor: no tiene que hacer parte. */
 export function textoSinParteFueraDeServicio(patente: string, desde: FechaCivil, motivo: string): string {

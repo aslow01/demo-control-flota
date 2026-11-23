@@ -128,8 +128,8 @@
         <div class="secundaria"><EnlaceAccion href={e.enlace.href}>{e.enlace.texto}</EnlaceAccion></div>
       {:else if inicio.hoyEstado.tipo === "fuera-de-servicio"}
         <Aviso tono="semana" icono="llave"><span class="largo">{inicio.hoyEstado.aviso}</span></Aviso>
-      {:else if inicio.hoyEstado.tipo === "licencia-no-vigente"}
-        <!-- Estado 5 (L1): el bloqueo se dice sin rol de alerta (el foco ya fue al h1 y esto es lo primero que se lee en el panel) y sin primario: no se deshabilita nada, se explica. -->
+      {:else if inicio.hoyEstado.tipo === "licencia-no-vigente" || inicio.hoyEstado.tipo === "no-puede-salir"}
+        <!-- Estados 5 (L1) y 5 ter (P21, la documentación de la unidad): el bloqueo se dice sin rol de alerta (el foco ya fue al h1 y esto es lo primero que se lee en el panel) y sin primario: no se deshabilita nada, se explica. -->
         {@const l = inicio.hoyEstado}
         <Aviso tono="critico" icono="vencido" accion={l.renglon2}>{l.renglon1}</Aviso>
         {#if l.borrador !== null}

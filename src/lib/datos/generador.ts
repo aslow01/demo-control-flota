@@ -184,7 +184,7 @@ function crearPatente(azar: Azar, anio: number, usadas: Set<string>): string {
 }
 
 /** Versión del formato de los datos guardados (D7): si cambia, la demo se reinicia sola con un aviso. */
-export const VERSION_ESQUEMA = 2;
+export const VERSION_ESQUEMA = 3;
 
 /** Genera el estado completo de la demo. Las fechas son relativas a `fechaBase` (el "hoy" del ejemplo). */
 export function generar(semilla: number, fechaBase: FechaCivil): Estado {
@@ -384,7 +384,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     }
   }
 
-  // C18: la revisión técnica venció en H - 7; se renovó en H - 6, después de enviar el parte de ese día.
+  // C18: la revisión técnica venció en H - 7; se renovó en H - 6 a las 05:40 (Argentina), antes de la revisión del día: ningún parte sale con la documentación vencida (P21).
   const unidadC18 = porRol("c18");
   const revisionVieja: Documento = {
     id: id("d", "d", 4),
@@ -405,7 +405,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     emisor: EMISORES["revision-tecnica"],
     vence: d(358),
     emitido: d(-6),
-    cargado: en(d(-6), 22, 40),
+    cargado: en(d(-6), 8, 40),
     reemplazaA: revisionVieja.id,
   };
   documentos.push(revisionVieja, revisionNueva);
@@ -492,7 +492,6 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
       const advertencias: Advertencia[] = [];
       const checklist = checklistCompleto();
       let otraNovedad: Parte["otraNovedad"] = null;
-      let documentacionVencida: TipoDocumento[] = [];
 
       // C20: el tablero se cambió en H - 20; desde ahí el kilometraje parte de la base 120.
       if (rol === "c20" && n === -20) {
@@ -522,11 +521,6 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
       if (rol === "c15" && n === -4) {
         km += 1250;
         advertencias.push({ tipo: "salto-km", km: 1250 });
-      }
-      // C18: parte de H - 6 con la revisión técnica vencida (venció en H - 7), enviado con la advertencia aceptada.
-      if (rol === "c18" && n === -6) {
-        documentacionVencida = ["revision-tecnica"];
-        advertencias.push({ tipo: "documentacion-vencida", documentos: ["revision-tecnica"] });
       }
       // C19: una luz de patente quemada, informada como "otra novedad" y todavía abierta.
       if (rol === "c19" && n === -9) otraNovedad = { descripcion: "Luz de patente quemada", impideUso: false };
@@ -567,7 +561,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
         checklist,
         otraNovedad,
         advertenciasAceptadas: advertencias,
-        documentacionVencida,
+        documentacionVencida: [],
         creado: en(fecha, 8, 0),
         actualizado: enviado,
         enviado,

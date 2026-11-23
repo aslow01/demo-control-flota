@@ -10,7 +10,7 @@ import { formatoDePatente } from "../src/lib/dominio/patente.ts";
 import type { Documento, Estado, Parte, TipoDocumento, Unidad } from "../src/lib/dominio/tipos.ts";
 import { clasificar, documentoVigente, hayDocumentoQueAmpare } from "../src/lib/dominio/vencimientos.ts";
 import { cuitValido } from "../src/lib/datos/cuit.ts";
-import { APELLIDOS, EMPRESA, ENCARGADA, NOMBRES, SEMILLA_POR_DEFECTO, generar } from "../src/lib/datos/generador.ts";
+import { APELLIDOS, EMPRESA, ENCARGADA, NOMBRES, SEMILLA_POR_DEFECTO, VERSION_ESQUEMA, generar } from "../src/lib/datos/generador.ts";
 import { contexto } from "./ayuda.ts";
 
 const H = "2026-11-18";
@@ -278,8 +278,8 @@ describe("la flota de relleno", () => {
     }
   });
 
-  it("meta: esquema 2, semilla, fecha base, sin modificar y perfil de encargado", () => {
-    expect(e.meta).toEqual({ versionEsquema: 2, semilla: 20261118, fechaBase: H, modificada: false, perfil: { tipo: "encargado" } });
+  it("meta: esquema actual, semilla, fecha base, sin modificar y perfil de encargado", () => {
+    expect(e.meta).toEqual({ versionEsquema: VERSION_ESQUEMA, semilla: 20261118, fechaBase: H, modificada: false, perfil: { tipo: "encargado" } });
   });
 
   it("D2: los vencimientos aleatorios caen a más de 30 días (H+31 a H+400)", () => {
@@ -471,73 +471,37 @@ describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
     expect(a.conductorId).toBe(licencias[0]!.titular.id);
   });
 
-  it("C18: revisión vencida en H - 7, parte de H - 6 con la advertencia aceptada y renovada ese día, después del parte", () => {
-    const p = e.partes.find((x) => x.documentacionVencida.length > 0)!;
-    expect(p.fecha).toBe(d(-6));
-    expect(p.documentacionVencida).toEqual(["revision-tecnica"]);
-    expect(p.advertenciasAceptadas).toEqual([{ tipo: "documentacion-vencida", documentos: ["revision-tecnica"] }]);
-    const u = e.unidades.find((x) => x.id === p.unidadId)!;
+  it("C18: revisión técnica vencida en H - 7 y renovada en H - 6 antes de la revisión del día: el parte de H - 6 sale con los papeles en regla (P21)", () => {
+    const u = unidad(14);
     const nueva = vigente(u, "revision-tecnica");
     const vieja = e.documentos.find((x) => x.id === nueva.reemplazaA)!;
     expect(vieja.vence).toBe(d(-7));
-    expect(fechaEnArgentina(nueva.cargado)).toBe(p.fecha);
-    expect(nueva.cargado > (p.enviado as string)).toBe(true);
+    expect(fechaEnArgentina(nueva.cargado)).toBe(d(-6));
+    const delDia = e.partes.find((x) => x.unidadId === u.id && x.fecha === d(-6))!;
+    expect(nueva.cargado < (delDia.revisado as string)).toBe(true);
+    expect(delDia.documentacionVencida).toEqual([]);
+    expect(delDia.advertenciasAceptadas).toEqual([]);
     expect(diasEntre(H, nueva.vence)).toBeGreaterThan(30);
-    // la alerta crítica dura hasta H - 6 + 30
-    const alerta = (hoy: string) => calcularAlertas(e, hoy).alertas.filter((x) => x.tipo === "uso-con-documentacion-vencida");
-    expect(alerta(H)).toHaveLength(1);
-    expect(alerta(H)[0]?.gravedad).toBe("critica");
-    expect(alerta(d(24))).toHaveLength(1);
-    expect(alerta(d(25))).toHaveLength(0);
     expect(e.eventos.some((x) => x.tipo === "documento-renovado" && x.datos["documentoId"] === nueva.id)).toBe(true);
+    expect(calcularAlertas(e, H).alertas.some((x) => x.tipo === "uso-con-documentacion-vencida")).toBe(false);
   });
 
-  it("C18, M1: si la renovación se hubiera cargado hoy (orden inverso), el parte de H - 6 igual sale con la advertencia y queda registrada", () => {
-    const original = e.partes.find((x) => x.documentacionVencida.length > 0)!;
-    const u = e.unidades.find((x) => x.id === original.unidadId)!;
-    const renovacion = vigente(u, "revision-tecnica");
-    const c = contexto({ hoy: H, ahora: `${H}T15:00:00.000Z` });
-    // el mismo estado, pero con el parte todavía como borrador y la renovación cargada recién hoy, sin fecha de emisión
-    const invertido: Estado = {
-      ...e,
-      partes: e.partes.map((p) =>
-        p.id === original.id ? { ...p, estado: "borrador", revisado: null, enviado: null, documentacionVencida: [], advertenciasAceptadas: [] } : p,
-      ),
-      documentos: e.documentos.map((doc) => (doc.id === renovacion.id ? { ...doc, cargado: c.ahora, emitido: null } : doc)),
-    };
-    const sinAceptar = ejecutar(invertido, { tipo: "enviarRevision", parteId: original.id, advertenciasAceptadas: [] }, c);
-    expect(sinAceptar.ok).toBe(false);
-    if (sinAceptar.ok) return;
-    expect(sinAceptar.error.codigo).toBe("advertencias-sin-aceptar");
-    expect(sinAceptar.error.detalle).toEqual({ advertencias: [{ tipo: "documentacion-vencida", documentos: ["revision-tecnica"] }] });
-
-    const aceptado = ejecutar(invertido, { tipo: "enviarRevision", parteId: original.id, advertenciasAceptadas: ["documentacion-vencida"] }, c);
-    expect(aceptado.ok).toBe(true);
-    if (!aceptado.ok) return;
-    expect(aceptado.valor.estado.partes.find((p) => p.id === original.id)?.documentacionVencida).toEqual(["revision-tecnica"]);
-    const alerta = calcularAlertas(aceptado.valor.estado, H).alertas.filter((x) => x.tipo === "uso-con-documentacion-vencida");
-    expect(alerta).toHaveLength(1);
-  });
-
-  it("C18, M1: recalcular P9 para el parte de H - 6 con la renovación cargada ese día da lo mismo que lo guardado, salvo que la emisión la haga amparar", () => {
-    const original = e.partes.find((x) => x.documentacionVencida.length > 0)!;
-    const u = e.unidades.find((x) => x.id === original.unidadId)!;
+  it("C18, M1: la renovación de H - 6 ampara el parte de ese día; sin la fecha de emisión y cargada después, no", () => {
+    const u = unidad(14);
     const proyecto = e.proyectos.find((x) => x.id === u.proyectoId)!;
     const renovacion = vigente(u, "revision-tecnica");
-    const evaluar = (documentos: Documento[]) => documentacionVencidaEn({ fecha: original.fecha, unidad: u, proyecto, documentos });
-    // la renovación se cargó el 17/11 (H - 6) a las 19:40 de Argentina y su emisión es de ese día: ampara el día
+    const evaluar = (documentos: Documento[]) => documentacionVencidaEn({ fecha: d(-6), unidad: u, proyecto, documentos });
     expect(evaluar(e.documentos)).toEqual([]);
-    // sin la fecha de emisión y cargada al día siguiente, no
     const tarde = e.documentos.map((doc) => (doc.id === renovacion.id ? { ...doc, emitido: null, cargado: `${d(-5)}T15:00:00.000Z` } : doc));
     expect(evaluar(tarde)).toEqual(["revision-tecnica"]);
   });
 
-  it("C18: ningún otro parte tiene documentación vencida: las renovaciones del pasado se hicieron antes de vencer", () => {
-    const con = e.partes.filter((x) => x.documentacionVencida.length > 0);
-    expect(con).toHaveLength(1);
-    // recalculado a la fecha de cada parte (salvo C10, que cambió de proyecto hoy, y el propio C18)
+  it("P21: ningún parte del ejemplo salió con la documentación de la unidad vencida (las renovaciones del pasado se hicieron antes de vencer o a tiempo)", () => {
+    expect(e.partes.filter((x) => x.documentacionVencida.length > 0)).toEqual([]);
+    expect(e.partes.flatMap((x) => x.advertenciasAceptadas).some((a) => a.tipo === "documentacion-vencida")).toBe(false);
+    // recalculado a la fecha de cada parte (salvo C10, que cambió de proyecto hoy)
     const c10 = unidad(10);
-    for (const p of e.partes.filter((x) => x.estado === "enviado" && x.unidadId !== c10.id && x.id !== con[0]!.id)) {
+    for (const p of e.partes.filter((x) => x.estado === "enviado" && x.unidadId !== c10.id)) {
       const u = e.unidades.find((x) => x.id === p.unidadId)!;
       const proyecto = e.proyectos.find((x) => x.id === u.proyectoId)!;
       expect(documentacionVencidaEn({ fecha: p.fecha, unidad: u, proyecto, documentos: e.documentos }), `${u.patente} ${p.fecha}`).toEqual([]);
@@ -583,19 +547,19 @@ describe("D2: el ejemplo completo con H = 2026-11-18 (docs/diseno.md, 9.2)", () 
     expect(Object.values(resumen.porGrupo).reduce((a, b) => a + b, 0)).toBe(12);
   });
 
-  it("pendientes de operación 6: C11, C18, C13, C14 (x2) y C19", () => {
-    expect(resumen.totalOperacion).toBe(6);
+  it("pendientes de operación 5: C11, C13, C14 (x2) y C19 (antes de P21, 6: también C18, «Circuló con documentación vencida»)", () => {
+    expect(resumen.totalOperacion).toBe(5);
     expect(resumen.operacion).toEqual({
       "novedad-critica": 1,
-      "uso-con-documentacion-vencida": 1,
+      "uso-con-documentacion-vencida": 0,
       "parte-sin-enviar": 1,
       "sin-parte": 2,
       "novedad-abierta": 1,
     });
   });
 
-  it("alertas críticas (insignia de la pestaña) 5: C01, C10, C11, C18 y C21", () => {
-    expect(resumen.criticas).toBe(5);
+  it("alertas críticas (insignia de la pestaña) 4: C01, C10, C11 y C21 (antes de P21, 5: también C18)", () => {
+    expect(resumen.criticas).toBe(4);
   });
 
   it("conductores que no pueden manejar hoy (L6): 1, el de C21", () => {
@@ -614,8 +578,8 @@ describe("D2: el ejemplo completo con H = 2026-11-18 (docs/diseno.md, 9.2)", () 
       const r = calcularAlertas(otro, base).resumen;
       expect(r.protagonista, base).toBe(4);
       expect(r.porGrupo, base).toEqual({ vencidos: 3, "7": 4, "15": 3, "30": 2 });
-      expect(r.totalOperacion, base).toBe(6);
-      expect(r.criticas, base).toBe(5);
+      expect(r.totalOperacion, base).toBe(5);
+      expect(r.criticas, base).toBe(4);
       expect(r.conductoresSinLicencia, base).toHaveLength(1);
       expect(unidadesEnServicioConNovedadCritica(otro), base).toEqual([]);
     }
@@ -713,4 +677,4 @@ describe("el ejemplo reacciona a los comandos (criterio de la pantalla 4.2)", ()
   });
 });
 
-const HASH_DEL_EJEMPLO = "df80c262";
+const HASH_DEL_EJEMPLO = "6e0a70d0";

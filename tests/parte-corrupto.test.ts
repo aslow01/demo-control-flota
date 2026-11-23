@@ -171,7 +171,7 @@ describe("la aplicación con un borrador roto en el almacenamiento", () => {
     const app = await iniciada(estado({ checklist: "basura" }));
     expect(app.avisos.map((a) => a.tipo)).toEqual(["esquema-actualizado"]);
     expect(app.estado?.partes.some((p) => p.id === "pr")).toBe(false);
-    expect(app.parteDeLaRuta?.tipo).toBe("edicion");
+    expect(app.parteDeLaRuta?.tipo).toBe("no-disponible") // la unidad de la ruta es la C01: con el seguro vencido no se puede cargar (P21);
   });
 
   it("se puede descartar", async () => {
