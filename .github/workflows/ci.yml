@@ -1,5 +1,5 @@
 # Integración continua (paso 0.4). Nota: hoy GitHub Actions no corre en la cuenta (facturación) y el repositorio
-# todavía no tiene remoto: el archivo queda listo y SIN PROBAR hasta que haya un remoto donde correrlo.
+# tiene un remoto privado, pero el archivo nunca se ejecutó: queda escrito y SIN PROBAR hasta que Actions pueda correr.
 name: CI
 
 on:

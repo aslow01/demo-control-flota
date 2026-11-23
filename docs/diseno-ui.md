@@ -16,8 +16,8 @@ revisión antes de salir y cierre) y que **la licencia vencida o faltante bloque
 5.10, 5.12 a 5.17, 5.19, 6.1 a 6.5, 7, 8, 9, 10, 12 y 13) y resumidos, con las tareas del maquetador, en la **sección
 14**. Las reglas nuevas (P14 a P17, K10, L1 a L7) y la lógica están en `docs/diseno.md`, secciones 6 y 17.
 
-**Actualización del 22/11/2026.** Revisión visual de la etapa 6 (`docs/revisiones/demo2-etapa6-diseno.md` del
-portafolio, con las de accesibilidad y QA) y decisiones de Matías: resumen de errores agrupado (D1), marca «(persona
+**Actualización del 22/11/2026.** Revisión visual de la etapa 6 (informe de revisión interno (no publicado), con las de
+accesibilidad y QA) y decisiones de Matías: resumen de errores agrupado (D1), marca «(persona
 ficticia)» (D2), «fuera de plazo» en lugar de «fuera de término», «Enviar de todos modos» / «Cerrar de todos modos» y la
 regla nueva **«Cerrar antes»** (estado 5 bis del inicio y pantalla E). Aplicado en 4.1, 4.2, 5.1, 5.4, 5.9, 5.10, 5.11,
 5.14 a 5.18, 6.1 a 6.5, 7, 8, 9, 10, 12 y 13; las tareas del maquetador, en orden, en la **sección 14.3**.
@@ -181,8 +181,8 @@ Otros tokens nuevos:
 
 ### 3.3 Contrastes medidos
 
-Fórmula de luminancia relativa de WCAG 2.x, script reproducible (`contraste.mjs`, en el *scratchpad* de la sesión del
-18/11; copiarlo a `scripts/` cuando se arme el proyecto). Los heredados son los medidos en la Demo 1.
+Fórmula de luminancia relativa de WCAG 2.x, script reproducible (`scripts/contraste.mjs`, que se corre con `npm run contraste`; nació en la sesión del
+18/11). Los heredados son los medidos en la Demo 1.
 
 | Par | Claro | Oscuro | Mínimo |
 | --- | --- | --- | --- |
@@ -1656,8 +1656,7 @@ correcciones → `disenador-ui` revisa contra este documento → `critico-reclut
 | UI5 | Franja en filas que están bien | Sin franja (propuesto) · franja verde | Sin franja: el color queda para lo que hay que mirar. |
 | UI6 | Invitación de primera visita (como el globo de la Demo 1) | Ninguna (propuesto) · globo | Ninguna: la bajada con "Cómo funciona" alcanza y la pantalla ya responde sola. |
 
-Decididas por Matías el 19/11/2026 (revisión visual del paso 5.3, `docs/revisiones/demo2-etapa5-diseno.md` del
-portafolio), todas con la opción (b):
+Decididas por Matías el 19/11/2026 (revisión visual del paso 5.3, informe de revisión interno (no publicado)), todas con la opción (b):
 
 | # | Pregunta | Decisión | Dónde quedó |
 | --- | --- | --- | --- |
@@ -1666,7 +1665,7 @@ portafolio), todas con la opción (b):
 | D3 | ¿Anillo de foco en el `h1` después de navegar? | Sin anillo en `h1[tabindex="-1"]` (con el visto bueno pendiente de `auditor-accesibilidad`). | 2, 5, 9 |
 | D4 | Motivos del protagonista en rojo | Motivo en `--c-texto`; el rojo queda en la franja y en la cifra. | 6.1 |
 
-Decididas el 22/11/2026 (revisión de la etapa 6, `docs/revisiones/demo2-etapa6-diseno.md` del portafolio):
+Decididas el 22/11/2026 (revisión de la etapa 6, informe de revisión interno (no publicado)):
 
 | # | Pregunta | Decisión | Dónde quedó |
 | --- | --- | --- | --- |
@@ -1744,9 +1743,8 @@ Decididas el 22/11/2026 (revisión de la etapa 6, `docs/revisiones/demo2-etapa6-
 
 ### 14.3 Correcciones de la etapa 6: tareas del maquetador (22/11/2026)
 
-Salen de la revisión visual (`demo2-etapa6-diseno.md`, C1 a C16), de la auditoría de accesibilidad
-(`demo2-etapa6-accesibilidad.md`, M1, m1, m2) y de lo de presentación del QA (`demo2-etapa6-qa.md`, B1, B2, B5), en
-`docs/revisiones/` del portafolio, y de las decisiones de Matías del 22/11. Donde algo de 14.2 contradiga esta lista,
+Salen de la revisión visual (C1 a C16), de la auditoría de accesibilidad (M1, m1, m2) y de lo de presentación del QA
+(B1, B2, B5), todos en informes de revisión internos (no publicados), y de las decisiones de Matías del 22/11. Donde algo de 14.2 contradiga esta lista,
 manda esta. Marcas: **[solo M]** se hace ya; **[espera P]** necesita un dato o un texto que entrega el programador en
 `src/lib/` (hasta entonces se maqueta con el dato simulado en `Muestras.svelte` y se conecta después). Los textos que
 arma `src/lib/dominio/textos.ts` los cambia el programador; si al conectar difieren de la sección 7, **mandan los de la

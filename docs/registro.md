@@ -3,6 +3,10 @@
 Los roles que aparecen en este registro («programador», «maquetador», «diseñador», «redactor», «revisor», «QA»,
 «auditor») son agentes de IA con instrucciones distintas. Matías es el único humano: decide, prioriza y aprueba.
 
+**Clave de los códigos.** *Hallazgos de una revisión:* letra de gravedad y número, junto al tipo de informe («QA B5», «accesibilidad M1»): **A** alta, **M** media, **B** baja, **m** menor; en una revisión visual, **C** numera los cambios pedidos.
+*Decisiones:* **D** de diseño (`docs/diseno.md`, sección 15), **S** de tecnología (`docs/stack.md`, sección 9) y **Q** preguntas a Matías (`docs/diseno.md`, 17.10).
+*Reglas y datos:* letra del área y número (T, V, A, P, K, N, U, H, D, L; `docs/diseno.md`, sección 6) y casos de ejemplo C01 a C21 (sección 9.2); el contexto distingue la «D» de una decisión de la «D» de las reglas de datos. Los informes de revisión que los citan son internos y no se publican.
+
 ## 18/11/2026 (noche, 6) — Revisiones de 3.2 a 3.4: segunda tanda de lógica (programador)
 
 **Qué se hizo.** Cinco tareas chicas en `src/lib/` y tests, con TDD (cada test nuevo se vio fallar antes del código; el de «Cómo funciona», al romper a propósito
@@ -44,7 +48,7 @@ cerrar diálogos (la especificación no lo pide); prueba con lector de pantalla 
 
 ## 18/11/2026 (noche, 4) — Revisiones de 3.2 a 3.4: correcciones de la lógica (programador)
 
-**Qué se hizo.** Se commitearon los cuatro informes (`docs/revision-codigo-…`, `qa-…`, `accesibilidad-…`, `revision-textos-marco-…`) y se
+**Qué se hizo.** Se commitearon los cuatro informes de revisión (código, QA, accesibilidad y textos del marco; luego retirados del repositorio: informes internos, no publicados) y se
 aplicó lo que cae en `src/lib/`. Con TDD: cada test nuevo se vio fallar antes del código. Sin tocar `src/componentes/` ni estilos.
 
 | Qué | Cómo quedó |
@@ -194,14 +198,16 @@ partes y 1.112 eventos (como pide el diseño); recargar no regenera nada; `#/uni
 con TDD: cada test se vio fallar antes del código. Decisiones completas en `docs/diseno.md`, sección 16. **A confirmar por
 Matías: M1, M3 y M4** (están marcadas así en el diseño).
 
+**Actualización.** Matías confirmó M1, M3 y M4 el 18/11/2026 (`docs/diseno.md`, sección 16). Las filas «a confirmar» de abajo se conservan como estaban cuando se escribió esta entrada.
+
 | Hallazgo | Commit | Resultado |
 | --- | --- | --- |
-| M5 | `47760e1` | `npm test` corre por defecto con `TZ=Asia/Tokyo` (fijada en `vite.config.ts`); test que lo verifica; `.github/workflows/ci.yml` (Actions no corre hoy en la cuenta: no se forzó). Se incluyó el informe `docs/revision-dominio.md`. |
+| M5 | `47760e1` | `npm test` corre por defecto con `TZ=Asia/Tokyo` (fijada en `vite.config.ts`); test que lo verifica; `.github/workflows/ci.yml` (Actions no corre hoy en la cuenta: no se forzó). Se incluyó el informe de revisión del dominio (luego retirado del repositorio: informe interno, no publicado). |
 | M2, B1, B4 | `8924617` | Contexto validado (lanza error), `parsearInstante` estricto con `Z` obligatoria, `sumarDias` solo con enteros, recorrido de 2000 a 2100. La validación encontró un test con `hoy` y `ahora` incoherentes (se corrigió). |
 | M6 | `ca35b1a` | Copias de `checklist`, `otraNovedad` y `titular`; `datos` de los eventos con copia profunda. |
-| M1 (a confirmar) | `eff6eff` | P9 con los documentos como estaban en la fecha del parte; test con C18 en orden inverso. El generador carga y emite documentos antes del primer parte. |
-| M3 (a confirmar) | `38800a9` | Corrección de kilometraje anterior a registros cargados: se rechaza (`km-correccion-anterior`). |
-| M4 (a confirmar) | `7775928` | Habilitación de ingreso que el proyecto no exige: alerta `baja`, fuera de la insignia, coherente con `aptitud`. |
+| M1 (a confirmar; **confirmada por Matías el 18/11/2026**) | `eff6eff` | P9 con los documentos como estaban en la fecha del parte; test con C18 en orden inverso. El generador carga y emite documentos antes del primer parte. |
+| M3 (a confirmar; **confirmada por Matías el 18/11/2026**) | `38800a9` | Corrección de kilometraje anterior a registros cargados: se rechaza (`km-correccion-anterior`). |
+| M4 (a confirmar; **confirmada por Matías el 18/11/2026**) | `7775928` | Habilitación de ingreso que el proyecto no exige: alerta `baja`, fuera de la insignia, coherente con `aptitud`. |
 | Bajos | `ef349af` | Tests de B2 (cada uno con su mutación), textos a `textos.ts` (B8), `validarLitros` y `abreviar` únicos, `enviadoFueraDeTermino` eliminada, motivo abreviado en el evento de A3, C10 a las 00:00 de Argentina. |
 | Publicabilidad | `3934460` | `CLAUDE.md` sin la referencia al empleador ni a la carpeta de terceros; `textoEmpresa` rotula el CUIT como ficticio; README sin afirmar la serie de patentes. El historial no se reescribió. |
 
@@ -948,7 +954,7 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 
 **Qué se hizo.**
 - *Pantallas del 4.5.* `PantallaConductor` (6.4: panel «Hoy» con sus cinco estados, `select` «Usar otra unidad» / «Elija la unidad», «Pendientes», «Su licencia», «Mis últimos partes»), `PantallaParte` (6.5) con `ParteFormulario` (kilometraje, conductor en el perfil Encargado, diez puntos con `ItemRevision`, `SelectorCombustible`, litros, «Otra novedad», indicador de guardado, resumen de errores, barra de envío, «Descartar borrador»), `DialogoAntesDeEnviar`, `ParteEnviado` (el panel de «Parte enviado» y, con otro título, el parte en lectura), «No se puede cargar este parte» y «No se encontró la unidad». Enchufadas en `App.svelte` (`#/conductor`, `#/parte/…`); la dirección desconocida muestra «Página no encontrada» con su camino de vuelta. Piezas tocadas: `EnlaceAccion` (variante primaria y grande, nombre accesible), `ResumenErrores` (texto general y enlaces de 44 px), `Panel`. Textos de presentación en `textos-marco.ts` (`TEXTO_CONDUCTOR_VISTA`, `TEXTO_PARTE_VISTA`) para `redactor-ux`.
-- *Correcciones (informes `docs/revisiones/demo2-etapa4-*.md` del portafolio, fuera del repo).* QA M1; accesibilidad M1 a M4 y B1 a B7; código M2 y M7; el `<svelte:boundary>` de `App.svelte` reindentado y probado a mano (ver abajo). Detalle en `diseno.md`, sección 16, últimas dos viñetas.
+- *Correcciones (informe de revisión interno (no publicado) de la etapa 4).* QA M1; accesibilidad M1 a M4 y B1 a B7; código M2 y M7; el `<svelte:boundary>` de `App.svelte` reindentado y probado a mano (ver abajo). Detalle en `diseno.md`, sección 16, últimas dos viñetas.
 
 **Decisiones.** Quince puntos en `diseno.md`, sección 16 («Paso 4.5 … pantallas»). Las que más pesan: «Enviar parte» es `type="button"` (Enter en un campo no envía); el error de un campo del envío queda hasta que se lo toca; «Parte enviado» es estado de la pantalla y «Imprimir» no está (6.1); las secciones son `section` con `h2` y no `legend`; sin unidad, «Empezar el parte» aparece al elegir una.
 
@@ -958,7 +964,7 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 
 ## 19/11/2026 (18 · rama `interfaz-etapa-0`) — Correcciones de presentación de la revisión del paso 4.5 (maquetador)
 
-**Qué se hizo.** Los hallazgos de presentación de los tres informes de la revisión del 4.5 (`docs/revisiones/demo2-etapa45-*.md` del portafolio, fuera del repo). N1 es de lógica y no se tocó.
+**Qué se hizo.** Los hallazgos de presentación de los tres informes de la revisión del 4.5 (informe de revisión interno (no publicado)). N1 es de lógica y no se tocó.
 
 | Hallazgo | Arreglo |
 | --- | --- |
@@ -986,7 +992,7 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 **Sin hacer.** N1 (lógica). Accesibilidad B8 (token `--c-neutro-r`). Código M1 a M4 y B1 a B5, B8 y B9 (lógica, pruebas y README). QA M-1, M-2, B1, B2, B7, B9 y D1 a D5 (lógica o contenido).
 ## 18/11/2026 (noche, 18 · rama `logica-4-5c`) — Correcciones de lógica de la revisión del paso 4.5 (programador)
 
-**Qué se hizo.** La lógica que marcaron los informes de código, QA y accesibilidad del 4.5 (`docs/revisiones/demo2-etapa45-*.md` del portafolio, fuera del repo), con el test que falla primero. Un commit por tema, sin push. Rama aparte (un `git worktree` aparte, creado desde `interfaz-etapa-0`) para no pisar al maquetador.
+**Qué se hizo.** La lógica que marcaron los informes de código, QA y accesibilidad del 4.5 (informe de revisión interno (no publicado)), con el test que falla primero. Un commit por tema, sin push. Rama aparte (un `git worktree` aparte, creado desde `interfaz-etapa-0`) para no pisar al maquetador.
 
 | Hallazgo | Arreglo |
 | --- | --- |
@@ -1029,7 +1035,7 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 
 ## 19/11/2026 (rama `interfaz-etapa-0`) — Correcciones de la revisión visual del paso 5.3 (maquetador)
 
-**Qué se hizo.** C1, C2, C4 a C13, C16, C18 y el cambio de código de S2 de `docs/revisiones/demo2-etapa5-diseno.md` (del portafolio). Solo `src/componentes/`, un símbolo de `index.html` y cuatro textos de `textos-marco.ts`; sin tocar la lógica, los tokens ni las dependencias. Un commit por hallazgo (o grupo). Medido contra el build servido con `public/_headers`, antes y después.
+**Qué se hizo.** C1, C2, C4 a C13, C16, C18 y el cambio de código de S2 del informe de revisión interno (no publicado) de diseño de la etapa 5. Solo `src/componentes/`, un símbolo de `index.html` y cuatro textos de `textos-marco.ts`; sin tocar la lógica, los tokens ni las dependencias. Un commit por hallazgo (o grupo). Medido contra el build servido con `public/_headers`, antes y después.
 
 | Hallazgo | Cómo quedó | Antes → después |
 | --- | --- | --- |
@@ -1201,7 +1207,7 @@ Medidas: «Al iniciar» (paso 1) a 360 × 780: 590 px; «Al terminar» (paso 2):
 
 ## Etapa 7: correcciones de lógica (programador, 22/11/2026)
 
-Rama `correcciones-logica-e7` (sale de `3fbe7d7`), TDD. Los informes están en el repositorio del portafolio (`docs/revisiones/demo2-etapa7-*.md`).
+Rama `correcciones-logica-e7` (sale de `3fbe7d7`), TDD. Los informes de las cuatro revisiones de la etapa 7 son internos (no publicados).
 
 | Hallazgo | Qué se hizo |
 | --- | --- |
@@ -1245,7 +1251,7 @@ Rama `correcciones-logica-e7` (sale de `3fbe7d7`), TDD. Los informes están en e
 
 **Verificación.** `npm run check` 0 errores y 0 avisos; `npm test` 57 archivos y 1555 pruebas; `npm run contraste` 182 mediciones, 0 fallan, 9 justas; `npm run buscar` sin hallazgos (8 reglas, 194 archivos); `npm run build` en verde, JS 404,98 kB y **117,66 kB gzip** (tope 120), CSS 15,51 kB gzip.
 Navegador (Playwright con Chromium, compilación servida con `node scripts/servir-dist.mjs 4722`, es decir con la CSP de `_headers`; el servidor se apagó al terminar): **432 combinaciones** = 36 pantallas y estados (alertas, flota, ficha, 7 inicios, paso 1 vacío y con errores de 10, 3, 1 y mezcla, diálogo, C1 con y sin avisos, C2, inicio en uso, cierre vacío y con errores, C3, lectura D, E de licencia y de fuera de servicio, cuatro de «Cerrar antes», C1 de un día pasado) × claro y oscuro × 320, 360, 768 y 1280 px, más 320 y 360 con el texto al 200 %. En cada una se midió: desborde de la página (`scrollWidth`) y de cualquier elemento fuera de un contenedor con desplazamiento; **palabras partidas** (cada palabra de 4 caracteres o más, con un `Range` por carácter: se marca si el corte cae donde el navegador no corta solo, es decir fuera de un «-» o un «/»); nada pulsable de menos de 44 px (los radios por su etiqueta completa; los enlaces en línea no cuentan); consola. Resultado: 0 desbordes, 0 controles de menos de 44 px, 0 mensajes de consola ni violaciones de CSP, 0 palabras partidas salvo 2 combinaciones (alertas a 320 px con el texto al 200 %, claro y oscuro: «documentación» en una etiqueta). Antes de la tanda, el mismo barrido a 360 y 320 con el texto al 200 % daba 70 de 144 combinaciones con problemas.
-Medidas puntuales: C6 (768 px) rótulos en 229 y 229, valor en 297,4 y 297,4; C2 km y «· último parte» en la misma `y` en las tres tarjetas con etiqueta; B3 y m4 como en la tabla; contraste de B8 3,76 y 3,78 (claro). Capturas de revisión (alertas, flota, ficha a 360 px con el texto al 200 %, foco del botón-texto) en el *scratchpad* de la sesión, `vista-e7/shots/`.
+Medidas puntuales: C6 (768 px) rótulos en 229 y 229, valor en 297,4 y 297,4; C2 km y «· último parte» en la misma `y` en las tres tarjetas con etiqueta; B3 y m4 como en la tabla; contraste de B8 3,76 y 3,78 (claro). Capturas de revisión (alertas, flota, ficha a 360 px con el texto al 200 %, foco del botón-texto) no se conservan en el repositorio.
 **Sin verificar:** Firefox, Safari y WebKit; lector de pantalla; colores forzados reales de Windows (solo su emulación y solo en claro; ni siquiera se miró una captura de m2: se confía en la regla); teclado táctil real para B3 (se probó Enter con teclado físico); zoom real del navegador al 200 % (se usó el texto al 200 %); el 200 % en oscuro con colores forzados.
 
 ## 22/11/2026 (rama `critica-logica`) — Crítica de reclutador de la Demo 2, parte de lógica (programador, IA)
