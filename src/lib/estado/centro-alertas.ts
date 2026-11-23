@@ -48,7 +48,6 @@ export const MAX_PROTAGONISTA = 6;
 const GRUPOS: readonly Grupo[] = ["vencidos", "7", "15", "30"];
 const TIPOS_OPERACION: readonly TipoAlertaOperacion[] = [
   "novedad-critica",
-  "uso-con-documentacion-vencida",
   "parte-sin-enviar",
   "sin-parte",
   "novedad-abierta",

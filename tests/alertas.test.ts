@@ -286,24 +286,6 @@ describe("alertas de operación", () => {
     expect(calcularAlertas(base({ unidades: [u], documentos: [], novedades: [n] }), H).alertas).toEqual([]);
   });
 
-  it("P9: 'Circuló con documentación vencida' dura 30 días desde la fecha del parte", () => {
-    const p = parte({ id: "pd", fecha: "2026-11-12", documentacionVencida: ["seguro"], estado: "enviado" });
-    const dia = (hoy: string) => porTipo(calcularAlertas(base({ partes: [p] }), hoy).alertas, "uso-con-documentacion-vencida");
-    expect(dia("2026-11-12")).toHaveLength(1);
-    expect(dia("2026-12-12")).toHaveLength(1); // fecha + 30
-    expect(dia("2026-12-13")).toHaveLength(0); // fecha + 31
-    expect(dia("2026-11-12")[0]).toMatchObject({
-      gravedad: "critica",
-      texto: "Circuló con documentación vencida: Seguro (parte del 12/11/2026)",
-    });
-  });
-
-  it("P9: dos documentos se nombran los dos", () => {
-    const p = parte({ fecha: "2026-11-12", documentacionVencida: ["seguro", "revision-tecnica"] });
-    const a = porTipo(calcularAlertas(base({ partes: [p] }), H).alertas, "uso-con-documentacion-vencida")[0];
-    expect(a?.texto).toBe("Circuló con documentación vencida: Seguro, Revisión técnica (parte del 12/11/2026)");
-  });
-
   it("P5: borrador de ayer -> 'Parte sin enviar' con quién lo empezó; borrador de hoy no alerta", () => {
     const c = conductor({ id: "c1", nombre: "Luis Ferreyra" });
     const ayer = parte({ id: "b1", estado: "borrador", enviado: null, fecha: en(-1), conductorId: "c1" });
@@ -377,7 +359,6 @@ describe("resumen", () => {
     expect(resumen.porGrupo).toEqual({ vencidos: 2, "7": 1, "15": 1, "30": 1 });
     expect(resumen.operacion).toEqual({
       "novedad-critica": 1,
-      "uso-con-documentacion-vencida": 0,
       "parte-sin-enviar": 0,
       "sin-parte": 2,
       "novedad-abierta": 1,
@@ -489,17 +470,6 @@ describe("partes en uso (P5, P6, P17)", () => {
     expect(porTipo(alertas, "sin-parte")).toHaveLength(0);
   });
 
-  it("P17: un parte en uso con documentación vencida alerta desde que se envía la revisión", () => {
-    const p = enUso(H, { documentacionVencida: ["seguro"] });
-    const a = porTipo(calcularAlertas(estadoCon([p]), H).alertas, "uso-con-documentacion-vencida");
-    expect(a).toHaveLength(1);
-    expect(a[0]?.gravedad).toBe("critica");
-  });
-
-  it("P17: un parte sin salida con documentacionVencida (dato viejo) no alerta", () => {
-    const p = parte({ id: "ss", fecha: en(-2), sinSalida: true, documentacionVencida: ["seguro"], conductorId: "c1" });
-    expect(porTipo(calcularAlertas(estadoCon([p]), H).alertas, "uso-con-documentacion-vencida")).toHaveLength(0);
-  });
 });
 
 describe("conductores que no pueden manejar hoy (L6, L7)", () => {

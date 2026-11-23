@@ -252,7 +252,6 @@ describe("enviarRevision: el parte pasa a en uso (P14)", () => {
       enviado: null,
       sinSalida: false,
       autor: "Rocío Medina",
-      documentacionVencida: [],
       advertenciasAceptadas: [],
     });
     expect(r.eventos.map((x) => x.tipo)).toEqual(["revision-enviada"]);
@@ -587,7 +586,7 @@ describe("enviarRevision: documentación de la unidad (P21) y novedades (A3, P11
   it("P21: con el seguro vencido la revisión no se envía, sin advertencia que aceptar, y el error dice cuál y desde cuándo", () => {
     const e = conSeguroQueVence(flotaDePrueba(), "2026-11-15");
     const { estado, parteId } = conBorrador(e, listo());
-    const err = ejecutarError(estado, revision(parteId, ["documentacion-vencida"]));
+    const err = ejecutarError(estado, revision(parteId, ["salto-km", "recorrido-largo"]));
     expect(err.codigo).toBe("documentacion-de-la-unidad-vencida");
     expect(err.detalle).toEqual({ documentos: ["seguro"] });
     expect(err.mensaje).toBe("El seguro de ZK 214 BD venció el 15/11/2026. La unidad no puede salir. Renueve la documentación antes de enviar la revisión.");
@@ -608,7 +607,7 @@ describe("enviarRevision: documentación de la unidad (P21) y novedades (A3, P11
     const base = flotaDePrueba();
     const e: Estado = { ...conSeguroQueVence(base, "2026-11-17"), partes: [] };
     const ayer = conBorrador(e, listo({ fecha: "2026-11-17", kmInicio: 1000 }));
-    expect(parteDe(ejecutarOk(ayer.estado, revision(ayer.parteId)).estado, ayer.parteId)).toMatchObject({ estado: "en-uso", documentacionVencida: [] });
+    expect(parteDe(ejecutarOk(ayer.estado, revision(ayer.parteId)).estado, ayer.parteId)).toMatchObject({ estado: "en-uso" });
     const hoy = conBorrador(e, listo({ fecha: H, kmInicio: 1000 }));
     expect(ejecutarError(hoy.estado, revision(hoy.parteId)).codigo).toBe("documentacion-de-la-unidad-vencida");
   });
@@ -637,7 +636,7 @@ describe("enviarRevision: documentación de la unidad (P21) y novedades (A3, P11
   it("P21: ya no hay advertencia de documentación que aceptar: con todo vigente la revisión no pide nada", () => {
     const { estado, parteId } = conBorrador(flotaDePrueba(), listo());
     const r = ejecutarOk(estado, revision(parteId));
-    expect(parteDe(r.estado, parteId)).toMatchObject({ estado: "en-uso", documentacionVencida: [], advertenciasAceptadas: [] });
+    expect(parteDe(r.estado, parteId)).toMatchObject({ estado: "en-uso", advertenciasAceptadas: [] });
   });
 
   it("P16, A3, H1: una novedad crítica cierra el parte sin salida y deja la unidad fuera de servicio, con los eventos en orden", () => {
@@ -653,7 +652,6 @@ describe("enviarRevision: documentación de la unidad (P21) y novedades (A3, P11
       litrosCargados: null,
       revisado: ahora,
       enviado: ahora,
-      documentacionVencida: [],
     });
     expect(r.eventos.map((x) => x.tipo)).toEqual(["revision-enviada", "novedad-abierta", "fuera-de-servicio"]);
     expect(r.eventos[0]?.datos).toMatchObject({ sinSalida: true, kmInicio: 84320 });

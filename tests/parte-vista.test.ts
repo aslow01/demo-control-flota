@@ -7,7 +7,7 @@ import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
 import { opcionesDeConductor } from "../src/lib/dominio/formulario.ts";
 import { inicioDelConductor, opcionesParaElegirConductor, panelDeParteEnviado, panelDeRevisionEnviada, panelDeSinSalida, vistaDeParte } from "../src/lib/estado/parte.ts";
 import { SEMILLA_POR_DEFECTO, generar } from "../src/lib/datos/generador.ts";
-import { checklistEnOrden, checklistVacio, conDocumentacionVencidaAceptada, documento, ejecutarOk, flotaDePrueba, novedad, parte, unidad } from "./ayuda.ts";
+import { checklistEnOrden, checklistVacio, documento, ejecutarOk, flotaDePrueba, novedad, parte, unidad } from "./ayuda.ts";
 
 const H = "2026-11-18";
 const COND: Perfil = { tipo: "conductor", conductorId: "c1" };
@@ -745,7 +745,6 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       ],
       avisoCritica: null,
       advertencias: [],
-      conDocumentacionVencida: false,
       fueraDePlazo: null,
       notaEncargado: null,
       parrafo: null,
@@ -801,19 +800,11 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     expect(panelDeParteEnviado(hecho.estado, hecho.parte, COND).avisoCritica).not.toBeNull();
   });
 
-  it("advertencias aceptadas (K6, P9 de la revisión y K7 del cierre) y revisión fuera de plazo", () => {
-    const hecho = enviado(flotaDePrueba(), { kmInicio: 85500, kmFin: 86800 }, ["salto-km", "recorrido-largo"]);
-    // un parte de antes de P21: el seguro venció ayer y se aceptó enviarlo igual
-    const estado = conDocumentacionVencidaAceptada(
-      { ...hecho.estado, documentos: hecho.estado.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d)) },
-      hecho.parte.id,
-      ["seguro"],
-    );
-    const p = estado.partes.find((x) => x.id === hecho.parte.id)!;
+  it("advertencias aceptadas (K6 de la revisión y K7 del cierre) y revisión fuera de plazo", () => {
+    const { estado, parte: p } = enviado(flotaDePrueba(), { kmInicio: 85500, kmFin: 86800 }, ["salto-km", "recorrido-largo"]);
     const panel = panelDeParteEnviado(estado, p, COND);
     expect(panel.advertencias).toEqual([
       { tono: "semana", texto: "1.180 km sin registrar desde el último parte" },
-      { tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." },
       { tono: "semana", texto: "Recorrido del día inusualmente largo: 1.300 km" },
     ]);
     // Fuera de plazo: la revisión del parte de ayer se envió hoy.
@@ -835,7 +826,6 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       ],
       avisoCritica: null,
       advertencias: [],
-      conDocumentacionVencida: false,
       fueraDePlazo: null,
       notaEncargado: null,
       parrafo: "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible.",
@@ -846,22 +836,6 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     expect(deAyer.completarCierre).toEqual({ texto: "Completar el cierre", href: "#/parte/ZK214BD/2026-11-18", primario: true });
     // C4: un parte de un día pasado no dice «al terminar la jornada»: la jornada ya terminó
     expect(deAyer.parrafo).toBe("Falta cerrar este parte con el kilometraje y el combustible de esa jornada.");
-  });
-
-  it("C1 (S1): con documentación vencida aceptada la línea no dice «puede salir» y el panel lo marca; fuera de plazo también", () => {
-    const { parte: p, estado } = enUso(flotaDePrueba());
-    // un parte en uso de antes de P21, con la documentación vencida aceptada (los comandos ya no lo pueden armar)
-    const uso = { estado: conDocumentacionVencidaAceptada({ ...estado, documentos: estado.documentos.map((d) => (d.id === "u1-seguro" ? { ...d, vence: "2026-11-17" } : d)) }, p.id, ["seguro"]) };
-    const conAviso = uso.estado.partes.find((x) => x.id === p.id)!;
-    const panel = panelDeRevisionEnviada(uso.estado, conAviso, COND, H);
-    expect(panel.conDocumentacionVencida).toBe(true);
-    expect(panel.linea).toBe("ZK 214 BD: revisión enviada a las 12:00. Sale con documentación vencida: quedó registrado.");
-    expect(panel.advertencias).toEqual([{ tono: "critico", texto: "El seguro de ZK 214 BD venció el 17/11/2026. Se envió de todos modos: quedó registrado." }]);
-    const tarde = { ...conAviso, fecha: "2026-11-17", revisado: "2026-11-18T08:10:00.000Z" };
-    expect(panelDeRevisionEnviada(uso.estado, tarde, COND, H).linea).toBe("Revisión del 17/11/2026 enviada el 18/11/2026 a las 05:10 (fuera de plazo). Salió con documentación vencida: quedó registrado.");
-    // sin documentación vencida, como siempre
-    expect(panelDeRevisionEnviada(estado, p, COND, H).conDocumentacionVencida).toBe(false);
-    expect(panelDeRevisionEnviada(estado, p, COND, H).linea).toMatch(/puede salir\. Revisión enviada a las/);
   });
 
   it("C1: con una novedad normal la nota dice que el encargado la ve; fuera de plazo lo dice la línea", () => {

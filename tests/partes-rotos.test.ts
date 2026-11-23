@@ -26,8 +26,6 @@ async function repoConParteRoto(dañar: Dañar, quePartes: (p: Parte) => boolean
 }
 
 const rotos: [string, Dañar][] = [
-  ["sin documentacionVencida", (p) => delete p["documentacionVencida"]],
-  ["con documentacionVencida de otro tipo", (p) => (p["documentacionVencida"] = "seguro")],
   ["sin advertenciasAceptadas", (p) => delete p["advertenciasAceptadas"]],
   ["con advertenciasAceptadas con basura", (p) => (p["advertenciasAceptadas"] = [null, "x", { tipo: "salto-km" }])],
   ["con el checklist vacío", (p) => (p["checklist"] = {})],
@@ -47,7 +45,6 @@ describe("D7 y código M1: el arranque normaliza los partes con `parteLegible`",
       expect(() => calcularAlertas(r.estado, HOY)).not.toThrow();
       const leido = r.estado.partes.find((p) => p.id === parte.id);
       expect(leido).toBeDefined();
-      expect(Array.isArray(leido?.documentacionVencida)).toBe(true);
       expect(Array.isArray(leido?.advertenciasAceptadas)).toBe(true);
       expect(Object.keys(leido?.checklist ?? {})).toHaveLength(14);
       expect(leido?.kmInicio === null || typeof leido?.kmInicio === "number").toBe(true);
@@ -113,11 +110,11 @@ describe("«Actualizar» (otra pestaña escribió): lo leído también se normal
     const app = await iniciarApp(repo, "#/alertas");
     const roto = (await repo.cargar()) as Estado;
     const p = roto.partes.find((x) => x.estado === "enviado")!;
-    delete (p as unknown as Record<string, unknown>)["documentacionVencida"];
+    delete (p as unknown as Record<string, unknown>)["advertenciasAceptadas"];
     await repo.reemplazarTodo(roto);
     const r = await app.actualizar();
     expect(r.ok).toBe(true);
-    expect(app.estado?.partes.find((x) => x.id === p.id)?.documentacionVencida).toEqual([]);
+    expect(app.estado?.partes.find((x) => x.id === p.id)?.advertenciasAceptadas).toEqual([]);
     expect(app.alertas).not.toBeNull();
   });
 

@@ -46,8 +46,8 @@
   const critico = $derived(panel.variante === "sin-salida");
   // La lectura (D) se reconoce por su etiqueta «Cerrado»: no lleva ícono.
   const lectura = $derived(etiqueta !== undefined);
-  const tono = $derived(critico ? "critico" : panel.conDocumentacionVencida && !lectura ? "semana" : "vigente");
-  const iconoDelTono = $derived(critico ? "octogono" : tono === "semana" ? "alerta" : "check");
+  const tono = $derived(critico ? "critico" : "vigente");
+  const iconoDelTono = $derived(critico ? "octogono" : "check");
   const filas = $derived([...momentos, ...panel.filas]);
 </script>
 
@@ -74,7 +74,7 @@
       <p class="rotulo-chico">{T.enviado.avisosAceptados}</p>
       <ul>
         {#each panel.advertencias as a, i (i)}
-          <li data-tono={a.tono}><span class="icono-aviso"><Icono nombre={a.tono === "critico" ? "vencido" : "alerta"} /></span><span>{a.texto}</span></li>
+          <li data-tono={a.tono}><span class="icono-aviso"><Icono nombre="alerta" /></span><span>{a.texto}</span></li>
         {/each}
       </ul>
     </div>

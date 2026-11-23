@@ -23,7 +23,6 @@ export function aspectoDeVencimiento(fila: FilaVencimiento): Aspecto {
 
 const OPERACION: Record<TipoAlertaOperacion, Aspecto> = {
   "novedad-critica": { tono: "critico", icono: "octogono" },
-  "uso-con-documentacion-vencida": { tono: "critico", icono: "vencido" },
   "parte-sin-enviar": { tono: "semana", icono: "lapiz" },
   "sin-parte": { tono: "semana", icono: "guion" },
   "novedad-abierta": { tono: "semana", icono: "llave" },

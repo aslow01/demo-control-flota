@@ -105,7 +105,7 @@ describe("B2: el tope de 200 caracteres del motivo de fuera de servicio (A3) y a
       checklist[k] = { estado: "con-novedad", descripcion: largo, impideUso: true };
     }
     const g = ejecutarOk(e, borrador({ kmInicio: 1000, kmFin: 1100, combustible: "medio", checklist, otraNovedad: { descripcion: largo, impideUso: true } }));
-    const enviado = ejecutarOk(g.estado, { tipo: "enviarRevision", parteId: g.cambios.partes[0]!.id, advertenciasAceptadas: ["salto-km", "documentacion-vencida"] });
+    const enviado = ejecutarOk(g.estado, { tipo: "enviarRevision", parteId: g.cambios.partes[0]!.id, advertenciasAceptadas: ["salto-km"] });
     const u = enviado.estado.unidades.find((x) => x.id === "u1")!;
     expect(u.estado.tipo).toBe("fuera-de-servicio");
     const evento = enviado.eventos.find((x) => x.tipo === "fuera-de-servicio")!;

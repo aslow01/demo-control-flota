@@ -1,4 +1,4 @@
-// Parte diario en dos pasos (P2 a P4, P9 a P11, P13, P16; sección 17): revisión antes de salir y cierre; advertencias (K6, K7, P9).
+// Parte diario en dos pasos (P2 a P4, P10, P11, P13, P16; sección 17): revisión antes de salir y cierre; advertencias (K6, K7).
 
 import { diasEntre, parsearFechaCivil, parsearInstante } from "./fechas.ts";
 import { KM_MAXIMO, advertenciasDeSalida } from "./kilometraje.ts";
@@ -6,11 +6,10 @@ import { largoEnCaracteres, normalizarTexto } from "./texto.ts";
 import { formatearPatente } from "./patente.ts";
 import {
   ERRORES,
-  NOMBRES_DOCUMENTO,
   NOMBRES_ITEM_CHECKLIST,
   errLitrosExcedidos,
   errLitrosInvalidos,
-  renglonesDeAvisoAceptado,
+  textoAdvertencia,
   type ContextoDeDocumentacion,
   type RenglonDeAviso,
 } from "./textos.ts";
@@ -237,11 +236,11 @@ export function documentacionQueBloquea(entrada: EntradaDocumentacion): { docume
   return { documentos, contexto: contextoDeDocumentacion(entrada.documentos, entrada.unidad, entrada.fecha) };
 }
 
-/** Los documentos obligatorios de una unidad, en el orden en que se muestran: los que puede decir un aviso de P9. */
+/** Los documentos obligatorios de una unidad, en el orden en que se muestran: los que puede decir el motivo de P21. */
 const TIPOS_DE_DOCUMENTO_DE_UNIDAD: readonly TipoDocumento[] = ["seguro", "revision-tecnica", "matafuego", "habilitacion-proyecto"];
 
 /**
- * C6: cómo estaba cada documento de la unidad el día del parte, para los textos de P9: la fecha en que venció (la más tardía de los documentos que ya valían
+ * C6: cómo estaba cada documento de la unidad el día del parte, para los textos de P21: la fecha en que venció (la más tardía de los documentos que ya valían
  * ese día y ya
  * habían vencido) o `null` si no había ninguno. Como `documentacionVencidaEn`, mira los documentos como estaban ese día (M1): una renovación cargada después no
  * borra el hecho.
@@ -290,18 +289,9 @@ export function unidadSinSalidaHoy(estado: Pick<Estado, "partes" | "novedades">,
   return estado.novedades.some((n) => n.unidadId === unidadId && n.gravedad === "critica" && n.fecha === hoy);
 }
 
-/**
- * Los avisos que se aceptaron al enviar un parte, ya en renglones con su tono (C6, M2): un renglón por documento vencido y uno por cada aviso de kilómetros.
- * Los de documentación
- * dicen cómo estaba cada documento de la unidad el día del parte.
- */
-export function renglonesDeAvisosAceptados(
-  parte: Pick<Parte, "advertenciasAceptadas" | "fecha">,
-  unidad: Pick<Unidad, "id" | "patente"> | undefined,
-  documentos: readonly Documento[],
-): RenglonDeAviso[] {
-  const contexto = unidad === undefined ? undefined : contextoDeDocumentacion(documentos, unidad, parte.fecha);
-  return parte.advertenciasAceptadas.flatMap((a) => renglonesDeAvisoAceptado(a, contexto));
+/** Los avisos de kilómetros que se aceptaron al enviar un parte (K6, K7), ya en renglones con su tono. */
+export function renglonesDeAvisosAceptados(parte: Pick<Parte, "advertenciasAceptadas">): RenglonDeAviso[] {
+  return parte.advertenciasAceptadas.map((a) => ({ tono: "semana", texto: textoAdvertencia(a) }));
 }
 
 /** K6: lo que hay que aceptar antes de enviar la revisión. La documentación vencida de la unidad ya no se acepta: bloquea (P21). */
@@ -362,7 +352,6 @@ export function nuevoBorrador(entrada: EntradaBorrador): Parte {
     },
     otraNovedad: null,
     advertenciasAceptadas: [],
-    documentacionVencida: [],
     creado: entrada.ahora,
     actualizado: entrada.ahora,
     enviado: null,
@@ -404,10 +393,6 @@ function nivelLegible(valor: unknown): NivelCombustible | null {
   return NIVELES.find((n) => n === valor) ?? null;
 }
 
-function tipoDeDocumentoLegible(valor: unknown): valor is TipoDocumento {
-  return typeof valor === "string" && Object.hasOwn(NOMBRES_DOCUMENTO, valor);
-}
-
 function respuestaLegible(valor: unknown): RespuestaItem {
   if (!esObjeto(valor)) return { estado: "sin-responder" };
   if (valor["estado"] === "en-orden") return { estado: "en-orden" };
@@ -426,9 +411,6 @@ function advertenciaLegible(valor: unknown): Advertencia | null {
   const km = valor["km"];
   if ((valor["tipo"] === "salto-km" || valor["tipo"] === "recorrido-largo") && typeof km === "number" && Number.isFinite(km)) {
     return { tipo: valor["tipo"], km };
-  }
-  if (valor["tipo"] === "documentacion-vencida" && Array.isArray(valor["documentos"])) {
-    return { tipo: "documentacion-vencida", documentos: valor["documentos"].filter(tipoDeDocumentoLegible) };
   }
   return null;
 }
@@ -481,7 +463,6 @@ export function parteLegible(crudo: unknown): Parte | null {
     otraNovedad:
       esObjeto(otra) && typeof otra["descripcion"] === "string" ? { descripcion: otra["descripcion"], impideUso: otra["impideUso"] === true } : null,
     advertenciasAceptadas: advertenciasLegibles(crudo["advertenciasAceptadas"]),
-    documentacionVencida: Array.isArray(crudo["documentacionVencida"]) ? crudo["documentacionVencida"].filter(tipoDeDocumentoLegible) : [],
     creado: instanteLegible(crudo["creado"]) ?? "",
     actualizado: instanteLegible(crudo["actualizado"]) ?? "",
     enviado: instanteLegible(crudo["enviado"]),

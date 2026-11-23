@@ -346,7 +346,7 @@ export const TEXTO_PARTE_VISTA = {
   cerrando: "Cerrando…",
   descartar: "Descartar borrador",
   confirmarDescartar: "Confirmar descarte",
-  /** Diálogo «Antes de enviar» (K6, K7, P9): lo que explica cada aviso viene de `textoAdvertencia` (dominio). */
+  /** Diálogo «Antes de enviar» (K6, K7): lo que explica cada aviso viene de `textoAdvertencia` (dominio). */
   antesDeEnviar: {
     titulo: "Antes de enviar",
     introRevision: "Antes de enviar la revisión, lea esto.",

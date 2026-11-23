@@ -1269,3 +1269,17 @@ Medidas puntuales: C6 (768 px) rótulos en 229 y 229, valor en 297,4 y 297,4; C2
 | A4 (lógica) | `npm run contraste`: 182 mediciones, 0 fallan, 9 justas. `npm run build` sin errores. |
 
 **Para el redactor.** Textos nuevos: `errDocumentacionDeLaUnidad` («El seguro de ZK 214 BD venció el 17/11/2026. La unidad no puede salir. Renueve la documentación antes de enviar la revisión.» / «Avise al encargado.»), la nota «El borrador se conserva: cuando se renueve la documentación, podrá enviarlo.», los cuatro nombres de punto y, en «Cómo funciona», 14 puntos y la mención de la documentación. Cambian el README (24 conductores, 4 alertas críticas, 5 pendientes de operación, la asimetría de «Límites conocidos») y la captura `docs/img/parte-revision-360.png`.
+
+## 22/11/2026 (rama `critica-logica`, segunda tanda) — Código muerto de P9 borrado y M1 (lógica) (programador, IA)
+
+**Qué se hizo.** Con P21 y el esquema 3 ya no se puede producir ni leer una revisión enviada con documentación de la unidad vencida, así que se borró todo lo que existía para eso (el diseño lo anota en §17.13). Los avisos de kilómetros (K6 y K7) siguen igual.
+
+| Qué | Detalle |
+| --- | --- |
+| Borrado | Tipo de alerta `uso-con-documentacion-vencida` (cálculo, textos, ícono, grupo del centro de alertas); campo `Parte.documentacionVencida`; advertencia `documentacion-vencida` y su texto; tono crítico de los avisos aceptados (ahora siempre semana); `conDocumentacionVencida` y la línea «Sale con documentación vencida» del panel de la revisión enviada; `tonoDeAdvertencia`, `renglonesDeAvisoAceptado`, `estadoDeDocumentos`; `conDocumentacionVencidaAceptada` de `tests/ayuda.ts` y los tests que solo existían para eso. |
+| Se conserva | `documentacionVencidaEn`, `documentacionQueBloquea`, `contextoDeDocumentacion` y los renglones por documento: los usa P21 (error del comando, pantalla del parte, inicio del conductor). |
+| Vistas | Mínimo para que compile: `ParteEnviado` y `DialogoAntesDeEnviar` ya no eligen el ícono por tono (siempre `alerta`); `ParteEnviado` ya no tiene tono «semana». |
+| M1 | `conductoresParaProbar(estado, alertas, hoy)` en `estado/parte.ts`, con `tests/conductores-para-probar.test.ts` (8 pruebas). La vista y el botón «Completar con un ejemplo» quedan para después. |
+| JS | 411,17 kB → 408,28 kB (gzip 119,47 → 118,78 kB): el margen contra el tope de 120 pasa de 0,53 a 1,22 kB. |
+
+**Para el redactor.** Texto nuevo `TEXTO_CONDUCTOR_PARA_PROBAR` (cuatro marcas «Para probar: …»). Texto que desaparece: «Puede enviar la revisión de todos modos: quedará registrado que la unidad salió con documentación vencida.» y «Sale con documentación vencida: quedó registrado.». `docs/diseno-ui.md` todavía describe la alerta «Circuló…» (líneas 506, 887) y el aviso de aptitud con primario (1184-1186, 1431): lo ve el diseñador.

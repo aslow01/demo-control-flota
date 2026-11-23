@@ -24,14 +24,13 @@ export type TipoAlerta =
   | "documento-vencido"
   | "documento-por-vencer"
   | "novedad-critica"
-  | "uso-con-documentacion-vencida"
   | "parte-sin-enviar"
   | "sin-parte"
   | "novedad-abierta";
 
 export type TipoAlertaOperacion = Exclude<TipoAlerta, "documento-faltante" | "documento-vencido" | "documento-por-vencer">;
 
-/** Crítica: vencido, faltante, novedad crítica, uso con documentación vencida. Media: por vencer en 7 días y pendientes. Baja: 15 y 30 días. */
+/** Crítica: vencido, faltante, novedad crítica. Media: por vencer en 7 días y pendientes. Baja: 15 y 30 días. */
 export type Gravedad = "critica" | "media" | "baja";
 
 export interface Alerta {
@@ -93,7 +92,6 @@ export interface ResultadoAlertas {
 
 const ORDEN_GRUPO: Record<Grupo, number> = { vencidos: 0, "7": 1, "15": 2, "30": 3 };
 const ORDEN_GRAVEDAD: Record<Gravedad, number> = { critica: 0, media: 1, baja: 2 };
-const DIAS_AVISO_DOCUMENTACION_VENCIDA = 30;
 
 /** `Luis Ferreyra` -> `L. Ferreyra`. */
 export function nombreCorto(nombre: string): string {
@@ -228,7 +226,7 @@ function alertasDeVencimientos(estado: Estado, hoy: FechaCivil): Alerta[] {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Operación (A3, N5, P5, P6, P9)
+// Operación (A3, N5, P5, P6)
 // ---------------------------------------------------------------------------------------------
 
 function textoAntiguedad(dias: number): string {
@@ -280,19 +278,6 @@ function operacion(
   };
 }
 
-function alertaUsoConDocumentacionVencida(p: Parte): Alerta {
-  const nombres = p.documentacionVencida.map((t) => NOMBRES_DOCUMENTO[t]).join(", ");
-  return operacion({
-    id: `uso-doc:${p.id}`,
-    tipo: "uso-con-documentacion-vencida",
-    gravedad: "critica",
-    texto: TEXTO_ALERTA.usoConDocumentacionVencida(nombres, p.fecha),
-    fecha: p.fecha,
-    unidadId: p.unidadId,
-    conductorId: p.conductorId,
-  });
-}
-
 function alertaParteSinEnviar(p: Parte, conductores: readonly Conductor[]): Alerta {
   const quien = conductores.find((c) => c.id === p.conductorId);
   const nombre = quien === undefined ? null : nombreCorto(quien.nombre);
@@ -331,11 +316,6 @@ function alertasDeOperacion(estado: Estado, hoy: FechaCivil): Alerta[] {
 
   for (const p of estado.partes) {
     if (!activas.has(p.unidadId)) continue;
-    if (p.estado !== "borrador" && !p.sinSalida && p.documentacionVencida.length > 0) {
-      // P9, P17: partes en uso o cerrados que salieron; la alerta dura 30 días desde la fecha del parte.
-      const dias = diasEntre(p.fecha, hoy);
-      if (dias >= 0 && dias <= DIAS_AVISO_DOCUMENTACION_VENCIDA) alertas.push(alertaUsoConDocumentacionVencida(p));
-    }
     // P5: borrador o parte en uso de un día anterior a hoy (la revisión o el cierre quedaron sin enviar).
     if (p.estado !== "enviado" && p.fecha < hoy) alertas.push(alertaParteSinEnviar(p, estado.conductores));
   }
@@ -385,7 +365,6 @@ export function calcularAlertas(estado: Estado, hoy: FechaCivil): ResultadoAlert
 
   const operacionPorTipo: Record<TipoAlertaOperacion, number> = {
     "novedad-critica": 0,
-    "uso-con-documentacion-vencida": 0,
     "parte-sin-enviar": 0,
     "sin-parte": 0,
     "novedad-abierta": 0,

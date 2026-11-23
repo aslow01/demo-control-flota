@@ -580,7 +580,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(e.tipo === "enviado" && e.panel.advertencias).toEqual([{ tono: "semana", texto: "1.089 km sin registrar desde el último parte" }]);
   });
 
-  it("P21: con el seguro vencido (ZK 214 BD) la revisión no se envía ni siquiera completa, antes que los faltantes; no queda parte en uso ni alerta «Circuló…»", async () => {
+  it("P21: con el seguro vencido (ZK 214 BD) la revisión no se envía ni siquiera completa, antes que los faltantes; no queda parte en uso", async () => {
     const { app } = await iniciada({ perfil: C07, patente: "ZYN469" });
     const v = completo(edicion(app).valoresIniciales);
     const uid = idDe(app, "ZK214BD");
@@ -590,7 +590,6 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(r.tipo === "errores" && r.errores.general).toBe("El seguro de ZK 214 BD venció el 17/11/2026. La unidad no puede salir. Renueve la documentación antes de enviar la revisión.");
     expect(r.tipo === "errores" && r.errores.lista).toEqual([]);
     expect(parteDeHoy(app, "ZK214BD")?.estado).not.toBe("en-uso");
-    expect(app.alertas?.alertas.some((x) => x.tipo === "uso-con-documentacion-vencida")).toBe(false);
   });
 
   it("P20: el conductor con un parte en uso en otra unidad no envía la revisión de esta (error en el campo Conductor, antes que los faltantes); el borrador queda", async () => {

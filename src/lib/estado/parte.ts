@@ -18,6 +18,7 @@ import {
   type AvisoDeAptitud,
   type RenglonDeAviso,
   TEXTO_BORRADOR_CONSERVADO,
+  TEXTO_CONDUCTOR_PARA_PROBAR,
   TEXTO_BORRADOR_CONSERVADO_POR_DOCUMENTACION,
   AVISE_AL_ENCARGADO,
   errDocumentacionDeLaUnidad,
@@ -178,7 +179,7 @@ export interface InicioDelConductor {
   hoyEstado: EstadoDelDia;
   /**
    * «ZK 214 BD no puede salir: Seguro vencido hace 1 día.» (`titular`) y «Avise al encargado antes de usarla.» (`accion`), ya partido en dos renglones por la lógica: la vista no corta nada.
-   * Solo en los estados `borrador` y `sin-parte` (arriba del botón, que sigue disponible: P9).
+   * Solo en los estados `borrador` y `sin-parte` (arriba del botón, que sigue disponible).
    */
   avisoAptitud: AvisoDeAptitud | null;
   /** `modo: "otra"` = botón-texto «Usar otra unidad» que abre el `select`; `"elegir"` = el `select` «Elija la unidad» ya a la vista. Solo unidades en servicio. */
@@ -410,6 +411,60 @@ export function opcionesParaElegirConductor(estado: Estado, hoy: FechaCivil): Op
     });
 }
 
+/** Un caso del parte que la demo permite probar eligiendo a un conductor (M1). */
+export type CasoParaProbar = "puede-salir" | "documentacion-vencida" | "fuera-de-servicio" | "sin-licencia";
+
+/** Un conductor del ejemplo que sirve para probar un caso: `etiqueta` es la marca «Para probar: …» para el diálogo «¿Quién completa el parte?». */
+export interface ConductorParaProbar {
+  conductorId: string;
+  nombre: string;
+  /** La patente con espacios de su unidad asignada. */
+  patente: string;
+  caso: CasoParaProbar;
+  etiqueta: string;
+}
+
+/** En este orden se devuelven los casos (el primero es el recorrido principal de «Cómo usarla»). */
+const CASOS_PARA_PROBAR: readonly CasoParaProbar[] = ["puede-salir", "documentacion-vencida", "fuera-de-servicio", "sin-licencia"];
+
+/**
+ * M1: a quién elegir para probar cada caso. Mira lo que vería ese conductor en su inicio (`inicioDelConductor`, el mismo cálculo que la pantalla), así la sugerencia nunca contradice lo que
+ * aparece al elegirlo: unidad apta y sin parte hoy (`sin-parte` y sin aviso de aptitud), documentación de la unidad vencida (P21), unidad fuera de servicio (se prefiere una que quedó
+ * así por una novedad crítica, la de frenos del ejemplo) y sin licencia vigente (L1). Uno por caso, el primero del listado; solo conductores activos con una unidad asignada. Un caso que
+ * el estado no tiene no aparece.
+ */
+export function conductoresParaProbar(estado: Estado, alertas: ResultadoAlertas, hoy: FechaCivil): ConductorParaProbar[] {
+  const hallados = new Map<CasoParaProbar, { sugerido: ConductorParaProbar; porNovedadCritica: boolean }>();
+  for (const c of estado.conductores) {
+    if (!c.activo) continue;
+    const unidad = estado.unidades.find((u) => u.conductorId === c.id && u.estado.tipo !== "baja");
+    if (unidad === undefined) continue;
+    const inicio = inicioDelConductor(estado, alertas, hoy, { tipo: "conductor", conductorId: c.id });
+    const caso = inicio === null ? null : casoParaProbar(inicio);
+    if (caso === null) continue;
+    const porNovedadCritica = unidad.estado.tipo === "fuera-de-servicio" && unidad.estado.origen === "novedad-critica";
+    const previo = hallados.get(caso);
+    if (previo !== undefined && !(caso === "fuera-de-servicio" && porNovedadCritica && !previo.porNovedadCritica)) continue;
+    hallados.set(caso, { sugerido: { conductorId: c.id, nombre: c.nombre, patente: formatearPatente(unidad.patente), caso, etiqueta: TEXTO_CONDUCTOR_PARA_PROBAR[caso] }, porNovedadCritica });
+  }
+  return CASOS_PARA_PROBAR.flatMap((caso) => hallados.get(caso)?.sugerido ?? []);
+}
+
+function casoParaProbar(inicio: InicioDelConductor): CasoParaProbar | null {
+  switch (inicio.hoyEstado.tipo) {
+    case "sin-parte":
+      return inicio.avisoAptitud === null ? "puede-salir" : null;
+    case "no-puede-salir":
+      return "documentacion-vencida";
+    case "fuera-de-servicio":
+      return "fuera-de-servicio";
+    case "licencia-no-vigente":
+      return "sin-licencia";
+    default:
+      return null;
+  }
+}
+
 // ---------------------------------------------------------------------------------------------
 // Pantalla del parte (6.5)
 // ---------------------------------------------------------------------------------------------
@@ -432,15 +487,10 @@ export interface PanelParteEnviado {
   /** Aviso en tono semana si hubo una novedad crítica y la unidad está fuera de servicio (A3): en C2 y, mientras siga así, en la lectura de un parte sin salida. */
   avisoCritica: string | null;
   /**
-   * Los avisos que se aceptaron al enviar (K6, K7, P9), uno por renglón y con su tono (C3 y lectura: los de la revisión y los del cierre): un renglón por documento vencido y uno por cada
+   * Los avisos que se aceptaron al enviar (K6, K7), uno por renglón y con su tono (C3 y lectura: los de la revisión y los del cierre): un renglón por documento vencido y uno por cada
    * aviso de kilómetros. La vista elige el ícono por el `tono` y usa el índice como clave (dos renglones pueden decir lo mismo).
    */
   advertencias: RenglonDeAviso[];
-  /**
-   * C1 (S1): la revisión se envió con documentación vencida de la unidad aceptada (P9). La vista no puede decir «puede salir»: el panel va en tono semana, con `i-alerta`, y
-   * `linea` ya dice «Sale con documentación vencida: quedó registrado.». Es `false` en los demás paneles.
-   */
-  conDocumentacionVencida: boolean;
   /** «Revisión enviada fuera de plazo.» (P5) o `null`. */
   fueraDePlazo: string | null;
   /** C1: «El encargado la ve en el centro de alertas.» si la revisión abrió novedades normales. */
@@ -665,8 +715,7 @@ export function panelDeParteEnviado(estado: Estado, entrada: Parte, perfil: Perf
     linea: textoLineaParteCerrado(patente, parte.fecha, horaDe(revision), parte.sinSalida ? null : horaDe(parte.enviado ?? (parte.actualizado === "" ? null : parte.actualizado))),
     filas,
     avisoCritica: criticas.length > 0 && unidad?.estado.tipo === "fuera-de-servicio" && parte.sinSalida ? TEXTO_PARTE.enviadoConCritica : null,
-    advertencias: renglonesDeAvisosAceptados(parte, unidad, estado.documentos),
-    conDocumentacionVencida: false,
+    advertencias: renglonesDeAvisosAceptados(parte),
     fueraDePlazo: diaDeRevision !== null && diasEntre(parte.fecha, diaDeRevision) > 0 ? TP.fueraDePlazo : null,
     notaEncargado: null,
     parrafo: null,
@@ -688,14 +737,13 @@ export function panelDeRevisionEnviada(estado: Estado, entrada: Parte, perfil: P
   return {
     variante: "revision-enviada",
     titulo: TP.tituloRevisionEnviada,
-    linea: textoLineaRevisionEnviada(patente, parte.fecha, diaDeEnvio, hora, parte.documentacionVencida.length > 0),
+    linea: textoLineaRevisionEnviada(patente, parte.fecha, diaDeEnvio, hora),
     filas: [
       { rotulo: TP.rotulos.alIniciar, valor: parte.kmInicio === null ? TEXTO_FORMULARIO_PARTE.sinRecorrido : `${formatearKm(parte.kmInicio)} km` },
       { rotulo: TP.rotulos.novedades, valor: textoNovedadesDelParte(criticas, normales) },
     ],
     avisoCritica: null,
-    advertencias: renglonesDeAvisosAceptados(parte, unidad, estado.documentos),
-    conDocumentacionVencida: parte.documentacionVencida.length > 0,
+    advertencias: renglonesDeAvisosAceptados(parte),
     // El texto de «fuera de plazo» ya va en la línea (C1).
     fueraDePlazo: null,
     notaEncargado: normales.length > 0 ? TP.encargadoLaVe : null,
@@ -708,7 +756,7 @@ export function panelDeRevisionEnviada(estado: Estado, entrada: Parte, perfil: P
 /** C2: el panel «La unidad no puede salir» (la revisión informó una novedad crítica y el parte quedó cerrado sin uso). */
 export function panelDeSinSalida(estado: Estado, entrada: Parte, perfil: Perfil): PanelParteEnviado {
   const parte = parteLegible(entrada) ?? entrada;
-  const { patente, unidad, volverAlInicio } = panelBase(estado, parte, perfil);
+  const { patente, volverAlInicio } = panelBase(estado, parte, perfil);
   const { criticas } = novedadesPorGravedad(parte);
   return {
     variante: "sin-salida",
@@ -716,8 +764,7 @@ export function panelDeSinSalida(estado: Estado, entrada: Parte, perfil: Perfil)
     linea: textoLineaSinSalida(horaDe(parte.revisado), criticas),
     filas: [],
     avisoCritica: textoUnidadQuedoFueraDeServicio(patente),
-    advertencias: renglonesDeAvisosAceptados(parte, unidad, estado.documentos),
-    conDocumentacionVencida: false,
+    advertencias: renglonesDeAvisosAceptados(parte),
     fueraDePlazo: null,
     notaEncargado: null,
     parrafo: TP.siTieneQueSalir,

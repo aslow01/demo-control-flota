@@ -303,7 +303,6 @@ describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
     expect(a.motivos.map((m) => m.texto)).toEqual(["Seguro vencido hace 1 día"]);
     const ayer = partesDe(u).find((p) => p.fecha === d(-1))!;
     expect(ayer.estado).toBe("enviado");
-    expect(ayer.documentacionVencida).toEqual([]);
     expect(partesDe(u).some((p) => p.fecha === H)).toBe(false);
   });
 
@@ -365,7 +364,6 @@ describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
     expect((cambio.datos["antes"] as { proyectoId: string }).proyectoId).toBe(e.proyectos.find((p) => p.nombre === "Base de mantenimiento")!.id);
     expect(documentoVigente(e.documentos, { tipo: "unidad", id: u.id }, "habilitacion-proyecto")).toBeUndefined();
     expect(aptitud(u, e, H).motivos.map((m) => m.texto)).toEqual(["Falta cargar: Habilitación de ingreso al proyecto"]);
-    expect(partesDe(u).every((p) => p.documentacionVencida.length === 0)).toBe(true);
     expect(partesDe(u).some((p) => p.fecha === d(-1))).toBe(true);
   });
 
@@ -500,11 +498,9 @@ describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
     expect(fechaEnArgentina(nueva.cargado)).toBe(d(-6));
     const delDia = e.partes.find((x) => x.unidadId === u.id && x.fecha === d(-6))!;
     expect(nueva.cargado < (delDia.revisado as string)).toBe(true);
-    expect(delDia.documentacionVencida).toEqual([]);
     expect(delDia.advertenciasAceptadas).toEqual([]);
     expect(diasEntre(H, nueva.vence)).toBeGreaterThan(30);
     expect(e.eventos.some((x) => x.tipo === "documento-renovado" && x.datos["documentoId"] === nueva.id)).toBe(true);
-    expect(calcularAlertas(e, H).alertas.some((x) => x.tipo === "uso-con-documentacion-vencida")).toBe(false);
   });
 
   it("C18, M1: la renovación de H - 6 ampara el parte de ese día; sin la fecha de emisión y cargada después, no", () => {
@@ -518,8 +514,6 @@ describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
   });
 
   it("P21: ningún parte del ejemplo salió con la documentación de la unidad vencida (las renovaciones del pasado se hicieron antes de vencer o a tiempo)", () => {
-    expect(e.partes.filter((x) => x.documentacionVencida.length > 0)).toEqual([]);
-    expect(e.partes.flatMap((x) => x.advertenciasAceptadas).some((a) => a.tipo === "documentacion-vencida")).toBe(false);
     // recalculado a la fecha de cada parte (salvo C10, que cambió de proyecto hoy)
     const c10 = unidad(10);
     for (const p of e.partes.filter((x) => x.estado === "enviado" && x.unidadId !== c10.id)) {
@@ -568,11 +562,10 @@ describe("D2: el ejemplo completo con H = 2026-11-18 (docs/diseno.md, 9.2)", () 
     expect(Object.values(resumen.porGrupo).reduce((a, b) => a + b, 0)).toBe(12);
   });
 
-  it("pendientes de operación 5: C11, C13, C14 (x2) y C19 (antes de P21, 6: también C18, «Circuló con documentación vencida»)", () => {
+  it("pendientes de operación 5: C11, C13, C14 (x2) y C19 (antes de P21, 6: también C18)", () => {
     expect(resumen.totalOperacion).toBe(5);
     expect(resumen.operacion).toEqual({
       "novedad-critica": 1,
-      "uso-con-documentacion-vencida": 0,
       "parte-sin-enviar": 1,
       "sin-parte": 2,
       "novedad-abierta": 1,
@@ -698,4 +691,4 @@ describe("el ejemplo reacciona a los comandos (criterio de la pantalla 4.2)", ()
   });
 });
 
-const HASH_DEL_EJEMPLO = "08ce263e";
+const HASH_DEL_EJEMPLO = "101716b4";

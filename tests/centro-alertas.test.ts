@@ -5,7 +5,7 @@ import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import { ejecutar } from "../src/lib/dominio/comandos.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { MAX_PROTAGONISTA, centroDeAlertas, vencimientosVisibles, type CentroDeAlertas } from "../src/lib/estado/centro-alertas.ts";
-import { conDocumentacionVencidaAceptada, contexto, flotaDePrueba, parte } from "./ayuda.ts";
+import { contexto, flotaDePrueba, parte } from "./ayuda.ts";
 
 const H = "2026-11-18";
 const EMPRESA = "Logística Andina Demo S.A.";
@@ -335,15 +335,6 @@ describe("detalle de operación (6.1)", () => {
       expect(f.estado).toBe("Sin parte");
       expect(f.accion).toMatchObject({ tipo: "ver-ficha", etiqueta: "Ver ficha", href: f.unidad.href });
     }
-  });
-
-  it("circuló con documentación vencida (un parte guardado antes de P21; el ejemplo ya no lo tiene): «Con documentación vencida» y «Ver ficha»", () => {
-    const delPasado = e.partes.find((p) => p.unidadId === e.unidades.find((u) => u.interno === 14)!.id && p.fecha === "2026-11-12")!;
-    const historico = conDocumentacionVencidaAceptada(e, delPasado.id, ["revision-tecnica"]);
-    const fila = centroDe(historico).detalle.grupos.find((g) => g.tipo === "uso-con-documentacion-vencida")!.filas[0]!;
-    expect(fila.estado).toBe("Con documentación vencida");
-    expect(fila.accion.tipo).toBe("ver-ficha");
-    expect(fila.texto).toMatch(/^Circuló con documentación vencida: Revisión técnica \(parte del \d{2}\/\d{2}\/\d{4}\)$/);
   });
 
   it("novedad abierta: «Abierta» y «Resolver»", () => {

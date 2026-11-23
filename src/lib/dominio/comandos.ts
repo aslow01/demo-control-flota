@@ -1045,7 +1045,6 @@ function guardarBorrador(
     checklist: copiarChecklist(c.checklist),
     otraNovedad: c.otraNovedad === null ? null : { descripcion: limpiarTexto(c.otraNovedad.descripcion), impideUso: c.otraNovedad.impideUso },
     advertenciasAceptadas: [],
-    documentacionVencida: [],
     creado: existente?.creado ?? ctx.ahora,
     actualizado: ctx.ahora,
     enviado: null,
@@ -1175,8 +1174,8 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
 
   const base: Parte = { ...recortado, advertenciasAceptadas: requeridas, actualizado: ctx.ahora, autor: ctx.autor, revisado: ctx.ahora };
   const parte: Parte = hayCritica
-    ? { ...base, estado: "enviado", sinSalida: true, kmFin: kmInicio, combustible: null, litrosCargados: null, documentacionVencida: [], enviado: ctx.ahora }
-    : { ...base, estado: "en-uso", sinSalida: false, documentacionVencida: [], enviado: null };
+    ? { ...base, estado: "enviado", sinSalida: true, kmFin: kmInicio, combustible: null, litrosCargados: null, enviado: ctx.ahora }
+    : { ...base, estado: "en-uso", sinSalida: false, enviado: null };
 
   const novedades: Novedad[] = nuevas.map((n) => ({
     id: ctx.nuevoId(),
@@ -1241,7 +1240,7 @@ function guardarCierre(estado: Estado, c: Extract<Comando, { tipo: "guardarCierr
   return ok({ cambios: { partes: [guardado] }, eventos: [], modifica: true });
 }
 
-/** El cierre (P15): K2, K4 y K7. No vuelve a mirar la licencia (L3) ni la fecha (P15) ni la documentación (P9: quedó fijada en la revisión). */
+/** El cierre (P15): K2, K4 y K7. No vuelve a mirar la licencia (L3) ni la fecha (P15) ni la documentación (P21: se controló en la revisión). */
 function enviarCierre(estado: Estado, c: Extract<Comando, { tipo: "enviarCierre" }>, ctx: Contexto): Resultado<Parcial> {
   const p = parteEnUso(estado, c.parteId);
   if (!p.ok) return p;

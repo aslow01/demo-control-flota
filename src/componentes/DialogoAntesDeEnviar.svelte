@@ -1,7 +1,6 @@
 <script lang="ts">
-  // Diálogo «Antes de enviar» (5.17): el paso está completo pero hay avisos que conviene leer antes de seguir. En la revisión (`paso="revision"`) son K6 y P9 (solo documentos de la
-  // unidad); en el cierre (`paso="cierre"`), K7. Nunca hay una advertencia por la licencia: la licencia bloquea (L1). Cada aviso va con su ícono y su tono (crítico para la
-  // documentación vencida, semana para los kilómetros inusuales). «Enviar de todos modos» (revisión) o «Cerrar de todos modos» (cierre) acepta esos avisos; «Volver al parte» cierra el diálogo y devuelve
+  // Diálogo «Antes de enviar» (5.17): el paso está completo pero hay avisos que conviene leer antes de seguir. En la revisión (`paso="revision"`) es K6 (kilómetros sin registrar); en el cierre (`paso="cierre"`), K7. Nunca hay una advertencia por la licencia ni por la documentación de la unidad: bloquean (L1, P21). Cada aviso va con su ícono y su tono
+  // (semana, para los kilómetros inusuales). «Enviar de todos modos» (revisión) o «Cerrar de todos modos» (cierre) acepta esos avisos; «Volver al parte» cierra el diálogo y devuelve
   // el foco al botón de la barra de envío. No tiene reglas: la lista y los tonos los arma `app.enviarRevisionDeParte` o `app.enviarCierreDeParte`.
   //  - Foco al abrir: «Volver al parte» (el diálogo no tiene campos; enviar no es lo que se pide por defecto).
   //  - Enviando: el botón queda con aria-disabled y no repite el pedido; el texto «Enviando…» («Cerrando…» en el cierre) aparece solo si tarda más de 200 ms (5.19). No se puede cerrar mientras tanto.
@@ -40,7 +39,7 @@
   <ul class="avisos">
     {#each advertencias as a (a.tipo)}
       <li class="aviso" data-tono={a.tono}>
-        <span class="icono-aviso"><Icono nombre={a.tono === "critico" ? "vencido" : "alerta"} /></span>
+        <span class="icono-aviso"><Icono nombre="alerta" /></span>
         <span class="texto">{a.texto}</span>
       </li>
     {/each}

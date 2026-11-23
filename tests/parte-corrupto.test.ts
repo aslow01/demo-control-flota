@@ -68,14 +68,12 @@ describe("parteLegible: lo que se puede leer de un parte con la forma rota", () 
     expect(parteLegible(roto({ conductorId: 7 }))?.conductorId).toBeNull();
   });
 
-  it("las advertencias y la documentación vencida: solo lo que se reconoce", () => {
+  it("las advertencias: solo lo que se reconoce", () => {
     const p = parteLegible(roto({
-      advertenciasAceptadas: [{ tipo: "salto-km", km: 1250 }, { tipo: "invento" }, 5, { tipo: "recorrido-largo", km: "mucho" }, { tipo: "documentacion-vencida", documentos: ["seguro", "pasaporte"] }],
-      documentacionVencida: ["seguro", 3, "pasaporte"],
+      advertenciasAceptadas: [{ tipo: "salto-km", km: 1250 }, { tipo: "invento" }, 5, { tipo: "recorrido-largo", km: "mucho" }, { tipo: "documentacion-vencida", documentos: ["seguro"] }],
     }));
-    expect(p?.advertenciasAceptadas).toEqual([{ tipo: "salto-km", km: 1250 }, { tipo: "documentacion-vencida", documentos: ["seguro"] }]);
-    expect(p?.documentacionVencida).toEqual(["seguro"]);
-    expect(parteLegible(roto({ advertenciasAceptadas: "x", documentacionVencida: null }))).toMatchObject({ advertenciasAceptadas: [], documentacionVencida: [] });
+    expect(p?.advertenciasAceptadas).toEqual([{ tipo: "salto-km", km: 1250 }]);
+    expect(parteLegible(roto({ advertenciasAceptadas: "x" }))).toMatchObject({ advertenciasAceptadas: [] });
   });
 
   it("los instantes que no son instantes quedan vacíos (las pantallas no inventan una hora)", () => {
@@ -208,10 +206,7 @@ describe("la aplicación con un borrador roto en el almacenamiento", () => {
 
 describe("advertenciasLegibles (código B4: sin casts sobre el detalle de un error)", () => {
   it("devuelve las advertencias bien formadas y descarta el resto; un valor que no es una lista da una lista vacía", () => {
-    expect(advertenciasLegibles([{ tipo: "salto-km", km: 900 }, null, "x", { tipo: "recorrido-largo" }, { tipo: "documentacion-vencida", documentos: ["seguro", "nada"] }])).toEqual([
-      { tipo: "salto-km", km: 900 },
-      { tipo: "documentacion-vencida", documentos: ["seguro"] },
-    ]);
+    expect(advertenciasLegibles([{ tipo: "salto-km", km: 900 }, null, "x", { tipo: "recorrido-largo" }])).toEqual([{ tipo: "salto-km", km: 900 }]);
     expect(advertenciasLegibles(undefined)).toEqual([]);
     expect(advertenciasLegibles({ tipo: "salto-km", km: 1 })).toEqual([]);
   });

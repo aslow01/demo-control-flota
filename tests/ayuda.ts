@@ -126,7 +126,6 @@ export function parte(parcial: Partial<Parte> = {}): Parte {
     checklist: checklistEnOrden(),
     otraNovedad: null,
     advertenciasAceptadas: [],
-    documentacionVencida: [],
     creado: "2026-11-18T12:00:00.000Z",
     actualizado: "2026-11-18T12:00:00.000Z",
     enviado: "2026-11-18T18:00:00.000Z",
@@ -217,20 +216,4 @@ export function ejecutarError(estado: Estado, comando: Comando, ctx: Contexto = 
   const r = ejecutar(estado, comando, ctx);
   if (r.ok) throw new Error(`El comando ${comando.tipo} se aceptó y tenía que fallar`);
   return r.error;
-}
-
-/**
- * Un parte guardado antes de P21, con la documentación vencida aceptada: los comandos ya no pueden producirlo (la documentación vencida bloquea la revisión), pero los datos
- * viejos se siguen leyendo y mostrando. Marca `documentos` en el parte y suma el aviso a lo aceptado, después de los de la revisión (kilómetros) y antes de los del cierre.
- */
-export function conDocumentacionVencidaAceptada(estado: Estado, parteId: string, documentos: TipoDocumento[]): Estado {
-  return {
-    ...estado,
-    partes: estado.partes.map((p) => {
-      if (p.id !== parteId) return p;
-      const deLaRevision = p.advertenciasAceptadas.filter((a) => a.tipo !== "recorrido-largo");
-      const delCierre = p.advertenciasAceptadas.filter((a) => a.tipo === "recorrido-largo");
-      return { ...p, documentacionVencida: documentos, advertenciasAceptadas: [...deLaRevision, { tipo: "documentacion-vencida", documentos }, ...delCierre] };
-    }),
-  };
 }

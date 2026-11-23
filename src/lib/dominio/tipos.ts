@@ -97,11 +97,8 @@ export type RespuestaItem =
   | { estado: "en-orden" }
   | { estado: "con-novedad"; descripcion: string; impideUso: boolean };
 
-/** Advertencias que hay que aceptar antes de enviar (K6, K7, P9). */
-export type Advertencia =
-  | { tipo: "salto-km"; km: number }
-  | { tipo: "recorrido-largo"; km: number }
-  | { tipo: "documentacion-vencida"; documentos: TipoDocumento[] };
+/** Advertencias que hay que aceptar antes de enviar (K6, K7). La documentación vencida de la unidad no es una: bloquea (P21). */
+export type Advertencia = { tipo: "salto-km"; km: number } | { tipo: "recorrido-largo"; km: number };
 
 export interface Parte {
   id: string;
@@ -126,8 +123,6 @@ export interface Parte {
   checklist: Record<ItemChecklist, RespuestaItem>;
   otraNovedad: { descripcion: string; impideUso: boolean } | null;
   advertenciasAceptadas: Advertencia[];
-  /** Calculado al enviar la revisión (P9); solo documentos de la unidad. */
-  documentacionVencida: TipoDocumento[];
   creado: Instante;
   actualizado: Instante;
   /** Cuándo se cerró el parte; en un parte sin salida es igual a `revisado`. */

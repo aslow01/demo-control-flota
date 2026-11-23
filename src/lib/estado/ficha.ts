@@ -250,7 +250,7 @@ export interface DetalleDeParte {
   novedades: { rotulo: string; texto: string; critica: boolean }[];
   /** «8 puntos en orden»; `null` si no hay. */
   puntosEnOrden: string | null;
-  /** Las advertencias aceptadas al enviar (K6, K7, P9), ya en texto. */
+  /** Las advertencias aceptadas al enviar (K6, K7), ya en texto. */
   advertencias: string[];
   fueraDePlazo: boolean;
   /** «Ver el parte completo». */
@@ -725,7 +725,7 @@ function detalleDeParte(estado: Estado, unidad: Unidad, datos: Record<string, un
     litros: textoLitros(parte.litrosCargados),
     novedades,
     puntosEnOrden: enOrden === 0 ? null : textoPuntosEnOrden(enOrden),
-    advertencias: renglonesDeAvisosAceptados(parte, unidad, estado.documentos).map((r) => r.texto),
+    advertencias: renglonesDeAvisosAceptados(parte).map((r) => r.texto),
     fueraDePlazo: datos["fueraDeTermino"] === true,
     href: aHash({ tipo: "parte", patente: unidad.patente, fecha: parte.fecha }),
   };

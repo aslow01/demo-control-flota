@@ -34,7 +34,7 @@ import { formatearHora } from "../dominio/fechas.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
 import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, sumarErrorDeRegla, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
 import { kmDeRegistro, registroAnterior, validarKmDeSalida } from "../dominio/kilometraje.ts";
-import { advertenciasLegibles, contextoDeDocumentacion, esBorradorVacio, unidadSinSalidaHoy } from "../dominio/parte.ts";
+import { advertenciasLegibles, esBorradorVacio, unidadSinSalidaHoy } from "../dominio/parte.ts";
 import {
   comandoDeAsignacion,
   comandoDeBaja,
@@ -91,7 +91,6 @@ import {
   TEXTO_ERROR_ARRANQUE,
   TEXTO_FORMULARIO_PARTE,
   textoAdvertencia,
-  tonoDeAdvertencia,
   textoAsignacionCambiada,
   textoDocumentoCargado,
   textoDocumentoCorregido,
@@ -183,11 +182,11 @@ export type ResultadoAgregarUnidad =
   | { ok: true; mensaje: string; foco: "titulo-de-la-ficha"; href: string; ruta: Ruta }
   | { ok: false; errores: ErroresDeFormularioUnidad };
 
-/** Una advertencia que hay que aceptar antes de enviar (K6, K7, P9): el diálogo «Antes de enviar» las lista; `tono` crítico para la documentación vencida. */
+/** Una advertencia que hay que aceptar antes de enviar (K6, K7): el diálogo «Antes de enviar» las lista; el tono es siempre semana. */
 export interface AdvertenciaDeEnvio {
   tipo: Advertencia["tipo"];
   texto: string;
-  tono: "critico" | "semana";
+  tono: "semana";
 }
 
 /**
@@ -197,7 +196,7 @@ export interface AdvertenciaDeEnvio {
  *   devuelve el mismo panel.
  * - `errores`: faltan datos o falla una regla (P4, K2 a K4, P2, P8, escritura): resumen de errores arriba del formulario con el foco (`foco`) y enlaces a cada campo.
  *   Lo escrito se guardó como borrador (si se podía): no se pierde.
- * - `advertencias`: el parte está completo pero hay que aceptar algo (K6, K7, P9): abrir «Antes de enviar». Al elegir «Enviar de todos modos» (o «Cerrar de todos modos») se vuelve a llamar con
+ * - `advertencias`: el parte está completo pero hay que aceptar algo (K6, K7): abrir «Antes de enviar». Al elegir «Enviar de todos modos» (o «Cerrar de todos modos») se vuelve a llamar con
  *   `aceptables` como `aceptadas`.
  */
 export type ResultadoDeEnvio =
@@ -824,15 +823,12 @@ export class EstadoApp {
     return { tipo: "errores", errores: e, foco: "resumen-de-errores", primerCampo: e.lista[0]?.campo ?? null };
   }
 
-  /** Las advertencias que hay que aceptar (K6, K7, P9), listas para el diálogo «Antes de enviar». */
-  private advertenciasPendientes(error: ErrorDeNegocio, parte?: Parte): ResultadoDeEnvio {
+  /** Las advertencias que hay que aceptar (K6, K7), listas para el diálogo «Antes de enviar». */
+  private advertenciasPendientes(error: ErrorDeNegocio): ResultadoDeEnvio {
     const pendientes = advertenciasLegibles(error.detalle?.["advertencias"]);
-    // Los avisos de documentación dicen cómo estaba cada documento de la unidad el día del parte (C6).
-    const unidad = parte === undefined ? undefined : this.estado?.unidades.find((u) => u.id === parte.unidadId);
-    const contexto = parte === undefined || unidad === undefined || this.estado === null ? undefined : contextoDeDocumentacion(this.estado.documentos, unidad, parte.fecha);
     return {
       tipo: "advertencias",
-      advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a, contexto), tono: tonoDeAdvertencia(a) })),
+      advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a), tono: "semana" })),
       aceptables: pendientes.map((a) => a.tipo),
       foco: "dialogo-antes-de-enviar",
     };
@@ -846,7 +842,7 @@ export class EstadoApp {
   }
 
   /**
-   * «Enviar revisión» (P4, P12, L1, K3, K4, K6, P9, A3, P16). Primero guarda lo que hay en el formulario como borrador (así lo escrito en los últimos 500 ms no se pierde y, si el
+   * «Enviar revisión» (P4, P12, L1, K3, K4, K6, P21, A3, P16). Primero guarda lo que hay en el formulario como borrador (así lo escrito en los últimos 500 ms no se pierde y, si el
    * envío se bloquea —licencia, K3—, el borrador queda), después revisa lo que falta y por último envía. El envío es atómico (P12): el parte, las novedades, el cambio de estado de la
    * unidad y los eventos se escriben juntos; si falla, queda el borrador. `aceptadas` son las advertencias que la persona aceptó en «Antes de enviar». El resultado es C1 (el parte quedó
    * en uso) o C2 (una novedad crítica: la unidad no sale y el parte se cerró sin uso).
@@ -880,7 +876,7 @@ export class EstadoApp {
     if (!r.ok) {
       if (ERRORES_QUE_VAN_ANTES_DE_LOS_FALTANTES.has(r.error.codigo)) return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
       if (previos !== null) return this.erroresDeEnvio(this.conErrorDeKilometraje(previos, v, borrador));
-      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error, borrador);
+      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error);
       return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
     }
     const enviado = r.valor.estado.partes.find((p) => p.id === borrador.id);
@@ -925,7 +921,7 @@ export class EstadoApp {
 
     const r = await this.ejecutarAhora({ tipo: "enviarCierre", parteId: parte.id, advertenciasAceptadas: aceptadas }, perfil);
     if (!r.ok) {
-      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error, parte);
+      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error);
       return this.erroresDeEnvio(erroresDeNegocioParte(r.error, "cierre"));
     }
     const cerrado = r.valor.estado.partes.find((p) => p.id === parte.id);
