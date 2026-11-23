@@ -56,7 +56,10 @@ export interface Alerta {
   etapaParte: "borrador" | "en-uso" | null;
 }
 
-/** L6: un conductor activo cuya licencia no ampara hoy. `alertaId` es la alerta de vencimiento de su licencia (la que abre «Renovar» o «Cargar»); `null` si no tiene una. */
+/**
+ * L6: un conductor activo cuya licencia no ampara hoy. `alertaId` es la alerta de vencimiento de su licencia (la que abre «Renovar» o «Cargar»); `null` si no
+ * tiene una.
+ */
 export interface ConductorSinLicencia {
   conductorId: string;
   nombre: string;
@@ -132,7 +135,7 @@ function alertasDeTitular(
     // V17: un documento no obligatorio que falta no alerta; si está cargado, alerta como cualquier otro.
     const exigido = tiposObligatorios.includes(tipo);
     if (vigente === undefined && !exigido) continue;
-    // M4 (a confirmar): un documento que solo se exige en ciertos proyectos y este no lo exige (la habilitación de ingreso en
+    // M4 (confirmado por Matías el 18/11/2026): un documento que solo se exige en ciertos proyectos y este no lo exige (la habilitación de ingreso en
     // la base de mantenimiento) alerta con gravedad baja: la aptitud (A1) no lo considera bloqueante y no tiene que subir la insignia.
     const noExigidoAqui = req.obligatorio === "si-proyecto-requiere" && !exigido;
     const evaluacion = evaluarObligatorio(vigente, hoy);
@@ -262,7 +265,9 @@ function alertaDeNovedad(n: Novedad, hoy: FechaCivil): Alerta {
   };
 }
 
-function operacion(base: Pick<Alerta, "id" | "tipo" | "gravedad" | "texto" | "fecha"> & { unidadId: string; conductorId?: string | null; etapaParte?: Alerta["etapaParte"] }): Alerta {
+function operacion(
+  base: Pick<Alerta, "id" | "tipo" | "gravedad" | "texto" | "fecha"> & { unidadId: string; conductorId?: string | null; etapaParte?: Alerta["etapaParte"] },
+): Alerta {
   return {
     categoria: "operacion",
     grupo: null,

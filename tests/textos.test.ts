@@ -242,8 +242,8 @@ describe("«Cerrar antes» y P20: un parte de hoy está en uso, no «quedó sin 
 
 describe("motivo de fuera de servicio por una novedad crítica (C3)", () => {
   it("el parte se nombra solo si es de otro día que el «Desde»", () => {
-    expect(MOTIVO_NOVEDAD_CRITICA.delParte("2026-11-20", "Frenos", "2026-11-20")).toBe("Novedad crítica en Frenos");
-    expect(MOTIVO_NOVEDAD_CRITICA.delParte("2026-11-19", "Frenos, Dirección", "2026-11-20")).toBe("Novedad crítica en Frenos, Dirección, parte del 19/11/2026");
+    expect(MOTIVO_NOVEDAD_CRITICA.delParte("2026-11-20", "Frenos", "2026-11-20")).toBe("Novedad crítica en frenos");
+    expect(MOTIVO_NOVEDAD_CRITICA.delParte("2026-11-19", "Frenos, Dirección", "2026-11-20")).toBe("Novedad crítica en frenos, dirección, parte del 19/11/2026");
   });
 });
 

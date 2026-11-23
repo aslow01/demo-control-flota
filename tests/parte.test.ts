@@ -29,18 +29,22 @@ function con(checklist: Parte["checklist"], cambios: Partial<Parte["checklist"]>
 }
 
 describe("ITEMS_CHECKLIST (5.2)", () => {
-  it("tiene los diez ítems en orden, cinco críticos", () => {
+  it("tiene los catorce ítems en orden, siete críticos (M2: cuatro puntos de minería, dos de ellos críticos)", () => {
     expect(ITEMS_CHECKLIST.map((i) => i.id)).toEqual([
       "frenos",
       "direccion",
       "neumaticos",
       "luces",
       "cinturones",
+      "perticaBaliza",
+      "alarmaRetroceso",
       "niveles",
       "matafuego",
       "botiquin",
       "documentacion",
       "cabina",
+      "calzasAntiderrame",
+      "radio",
     ]);
     expect(ITEMS_CHECKLIST.filter((i) => i.critico).map((i) => i.id)).toEqual([
       "frenos",
@@ -48,9 +52,17 @@ describe("ITEMS_CHECKLIST (5.2)", () => {
       "neumaticos",
       "luces",
       "cinturones",
+      "perticaBaliza",
+      "alarmaRetroceso",
     ]);
     expect(ITEMS_CHECKLIST[0]?.texto).toBe("Frenos");
     expect(ITEMS_CHECKLIST[2]?.texto).toBe("Neumáticos y rueda de auxilio");
+    expect(ITEMS_CHECKLIST.filter((i) => ["perticaBaliza", "alarmaRetroceso", "calzasAntiderrame", "radio"].includes(i.id)).map((i) => i.texto)).toEqual([
+      "Pértiga con banderola y baliza",
+      "Alarma de retroceso",
+      "Calzas y kit antiderrame",
+      "Radio de comunicación",
+    ]);
   });
 });
 
@@ -316,14 +328,13 @@ describe("P9: documentación de la unidad vencida a la fecha del parte", () => {
   });
 });
 
-describe("advertencias de la revisión (K6, P9) y del cierre (K7)", () => {
-  it("la revisión junta la de kilometraje y la de documentación, en ese orden", () => {
-    const a = advertenciasDeRevision({ kmAnterior: 0, kmInicio: 1250, documentacionVencida: ["seguro"] });
-    expect(a).toEqual([{ tipo: "salto-km", km: 1250 }, { tipo: "documentacion-vencida", documentos: ["seguro"] }]);
+describe("advertencias de la revisión (K6) y del cierre (K7)", () => {
+  it("la revisión avisa del salto de kilometraje; la documentación de la unidad ya no es una advertencia (P21: bloquea)", () => {
+    expect(advertenciasDeRevision({ kmAnterior: 0, kmInicio: 1250 })).toEqual([{ tipo: "salto-km", km: 1250 }]);
   });
 
   it("la revisión sin nada para avisar no devuelve nada", () => {
-    expect(advertenciasDeRevision({ kmAnterior: 100, kmInicio: 100, documentacionVencida: [] })).toEqual([]);
+    expect(advertenciasDeRevision({ kmAnterior: 100, kmInicio: 100 })).toEqual([]);
   });
 });
 
@@ -369,7 +380,7 @@ describe("P13: borrador nuevo", () => {
     expect(p.enviado).toBeNull();
     expect(p.creado).toBe("2026-11-18T12:00:00.000Z");
     expect(Object.values(p.checklist).every((r) => r.estado === "sin-responder")).toBe(true);
-    expect(Object.keys(p.checklist)).toHaveLength(10);
+    expect(Object.keys(p.checklist)).toHaveLength(14);
   });
 
   it("P13: sin registros de kilometraje, kmInicio queda vacío", () => {

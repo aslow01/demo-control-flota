@@ -93,11 +93,15 @@ const ITEMS_DEL_CHECKLIST: Record<ItemChecklist, true> = {
   neumaticos: true,
   luces: true,
   cinturones: true,
+  perticaBaliza: true,
+  alarmaRetroceso: true,
   niveles: true,
   matafuego: true,
   botiquin: true,
   documentacion: true,
   cabina: true,
+  calzasAntiderrame: true,
+  radio: true,
 };
 /** Los tres estados de un parte (sección 17): revisión sin enviar, en uso (revisión enviada) y cerrado. */
 const ESTADOS_DE_PARTE: Record<Parte["estado"], true> = { borrador: true, "en-uso": true, enviado: true };

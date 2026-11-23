@@ -53,7 +53,10 @@ export function documentosPendientes(estado: Estado, unidad: Unidad, hoy: FechaC
   return { aRenovar: nombres("documento-vencido"), aCargar: nombres("documento-faltante") };
 }
 
-/** El aviso de A5 («vuelve a servicio, pero no puede salir hasta renovar: Seguro.») o `null` si no hay nada pendiente. Solo los documentos: lo de P19 lo dice `avisoDeVuelta`. */
+/**
+ * El aviso de A5 («vuelve a servicio, pero no puede salir hasta renovar: Seguro.») o `null` si no hay nada pendiente. Solo los documentos: lo de P19 lo dice
+ * `avisoDeVuelta`.
+ */
 export function avisoDeVueltaSinPoderSalir(estado: Estado, unidad: Unidad, hoy: FechaCivil): string | null {
   const { aRenovar, aCargar } = documentosPendientes(estado, unidad, hoy);
   return aRenovar.length + aCargar.length === 0 ? null : TEXTO_DIALOGOS_FICHA.volver.sinPoderSalir(aRenovar, aCargar);

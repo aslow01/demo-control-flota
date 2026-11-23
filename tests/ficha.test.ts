@@ -263,7 +263,7 @@ describe("C11 (ZU 899 QE): A4 y N2 a la vista", () => {
 
   it("está fuera de servicio por la novedad de frenos: etiqueta, motivo y estado operativo", () => {
     expect(f.aptitud).toMatchObject({ categoria: "fuera-de-servicio", etiqueta: "Fuera de servicio" });
-    expect(f.aptitud.linea).toBe("Desde el 16/11/2026: novedad crítica en Frenos");
+    expect(f.aptitud.linea).toBe("Desde el 16/11/2026: novedad crítica en frenos");
     expect(f.estadoOperativo).toMatchObject({ tipo: "fuera-de-servicio", desde: "16/11/2026", origen: "novedad-critica" });
   });
 
@@ -431,7 +431,7 @@ describe("panel Historial (5.16, H3, H4)", () => {
     const eventos = fichaDe(e, "ZU899QE").historial.eventos;
     const frenos = eventos.find((x) => x.tipo === "revision-enviada" && x.resumen.includes("novedad crítica"));
     expect(frenos).toMatchObject({ icono: "parte", categoria: "partes", detalle: null });
-    expect(frenos?.resumen).toMatch(/^Revisión antes de salir · [\d.]+ km · novedad crítica en Frenos: la unidad no salió$/);
+    expect(frenos?.resumen).toMatch(/^Revisión antes de salir · [\d.]+ km · novedad crítica en frenos: la unidad no salió$/);
     // sin salida no hay un «parte cerrado» aparte (P16)
     expect(eventos.filter((x) => x.dia === frenos?.dia && x.tipo === "parte-enviado")).toEqual([]);
     const normal = h.eventos.find((x) => x.tipo === "revision-enviada");

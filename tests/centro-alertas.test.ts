@@ -5,7 +5,7 @@ import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import { ejecutar } from "../src/lib/dominio/comandos.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { MAX_PROTAGONISTA, centroDeAlertas, vencimientosVisibles, type CentroDeAlertas } from "../src/lib/estado/centro-alertas.ts";
-import { contexto, flotaDePrueba, parte } from "./ayuda.ts";
+import { conDocumentacionVencidaAceptada, contexto, flotaDePrueba, parte } from "./ayuda.ts";
 
 const H = "2026-11-18";
 const EMPRESA = "Logística Andina Demo S.A.";
@@ -115,13 +115,12 @@ describe("protagonista «No pueden salir hoy» con el ejemplo", () => {
   });
 });
 
-describe("operación diaria con el ejemplo: 6 pendientes", () => {
+describe("operación diaria con el ejemplo: 5 pendientes", () => {
   it("una fila por tipo con pendientes, en el orden del detalle, con su cifra y su texto", () => {
-    expect(c.operacion.total).toBe(6);
-    expect(c.operacion.rotuloTotal).toBe("6 pendientes");
+    expect(c.operacion.total).toBe(5);
+    expect(c.operacion.rotuloTotal).toBe("5 pendientes");
     expect(c.operacion.filas.map((f) => [f.tipo, f.cifra, f.texto])).toEqual([
       ["novedad-critica", 1, "1 novedad crítica abierta"],
-      ["uso-con-documentacion-vencida", 1, "1 circuló con documentación vencida"],
       ["parte-sin-enviar", 1, "1 parte sin enviar"],
       ["sin-parte", 2, "2 unidades sin parte de ayer"],
       ["novedad-abierta", 1, "1 novedad abierta hace 9 días"],
@@ -304,7 +303,6 @@ describe("detalle de operación (6.1)", () => {
   it("un grupo por tipo con pendientes, con su título y cantidad", () => {
     expect(d.grupos.map((g) => [g.tipo, g.cantidad, g.tituloConCantidad])).toEqual([
       ["novedad-critica", 1, "Novedades críticas (1)"],
-      ["uso-con-documentacion-vencida", 1, "Circuló con documentación vencida (1)"],
       ["parte-sin-enviar", 1, "Partes sin enviar (1)"],
       ["sin-parte", 2, "Sin parte de ayer (2)"],
       ["novedad-abierta", 1, "Novedades abiertas (1)"],
@@ -339,8 +337,10 @@ describe("detalle de operación (6.1)", () => {
     }
   });
 
-  it("circuló con documentación vencida: «Con documentación vencida» y «Ver ficha»", () => {
-    const fila = d.grupos.find((g) => g.tipo === "uso-con-documentacion-vencida")!.filas[0]!;
+  it("circuló con documentación vencida (un parte guardado antes de P21; el ejemplo ya no lo tiene): «Con documentación vencida» y «Ver ficha»", () => {
+    const delPasado = e.partes.find((p) => p.unidadId === e.unidades.find((u) => u.interno === 14)!.id && p.fecha === "2026-11-12")!;
+    const historico = conDocumentacionVencidaAceptada(e, delPasado.id, ["revision-tecnica"]);
+    const fila = centroDe(historico).detalle.grupos.find((g) => g.tipo === "uso-con-documentacion-vencida")!.filas[0]!;
     expect(fila.estado).toBe("Con documentación vencida");
     expect(fila.accion.tipo).toBe("ver-ficha");
     expect(fila.texto).toMatch(/^Circuló con documentación vencida: Revisión técnica \(parte del \d{2}\/\d{2}\/\d{4}\)$/);

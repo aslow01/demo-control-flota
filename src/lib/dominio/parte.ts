@@ -4,7 +4,16 @@ import { diasEntre, parsearFechaCivil, parsearInstante } from "./fechas.ts";
 import { KM_MAXIMO, advertenciasDeSalida } from "./kilometraje.ts";
 import { largoEnCaracteres, normalizarTexto } from "./texto.ts";
 import { formatearPatente } from "./patente.ts";
-import { ERRORES, NOMBRES_DOCUMENTO, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos, renglonesDeAvisoAceptado, type ContextoDeDocumentacion, type RenglonDeAviso } from "./textos.ts";
+import {
+  ERRORES,
+  NOMBRES_DOCUMENTO,
+  NOMBRES_ITEM_CHECKLIST,
+  errLitrosExcedidos,
+  errLitrosInvalidos,
+  renglonesDeAvisoAceptado,
+  type ContextoDeDocumentacion,
+  type RenglonDeAviso,
+} from "./textos.ts";
 import { estadoDeLicencia, hayDocumentoQueAmpare, inicioDeDocumento, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 import {
   fallo,
@@ -31,18 +40,29 @@ export interface ItemInfo {
   critico: boolean;
 }
 
-/** 5.2: los diez ítems del checklist, en este orden. */
+/**
+ * 5.2 y M2: los catorce ítems del checklist, en este orden: los diez de una flota cualquiera más cuatro que se piden en un proyecto minero. Un ítem crítico con
+ * novedad deja la unidad
+ * fuera de servicio (A3, P16). Críticos: los cinco de seguridad vial y, de los de minería, la pértiga con banderola y baliza y la alarma de retroceso (sin
+ * ellas una unidad no ingresa a
+ * la mina). Calzas y kit antiderrame y radio no lo son: si faltan se informan y, si hay que frenar la unidad, el conductor marca «Impide usar la unidad». Los
+ * críticos van juntos, primero.
+ */
 export const ITEMS_CHECKLIST: readonly ItemInfo[] = [
   { id: "frenos", texto: NOMBRES_ITEM_CHECKLIST.frenos, critico: true },
   { id: "direccion", texto: NOMBRES_ITEM_CHECKLIST.direccion, critico: true },
   { id: "neumaticos", texto: NOMBRES_ITEM_CHECKLIST.neumaticos, critico: true },
   { id: "luces", texto: NOMBRES_ITEM_CHECKLIST.luces, critico: true },
   { id: "cinturones", texto: NOMBRES_ITEM_CHECKLIST.cinturones, critico: true },
+  { id: "perticaBaliza", texto: NOMBRES_ITEM_CHECKLIST.perticaBaliza, critico: true },
+  { id: "alarmaRetroceso", texto: NOMBRES_ITEM_CHECKLIST.alarmaRetroceso, critico: true },
   { id: "niveles", texto: NOMBRES_ITEM_CHECKLIST.niveles, critico: false },
   { id: "matafuego", texto: NOMBRES_ITEM_CHECKLIST.matafuego, critico: false },
   { id: "botiquin", texto: NOMBRES_ITEM_CHECKLIST.botiquin, critico: false },
   { id: "documentacion", texto: NOMBRES_ITEM_CHECKLIST.documentacion, critico: false },
   { id: "cabina", texto: NOMBRES_ITEM_CHECKLIST.cabina, critico: false },
+  { id: "calzasAntiderrame", texto: NOMBRES_ITEM_CHECKLIST.calzasAntiderrame, critico: false },
+  { id: "radio", texto: NOMBRES_ITEM_CHECKLIST.radio, critico: false },
 ];
 
 export const DIAS_ATRAS_PARTE = 7;
@@ -163,7 +183,7 @@ export function novedadesDelParte(parte: Parte): NovedadDelParte[] {
 }
 
 /**
- * A1: el parte en uso más antiguo de la unidad con fecha anterior a `fecha` (sin `fecha`, el más antiguo de todos). Mientras exista, no se puede enviar la
+ * P18: el parte en uso más antiguo de la unidad con fecha anterior a `fecha` (sin `fecha`, el más antiguo de todos). Mientras exista, no se puede enviar la
  * revisión de una fecha posterior de esa unidad, corregir su kilometraje desde ese día ni darla de baja: primero hay que cerrarlo.
  */
 export function partePendienteDeCierre(partes: readonly Parte[], unidadId: string, fecha?: FechaCivil): Parte | undefined {
@@ -176,7 +196,8 @@ export function partePendienteDeCierre(partes: readonly Parte[], unidadId: strin
 }
 
 /**
- * P20: el parte en uso más antiguo de un conductor en una unidad que no es `exceptoUnidadId` (de cualquier fecha), sin contar las unidades de baja (su parte ya no se puede
+ * P20: el parte en uso más antiguo de un conductor en una unidad que no es `exceptoUnidadId` (de cualquier fecha), sin contar las unidades de baja (su parte ya
+ * no se puede
  * cerrar, A7). Mientras exista, el conductor no puede enviar la revisión de otra unidad: primero cierra el parte anterior.
  */
 export function parteEnUsoDelConductor(estado: Pick<Estado, "partes" | "unidades">, conductorId: string, exceptoUnidadId: string): Parte | undefined {
@@ -197,7 +218,7 @@ export interface EntradaDocumentacion {
 }
 
 /**
- * P9: documentos obligatorios **de la unidad** que no amparaban la fecha del parte: vencidos o faltantes **como estaban ese día** (M1), no según el
+ * P21: documentos obligatorios **de la unidad** que no amparaban la fecha del parte: vencidos o faltantes **como estaban ese día** (M1), no según el
  * documento vigente de hoy. Un documento que vence ese mismo día todavía vale (V2). La licencia del conductor ya no entra acá: bloquea la revisión (L1).
  */
 export function documentacionVencidaEn(entrada: EntradaDocumentacion): TipoDocumento[] {
@@ -205,12 +226,25 @@ export function documentacionVencidaEn(entrada: EntradaDocumentacion): TipoDocum
   return tiposObligatoriosDeUnidad(proyecto).filter((tipo) => !hayDocumentoQueAmpare(documentos, { tipo: "unidad", id: unidad.id }, tipo, fecha));
 }
 
+/**
+ * P21: la documentación de la unidad que le impide salir a esa fecha (la que `documentacionVencidaEn` encuentra vencida o faltante) y cómo estaba cada
+ * documento ese día, para
+ * decirlo; `null` si está en regla. Es el único lugar que lo decide: el comando `enviarRevision`, el inicio del conductor y la pantalla del parte lo leen.
+ */
+export function documentacionQueBloquea(entrada: EntradaDocumentacion): { documentos: TipoDocumento[]; contexto: ContextoDeDocumentacion } | null {
+  const documentos = documentacionVencidaEn(entrada);
+  if (documentos.length === 0) return null;
+  return { documentos, contexto: contextoDeDocumentacion(entrada.documentos, entrada.unidad, entrada.fecha) };
+}
+
 /** Los documentos obligatorios de una unidad, en el orden en que se muestran: los que puede decir un aviso de P9. */
 const TIPOS_DE_DOCUMENTO_DE_UNIDAD: readonly TipoDocumento[] = ["seguro", "revision-tecnica", "matafuego", "habilitacion-proyecto"];
 
 /**
- * C6: cómo estaba cada documento de la unidad el día del parte, para los textos de P9: la fecha en que venció (la más tardía de los documentos que ya valían ese día y ya
- * habían vencido) o `null` si no había ninguno. Como `documentacionVencidaEn`, mira los documentos como estaban ese día (M1): una renovación cargada después no borra el hecho.
+ * C6: cómo estaba cada documento de la unidad el día del parte, para los textos de P9: la fecha en que venció (la más tardía de los documentos que ya valían
+ * ese día y ya
+ * habían vencido) o `null` si no había ninguno. Como `documentacionVencidaEn`, mira los documentos como estaban ese día (M1): una renovación cargada después no
+ * borra el hecho.
  */
 export function contextoDeDocumentacion(documentos: readonly Documento[], unidad: Pick<Unidad, "id" | "patente">, fecha: FechaCivil): ContextoDeDocumentacion {
   const venceron: Partial<Record<TipoDocumento, FechaCivil | null>> = {};
@@ -226,8 +260,10 @@ export function contextoDeDocumentacion(documentos: readonly Documento[], unidad
 }
 
 /**
- * P19: el parte de hoy de la unidad si quedó cerrado sin salida (novedad crítica en la revisión). Ese parte cierra el día de la unidad: aunque el encargado resuelva la novedad y la
- * devuelva a servicio, no sale hasta mañana. Es el ÚNICO lugar que lo decide: la aptitud lo lee (y con ella la ficha, la flota y el centro de alertas), igual que el inicio del
+ * P19: el parte de hoy de la unidad si quedó cerrado sin salida (novedad crítica en la revisión). Ese parte cierra el día de la unidad: aunque el encargado
+ * resuelva la novedad y la
+ * devuelva a servicio, no sale hasta mañana. Es el ÚNICO lugar que lo decide: la aptitud lo lee (y con ella la ficha, la flota y el centro de alertas), igual
+ * que el inicio del
  * conductor y los diálogos de resolver y de volver a servicio. Los registros rotos se ignoran.
  */
 export function parteSinSalidaDeHoy(partes: readonly Parte[], unidadId: string, hoy: FechaCivil): Parte | undefined {
@@ -241,9 +277,12 @@ export function parteSinSalidaDeHoy(partes: readonly Parte[], unidadId: string, 
 }
 
 /**
- * P19 ampliada (QA D2, decisión de Matías del 22/11/2026): ¿la unidad no sale hoy porque hoy tuvo una novedad crítica? Vale para toda crítica, venga de la revisión del conductor (el
- * parte cerrado sin salida) o la cargue el encargado a mano con «Impide usar la unidad»: aunque se repare ese mismo día, la unidad no vuelve a salir hasta mañana. Una crítica abierta
- * ya impide salir por sí sola (A1); esto agrega lo que queda después de repararla. Es el lugar único que decide el estado: la aptitud lo lee (y con ella la ficha, la flota y el
+ * P19 ampliada (QA D2, decisión de Matías del 22/11/2026): ¿la unidad no sale hoy porque hoy tuvo una novedad crítica? Vale para toda crítica, venga de la
+ * revisión del conductor (el
+ * parte cerrado sin salida) o la cargue el encargado a mano con «Impide usar la unidad»: aunque se repare ese mismo día, la unidad no vuelve a salir hasta
+ * mañana. Una crítica abierta
+ * ya impide salir por sí sola (A1); esto agrega lo que queda después de repararla. Es el lugar único que decide el estado: la aptitud lo lee (y con ella la
+ * ficha, la flota y el
  * centro de alertas) y los diálogos de resolver y de volver a servicio también.
  */
 export function unidadSinSalidaHoy(estado: Pick<Estado, "partes" | "novedades">, unidadId: string, hoy: FechaCivil): boolean {
@@ -252,21 +291,22 @@ export function unidadSinSalidaHoy(estado: Pick<Estado, "partes" | "novedades">,
 }
 
 /**
- * Los avisos que se aceptaron al enviar un parte, ya en renglones con su tono (C6, M2): un renglón por documento vencido y uno por cada aviso de kilómetros. Los de documentación
+ * Los avisos que se aceptaron al enviar un parte, ya en renglones con su tono (C6, M2): un renglón por documento vencido y uno por cada aviso de kilómetros.
+ * Los de documentación
  * dicen cómo estaba cada documento de la unidad el día del parte.
  */
-export function renglonesDeAvisosAceptados(parte: Pick<Parte, "advertenciasAceptadas" | "fecha">, unidad: Pick<Unidad, "id" | "patente"> | undefined, documentos: readonly Documento[]): RenglonDeAviso[] {
+export function renglonesDeAvisosAceptados(
+  parte: Pick<Parte, "advertenciasAceptadas" | "fecha">,
+  unidad: Pick<Unidad, "id" | "patente"> | undefined,
+  documentos: readonly Documento[],
+): RenglonDeAviso[] {
   const contexto = unidad === undefined ? undefined : contextoDeDocumentacion(documentos, unidad, parte.fecha);
   return parte.advertenciasAceptadas.flatMap((a) => renglonesDeAvisoAceptado(a, contexto));
 }
 
-/** K6 y P9: lo que hay que aceptar antes de enviar la revisión. */
-export function advertenciasDeRevision(entrada: { kmAnterior: number | null; kmInicio: number; documentacionVencida: TipoDocumento[] }): Advertencia[] {
-  const advertencias = advertenciasDeSalida(entrada);
-  if (entrada.documentacionVencida.length > 0) {
-    advertencias.push({ tipo: "documentacion-vencida", documentos: [...entrada.documentacionVencida] });
-  }
-  return advertencias;
+/** K6: lo que hay que aceptar antes de enviar la revisión. La documentación vencida de la unidad ya no se acepta: bloquea (P21). */
+export function advertenciasDeRevision(entrada: { kmAnterior: number | null; kmInicio: number }): Advertencia[] {
+  return advertenciasDeSalida(entrada);
 }
 
 /**
@@ -310,11 +350,15 @@ export function nuevoBorrador(entrada: EntradaBorrador): Parte {
       neumaticos: sin,
       luces: sin,
       cinturones: sin,
+      perticaBaliza: sin,
+      alarmaRetroceso: sin,
       niveles: sin,
       matafuego: sin,
       botiquin: sin,
       documentacion: sin,
       cabina: sin,
+      calzasAntiderrame: sin,
+      radio: sin,
     },
     otraNovedad: null,
     advertenciasAceptadas: [],

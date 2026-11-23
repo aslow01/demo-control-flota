@@ -76,7 +76,7 @@ export function documentoVigente(
 }
 
 /**
- * M1 (a confirmar): ¿este documento amparaba la fecha `fecha`? Vence ese día o después y ya existía: su emisión es ese día
+ * M1 (confirmado por Matías el 18/11/2026): ¿este documento amparaba la fecha `fecha`? Vence ese día o después y ya existía: su emisión es ese día
  * o antes y, si no se cargó la emisión, se carga ese día (en hora de Argentina) o antes. Así una renovación cargada
  * tarde, sin emisión o con emisión posterior, no borra el hecho de que el parte se hizo con el documento vencido.
  */

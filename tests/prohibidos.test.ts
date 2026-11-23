@@ -6,9 +6,11 @@ import {
   crearHuella,
   contieneProhibido,
   huellasDeLiterales,
+  marcaPendienteDeConfirmar,
   normalizar,
   tokenizar,
 } from "../scripts/prohibidos.mjs";
+import { correrBuscarCon } from "../scripts/ensayo-buscar.mjs";
 import { HUELLAS } from "../scripts/huellas-prohibidas.mjs";
 
 const huellas = [crearHuella("Zorbalux"), crearHuella("Quéntaro Brisa Norte")];
@@ -152,5 +154,26 @@ describe("HUELLAS del repositorio", () => {
   });
   it("no repite huellas", () => {
     expect(new Set(HUELLAS.map((h) => h.huella)).size).toBe(HUELLAS.length);
+  });
+});
+
+describe("buscar: «a confirmar» en src/ (decisiones sin confirmar no pueden quedar en el código)", () => {
+  it("la función reconoce la marca en un comentario, con cualquier caja", () => {
+    expect(marcaPendienteDeConfirmar("// M1 (a confirmar): vigencia")).toBe(true);
+    expect(marcaPendienteDeConfirmar(" * A confirmar con el encargado")).toBe(true);
+    expect(marcaPendienteDeConfirmar("// M1 (confirmado por Matías el 18/11/2026)")).toBe(false);
+    expect(marcaPendienteDeConfirmar("para confirmar la baja, pulse el botón")).toBe(false);
+  });
+
+  it("npm run buscar falla con un caso plantado y nombra el archivo y la línea", () => {
+    const r = correrBuscarCon("export const x = 1;\n// M9 (a confirmar): no se sabe todavía\n");
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("src/plantado.ts:2");
+    expect(r.stderr).toContain("a confirmar");
+  });
+
+  it("y pasa con el mismo archivo sin la marca", () => {
+    const r = correrBuscarCon("export const x = 1;\n// M9 (confirmado por Matías el 18/11/2026)\n");
+    expect(r.status).toBe(0);
   });
 });

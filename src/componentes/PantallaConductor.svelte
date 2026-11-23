@@ -128,8 +128,8 @@
         <div class="secundaria"><EnlaceAccion href={e.enlace.href}>{e.enlace.texto}</EnlaceAccion></div>
       {:else if inicio.hoyEstado.tipo === "fuera-de-servicio"}
         <Aviso tono="semana" icono="llave"><span class="largo">{inicio.hoyEstado.aviso}</span></Aviso>
-      {:else if inicio.hoyEstado.tipo === "licencia-no-vigente"}
-        <!-- Estado 5 (L1): el bloqueo se dice sin rol de alerta (el foco ya fue al h1 y esto es lo primero que se lee en el panel) y sin primario: no se deshabilita nada, se explica. -->
+      {:else if inicio.hoyEstado.tipo === "licencia-no-vigente" || inicio.hoyEstado.tipo === "no-puede-salir"}
+        <!-- Estados 5 (L1) y 5 ter (P21, la documentación de la unidad): el bloqueo se dice sin rol de alerta (el foco ya fue al h1 y esto es lo primero que se lee en el panel) y sin primario: no se deshabilita nada, se explica. -->
         {@const l = inicio.hoyEstado}
         <Aviso tono="critico" icono="vencido" accion={l.renglon2}>{l.renglon1}</Aviso>
         {#if l.borrador !== null}
@@ -140,7 +140,7 @@
           </div>
         {/if}
       {:else if inicio.hoyEstado.tipo === "cierre-pendiente"}
-        <!-- Estado 5 bis, «Cerrar antes» (A1, P20): una tarea pendiente (tono semana, `i-lapiz`), no una prohibición; por eso hay primario. Tampoco es `role="alert"`. -->
+        <!-- Estado 5 bis, «Cerrar antes» (P18, P20): una tarea pendiente (tono semana, `i-lapiz`), no una prohibición; por eso hay primario. Tampoco es `role="alert"`. -->
         {@const c = inicio.hoyEstado}
         <Aviso tono="semana" icono="lapiz" accion={c.renglon2} idTexto={ID_AVISO_CERRAR_ANTES}>{c.renglon1}</Aviso>
         <div class="accion-principal"><EnlaceAccion href={c.primario.href} variante="primario" tamano="grande">{c.primario.texto}</EnlaceAccion></div>

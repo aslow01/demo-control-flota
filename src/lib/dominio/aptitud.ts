@@ -22,7 +22,8 @@ export interface Aptitud {
 type DatosDeAptitud = Pick<Estado, "documentos" | "novedades" | "partes" | "proyectos">;
 
 /**
- * A1: puede salir = en servicio, sin obligatorios vencidos o faltantes, sin novedades críticas abiertas y (P19) sin una novedad crítica de hoy (la de un parte cerrado sin salida o una
+ * A1: puede salir = en servicio, sin obligatorios vencidos o faltantes, sin novedades críticas abiertas y (P19) sin una novedad crítica de hoy (la de un parte
+ * cerrado sin salida o una
  * cargada a mano): aunque se resuelva y la unidad vuelva a servicio, ese día no sale.
  */
 export function aptitud(unidad: Unidad, estado: DatosDeAptitud, hoy: FechaCivil): Aptitud {

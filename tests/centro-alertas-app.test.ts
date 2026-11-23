@@ -1,6 +1,6 @@
 // Paso 4.2 (lógica): el centro de alertas y los diálogos Renovar y Cargar conectados con el estado de la aplicación y la
 // persistencia. Aceptación del plan: con el ejemplo (fechaBase 2026-11-18) el protagonista dice «4 unidades», hay 11
-// vencimientos en los grupos esperados y 6 pendientes de operación; renovar C01 lo saca de la lista y de «No pueden salir».
+// vencimientos en los grupos esperados y 5 pendientes de operación; renovar C01 lo saca de la lista y de «No pueden salir».
 import { describe, expect, it } from "vitest";
 import { generar } from "../src/lib/datos/generador.ts";
 import { sumarDias } from "../src/lib/dominio/fechas.ts";
@@ -51,7 +51,7 @@ function seguroDeC01(app: EstadoApp) {
 }
 
 describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", () => {
-  it("antes de iniciar no hay centro; después, el ejemplo: 4 unidades, 12 vencimientos, 6 pendientes", async () => {
+  it("antes de iniciar no hay centro; después, el ejemplo: 4 unidades, 12 vencimientos, 5 pendientes", async () => {
     const t = new EstadoApp({
       reloj: crearReloj(() => new Date(Date.parse(MEDIODIA))),
       abrirAlmacenamiento: async () => new RepositorioMemoria(),
@@ -65,7 +65,7 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
     expect(c.protagonista.textoLector).toBe("4 unidades no pueden salir hoy.");
     expect(c.vencimientos.total).toBe(12);
     expect(c.vencimientos.grupos.map((g) => g.cantidad)).toEqual([3, 4, 3, 2]);
-    expect(c.operacion.total).toBe(6);
+    expect(c.operacion.total).toBe(5);
     expect(c.encabezado.linea).toContain("Logística Andina Demo S.A.");
     expect(estadoDe(t)).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
   });
@@ -87,7 +87,7 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
     expect(c.vencimientos.total).toBe(11);
     expect(c.vencimientos.grupos.map((g) => g.cantidad)).toEqual([2, 4, 3, 2]);
     expect(c.vencimientos.grupos.flatMap((g) => g.filas).some((f) => f.alertaId === `doc:${viejo.id}`)).toBe(false);
-    expect(app.alertas?.resumen.criticas).toBe(4);
+    expect(app.alertas?.resumen.criticas).toBe(3);
     // la fila que abrió el diálogo ya no existe (su alerta se resolvió): por eso el foco va al título del panel (5.17)
     expect(app.alertas?.alertas.some((a) => a.id === `doc:${viejo.id}`)).toBe(false);
   });

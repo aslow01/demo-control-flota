@@ -34,7 +34,7 @@ function fueraPorFrenos(): Estado {
     novedades: [frenos],
     unidades: e.unidades.map((u) =>
       u.id === "u1"
-        ? { ...u, estado: { tipo: "fuera-de-servicio", desde: "2026-11-16", motivo: "Novedad crítica en Frenos, parte del 16/11/2026", origen: "novedad-critica", novedadIds: ["n1"] } }
+        ? { ...u, estado: { tipo: "fuera-de-servicio", desde: "2026-11-16", motivo: "Novedad crítica en frenos, parte del 16/11/2026", origen: "novedad-critica", novedadIds: ["n1"] } }
         : u,
     ),
   };

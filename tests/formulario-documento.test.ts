@@ -42,7 +42,7 @@ describe("contexto de «Renovar documento»", () => {
     expect(c).toEqual({
       documentoId: "u1-seguro",
       titulo: "Renovar: Seguro de ZK 214 BD",
-      contexto: "Vigente: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día).",
+      contexto: "Actual: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día).",
       nombreDocumento: "Seguro",
       titularEtiqueta: "ZK 214 BD",
       valoresIniciales: { numero: "", emisor: "Aseguradora del Sur Demo", vence: "", emitido: "" },
@@ -54,10 +54,10 @@ describe("contexto de «Renovar documento»", () => {
     const e = flotaDePrueba();
     const con = (vence: string) => ({ ...e, documentos: e.documentos.map((d) => (d.id === "u1-revision-tecnica" ? { ...d, vence } : d)) });
     const texto = (vence: string) => contextoDeRenovar(con(vence), "u1-revision-tecnica", H)?.contexto;
-    expect(texto("2026-11-18")).toBe("Vigente: número DEMO-u1-revision-tecnica, vence hoy (18/11/2026).");
-    expect(texto("2026-11-25")).toBe("Vigente: número DEMO-u1-revision-tecnica, vence el 25/11/2026 (en 7 días).");
-    expect(texto("2026-11-19")).toBe("Vigente: número DEMO-u1-revision-tecnica, vence el 19/11/2026 (en 1 día).");
-    expect(texto("2026-11-15")).toBe("Vigente: número DEMO-u1-revision-tecnica, venció el 15/11/2026 (hace 3 días).");
+    expect(texto("2026-11-18")).toBe("Actual: número DEMO-u1-revision-tecnica, vence hoy (18/11/2026).");
+    expect(texto("2026-11-25")).toBe("Actual: número DEMO-u1-revision-tecnica, vence el 25/11/2026 (en 7 días).");
+    expect(texto("2026-11-19")).toBe("Actual: número DEMO-u1-revision-tecnica, vence el 19/11/2026 (en 1 día).");
+    expect(texto("2026-11-15")).toBe("Actual: número DEMO-u1-revision-tecnica, venció el 15/11/2026 (hace 3 días).");
   });
 
   it("de un conductor: el título lleva su nombre", () => {

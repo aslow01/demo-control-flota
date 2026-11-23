@@ -51,7 +51,7 @@ persona ficticia). Es una perspectiva, no un control de acceso: la interfaz lo d
 | Documento | Algo con fecha de vencimiento, de una unidad (seguro, revisión técnica, habilitación de ingreso al proyecto, carga del matafuego) o de un conductor (licencia de conducir, habilitación de manejo). |
 | Vigente | El documento que cuenta para un titular y un tipo (ver V9). Los anteriores quedan como historial. |
 | Parte diario | Registro de una unidad en una fecha, en dos pasos: **revisión antes de salir** y **cierre**. Uno por unidad y por fecha. |
-| Revisión antes de salir | Primer paso del parte: kilometraje al iniciar, los 10 puntos del checklist y "Otra novedad". Se envía **antes de usar la unidad**; sus novedades se abren en ese momento (A3 incluido). |
+| Revisión antes de salir | Primer paso del parte: kilometraje al iniciar, los 14 puntos del checklist y "Otra novedad". Se envía **antes de usar la unidad**; sus novedades se abren en ese momento (A3 incluido). |
 | Cierre | Segundo paso: kilometraje al terminar, nivel de combustible y litros cargados. Se envía al terminar la jornada. |
 | Borrador | Parte con la revisión todavía sin enviar. Se guarda solo mientras se escribe. |
 | En uso | Parte con la revisión enviada y el cierre pendiente: la unidad salió. |
@@ -207,7 +207,7 @@ interface Meta {                  // un solo registro, clave 'estado'
 Simplificación consciente: la revisión técnica se pide a todas las unidades (sin exenciones por antigüedad) y la clase
 de licencia no se controla. Va en el README como límite.
 
-### 5.2 Checklist (constante `ITEMS_CHECKLIST`, en este orden)
+### 5.2 Checklist (constante `ITEMS_CHECKLIST`, en este orden; catorce ítems desde el 22/11/2026, M2)
 
 | Id | Texto | Crítico |
 | --- | --- | --- |
@@ -216,11 +216,17 @@ de licencia no se controla. Va en el README como límite.
 | `neumaticos` | Neumáticos y rueda de auxilio | Sí |
 | `luces` | Luces y balizas | Sí |
 | `cinturones` | Cinturones de seguridad | Sí |
+| `perticaBaliza` | Pértiga con banderola y baliza | Sí |
+| `alarmaRetroceso` | Alarma de retroceso | Sí |
 | `niveles` | Niveles de aceite y agua | No |
 | `matafuego` | Matafuego a bordo | No |
 | `botiquin` | Botiquín y kit de emergencia | No |
 | `documentacion` | Documentación a bordo | No |
 | `cabina` | Orden y limpieza de la cabina | No |
+| `calzasAntiderrame` | Calzas y kit antiderrame | No |
+| `radio` | Radio de comunicación | No |
+
+Los cuatro últimos puntos de minería (pértiga, alarma de retroceso, calzas y kit antiderrame, radio) los eligió Matías el 22/11/2026. Se decidió con el criterio conservador cuáles son críticos: la **pértiga con banderola y baliza** y la **alarma de retroceso** sí (sin ellas una unidad no ingresa a la mina); **calzas y kit antiderrame** y **radio** no (si faltan se informan, y si hay que frenar la unidad el conductor marca «Impide usar la unidad»). Los críticos van juntos, primero.
 
 "Crítico" significa: una novedad en ese punto deja la unidad fuera de servicio (A3) **al enviar la revisión, antes de
 salir**: la unidad no sale y el parte se cierra sin salida (P16). En los no críticos, el conductor puede marcar "Impide
@@ -290,12 +296,12 @@ identificador en su nombre (`it('V4: d = 8 cae en el grupo de 15 días')`), así
 | P1 | Un parte por unidad y por fecha (borrador o enviado). Índice único `[unidadId, fecha]`. | Segundo parte de ZK 214 BD para H → error "Ya hay un parte de ZK 214 BD para el 18/11/2026 (borrador). Ábralo para continuar." con enlace. |
 | P2 | Fecha del parte: no futura y no anterior a `hoy − 7`. | H → ok · H − 7 → ok · H − 8 → error "Solo se pueden cargar partes de los últimos 7 días." · H + 1 → error "La fecha no puede ser posterior a hoy." |
 | P3 | **Revisión incompleta = borrador.** Se guarda solo (500 ms después de la última tecla y al salir del campo) con cualquier subconjunto de datos; solo se valida el tipo de cada campo (un km con letras no se guarda y se avisa en el campo). El borrador no cambia el kilometraje de la unidad ni abre novedades. Lo mismo vale para los datos del cierre de un parte en uso (`guardarCierre`): se guardan solos y no cuentan hasta cerrar. | Borrador con solo `kmInicio` → se guarda; `kmActual` de la unidad no cambia (K9); ninguna novedad nueva. |
-| P4 | **Enviar la revisión** exige: conductor, `kmInicio`, los 10 ítems respondidos y una descripción de 3 a 500 caracteres (sin contar espacios de los extremos) en cada ítem "con novedad" y en "Otra novedad" si se marcó. **Cerrar** exige `kmFin` y `combustible`. Si falta algo, no se envía: se listan los faltantes **en el orden del formulario** de ese paso. | Revisión sin `kmInicio` y sin `luces` → `{ faltan: ['kmInicio', 'luces'] }`, "Faltan 2 datos". Cierre sin nada → `{ faltan: ['kmFin', 'combustible'] }`. |
+| P4 | **Enviar la revisión** exige: conductor, `kmInicio`, los 14 ítems respondidos y una descripción de 3 a 500 caracteres (sin contar espacios de los extremos) en cada ítem "con novedad" y en "Otra novedad" si se marcó. **Cerrar** exige `kmFin` y `combustible`. Si falta algo, no se envía: se listan los faltantes **en el orden del formulario** de ese paso. | Revisión sin `kmInicio` y sin `luces` → `{ faltan: ['kmInicio', 'luces'] }`, "Faltan 2 datos". Cierre sin nada → `{ faltan: ['kmFin', 'combustible'] }`. |
 | P5 | Un parte con fecha **anterior a hoy** que quedó a medias genera la alerta de operación "Parte sin enviar": un **borrador** (la revisión no se envió: "sin enviar", quién lo empezó) o un parte **en uso** (la revisión se envió y falta el cierre: "sin cerrar", con quién salió). Un borrador se puede completar y enviar mientras cumpla P2; queda marcado "fuera de plazo" si la revisión se envía después de su fecha. Un parte en uso se puede cerrar en cualquier momento (P15). | Borrador de H − 1 → alerta "sin enviar"; revisión enviada hoy → evento con "fuera de plazo". Parte en uso de H − 1 → alerta "sin cerrar"; parte en uso de H → nada. |
 | P6 | Una unidad `en-servicio`, creada antes de ayer, **sin parte de ayer** (en ningún estado: borrador, en uso ni cerrado) genera la alerta "Sin parte de ayer". Si hay borrador o parte en uso de ayer, solo vale P5 (no se duplica). Fuera de servicio y bajas no generan esta alerta. | Unidad en servicio sin parte de H − 1 → alerta · con borrador de H − 1 → solo "Parte sin enviar" · unidad en taller → nada. |
 | P7 | Un parte **cerrado (`enviado`) es inmutable** (para todos los perfiles). En un parte **en uso**, lo de la revisión (conductor, `kmInicio`, checklist, "Otra novedad") ya no cambia; solo se completan los datos del cierre. Un parte en uso no se puede descartar. Los errores de kilometraje se corrigen con una corrección de kilometraje (K5); las novedades, resolviéndolas. | `guardarBorrador(enviado)` → error "Un parte enviado no se puede modificar." · `guardarBorrador(en uso)` → error "La revisión ya se envió: no se puede modificar." · `descartarBorrador(en uso)` → el mismo error. |
 | P8 | No se empiezan partes ni se envía la revisión de unidades fuera de servicio ni de baja. (Ver decisión D3.) El **cierre** de un parte en uso sí se acepta con la unidad fuera de servicio (salió antes de que la sacaran de servicio: hay que registrar el kilometraje); con la unidad de baja, no (A7). | Unidad fuera de servicio → error "La unidad está fuera de servicio desde el 13/11/2026 (En taller: cambio de embrague). Pida al encargado que la vuelva a servicio." · Parte en uso y unidad puesta fuera de servicio a mediodía → el cierre se acepta. |
-| P9 | Si en la fecha del parte la unidad tenía un documento obligatorio **de la unidad** vencido o faltante, la revisión **se puede enviar** (registra lo que pasó), con advertencia previa que hay que aceptar. Queda `documentacionVencida` y la alerta de operación "Circuló con documentación vencida" durante 30 días desde la fecha del parte. **La licencia del conductor ya no entra acá: bloquea (L1).** Si la revisión tiene una novedad crítica, la unidad no sale (P16): no hay advertencia de P9 y `documentacionVencida` queda vacía. | Revisión de H con seguro vencido → advertencia; aceptada → en uso con `documentacionVencida: ['seguro']` y alerta crítica. A H + 31 la alerta ya no está. Seguro vencido + frenos con novedad → sin advertencia de P9, sin alerta de "circuló". |
+| P9 | **Reemplazada el 22/11/2026 por P21.** Antes: si en la fecha del parte la unidad tenía un documento obligatorio **de la unidad** vencido o faltante, la revisión **se puede enviar** (registra lo que pasó), con advertencia previa que hay que aceptar. Queda `documentacionVencida` y la alerta de operación "Circuló con documentación vencida" durante 30 días desde la fecha del parte. **La licencia del conductor ya no entra acá: bloquea (L1).** Si la revisión tiene una novedad crítica, la unidad no sale (P16): no hay advertencia de P9 y `documentacionVencida` queda vacía. | (histórico) Revisión de H con seguro vencido → advertencia; aceptada → en uso con `documentacionVencida: ['seguro']` y alerta crítica. Hoy esa revisión no se envía (P21). La alerta «Circuló con documentación vencida» sigue en el código solo para partes guardados antes de P21; el ejemplo no tiene ninguno. |
 | P10 | Litros cargados: vacío = no cargó; si no, número mayor que 0 y hasta 200, con hasta 1 decimal (coma o punto). | `0` → error "Si no cargó combustible, deje el campo vacío." · `45,5` → 45.5 · `250` → error · `12,25` → error. |
 | P11 | Novedad en ítem crítico → novedad `critica`. En ítem no crítico → `normal`, salvo "Impide usar la unidad" → `critica`. "Otra novedad" igual. | `niveles` con novedad sin marcar → normal · con marca → crítica → A3. |
 | P12 | Enviar la revisión y cerrar son **atómicos**: parte, novedades, cambio de estado y eventos se escriben en una sola transacción. Si falla, no queda nada a medias y el borrador (o el parte en uso) sigue intacto. | Repositorio de prueba que falla al escribir eventos → ni revisión enviada ni novedades; borrador igual al anterior; error "No se pudo guardar el parte. Sus datos siguen en este equipo; intente de nuevo." |
@@ -307,6 +313,7 @@ identificador en su nombre (`it('V4: d = 8 cae en el grupo de 15 días')`), así
 | P18 | **Cerrar antes** (decisión de Matías del 22/11/2026). Si la unidad tiene un parte **en uso** de una fecha anterior, no se envía la revisión de una fecha posterior (`parte-anterior-sin-cerrar`): primero se cierra. Sin esta regla, la revisión de hoy arrancaba con el kilometraje de salida de ayer (el precargado) y el cierre de ayer ya no podía registrar el recorrido real (K4). Se controla después de P8, P2 y L1 (si la licencia también bloquea, gana la licencia) y antes de los faltantes (P4). El cierre **no** mira la licencia (L3): quien no tiene licencia vigente puede cerrar un parte anterior. El inicio del conductor lo lleva al cierre (estado 5 bis, `cierre-pendiente`) y la pantalla del parte dice «No se puede cargar este parte» con el aviso «Cerrar antes» y un primario hacia ese cierre. Un borrador anterior sin enviar no bloquea, y un parte en uso de una fecha posterior tampoco. | Parte en uso del 17/11 de ZK 214 BD, revisión del 18/11 → error "ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar. Ciérrelo primero; después se puede empezar la revisión del 18/11/2026."; cerrado el del 17/11, la revisión del 18/11 se envía. |
 | P19 | **Sin salida: hasta mañana** (decisión de Matías del 22/11/2026, **ampliada el 22/11/2026**: vale para toda novedad crítica, la de la revisión del conductor o la que el encargado carga a mano con «Impide usar la unidad»; con cualquier crítica la unidad no vuelve a salir ese día aunque se repare, recién al día siguiente). Un parte cerrado sin salida (P16: novedad crítica en la revisión) cierra el día de esa unidad: aunque el encargado resuelva la novedad y la devuelva a servicio, ese día no hay otra revisión de la unidad (P1 ya lo impide: un parte por unidad y por fecha) y la interfaz no la ofrece: el primer botón de la ficha es «Ver el parte» y el inicio del conductor dice «Aunque el encargado resuelva la novedad hoy, la unidad no vuelve a salir hasta mañana.». **Todas las vistas dicen lo mismo** (QA D1 de la etapa 7, decidido por Matías): la aptitud suma el motivo «Sin salida hasta mañana (novedad crítica en la revisión de hoy)», así que la ficha, la flota y el centro de alertas muestran «No puede salir» aunque la unidad ya esté en servicio, y el diálogo de resolver no promete que vuelve a salir ese día. Es una regla conservadora, no un límite. | Frenos con novedad en la revisión de H, novedad resuelta y unidad en servicio el mismo día → ficha con «Ver el parte» (no «Cargar parte»); inicio con el aviso de «recién mañana». |
 | P20 | **Un conductor, un parte en uso** (decisión de Matías del 22/11/2026). Si el conductor tiene un parte **en uso** (de cualquier fecha) en otra unidad, no puede enviar la revisión de una unidad nueva hasta cerrarlo: `parte-anterior-sin-cerrar` (el mismo código que P18), campo `conductorId`, con el parte a cerrar en `detalle`. Se controla después de P18. Una unidad de baja no cuenta (su parte ya no se puede cerrar, A7). Con el perfil Conductor el aviso «Cerrar antes» lleva al parte de la otra unidad; con el perfil Encargado el conductor se elige en el formulario y el error llega al enviar. | Luis (c1) con el parte en uso del 17/11 de ZKB 482 y la revisión de ZK 214 BD con él → error "Luis Ferreyra tiene sin cerrar el parte del martes 17/11/2026 de ZKB 482. Ciérrelo primero; después se puede enviar esta revisión." |
+| P21 | **La documentación de la unidad bloquea la revisión, como la licencia** (decisión de Matías del 22/11/2026; cambia su Q2 de esa mañana). Si a la fecha del parte la unidad tenía un documento obligatorio vencido o faltante (los de P9, evaluados como estaban ese día: M1), la revisión **no se envía** (`documentacion-de-la-unidad-vencida`, sin advertencia que aceptar y sin «Enviar de todos modos»). Se controla después de P8, P2 y L1 (si la licencia también bloquea, gana la licencia) y **antes** de P18, P20 y de los faltantes (P4): es un hecho sobre la unidad, como L1 lo es sobre quien maneja. Vale aunque la revisión traiga una novedad crítica. Pantalla del parte (los dos perfiles): «No se puede cargar este parte» con el motivo; inicio del conductor: estado `no-puede-salir` (aviso sin primario; «Usar otra unidad» sigue). El encargado la resuelve con «Renovar» (la renovación de hoy habilita la revisión de hoy; la de un día pasado no cambia que ese día faltaba). **«No puede salir» es verdad en el parte, la flota, la ficha y el centro de alertas**: ya no hay «Se envió de todos modos» para documentación de la unidad. La alerta «Circuló con documentación vencida» y el campo `documentacionVencida` del parte se conservan solo para leer partes guardados antes de esta regla (el ejemplo no tiene ninguno; la versión de esquema pasó a 3). | Seguro vencido en H → error «El seguro de ZK 214 BD venció el 15/11/2026. La unidad no puede salir. Renueve la documentación antes de enviar la revisión.»; renovado hoy, la revisión de hoy se envía. Seguro vencido y licencia vencida → gana L1. Seguro vencido y parte anterior en uso → P21 antes que P18. |
 
 ### 6.5 Kilometraje (K)
 
@@ -369,6 +376,7 @@ identificador en su nombre (`it('V4: d = 8 cae en el grupo de 15 días')`), así
 | D9 | Otra pestaña cambió los datos (`BroadcastChannel('control-flota')`) → aviso "Se hicieron cambios en otra pestaña. Esta pantalla sigue mostrando los datos anteriores hasta que actualice." con botón "Actualizar"; no se recarga sola (se perdería lo que se está escribiendo). | Canal de prueba que emite → aviso visible; los datos de esta pestaña no cambian hasta "Actualizar". |
 | D10 | Error al escribir (cuota, transacción abortada) → no se aplica nada, el formulario conserva lo escrito y el mensaje lo dice. Nunca un error que desaparece solo. | Repositorio que falla → estado igual al anterior y mensaje. |
 | D11 | `meta.modificada` pasa a `true` con el primer comando del visitante (no con el autoguardado de un borrador vacío ni con cambiar de perfil). | Abrir y cerrar el parte sin escribir → sigue `false`. |
+| D12 | Una pestaña desactualizada (hay un aviso D9 sin atender) es de solo lectura: `EstadoApp.ejecutarAhora` rechaza todo comando con `cambios-en-otra-pestana` y no escribe, para no pisar lo que hizo la otra pestaña (una baja se desharía, una renovación se duplicaría). «Actualizar» y «Reiniciar demo» siguen funcionando. | Con el aviso D9 encendido, cualquier comando devuelve `cambios-en-otra-pestana`; tras «Actualizar» se ejecuta. |
 
 ### 6.10 Licencia del conductor (L) — decisión de Matías del 19/11/2026
 
@@ -450,7 +458,7 @@ No es seguridad (no hay servidor): es la perspectiva de la demo, y la interfaz s
   (las series se asignan en orden alfabético desde el comienzo del abecedario; la Z no se alcanza en décadas —
   verificar el dato antes de publicar y decirlo en el README). Unidades de 2016 en adelante con formato Mercosur;
   anteriores, con el formato anterior.
-- **Personas:** nombre y apellido combinados de dos listas inventadas (16 conductores y la encargada "Rocío Medina").
+- **Personas:** nombre y apellido combinados de dos listas inventadas (24 conductores —16 con unidad asignada y 8 de relevo sin unidad propia— y la encargada "Rocío Medina").
   Se rotulan "(persona ficticia)" en la barra del perfil, la ficha y el historial (decisión del 22/11/2026: no depende del género del nombre); las empresas, "(ficticia)".
 - **Aseguradoras y plantas de revisión:** "Aseguradora del Sur Demo", "Seguros Puna Demo", "Planta de Revisión Técnica
   Demo N.º 3". Números de póliza inventados con prefijo `DEMO-`.
@@ -477,17 +485,17 @@ No es seguridad (no hay servidor): es la perspectiva de la demo, y la interfaz s
 | C15 | Parte de H − 4 con salto de 1 250 km aceptado. | K6 |
 | C16 | Unidad dada de baja con el seguro vencido (no alerta). | V14, A7 |
 | C17 | Licencia de un conductor que vence en H + 12. | V4 (conductor) |
-| C18 | Revisión técnica que venció en H − 7; parte de H − 6 enviado con la advertencia aceptada; renovada ese mismo día, después del parte. | P9, V9 |
+| C18 | Revisión técnica que venció en H − 7 y se renovó en H − 6, antes de la revisión del día: el historial muestra el «Antes / Después» de la renovación y ningún parte sale con la documentación vencida (hasta el 22/11/2026 el parte de H − 6 se enviaba con la advertencia aceptada: P21 lo prohibió). | P21, V9 |
 | C19 | Novedad normal abierta en H − 9 ("Luz de patente quemada"). | N5 |
 | C20 | Corrección de kilometraje en H − 20 (cambio de tablero). | K5, K8 |
 | C21 | Conductor activo, con una unidad asignada **en servicio y sin otros casos plantados**, cuya única licencia venció en H − 3 ("Vencida hace 3 días"). Los partes de esa unidad de H − 2 y H − 1 los firmó otro conductor activo (relevo), así ningún parte queda con un conductor sin licencia. La unidad puede salir (A1); el conductor no puede enviar la revisión (L1). | L1, L5, L6, L7, V1 (conductor) |
 
-Relleno: 24 unidades (14 camionetas, 4 utilitarios, 3 camiones livianos, 2 minibuses, 1 de baja), 16 conductores,
+Relleno: 24 unidades (14 camionetas, 4 utilitarios, 3 camiones livianos, 2 minibuses, 1 de baja), 24 conductores (16 con unidad asignada y 8 de relevo),
 partes cerrados de H − 45 a H − 1 para las unidades en servicio (revisión enviada entre las 06:00 y las 07:29 de
 Argentina y cierre entre las 18:00 y las 19:29 del mismo día, cada uno con su evento; recorrido diario de 40 a 260 km,
 nivel de combustible coherente, alguna carga), ningún parte de hoy, novedades normales ya resueltas en el pasado (para que el historial tenga vida), documentos
-aleatorios con vencimientos entre H + 31 y H + 400. Las renovaciones del pasado se hicieron **antes** de vencer (salvo
-C18), así ningún otro parte queda con documentación vencida. Las unidades fuera de servicio no tienen partes desde que
+aleatorios con vencimientos entre H + 31 y H + 400. Las renovaciones del pasado se hicieron **antes** de vencer (C18 se
+renovó el mismo día, antes de la revisión), así ningún parte queda con documentación vencida (P21). Las unidades fuera de servicio no tienen partes desde que
 salieron de servicio.
 
 **Resultado esperado del ejemplo con H = 2026-11-18** (test de coherencia de D2; si cambia, cambia a propósito):
@@ -502,8 +510,8 @@ salieron de servicio.
 | Vencen entre 8 y 15 días | 3 | C05, C06, C17 |
 | Vencen entre 16 y 30 días | 2 | C07, C08 |
 | Total de vencimientos ("Vencimientos · N") | 12 (antes: 11) | — |
-| Pendientes de operación | 6 | C11, C18, C13, C14 (×2), C19 |
-| Alertas críticas (insignia de la pestaña) | 5 (antes: 4) | C01, C10, C11, C18, C21 |
+| Pendientes de operación | 5 (antes de P21: 6, con C18) | C11, C13, C14 (×2), C19 |
+| Alertas críticas (insignia de la pestaña) | 4 (antes de P21: 5, con C18; antes de C21: 4) | C01, C10, C11, C21 |
 
 ### 9.3 Azar con semilla
 
@@ -568,8 +576,7 @@ si se aprueba, con pruebas de punta a punta en una etapa posterior.
   medianoche pertenece a la fecha de su revisión: la licencia se mira para esa fecha (L2, L3).
 - Una falla que aparece **durante el uso** no tiene campo propio en el cierre: el conductor avisa y el encargado la carga
   con "Cargar novedad" (N3). Pendiente de decisión (sección 17, pregunta Q1).
-- La documentación vencida **de la unidad** no bloquea la salida: avisa y queda registrada (P9). La licencia del
-  conductor sí bloquea (L1). Es una asimetría elegida (sección 17, pregunta Q2).
+- La documentación vencida **de la unidad** bloquea la revisión igual que la licencia del conductor (P21 y L1; decisión de Matías del 22/11/2026, sección 17, pregunta Q2). Ya no hay asimetría que explicar.
 - Un parte de un día pasado tampoco se puede enviar si el conductor no tenía licencia vigente ese día (L1): queda la
   alerta "Sin parte de ayer" o "Parte sin enviar", no un registro de que manejó sin licencia.
 - Lo escrito en el parte se guarda 500 ms después de la última tecla (y al salir del campo, al enviar y al irse de la pantalla). Si se recarga o se cierra la pestaña dentro de esos 500 ms, lo último puede perderse: guardar en IndexedDB son tres idas y vueltas con el navegador y una recarga no las espera (se probó con `pagehide`: no alcanza).
@@ -590,6 +597,8 @@ quiere decir que la regla venía del diseño de Matías y no de una propuesta de
 | D7 | Licencia del repositorio | MIT, como la Demo 1. | Matías, 19/11/2026. |
 | D8 | Momento del checklist del parte | Revisión antes de salir y cierre al volver (sección 17). Descartado: checklist de fin de jornada. | Matías, regla de operación, 19/11/2026. |
 | D9 | Licencia de conducir vencida o faltante | Bloquea la revisión (L1 a L7). Descartado: solo un aviso que el conductor acepta. | Matías, regla de operación, 19/11/2026. |
+| D10 | Documentación vencida o faltante de la unidad | Bloquea la revisión (P21), igual que la licencia. Descartado: advertencia aceptable con registro «Circuló con documentación vencida» (P9; era la recomendación de Q2 de la mañana). | Matías, 22/11/2026 (segunda sesión). |
+| D11 | Habilitación de manejo del proyecto (Q3) | Sigue opcional; queda como límite conocido, no se implementa antes de publicar. | Matías, 22/11/2026 (segunda sesión). |
 
 ---
 
@@ -698,7 +707,7 @@ convence, se cambia acá y en el código a la vez.
   (H − 45): así a cada parte generado lo ampara un documento que ya existía, y volver a calcular P9 a la fecha de cada
   parte da lo guardado. Cambió el contenido del ejemplo (hash de D1).
 - La corrección de kilometraje del caso C20 es "desde" H − 20 a las 09:30 de Argentina y el parte de ese día ya parte de 120.
-- Hay 16 conductores activos; las habilitaciones de manejo (opcionales) están cargadas para la mitad.
+- Hay 24 conductores activos (16 con unidad asignada y 8 de relevo); las habilitaciones de manejo (opcionales) están cargadas para la mitad.
 
 **Persistencia**
 
@@ -714,10 +723,10 @@ M1, M3 y M4 el 18/11/2026.
 
 | Hallazgo | Qué se hizo |
 | --- | --- |
-| M1 (a confirmar) | P9 a la fecha del parte con los documentos como estaban (ver «Fechas y vencimientos»). |
+| M1 (confirmado por Matías el 18/11/2026) | P9 a la fecha del parte con los documentos como estaban (ver «Fechas y vencimientos»). |
 | M2 | Contexto validado y instantes estrictos (ver «Comandos»). |
-| M3 (a confirmar) | Corrección de kilometraje anterior a registros ya cargados: se rechaza (ver «Kilometraje»). |
-| M4 (a confirmar) | La habilitación de ingreso cargada y vencida (o por vencer) en un proyecto que no la exige alerta con gravedad `baja`, no cuenta en la insignia (`criticas`) y es coherente con `aptitud` (la unidad puede salir). Se mantiene en el grupo «vencidos» (o 7/15/30) para que el encargado la vea. No se agregó un mecanismo de descarte (no existe en el diseño y habría que guardarlo); «descartable» se resolvió con gravedad baja. La habilitación de manejo del conductor (V17) conserva su gravedad. |
+| M3 (confirmado por Matías el 18/11/2026) | Corrección de kilometraje anterior a registros ya cargados: se rechaza (ver «Kilometraje»). |
+| M4 (confirmado por Matías el 18/11/2026) | La habilitación de ingreso cargada y vencida (o por vencer) en un proyecto que no la exige alerta con gravedad `baja`, no cuenta en la insignia (`criticas`) y es coherente con `aptitud` (la unidad puede salir). Se mantiene en el grupo «vencidos» (o 7/15/30) para que el encargado la vea. No se agregó un mecanismo de descarte (no existe en el diseño y habría que guardarlo); «descartable» se resolvió con gravedad baja. La habilitación de manejo del conductor (V17) conserva su gravedad. |
 | M5 | `vite.config.ts` fija `TZ=Asia/Tokyo` cuando nadie la definió, antes de cargar los módulos: `npm test` ya detecta un uso de la hora local (verificado con una mutación: fallan 3 tests sin `TZ`). `tests/zona-horaria.test.ts` exige que `TZ` esté definida y que, salvo pedido explícito, no sea la de Argentina. `.github/workflows/ci.yml` (Node 24, `npm ci`, `tsc`, `npm test`, `test:tz`, `npm audit --audit-level=critical`, permisos de solo lectura); hoy Actions no corre en la cuenta por facturación. La excepción de `picomatch` (5 altas en herramientas de desarrollo, sin parche) está comentada en el archivo. |
 | M6 | Copias de entrada (ver «Comandos»). |
 | B1 | Test que recorre cada día de 2000-01-01 a 2100-12-31 contra `Date.UTC` (mata las mutaciones de los años de siglo). |
@@ -825,7 +834,7 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   usa las etiquetas de 5.7 (Crítica, Abierta, Sin enviar, Sin parte, Con documentación vencida). Acciones: «Resolver» (la novedad; el diálogo es del paso 4.4, hasta
   entonces la fila ofrece su `href` de ficha), «Abrir parte» (al parte de esa fecha) y «Ver ficha».
   (6) *Diálogos.* El primario y el título siguen 5.17 («Renovar: Seguro de ZK 214 BD», «Guardar renovación», «Guardar documento»); «Cargar» lleva el mismo título con «Cargar:».
-  La línea de contexto dice «póliza» para el seguro y «número» para el resto («Vigente: número DEMO-RT-1234, vence el 25/11/2026 (en 7 días).»). `contextoDeRenovar`
+  La línea de contexto dice «póliza» para el seguro y «número» para el resto («Actual: número DEMO-RT-1234, vence el 25/11/2026 (en 7 días).»). `contextoDeRenovar`
   devuelve `null` si el documento ya no es el vigente (se renovó en otra pestaña o ya) y `contextoDeCargar` si ya hay uno vigente: en ese caso no hay diálogo que abrir.
   El `select` «Tipo» de «Cargar otro documento» (ficha) es del paso 4.4.
   (7) *Errores por campo.* El dominio devuelve solo el primer error; para decir todo junto (resumen de 5.15) `validarValores` corre **los mismos validadores** del dominio
@@ -918,7 +927,7 @@ Ambigüedades del diseño que se resolvieron al programar `estado/parte.ts`, `es
   (11) *`EstadoApp.ejecutar`* ahora delega en `ejecutarAhora` (el mismo cuerpo, sin la cola) para que guardar y enviar el parte encadenen dos comandos dentro de UN turno de la cola; el comportamiento de `ejecutar` no cambia.
 
 - **Correcciones de la revisión de la Etapa 4 (lógica, 18/11/2026).** Cuatro decisiones que el diseño no fijaba, con lo más simple:
-  (1) *Pestaña desactualizada = solo lectura.* Mientras `hayCambiosEnOtraPestana` esté encendido, `EstadoApp.ejecutarAhora` rechaza **todo** comando (`cambios-en-otra-pestana`, sin escribir ni avisar a las otras pestañas), no solo el cambio de perfil: si no, una baja se deshace o una renovación se duplica (QA A1). Alcanza al autoguardado del parte (el indicador muestra el mismo mensaje). «Actualizar» y «Reiniciar demo» siguen funcionando (los dos apagan el aviso). Límite que queda: si el aviso entre pestañas no llega (sin `BroadcastChannel`, o dos escrituras en el mismo instante), la pestaña vieja no se entera; sin servidor no hay forma barata de comparar versiones. (Pendiente para el README: anotarlo como límite conocido; el README no tiene todavía la sección.)
+  (1) *Pestaña desactualizada = solo lectura (D12).* Mientras `hayCambiosEnOtraPestana` esté encendido, `EstadoApp.ejecutarAhora` rechaza **todo** comando (`cambios-en-otra-pestana`, sin escribir ni avisar a las otras pestañas), no solo el cambio de perfil: si no, una baja se deshace o una renovación se duplica (QA A1). Alcanza al autoguardado del parte (el indicador muestra el mismo mensaje). «Actualizar» y «Reiniciar demo» siguen funcionando (los dos apagan el aviso). Límite que queda: si el aviso entre pestañas no llega (sin `BroadcastChannel`, o dos escrituras en el mismo instante), la pestaña vieja no se entera; sin servidor no hay forma barata de comparar versiones. (Pendiente para el README: anotarlo como límite conocido; el README no tiene todavía la sección.)
   (2) *D7 mira el tipo de lo que las pantallas leen.* `FORMA_DE_ELEMENTO` (arranque) ahora pide, por lista, los campos que la ficha, la flota, el centro de alertas y el historial usan, con su tipo y sus valores posibles (`tipo` de unidad, `estado` operativo con sus campos, `origen` de la novedad, `tipo` y `datos` del evento, etc.). Un elemento que no cumple cuenta como otro formato: se regenera el ejemplo y se avisa (QA M3, código M1). **Excepción deliberada: los partes.** Solo se pide `id`, `unidadId`, `fecha`, `estado` y un `checklist` objeto; el resto lo lee `parteLegible` (punto 9 de arriba), que deja descartar o completar un borrador roto en vez de borrarlo todo.
   (3) *Red de seguridad en la pantalla.* `main` va dentro de un `<svelte:boundary>`: si una pantalla falla al dibujarse, el marco (barra, menú, pie) sigue andando y se muestra «No se pudo mostrar esta pantalla» con «Recargar la página» y «Reiniciar demo». Al cambiar de pantalla se vuelve a intentar (`reponer`). Los errores de los manejadores de eventos no los atrapa Svelte: eso lo cubre la validación del punto 2.
   (4) *Sin promesas colgadas en los diálogos.* `guardarConIndicador` (estado/guardado.ts) envuelve el guardado con `try/catch/finally`: si `guardar` rechaza o lanza, el diálogo muestra el error general «No se pudo guardar…» y se desbloquea (código M3). Y el comando de alta de unidad y el de cargar documento reciben el tipo como texto y lo estrechan en el dominio con `esTipoDeUnidad` / `esTipoDocumento` (código M4): un tipo de documento inventado ahora dice «Elija el tipo de documento.» en el campo Tipo, en lugar de «undefined no corresponde…». El campo km solo se reformatea si lo escrito es un entero bien escrito (`reformatearKm` usa `parsearKm`): `84.5` queda como está y la validación lo rechaza (QA M2).
@@ -977,7 +986,7 @@ está en `diseno-ui.md` (4.2, 5.7, 6.1, 6.4, 6.5, 7 y 14).
 | Envíos del parte | Uno, al final del día, con todo. | Dos: **revisión antes de salir** (`kmInicio`, checklist, "Otra novedad") y **cierre** (`kmFin`, combustible, litros). |
 | Novedad crítica | Sacaba la unidad de servicio al enviar el parte (a la noche). | La saca al enviar la revisión, antes de salir; el parte se cierra sin salida (P16). |
 | Novedad normal | Se abría al enviar el parte. | Se abre al enviar la revisión (P14). |
-| Licencia vencida o faltante | Advertencia aceptable (P9) al enviar. | Bloquea la revisión (L1), sin advertencia aceptable. P9 queda solo para los documentos de la unidad. |
+| Licencia vencida o faltante | Advertencia aceptable (P9) al enviar. | Bloquea la revisión (L1), sin advertencia aceptable. P9 quedó para los documentos de la unidad; desde el 22/11/2026 también bloquean (P21). |
 | Estados del parte | `borrador`, `enviado`. | `borrador`, `en-uso`, `enviado` (en pantalla: «Cerrado»), más `sinSalida`. |
 | Kilometraje | Contaban los partes enviados. | Cuentan los cerrados y, desde la revisión, el `kmInicio` de los partes en uso (K10). |
 
@@ -1139,7 +1148,7 @@ Los nombres son orientativos (los fija el programador sin cambiar el significado
 | El conductor del perfil toma un borrador empezado por otro | Se mira **su** licencia (4.5 (3)). | L1 |
 | El encargado carga el parte con un conductor sin licencia | Mismo bloqueo; el conductor asignado no se precarga. | L1, P13 |
 | Conductor inactivo | No aparece en la lista de L6 ni se puede elegir (como hoy). | L6 |
-| Revisión con novedad crítica y seguro vencido | Sin advertencia de P9 ni alerta «Circuló»: la unidad no salió. | P9, P16 |
+| Revisión con novedad crítica y seguro vencido | Sin advertencia de P9 ni alerta «Circuló»: la unidad no salió. Desde P21: la revisión no se envía por el seguro, antes de mirar la novedad. | P21, P16 |
 | La unidad pasa a fuera de servicio (a mano o por una novedad cargada) mientras el parte está en uso | El cierre se acepta. | P8 |
 | El conductor tiene un parte en uso en una unidad y quiere empezar la revisión de otra | No se puede (P20): el inicio y la pantalla del parte muestran el aviso «Cerrar antes» con el parte de la otra unidad; con el perfil Encargado el error llega al enviar, en el campo Conductor. | P20 |
 | La unidad quedó sin salida (P16) o el encargado cargó a mano una crítica («Impide usar la unidad»), la novedad se resuelve y la unidad se devuelve a servicio el mismo día | La unidad no vuelve a salir ese día, en todas las vistas: ficha con «No puede salir» (motivo «Sin salida hasta mañana…») y, si hubo parte, «Ver el parte», flota y centro de alertas con «No puede salir», inicio con «Aunque el encargado resuelva la novedad hoy, la unidad no vuelve a salir hasta mañana.». El diálogo de resolver dice «Volver a servicio (sale desde mañana)» y la barra de estado, «…vuelve a servicio, pero no sale hasta mañana.». Al día siguiente vuelve a «Puede salir». | P19, P1 |
@@ -1265,14 +1274,14 @@ Matías aceptó las cuatro recomendaciones de Q1, Q2, Q4 y Q5 el 22/11/2026. Q3 
 | # | Pregunta | Recomendación (aceptada salvo Q3) |
 | --- | --- | --- |
 | Q1 | ¿El cierre tiene un campo «¿Pasó algo durante el uso?» (una falla a mitad de la jornada que, con «Impide usar», saque la unidad de servicio al cerrar)? | No por ahora: es un campo y un origen de novedad más. Una falla en ruta se avisa y el encargado la carga con «Cargar novedad» (N3). Queda como límite (sección 14). |
-| Q2 | ¿La documentación vencida **de la unidad** también bloquea la revisión, como la licencia? | No, por ahora: la unidad «No puede salir» ya lo dice en las dos vistas, y P9 deja el registro «Circuló con documentación vencida», que es lo que el encargado usa para pedir explicaciones. Si un gerente lo objeta, es cambiar P9 por un bloqueo igual a L1. |
+| Q2 | ¿La documentación vencida **de la unidad** también bloquea la revisión, como la licencia? | La recomendación de la mañana del 22/11/2026 era «no, por ahora». **Matías la cambió ese mismo día (segunda sesión): sí, bloquea (P21).** «No puede salir» pasa a ser verdad en todas las vistas y desaparece la asimetría con la licencia. |
 | Q3 | ¿La habilitación de manejo del proyecto pasa a obligatoria cuando el proyecto exige habilitación de ingreso (la otra mitad de la crítica D2)? | Sí, en una tanda aparte: misma lógica que V13 y que L1, con su caso plantado. No entró en esta decisión. |
 | Q4 | C21 cambia los números del ejemplo (3 vencidos y faltantes, 12 vencimientos, 5 alertas críticas). ¿Se acepta? | Sí: sin un caso plantado el bloqueo no se ve en la demo. Hay que actualizar el README y la ficha de la web que citan «2 vencidos» y «4 + 3 + 2». |
 | Q5 | Un parte de un día pasado, con la licencia vencida ese día: ¿se bloquea (lo elegido) o se registra con aviso (como antes)? | Bloquear: una sola regla, fácil de explicar («sin licencia no se envía la revisión»). La falta queda a la vista igual, como «Sin parte de ayer» o «Parte sin enviar». |
 
 ### 17.11 Decisiones de implementación (22/11/2026, programador)
 
-Respuestas a las preguntas: Q1 no (el cierre no tiene campo de novedad), Q2 no (la documentación de la unidad sigue siendo una advertencia, P9), Q3 fuera de esta tanda, Q4 sí
+Respuestas a las preguntas: Q1 no (el cierre no tiene campo de novedad), Q2 no por la mañana y **sí el 22/11/2026 por la tarde (P21: la documentación de la unidad bloquea)**, Q3 fuera de esta tanda (Matías la deja como límite, M7), Q4 sí
 (los números nuevos del ejemplo) y Q5 bloquear. Lo que la especificación no dice y se resolvió con lo más simple:
 
 - **Datos de cierre de un borrador (K9).** `enviarRevision` conserva `kmFin`, `combustible` y `litrosCargados` que traiga el borrador (de una versión vieja); al formulario del
@@ -1326,3 +1335,22 @@ Después de las cuatro revisiones de la etapa 6 (código, QA, diseño y accesibi
   dirección de un solo carácter (U+200E, U+200F), el espacio de ancho cero (U+200B) y el BOM (U+FEFF) se pierden. También se pierden las etiquetas de bandera de región (`Cf`, U+E0020 a U+E007F).
 - **B1.** Un cierre con el kilometraje final menor que el inicial sigue sin leerse (`kmFin` queda `null`): es deliberado, para no dibujar un recorrido negativo; ahora hay un test que lo fija.
   **B3.** Sin casts en la revisión y el cierre; `advertenciasDeCierre` se borra (sus tests ya estaban en `advertenciasDeRecorrido`). **B4, B6 y B7: sin cambios** (B7 es un límite declarado en el README).
+
+### 17.13 Crítica de reclutador del 22/11/2026 (programador, parte de lógica)
+
+Decisiones de Matías (22/11/2026, segunda sesión) y lo que el diseño no decía, resuelto con lo más simple:
+
+- **P21 (A1 de la crítica).** La documentación de la unidad bloquea la revisión (ver P21 y D10). Orden del comando: P8, P2, conductor activo, L1, **P21**, P18, P20, faltantes (P4). Una sola función decide
+  (`documentacionQueBloquea`, en `parte.ts`) y la leen el comando, el inicio del conductor y la pantalla del parte. **Qué se hizo con «Circuló con documentación vencida»:** el comando ya no puede producirla; el
+  tipo de alerta, el aviso aceptado y el campo `documentacionVencida` se conservan solo para leer partes guardados antes de P21. El ejemplo no tiene ninguno (la versión de esquema subió a 3: quien tenía el
+  ejemplo viejo lo recibe de nuevo con el aviso de D7). Es código que podría borrarse en una limpieza aparte (toca las vistas del aviso aceptado y del filtro de alertas). C18 pasó a «renovada antes de la
+  revisión»: los números del ejemplo cambian (pendientes de operación 6 → 5, alertas críticas 5 → 4).
+- **M2.** Cuatro puntos de minería en el checklist (sección 5.2), dos críticos.
+- **M3.** El generador ya no elige al azar quién maneja las unidades sin conductor asignado: las conducen 8 conductores de relevo, sin unidad propia, que rotan (`(turno + día) mod 8`), así nadie tiene dos partes el
+  mismo día (un test lo fija). El relevo de la unidad de C21 en H - 2 y H - 1 lo hace el de relevo del turno que queda libre (el de la unidad dada de baja). Reemplaza lo dicho en 17.11 sobre el «primer conductor».
+  Los de relevo salen de un azar aparte: no mueve ningún otro dato del ejemplo.
+- **A3.** «Cerrar antes» es P18 en el código y los comentarios (antes decían «A1», que es «Puede salir»). La regla de que una pestaña desactualizada es de solo lectura es **D12** (QA A1 de la etapa 4). M1, M3 y M4
+  (sección 16) los confirmó Matías el 18/11/2026; `npm run buscar` falla si aparece «a confirmar» en `src/`.
+- **B1 y B2.** El diálogo de renovación dice «Actual: póliza …» (antes «Vigente: …, venció el …»). El nombre de un punto del checklist va en minúscula dentro de una frase («novedad crítica en frenos»), también
+  en el motivo guardado de la unidad fuera de servicio y en el historial.
+- **M7.** La habilitación de manejo del proyecto sigue opcional y queda como límite conocido (D11).

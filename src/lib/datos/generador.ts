@@ -50,7 +50,13 @@ export const APELLIDOS: readonly string[] = [
 ];
 
 const DIAS_DE_PARTES = 45;
+/** Conductores con una unidad asignada. */
 const CANTIDAD_DE_CONDUCTORES = 16;
+/**
+ * M3: conductores sin unidad propia. Las unidades sin conductor asignado (internos 17 a 24) las conduce uno de ellos cada día, rotando: la unidad k la maneja el `(k + día) mod 8`, así
+ * nadie tiene dos partes el mismo día. La última de esas unidades es la de baja (sin partes desde H - 29): su turno queda libre y es el que releva a C21 en H - 2 y H - 1.
+ */
+const CONDUCTORES_DE_RELEVO = 8;
 /** C21: el conductor asignado a la unidad del caso (la última de las que tienen conductor) es el de la licencia vencida. */
 const INDICE_DEL_CONDUCTOR_C21 = CANTIDAD_DE_CONDUCTORES - 1;
 
@@ -184,7 +190,7 @@ function crearPatente(azar: Azar, anio: number, usadas: Set<string>): string {
 }
 
 /** Versión del formato de los datos guardados (D7): si cambia, la demo se reinicia sola con un aviso. */
-export const VERSION_ESQUEMA = 2;
+export const VERSION_ESQUEMA = 3;
 
 /** Genera el estado completo de la demo. Las fechas son relativas a `fechaBase` (el "hoy" del ejemplo). */
 export function generar(semilla: number, fechaBase: FechaCivil): Estado {
@@ -219,12 +225,23 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
   // --- Conductores -----------------------------------------------------------------------------
   const nombres = elegirSinRepetir(azar, NOMBRES, CANTIDAD_DE_CONDUCTORES);
   const apellidos = elegirSinRepetir(azar, APELLIDOS, CANTIDAD_DE_CONDUCTORES);
-  const conductores: Conductor[] = nombres.map((nombre, i) => ({
+  const conductoresConUnidad: Conductor[] = nombres.map((nombre, i) => ({
     id: id("c", "c", 2),
     nombre: `${nombre} ${apellidos[i]}`,
     legajo: `L-${String(101 + i).padStart(4, "0")}`,
     activo: true,
   }));
+  // Los de relevo salen de un azar aparte (otra semilla derivada): sumarlos no mueve nada de lo que ya genera `azar`.
+  const azarRelevo = crearAzar(semilla ^ 0x9e3779b9);
+  const nombresDeRelevo = elegirSinRepetir(azarRelevo, NOMBRES.filter((x) => !nombres.includes(x)), CONDUCTORES_DE_RELEVO);
+  const apellidosDeRelevo = elegirSinRepetir(azarRelevo, APELLIDOS.filter((x) => !apellidos.includes(x)), CONDUCTORES_DE_RELEVO);
+  const conductoresDeRelevo: Conductor[] = nombresDeRelevo.map((nombre, i) => ({
+    id: id("c", "c", 2),
+    nombre: `${nombre} ${apellidosDeRelevo[i]}`,
+    legajo: `L-${String(101 + CANTIDAD_DE_CONDUCTORES + i).padStart(4, "0")}`,
+    activo: true,
+  }));
+  const conductores: Conductor[] = [...conductoresConUnidad, ...conductoresDeRelevo];
   const nombreDe = (conductorId: string | null): string =>
     conductores.find((c) => c.id === conductorId)?.nombre ?? ENCARGADA;
 
@@ -245,7 +262,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
       anio,
       tipo: ficha.tipo,
       proyectoId: idProyecto[ficha.proyecto],
-      conductorId: i < CANTIDAD_DE_CONDUCTORES ? (conductores[i] as Conductor).id : null,
+      conductorId: i < CANTIDAD_DE_CONDUCTORES ? (conductoresConUnidad[i] as Conductor).id : null,
       estado: { tipo: "en-servicio" },
       creada: en(d(-(700 + azar.entero(0, 100))), 12),
     };
@@ -384,7 +401,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     }
   }
 
-  // C18: la revisión técnica venció en H - 7; se renovó en H - 6, después de enviar el parte de ese día.
+  // C18: la revisión técnica venció en H - 7; se renovó en H - 6 a las 05:40 (Argentina), antes de la revisión del día: ningún parte sale con la documentación vencida (P21).
   const unidadC18 = porRol("c18");
   const revisionVieja: Documento = {
     id: id("d", "d", 4),
@@ -405,7 +422,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     emisor: EMISORES["revision-tecnica"],
     vence: d(358),
     emitido: d(-6),
-    cargado: en(d(-6), 22, 40),
+    cargado: en(d(-6), 8, 40),
     reemplazaA: revisionVieja.id,
   };
   documentos.push(revisionVieja, revisionNueva);
@@ -426,7 +443,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
   });
 
   // Licencias (C17: la del tercer conductor vence en H + 12; C21: la única licencia del último conductor venció en H - 3) y habilitaciones de manejo (opcionales).
-  conductores.forEach((c, i) => {
+  conductoresConUnidad.forEach((c, i) => {
     agregarDocumento({
       titular: { tipo: "conductor", id: c.id },
       unidadId: null,
@@ -436,7 +453,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
       vence: i === 2 ? d(12) : i === INDICE_DEL_CONDUCTOR_C21 ? d(-3) : null,
     });
   });
-  conductores.forEach((c, i) => {
+  conductoresConUnidad.forEach((c, i) => {
     if (i % 2 === 0) {
       agregarDocumento({
         titular: { tipo: "conductor", id: c.id },
@@ -461,13 +478,38 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     neumaticos: respuestaEnOrden,
     luces: respuestaEnOrden,
     cinturones: respuestaEnOrden,
+    perticaBaliza: respuestaEnOrden,
+    alarmaRetroceso: respuestaEnOrden,
     niveles: respuestaEnOrden,
     matafuego: respuestaEnOrden,
     botiquin: respuestaEnOrden,
     documentacion: respuestaEnOrden,
     cabina: respuestaEnOrden,
+    calzasAntiderrame: respuestaEnOrden,
+    radio: respuestaEnOrden,
   });
-  const conductorC21 = conductores[INDICE_DEL_CONDUCTOR_C21] as Conductor;
+  const conductorC21 = conductoresConUnidad[INDICE_DEL_CONDUCTOR_C21] as Conductor;
+
+  // M3: la licencia (y la habilitación de manejo, en uno de cada dos) de los de relevo, sin pasar por `azar` ni por el historial (todas vigentes por mucho tiempo y cargadas antes del primer parte).
+  conductoresDeRelevo.forEach((c, i) => {
+    for (const tipo of i % 2 === 0 ? (["licencia", "habilitacion-manejo"] as const) : (["licencia"] as const)) {
+      const cargado = d(-azarRelevo.entero(46, 300));
+      documentos.push({
+        id: id("d", "d", 4),
+        titular: { tipo: "conductor", id: c.id },
+        tipo,
+        numero: `DEMO-${PREFIJO_NUMERO[tipo]}-${azarRelevo.entero(1000, 9999)}`,
+        emisor: EMISORES[tipo],
+        vence: d(azarRelevo.entero(60, 400)),
+        emitido: cargado,
+        cargado: en(cargado, 12),
+        reemplazaA: null,
+      });
+    }
+  });
+  const unidadesSinConductor = unidades.filter((x) => x.conductorId === null);
+  /** M3: quién maneja la unidad sin conductor asignado número `turno` (0 es la primera) el día `n`: el de relevo `(turno + n) mod 8`. */
+  const deRelevoEl = (turno: number, n: number): string => (conductoresDeRelevo[(((turno + n) % CONDUCTORES_DE_RELEVO) + CONDUCTORES_DE_RELEVO) % CONDUCTORES_DE_RELEVO] as Conductor).id;
   const NIVELES: readonly NivelCombustible[] = ["reserva", "cuarto", "medio", "tres-cuartos", "lleno"];
 
   /** Último día (relativo a H) con parte cerrado, según el papel de la unidad. */
@@ -479,9 +521,9 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
     let km = azar.entero(20000, 180000);
     for (let n = -DIAS_DE_PARTES; n <= ultimo; n++) {
       const fecha = d(n);
-      let conductorId = u.conductorId ?? (azar.elegir(conductores) as Conductor).id;
-      // C21: el conductor sin licencia (venció en H - 3) no firma partes de H - 2 en adelante: en esos días lo releva otro conductor activo con licencia vigente (L1).
-      if (conductorId === conductorC21.id && n > -3) conductorId = (conductores[0] as Conductor).id;
+      let conductorId = u.conductorId ?? deRelevoEl(unidadesSinConductor.indexOf(u), n);
+      // C21: el conductor sin licencia (venció en H - 3) no firma partes de H - 2 en adelante: en esos días lo releva un conductor de relevo con licencia vigente (L1), el del turno libre.
+      if (conductorId === conductorC21.id && n > -3) conductorId = deRelevoEl(unidadesSinConductor.length - 1, n);
       const recorrido = azar.entero(40, 260);
       const combustible = azar.elegir(NIVELES);
       const litros = azar.probabilidad(0.3) ? azar.entero(200, 800) / 10 : null;
@@ -492,7 +534,6 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
       const advertencias: Advertencia[] = [];
       const checklist = checklistCompleto();
       let otraNovedad: Parte["otraNovedad"] = null;
-      let documentacionVencida: TipoDocumento[] = [];
 
       // C20: el tablero se cambió en H - 20; desde ahí el kilometraje parte de la base 120.
       if (rol === "c20" && n === -20) {
@@ -522,11 +563,6 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
       if (rol === "c15" && n === -4) {
         km += 1250;
         advertencias.push({ tipo: "salto-km", km: 1250 });
-      }
-      // C18: parte de H - 6 con la revisión técnica vencida (venció en H - 7), enviado con la advertencia aceptada.
-      if (rol === "c18" && n === -6) {
-        documentacionVencida = ["revision-tecnica"];
-        advertencias.push({ tipo: "documentacion-vencida", documentos: ["revision-tecnica"] });
       }
       // C19: una luz de patente quemada, informada como "otra novedad" y todavía abierta.
       if (rol === "c19" && n === -9) otraNovedad = { descripcion: "Luz de patente quemada", impideUso: false };
@@ -567,7 +603,7 @@ export function generar(semilla: number, fechaBase: FechaCivil): Estado {
         checklist,
         otraNovedad,
         advertenciasAceptadas: advertencias,
-        documentacionVencida,
+        documentacionVencida: [],
         creado: en(fecha, 8, 0),
         actualizado: enviado,
         enviado,

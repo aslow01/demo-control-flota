@@ -32,7 +32,7 @@ export interface ContextoRenovar {
   documentoId: string;
   /** «Renovar: Seguro de ZK 214 BD». */
   titulo: string;
-  /** «Vigente: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día).» */
+  /** «Actual: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día).» */
   contexto: string;
   nombreDocumento: string;
   titularEtiqueta: string;
@@ -232,7 +232,9 @@ export interface ContextoCargarOtro {
 export function tiposParaCargar(estado: Estado, unidadId: string): TipoDocumento[] {
   const u = estado.unidades.find((x) => x.id === unidadId);
   if (u === undefined || u.estado.tipo === "baja") return [];
-  return REQUISITOS.filter((r) => r.titular === "unidad" && documentoVigente(estado.documentos, { tipo: "unidad", id: u.id }, r.tipo) === undefined).map((r) => r.tipo);
+  return REQUISITOS.filter((r) => r.titular === "unidad" && documentoVigente(estado.documentos, { tipo: "unidad", id: u.id }, r.tipo) === undefined).map(
+    (r) => r.tipo,
+  );
 }
 
 /** `null` si no hay ningún tipo para cargar. */

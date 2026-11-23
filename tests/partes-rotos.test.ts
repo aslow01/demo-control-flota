@@ -49,7 +49,7 @@ describe("D7 y código M1: el arranque normaliza los partes con `parteLegible`",
       expect(leido).toBeDefined();
       expect(Array.isArray(leido?.documentacionVencida)).toBe(true);
       expect(Array.isArray(leido?.advertenciasAceptadas)).toBe(true);
-      expect(Object.keys(leido?.checklist ?? {})).toHaveLength(10);
+      expect(Object.keys(leido?.checklist ?? {})).toHaveLength(14);
       expect(leido?.kmInicio === null || typeof leido?.kmInicio === "number").toBe(true);
     });
   }
