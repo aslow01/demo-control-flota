@@ -521,7 +521,7 @@ describe("opciones del diálogo «¿Quién completa el parte?» (L1)", () => {
 describe("pantalla del parte, edición (6.5)", () => {
   const ver = (e: Estado, perfil: Perfil, patente = "ZK214BD", fecha = H) => vistaDeParte(e, H, perfil, patente, fecha);
 
-  it("parte nuevo de hoy con el perfil Conductor: P13 (conductor y kilometraje inicial ya completados), ayuda del último registro y diez puntos", () => {
+  it("parte nuevo de hoy con el perfil Conductor: P13 (conductor y kilometraje inicial ya completados), ayuda del último registro y catorce puntos", () => {
     const v = ver(flotaDePrueba(), COND);
     expect(v.tipo).toBe("edicion");
     if (v.tipo !== "edicion") return;
@@ -546,9 +546,9 @@ describe("pantalla del parte, edición (6.5)", () => {
       ayudaLitros: "Déjelo vacío si no cargó.",
     });
     expect(v.valoresIniciales).toMatchObject({ conductorId: "c1", kmInicio: "84.320", kmFin: "", combustible: "" });
-    expect(v.puntos).toHaveLength(10);
+    expect(v.puntos).toHaveLength(14);
     expect(v.puntos[0]).toEqual({ id: "frenos", texto: "Frenos", critico: true, notaCritica: "Al enviar la revisión, la unidad queda fuera de servicio y no sale, hasta que el encargado resuelva la novedad y la vuelva a poner en servicio." });
-    expect(v.puntos[5]).toEqual({ id: "niveles", texto: "Niveles de aceite y agua", critico: false, notaCritica: null });
+    expect(v.puntos[7]).toEqual({ id: "niveles", texto: "Niveles de aceite y agua", critico: false, notaCritica: null });
     expect(v.combustible.map((o) => o.valor)).toEqual(["reserva", "cuarto", "medio", "tres-cuartos", "lleno"]);
   });
 
@@ -909,7 +909,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       titulo: "Parte del miércoles 18/11/2026",
       patenteTexto: "ZK 214 BD",
       conductor: "Luis Ferreyra",
-      puntosEnOrden: "9 puntos en orden: Dirección, Neumáticos y rueda de auxilio, Luces y balizas, Cinturones de seguridad, Niveles de aceite y agua, Matafuego a bordo, Botiquín y kit de emergencia, Documentación a bordo, Orden y limpieza de la cabina",
+      puntosEnOrden: "13 puntos en orden: Dirección, Neumáticos y rueda de auxilio, Luces y balizas, Cinturones de seguridad, Pértiga con banderola y baliza, Alarma de retroceso, Niveles de aceite y agua, Matafuego a bordo, Botiquín y kit de emergencia, Documentación a bordo, Orden y limpieza de la cabina, Calzas y kit antiderrame, Radio de comunicación",
       vuelta: { texto: "Ficha de ZK 214 BD", href: "#/unidad/ZK214BD" },
     });
     expect(v.novedades).toEqual([
@@ -919,7 +919,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     expect(v.panel.titulo).toBe("Parte cerrado");
   });
 
-  it("sin puntos en orden (los diez con novedad) no hay línea de «puntos en orden»", () => {
+  it("sin puntos en orden (los catorce con novedad) no hay línea de «puntos en orden»", () => {
     const checklist = Object.fromEntries(Object.keys(checklistEnOrden()).map((k) => [k, { estado: "con-novedad" as const, descripcion: "xx x", impideUso: false }])) as ReturnType<typeof checklistEnOrden>;
     const { estado } = enviado(flotaDePrueba(), { checklist });
     const v = vistaDeParte(estado, H, COND, "ZK214BD", H);

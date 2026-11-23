@@ -76,11 +76,15 @@ export function checklistVacio(): Parte["checklist"] {
     neumaticos: sin,
     luces: sin,
     cinturones: sin,
+    perticaBaliza: sin,
+    alarmaRetroceso: sin,
     niveles: sin,
     matafuego: sin,
     botiquin: sin,
     documentacion: sin,
     cabina: sin,
+    calzasAntiderrame: sin,
+    radio: sin,
   };
 }
 
@@ -92,11 +96,15 @@ export function checklistEnOrden(): Parte["checklist"] {
     neumaticos: ok,
     luces: ok,
     cinturones: ok,
+    perticaBaliza: ok,
+    alarmaRetroceso: ok,
     niveles: ok,
     matafuego: ok,
     botiquin: ok,
     documentacion: ok,
     cabina: ok,
+    calzasAntiderrame: ok,
+    radio: ok,
   };
 }
 

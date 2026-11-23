@@ -157,11 +157,15 @@ export const NOMBRES_ITEM_CHECKLIST = {
   neumaticos: "Neumáticos y rueda de auxilio",
   luces: "Luces y balizas",
   cinturones: "Cinturones de seguridad",
+  perticaBaliza: "Pértiga con banderola y baliza",
+  alarmaRetroceso: "Alarma de retroceso",
   niveles: "Niveles de aceite y agua",
   matafuego: "Matafuego a bordo",
   botiquin: "Botiquín y kit de emergencia",
   documentacion: "Documentación a bordo",
   cabina: "Orden y limpieza de la cabina",
+  calzasAntiderrame: "Calzas y kit antiderrame",
+  radio: "Radio de comunicación",
 } as const;
 
 /** V12: un obligatorio sin documento. */

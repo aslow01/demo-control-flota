@@ -82,11 +82,15 @@ export type ItemChecklist =
   | "neumaticos"
   | "luces"
   | "cinturones"
+  | "perticaBaliza"
+  | "alarmaRetroceso"
   | "niveles"
   | "matafuego"
   | "botiquin"
   | "documentacion"
-  | "cabina";
+  | "cabina"
+  | "calzasAntiderrame"
+  | "radio";
 
 export type RespuestaItem =
   | { estado: "sin-responder" }

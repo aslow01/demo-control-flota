@@ -354,7 +354,7 @@ export function textoBarraDeEnvio(v: ValoresParte, paso: PasoDelParte = "revisio
   return barraDeEnvio(v, paso, camposDelIntento).texto;
 }
 
-/** «Respondidos: 3 de 10» (5.12). */
+/** «Respondidos: 3 de 14» (5.12). */
 export function respondidos(v: ValoresParte): number {
   return ITEMS_CHECKLIST.filter((i) => v.checklist[i.id].respuesta !== "").length;
 }

@@ -43,7 +43,7 @@ describe("valores iniciales y de un parte guardado (P13)", () => {
     const v = valoresIniciales({ conductorId: "c1", kmInicio: 84320 });
     expect(v).toMatchObject({ conductorId: "c1", kmInicio: "84.320", kmFin: "", combustible: "", litros: "", otraNovedad: { descripcion: "", impideUso: false } });
     expect(Object.values(v.checklist).every((i) => i.respuesta === "" && i.descripcion === "" && !i.impideUso)).toBe(true);
-    expect(Object.keys(v.checklist)).toHaveLength(10);
+    expect(Object.keys(v.checklist)).toHaveLength(14);
   });
 
   it("sin kilometraje previo ni conductor, los campos arrancan vacíos", () => {
@@ -247,13 +247,13 @@ describe("P4: qué falta para enviar la revisión, en el orden del formulario", 
     expect(faltantesDeValores(completos({ kmInicio: "abc" }))).toEqual([]);
   });
 
-  it("respondidos: «3 de 10»", () => {
+  it("respondidos: «3 de 14»", () => {
     const v = valoresIniciales({ conductorId: "c1", kmInicio: 1 });
     v.checklist.frenos.respuesta = "en-orden";
     v.checklist.luces.respuesta = "con-novedad";
     v.checklist.cabina.respuesta = "en-orden";
     expect(respondidos(v)).toBe(3);
-    expect(respondidos(completos())).toBe(10);
+    expect(respondidos(completos())).toBe(14);
   });
 });
 
@@ -306,12 +306,12 @@ describe("P4: qué falta para cerrar el parte", () => {
 });
 
 describe("5.15: el resumen de errores al enviar", () => {
-  it("enviar la revisión vacía (solo con el inicio precargado y el conductor): faltan 10 datos, en el orden del formulario y con un mensaje por campo", () => {
+  it("enviar la revisión vacía (solo con el inicio precargado y el conductor): faltan 14 datos, en el orden del formulario y con un mensaje por campo", () => {
     const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
     expect(e).not.toBeNull();
     if (e === null) return;
-    expect(e.titulo).toBe("Faltan 10 datos para enviar la revisión");
-    expect(e.lista.map((x) => x.campo)).toEqual(["frenos", "direccion", "neumaticos", "luces", "cinturones", "niveles", "matafuego", "botiquin", "documentacion", "cabina"]);
+    expect(e.titulo).toBe("Faltan 14 datos para enviar la revisión");
+    expect(e.lista.map((x) => x.campo)).toEqual(["frenos", "direccion", "neumaticos", "luces", "cinturones", "perticaBaliza", "alarmaRetroceso", "niveles", "matafuego", "botiquin", "documentacion", "cabina", "calzasAntiderrame", "radio"]);
     expect(e.porCampo.frenos).toBe("Elija una opción para Frenos.");
     expect(e.porCampo.neumaticos).toBe("Elija una opción para Neumáticos y rueda de auxilio.");
     expect(e.general).toBeNull();
@@ -354,8 +354,8 @@ describe("5.15: el resumen de errores al enviar", () => {
 
   it("D1: con más de 3 puntos sin responder el resumen es un solo enlace al primero; con 3 o menos, uno por punto", () => {
     const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
-    expect(e?.lista).toHaveLength(10); // el mensaje por campo no cambia: cada punto sigue diciendo qué le falta
-    expect(agruparResumen(e?.lista ?? [])).toEqual([{ campo: "frenos", mensaje: "Faltan 10 puntos de la revisión" }]);
+    expect(e?.lista).toHaveLength(14); // el mensaje por campo no cambia: cada punto sigue diciendo qué le falta
+    expect(agruparResumen(e?.lista ?? [])).toEqual([{ campo: "frenos", mensaje: "Faltan 14 puntos de la revisión" }]);
 
     const tres = completos();
     for (const c of ["frenos", "luces", "cabina"] as const) tres.checklist[c] = { respuesta: "", descripcion: "", impideUso: false };
@@ -376,7 +376,7 @@ describe("5.15: el resumen de errores al enviar", () => {
     expect(agruparResumen(e?.lista ?? []).map((x) => [x.campo, x.mensaje])).toEqual([
       ["conductor", "Elija quién conduce la unidad."],
       ["kmInicio", "Escriba el kilometraje al iniciar."],
-      ["frenos", "Faltan 10 puntos de la revisión"],
+      ["frenos", "Faltan 14 puntos de la revisión"],
       ["otraNovedad", "Cuente qué pasó en «Otra novedad» (al menos 3 caracteres) o déjela vacía."],
     ]);
   });
@@ -387,20 +387,20 @@ describe("5.15: el resumen de errores al enviar", () => {
     v.checklist.luces = { respuesta: "con-novedad", descripcion: "x".repeat(501), impideUso: false };
     const e = validarParaEnviar(v);
     expect(agruparResumen(e?.lista ?? [])).toEqual([
-      { campo: "frenos", mensaje: "Faltan 9 puntos de la revisión" },
+      { campo: "frenos", mensaje: "Faltan 13 puntos de la revisión" },
       { campo: "luces", mensaje: "La descripción no puede superar 500 caracteres." },
     ]);
   });
 
   it("D1: agruparResumen se puede volver a aplicar a la parte que sigue vigente (a medida que se completan los puntos)", () => {
     const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
-    const quedan = (e?.lista ?? []).slice(6); // quedan 4
-    expect(agruparResumen(quedan)).toEqual([{ campo: "matafuego", mensaje: "Faltan 4 puntos de la revisión" }]);
+    const quedan = (e?.lista ?? []).slice(10); // quedan 4
+    expect(agruparResumen(quedan)).toEqual([{ campo: "documentacion", mensaje: "Faltan 4 puntos de la revisión" }]);
     expect(agruparResumen(quedan.slice(1))).toEqual(quedan.slice(1)); // quedan 3: uno por punto
   });
 
   it("CAMPOS_PARTE es el orden del formulario: la revisión y después el cierre", () => {
-    expect(CAMPOS_PARTE).toEqual(["conductor", "kmInicio", "frenos", "direccion", "neumaticos", "luces", "cinturones", "niveles", "matafuego", "botiquin", "documentacion", "cabina", "otraNovedad", "kmFin", "combustible", "litrosCargados"]);
+    expect(CAMPOS_PARTE).toEqual(["conductor", "kmInicio", "frenos", "direccion", "neumaticos", "luces", "cinturones", "perticaBaliza", "alarmaRetroceso", "niveles", "matafuego", "botiquin", "documentacion", "cabina", "calzasAntiderrame", "radio", "otraNovedad", "kmFin", "combustible", "litrosCargados"]);
   });
 });
 

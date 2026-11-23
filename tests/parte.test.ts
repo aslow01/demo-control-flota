@@ -29,18 +29,22 @@ function con(checklist: Parte["checklist"], cambios: Partial<Parte["checklist"]>
 }
 
 describe("ITEMS_CHECKLIST (5.2)", () => {
-  it("tiene los diez ítems en orden, cinco críticos", () => {
+  it("tiene los catorce ítems en orden, siete críticos (M2: cuatro puntos de minería, dos de ellos críticos)", () => {
     expect(ITEMS_CHECKLIST.map((i) => i.id)).toEqual([
       "frenos",
       "direccion",
       "neumaticos",
       "luces",
       "cinturones",
+      "perticaBaliza",
+      "alarmaRetroceso",
       "niveles",
       "matafuego",
       "botiquin",
       "documentacion",
       "cabina",
+      "calzasAntiderrame",
+      "radio",
     ]);
     expect(ITEMS_CHECKLIST.filter((i) => i.critico).map((i) => i.id)).toEqual([
       "frenos",
@@ -48,9 +52,17 @@ describe("ITEMS_CHECKLIST (5.2)", () => {
       "neumaticos",
       "luces",
       "cinturones",
+      "perticaBaliza",
+      "alarmaRetroceso",
     ]);
     expect(ITEMS_CHECKLIST[0]?.texto).toBe("Frenos");
     expect(ITEMS_CHECKLIST[2]?.texto).toBe("Neumáticos y rueda de auxilio");
+    expect(ITEMS_CHECKLIST.filter((i) => ["perticaBaliza", "alarmaRetroceso", "calzasAntiderrame", "radio"].includes(i.id)).map((i) => i.texto)).toEqual([
+      "Pértiga con banderola y baliza",
+      "Alarma de retroceso",
+      "Calzas y kit antiderrame",
+      "Radio de comunicación",
+    ]);
   });
 });
 
@@ -368,7 +380,7 @@ describe("P13: borrador nuevo", () => {
     expect(p.enviado).toBeNull();
     expect(p.creado).toBe("2026-11-18T12:00:00.000Z");
     expect(Object.values(p.checklist).every((r) => r.estado === "sin-responder")).toBe(true);
-    expect(Object.keys(p.checklist)).toHaveLength(10);
+    expect(Object.keys(p.checklist)).toHaveLength(14);
   });
 
   it("P13: sin registros de kilometraje, kmInicio queda vacío", () => {

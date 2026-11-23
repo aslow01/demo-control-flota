@@ -374,15 +374,15 @@ function valoresDeCierre(app: EstadoApp, cambios: Partial<ValoresParte> = {}): V
 const parteDeHoy = (app: EstadoApp, patente: string, fecha = H) => estadoDe(app).partes.find((p) => p.unidadId === idDe(app, patente) && p.fecha === fecha);
 
 describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
-  it("enviar vacío: resumen con los 10 puntos que faltan, en el orden del formulario, con el foco en el resumen; no se guarda nada", async () => {
+  it("enviar vacío: resumen con los 14 puntos que faltan, en el orden del formulario, con el foco en el resumen; no se guarda nada", async () => {
     const { app, repo } = await iniciada({ perfil: C01, patente: "ZYN469" });
     const antes = await repo.cargar();
     const r = await app.enviarRevisionDeParte(idDe(app, "ZYN469"), H, edicion(app).valoresIniciales);
     expect(r.tipo).toBe("errores");
     if (r.tipo !== "errores") return;
     expect(r.foco).toBe("resumen-de-errores");
-    expect(r.errores.titulo).toBe("Faltan 10 datos para enviar la revisión");
-    expect(r.errores.lista.map((e) => e.campo)).toEqual(["frenos", "direccion", "neumaticos", "luces", "cinturones", "niveles", "matafuego", "botiquin", "documentacion", "cabina"]);
+    expect(r.errores.titulo).toBe("Faltan 14 datos para enviar la revisión");
+    expect(r.errores.lista.map((e) => e.campo)).toEqual(["frenos", "direccion", "neumaticos", "luces", "cinturones", "perticaBaliza", "alarmaRetroceso", "niveles", "matafuego", "botiquin", "documentacion", "cabina", "calzasAntiderrame", "radio"]);
     expect(r.primerCampo).toBe("frenos");
     expect(await repo.cargar()).toEqual(antes);
   });
@@ -392,7 +392,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const v = edicion(app).valoresIniciales;
     v.checklist.frenos = { respuesta: "en-orden", descripcion: "", impideUso: false };
     const r = await app.enviarRevisionDeParte(idDe(app, "ZYN469"), H, v);
-    expect(r.tipo === "errores" && r.errores.titulo).toBe("Faltan 9 datos para enviar la revisión");
+    expect(r.tipo === "errores" && r.errores.titulo).toBe("Faltan 13 datos para enviar la revisión");
     expect(estadoDe(app).partes.find((x) => x.id === "nuevo-1")).toMatchObject({ estado: "borrador", revisado: null });
     expect(estadoDe(app).partes.find((x) => x.id === "nuevo-1")?.checklist.frenos).toEqual({ estado: "en-orden" });
   });

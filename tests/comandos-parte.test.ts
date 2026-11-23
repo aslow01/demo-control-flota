@@ -672,6 +672,22 @@ describe("enviarRevision: documentación de la unidad (P21) y novedades (A3, P11
     expect(kmActual("u1", r.estado.partes, r.estado.correccionesKm)).toBe(84320);
   });
 
+  it("M2: la alarma de retroceso y la pértiga con baliza son críticas (la unidad no sale); las calzas y la radio, no (novedad normal, la unidad sigue en uso)", () => {
+    for (const item of ["alarmaRetroceso", "perticaBaliza"] as const) {
+      const checklist = { ...checklistEnOrden(), [item]: { estado: "con-novedad" as const, descripcion: "No suena", impideUso: false } };
+      const r = conRevision(flotaDePrueba(), listo({ checklist }));
+      expect(parteDe(r.estado, r.parteId)).toMatchObject({ estado: "enviado", sinSalida: true });
+      expect(r.estado.unidades[0]?.estado).toMatchObject({ tipo: "fuera-de-servicio", origen: "novedad-critica" });
+    }
+    for (const item of ["calzasAntiderrame", "radio"] as const) {
+      const checklist = { ...checklistEnOrden(), [item]: { estado: "con-novedad" as const, descripcion: "Falta una", impideUso: false } };
+      const r = conRevision(flotaDePrueba(), listo({ checklist }));
+      expect(parteDe(r.estado, r.parteId)).toMatchObject({ estado: "en-uso", sinSalida: false });
+      expect(r.estado.novedades).toMatchObject([{ gravedad: "normal" }]);
+      expect(r.estado.unidades[0]?.estado).toEqual({ tipo: "en-servicio" });
+    }
+  });
+
   it("P16 + P21: con el seguro vencido y frenos con novedad se bloquea igual: la unidad no sale por los papeles, no por los frenos", () => {
     const e = conSeguroQueVence(flotaDePrueba(), "2026-11-15");
     const checklist = { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "Pedal blando", impideUso: false } };

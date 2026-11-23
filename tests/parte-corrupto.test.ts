@@ -122,7 +122,7 @@ describe("las pantallas con un borrador roto", () => {
   it("el inicio del conductor cuenta lo que falta de un borrador roto sin romperse", () => {
     const e = conBorradorRoto({ checklist: null, combustible: 5, kmFin: null });
     const v = inicioDelConductor(e, calcularAlertas(e, H), H, { tipo: "conductor", conductorId: "c1" });
-    expect(v?.hoyEstado).toMatchObject({ tipo: "borrador", texto: "Tiene una revisión empezada: faltan 10 datos." });
+    expect(v?.hoyEstado).toMatchObject({ tipo: "borrador", texto: "Tiene una revisión empezada: faltan 14 datos." });
   });
 
   it("el inicio del conductor y los últimos partes ignoran un parte enviado con los kilómetros rotos", () => {

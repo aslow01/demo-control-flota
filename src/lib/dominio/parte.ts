@@ -31,18 +31,26 @@ export interface ItemInfo {
   critico: boolean;
 }
 
-/** 5.2: los diez ítems del checklist, en este orden. */
+/**
+ * 5.2 y M2: los catorce ítems del checklist, en este orden: los diez de una flota cualquiera más cuatro que se piden en un proyecto minero. Un ítem crítico con novedad deja la unidad
+ * fuera de servicio (A3, P16). Críticos: los cinco de seguridad vial y, de los de minería, la pértiga con banderola y baliza y la alarma de retroceso (sin ellas una unidad no ingresa a
+ * la mina). Calzas y kit antiderrame y radio no lo son: si faltan se informan y, si hay que frenar la unidad, el conductor marca «Impide usar la unidad». Los críticos van juntos, primero.
+ */
 export const ITEMS_CHECKLIST: readonly ItemInfo[] = [
   { id: "frenos", texto: NOMBRES_ITEM_CHECKLIST.frenos, critico: true },
   { id: "direccion", texto: NOMBRES_ITEM_CHECKLIST.direccion, critico: true },
   { id: "neumaticos", texto: NOMBRES_ITEM_CHECKLIST.neumaticos, critico: true },
   { id: "luces", texto: NOMBRES_ITEM_CHECKLIST.luces, critico: true },
   { id: "cinturones", texto: NOMBRES_ITEM_CHECKLIST.cinturones, critico: true },
+  { id: "perticaBaliza", texto: NOMBRES_ITEM_CHECKLIST.perticaBaliza, critico: true },
+  { id: "alarmaRetroceso", texto: NOMBRES_ITEM_CHECKLIST.alarmaRetroceso, critico: true },
   { id: "niveles", texto: NOMBRES_ITEM_CHECKLIST.niveles, critico: false },
   { id: "matafuego", texto: NOMBRES_ITEM_CHECKLIST.matafuego, critico: false },
   { id: "botiquin", texto: NOMBRES_ITEM_CHECKLIST.botiquin, critico: false },
   { id: "documentacion", texto: NOMBRES_ITEM_CHECKLIST.documentacion, critico: false },
   { id: "cabina", texto: NOMBRES_ITEM_CHECKLIST.cabina, critico: false },
+  { id: "calzasAntiderrame", texto: NOMBRES_ITEM_CHECKLIST.calzasAntiderrame, critico: false },
+  { id: "radio", texto: NOMBRES_ITEM_CHECKLIST.radio, critico: false },
 ];
 
 export const DIAS_ATRAS_PARTE = 7;
@@ -316,11 +324,15 @@ export function nuevoBorrador(entrada: EntradaBorrador): Parte {
       neumaticos: sin,
       luces: sin,
       cinturones: sin,
+      perticaBaliza: sin,
+      alarmaRetroceso: sin,
       niveles: sin,
       matafuego: sin,
       botiquin: sin,
       documentacion: sin,
       cabina: sin,
+      calzasAntiderrame: sin,
+      radio: sin,
     },
     otraNovedad: null,
     advertenciasAceptadas: [],

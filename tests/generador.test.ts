@@ -109,7 +109,7 @@ describe("D3: todo es ficticio y se nota", () => {
   });
 
   it("D3: los nombres salen de las listas inventadas y no se repiten", () => {
-    expect(e.conductores).toHaveLength(16);
+    expect(e.conductores).toHaveLength(24);
     const completos = new Set<string>();
     for (const c of e.conductores) {
       const [nombre, apellido] = c.nombre.split(" ");
@@ -117,7 +117,7 @@ describe("D3: todo es ficticio y se nota", () => {
       expect(APELLIDOS).toContain(apellido);
       completos.add(c.nombre);
     }
-    expect(completos.size).toBe(16);
+    expect(completos.size).toBe(24);
     expect(ENCARGADA).toBe("Rocío Medina");
     expect(NOMBRES).not.toContain("Rocío");
     expect(APELLIDOS).not.toContain("Medina");
@@ -421,6 +421,27 @@ describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
     }
   });
 
+  it("M3: ningún conductor tiene más de un parte por día; los 8 de relevo no tienen unidad propia y se turnan en las unidades sin conductor asignado", () => {
+    const porDia = new Map<string, number>();
+    for (const p of e.partes) porDia.set(`${p.conductorId}|${p.fecha}`, (porDia.get(`${p.conductorId}|${p.fecha}`) ?? 0) + 1);
+    expect([...porDia].filter(([, n]) => n > 1)).toEqual([]);
+    const conUnidad = new Set(e.unidades.flatMap((u) => (u.conductorId === null ? [] : [u.conductorId])));
+    const sinUnidad = e.conductores.filter((c) => !conUnidad.has(c.id));
+    expect(conUnidad.size).toBe(16);
+    expect(sinUnidad).toHaveLength(8);
+    // las unidades sin conductor asignado las conducen solo los de relevo, y ellos solo conducen esas unidades
+    const sinConductor = new Set(e.unidades.filter((u) => u.conductorId === null).map((u) => u.id));
+    for (const p of e.partes) {
+      const esDeRelevo = sinUnidad.some((c) => c.id === p.conductorId);
+      expect(esDeRelevo, `${p.unidadId} ${p.fecha}`).toBe(sinConductor.has(p.unidadId) || (p.unidadId === unidad(16).id && p.fecha >= d(-2)));
+    }
+    // todos activos, con licencia vigente a la fecha de cada parte
+    for (const c of sinUnidad) {
+      expect(c.activo).toBe(true);
+      expect((documentoVigente(e.documentos, { tipo: "conductor", id: c.id }, "licencia")?.vence ?? "") > d(30)).toBe(true);
+    }
+  });
+
   it("C21: conductor activo con licencia vencida en H - 3 y unidad asignada que puede salir; los partes de H - 2 y H - 1 los firmó otro conductor con licencia vigente", () => {
     const c = e.conductores.find((x) => documentoVigente(e.documentos, { tipo: "conductor", id: x.id }, "licencia")?.vence === d(-3));
     expect(c).toBeDefined();
@@ -677,4 +698,4 @@ describe("el ejemplo reacciona a los comandos (criterio de la pantalla 4.2)", ()
   });
 });
 
-const HASH_DEL_EJEMPLO = "6e0a70d0";
+const HASH_DEL_EJEMPLO = "384d0e9e";
