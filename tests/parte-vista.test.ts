@@ -267,7 +267,7 @@ describe("inicio del conductor: el orden de los siete estados y la licencia (17.
     const h = inicio(sinSalida)?.hoyEstado;
     expect(h).toMatchObject({ tipo: "enviado", sinSalida: expect.stringMatching(/^Revisión de las \d\d:\d\d: novedad crítica en Frenos\. La unidad no salió\.$/) });
     // P19: aunque se resuelva la novedad y la unidad vuelva a servicio, hoy no sale: el inicio lo dice
-    expect(h).toMatchObject({ hastaManana: "Aunque el encargado resuelva la novedad hoy, la unidad vuelve a salir recién mañana." });
+    expect(h).toMatchObject({ hastaManana: "Aunque el encargado resuelva la novedad hoy, la unidad no vuelve a salir hasta mañana." });
     const resuelta = ejecutarOk(sinSalida, { tipo: "resolverNovedad", novedadId: sinSalida.novedades[0]!.id, texto: "Se cambiaron las pastillas", volverAServicio: true }).estado;
     expect(resuelta.unidades[0]?.estado.tipo).toBe("en-servicio");
     expect(inicio(resuelta)?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: expect.any(String) });

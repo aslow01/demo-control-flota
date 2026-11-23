@@ -96,7 +96,7 @@ export type EstadoDelDia =
   /**
    * Parte cerrado: «Cerrado a las 18:42» + «Ver el parte». Un parte cerrado sin salida (P16) trae `sinSalida`: «Revisión de las 06:52: novedad crítica en Frenos. La
    * unidad no salió.»; la vista lo muestra en lugar de la etiqueta. Con `sinSalida`, `hastaManana` (P19) dice que la unidad no vuelve a salir hoy aunque se resuelva la
-   * novedad: «Aunque el encargado resuelva la novedad hoy, la unidad vuelve a salir recién mañana.»; `null` si el parte salió.
+   * novedad: «Aunque el encargado resuelva la novedad hoy, la unidad no vuelve a salir hasta mañana.»; `null` si el parte salió.
    */
   | { tipo: "enviado"; etiqueta: string; sinSalida: string | null; hastaManana: string | null; enlace: EnlaceDeParte }
   | { tipo: "fuera-de-servicio"; aviso: string }

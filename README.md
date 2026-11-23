@@ -31,9 +31,10 @@ La demo muestra cómo se resuelve con estas ideas:
   podría registrar el recorrido real. Quien no tiene licencia vigente igual puede cerrar un parte anterior. Lo mismo vale
   para el conductor: con un parte sin cerrar en otra unidad, no envía la revisión de una unidad nueva hasta cerrarlo (una
   unidad por conductor).
-- **Hasta mañana:** si la revisión informa una novedad crítica, la unidad queda sin salida y no vuelve a salir ese día,
-  aunque el encargado resuelva la novedad y la devuelva a servicio: hay un solo parte por unidad y por día. Es una regla
-  conservadora, no un límite técnico.
+- **Hasta mañana:** si hay una novedad crítica de hoy, la unidad no vuelve a salir ese día, aunque se repare. Vale tanto
+  para la que informa el conductor en la revisión como para la que el encargado carga a mano como «Impide usar la
+  unidad». Hay un solo parte por unidad y por día, y la flota, la ficha y las alertas muestran «Sin salida hasta mañana».
+  Es una regla conservadora, no un límite técnico.
 - **Aptitud para salir:** cada unidad aparece como «Puede salir» o «No puede salir» según sus documentos, sus novedades
   críticas y si está fuera de servicio. La aptitud se calcula siempre; no se guarda ni se edita a mano. La licencia es del
   conductor, no de la unidad: la unidad de un conductor sin licencia puede salir con otro conductor. «Puede salir» describe la aptitud de la unidad:
@@ -106,8 +107,8 @@ npm run servir       # sirve dist/ con las mismas cabeceras de seguridad que se 
   `default-src 'none'`, todo lo demás limitado al propio origen y `connect-src 'none'`, es decir, la página no puede
   conectarse a ningún servidor. No se usa `{@html}`, `innerHTML` ni `eval`; el texto que escribe la persona se muestra
   siempre como texto.
-- **Tamaño medido (`npm run build`, 22/11/2026):** 117,03 KB de JavaScript comprimido con gzip (el tope fijado es de
-  120 KB). <!-- cifra E7 -->
+- **Tamaño medido (`npm run build`, 22/11/2026):** 118,73 KB de JavaScript comprimido con gzip (el tope fijado es de
+  120 KB).
 - **Accesibilidad:** pensada para el teclado, con foco visible, controles táctiles de 44 px como mínimo, modo claro y
   oscuro, colores forzados y anchos desde 320 px. Lo que se midió y lo que falta probar está más abajo.
 
@@ -143,11 +144,11 @@ Cifras medidas el 22/11/2026:
 
 | Comprobación | Comando | Resultado |
 | --- | --- | --- |
-| Pruebas automáticas | `npm test` | 1.555 pruebas en 57 archivos, todas pasan <!-- cifra E7 --> |
-| Las mismas en tres zonas horarias | `npm run test:tz` | 1.555 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan <!-- cifra E7 --> |
-| Tipos | `npm run check` | 0 errores y 0 avisos en 337 archivos <!-- cifra E7 --> |
-| Contraste de la paleta | `npm run contraste` | 178 mediciones, 0 fallan, 9 pasan por poco margen <!-- cifra E7 --> |
-| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (8 reglas, 194 archivos <!-- cifra E7 -->): sin `{@html}`, sin `eval`, sin `Math.random` en `src/lib`, sin reloj del sistema fuera de `estado/reloj.ts` |
+| Pruebas automáticas | `npm test` | 1.608 pruebas en 59 archivos, todas pasan |
+| Las mismas en tres zonas horarias | `npm run test:tz` | 1.608 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
+| Tipos | `npm run check` | 0 errores y 0 avisos en 339 archivos |
+| Contraste de la paleta | `npm run contraste` | 182 mediciones, 0 fallan, 9 pasan por poco margen |
+| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (8 reglas, 196 archivos): sin `{@html}`, sin `eval`, sin `Math.random` en `src/lib`, sin reloj del sistema fuera de `estado/reloj.ts` |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
 **Probado en un navegador** (Chromium con Playwright, contra la compilación servida con la CSP real; detalle en
@@ -163,8 +164,9 @@ También se midieron los contrastes de texto (0 fallas) y el tamaño de los cont
 al 200 % a 360 px, en «Mis últimos partes» la fecha, la patente y el kilometraje no se superponen (0 px) y ninguna de las
 36 pantallas se desplaza en horizontal (0 px). El informe de esa auditoría no está en este repositorio, igual que los
 guiones de Playwright: no se puede reproducir con un comando.
-**Límite conocido:** a 320 px con el texto al 200 % quedaba un desborde horizontal de 7 a 12 px (en el inicio del conductor y en el
-paso 1 con errores), que se está corrigiendo. <!-- revisar tras la tanda E7 -->
+**Límite conocido:** con el texto al 200 % y a 320 px de ancho, la página ya no se desplaza en horizontal (432
+combinaciones medidas, 0 desbordes). Queda un solo caso: en el centro de alertas, la etiqueta «Circuló con documentación
+vencida» se parte dentro de una palabra, porque necesita unos 255 px y la tarjeta da 222.
 
 **No se probó:**
 

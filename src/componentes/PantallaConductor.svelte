@@ -2,7 +2,7 @@
   // Inicio del conductor (6.4, `#/conductor`): 1) qué unidad es y qué hay que hacer hoy con el parte, 2) lo pendiente de otros días, 3) su licencia, 4) sus últimos
   // partes. No tiene reglas de negocio: todo lo arma `app.inicioDelConductor(unidadElegida)` (lib/estado/parte.ts).
   //  - Panel «Hoy», en ocho estados (el primero que aplica gana; los decide `inicioDelConductor`): sin unidad (solo el `select`), cerrado («Cerrado a las 18:42» o, si no salió, el
-  //    aviso crítico de la revisión con «recién mañana»; «Ver el parte»), en uso («En uso desde las 06:52» y «Cerrar el parte»), unidad fuera de servicio (aviso: no hace falta parte),
+  //    aviso crítico de la revisión con «hasta mañana»; «Ver el parte»), en uso («En uso desde las 06:52» y «Cerrar el parte»), unidad fuera de servicio (aviso: no hace falta parte),
   //    licencia que no ampara hoy (aviso de bloqueo, sin primario y sin «Usar otra unidad»: no cambia nada), «Cerrar antes» (estado 5 bis: aviso semana y «Cerrar el parte anterior»),
   //    borrador («Continuar la revisión» y «Descartar borrador», de dos pasos) y sin parte («Empezar la revisión»). El aviso de «no puede salir» va arriba del botón y el botón sigue (P9).
   //  - Los avisos de dos renglones son el compacto de `Aviso.svelte` (5.18): el hecho en firme y debajo lo que hay que hacer.

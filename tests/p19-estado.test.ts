@@ -97,8 +97,8 @@ describe("P19 ampliada: una crítica cargada a mano y reparada el mismo día tam
   it("el diálogo de resolver no promete que sale ese día (la crítica es de hoy)", () => {
     const g = ejecutarOk(flotaDePrueba(), { tipo: "cargarNovedad", unidadId: "u1", descripcion: "Pierde aceite fuerte", impideUso: true });
     const c = contextoDeResolver(g.estado, g.estado.novedades[0]!.id, H);
-    expect(c?.etiquetaVolverAServicio).toBe("Volver a servicio (sale recién mañana)");
-    expect(c?.notaVolverAServicio).toContain("vuelve a salir recién mañana");
+    expect(c?.etiquetaVolverAServicio).toBe("Volver a servicio (sale desde mañana)");
+    expect(c?.notaVolverAServicio).toContain("vuelve a salir a partir de mañana");
   });
 
   it("una crítica de un día anterior reparada hoy no cierra el día de hoy", () => {
@@ -169,8 +169,8 @@ describe("todas las vistas dicen lo mismo", () => {
     expect(item).toMatchObject({ categoria: "no-puede-salir", motivo: MOTIVO });
   });
 
-  it("el inicio del conductor: «recién mañana»", () => {
-    expect(inicioDelConductor(e, r, H, COND)?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: "Aunque el encargado resuelva la novedad hoy, la unidad vuelve a salir recién mañana." });
+  it("el inicio del conductor: «hasta mañana»", () => {
+    expect(inicioDelConductor(e, r, H, COND)?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: "Aunque el encargado resuelva la novedad hoy, la unidad no vuelve a salir hasta mañana." });
   });
 
   it("mañana, la ficha y la flota dicen «Puede salir»", () => {
@@ -183,12 +183,12 @@ describe("todas las vistas dicen lo mismo", () => {
 });
 
 describe("el diálogo de resolver no promete que la unidad vuelve ese día", () => {
-  it("con el parte de hoy sin salida: la nota y la casilla dicen que sale recién mañana", () => {
+  it("con el parte de hoy sin salida: la nota y la casilla dicen que sale desde mañana", () => {
     const e = sinSalidaHoy();
     const c = contextoDeResolver(e, e.novedades[0]!.id, H);
     expect(c?.ofreceVolverAServicio).toBe(true);
-    expect(c?.notaVolverAServicio).toBe("ZK 214 BD está fuera de servicio por esta novedad. Con la casilla marcada, queda en servicio, pero no sale hoy: vuelve a salir recién mañana.");
-    expect(c?.etiquetaVolverAServicio).toBe("Volver a servicio (sale recién mañana)");
+    expect(c?.notaVolverAServicio).toBe("ZK 214 BD está fuera de servicio por esta novedad. Con la casilla marcada, queda en servicio, pero no sale hoy: vuelve a salir a partir de mañana.");
+    expect(c?.etiquetaVolverAServicio).toBe("Volver a servicio (sale desde mañana)");
     expect(`${c?.notaVolverAServicio} ${c?.etiquetaVolverAServicio}`).not.toMatch(/ahora|vuelve a servicio al resolverla/);
   });
 

@@ -174,7 +174,7 @@ export const MOTIVO_APTITUD = {
   fueraDeServicio: (desde: FechaCivil, motivo: string) => `Desde el ${formatearFecha(desde)}: ${minuscula(motivo)}`,
   documentoFaltante: (nombre: string) => `${TEXTO_FALTA_CARGAR}: ${nombre}`,
   novedadCritica: (rotulo: string, origen: string) => `Novedad crítica abierta: ${rotulo} (${origen})`,
-  /** P19: hoy hubo una novedad crítica (en la revisión o cargada a mano); aunque se resuelva, la unidad sale recién mañana. */
+  /** P19: hoy hubo una novedad crítica (en la revisión o cargada a mano); aunque se resuelva, la unidad no sale hasta mañana. */
   sinSalidaHoy: "Sin salida hasta mañana (novedad crítica de hoy)",
 } as const;
 
@@ -1028,9 +1028,9 @@ export const TEXTO_DIALOGOS_FICHA = {
     volverEtiqueta: "Volver a servicio ahora",
     volverNota: (patente: string) => `${patente} está fuera de servicio por esta novedad. Con la casilla marcada, vuelve a servicio al resolverla.`,
     /** P19: hoy hubo una novedad crítica; el diálogo no promete que la unidad vuelve a salir ese día. */
-    volverEtiquetaHastaManana: "Volver a servicio (sale recién mañana)",
+    volverEtiquetaHastaManana: "Volver a servicio (sale desde mañana)",
     volverNotaHastaManana: (patente: string) =>
-      `${patente} está fuera de servicio por esta novedad. Con la casilla marcada, queda en servicio, pero no sale hoy: vuelve a salir recién mañana.`,
+      `${patente} está fuera de servicio por esta novedad. Con la casilla marcada, queda en servicio, pero no sale hoy: vuelve a salir a partir de mañana.`,
   },
   cargarNovedad: {
     titulo: (patente: string) => `Cargar novedad de ${patente}`,
@@ -1221,7 +1221,7 @@ export const TEXTO_INICIO_CONDUCTOR = {
   licenciaAvise: "Avise al encargado: cuando cargue una licencia vigente, podrá empezar la revisión.",
   revisionConservada: "Tiene una revisión empezada: se conserva.",
   /** P19: un parte sin salida (novedad crítica en la revisión) cierra el día de esa unidad, aunque se resuelva la novedad. */
-  sinSalidaHastaManana: "Aunque el encargado resuelva la novedad hoy, la unidad vuelve a salir recién mañana.",
+  sinSalidaHastaManana: "Aunque el encargado resuelva la novedad hoy, la unidad no vuelve a salir hasta mañana.",
   licenciaTitulo: "Su licencia",
   ultimosTitulo: "Mis últimos partes",
   ultimosVacio: "Todavía no cerró partes. Los últimos cinco aparecerán aquí.",

@@ -805,10 +805,9 @@ Los avisos son `role="status"` (no `alert`), salvo el de modo en memoria al arra
 **Aviso compacto de dos renglones (C10 del 22/11/2026):** el mismo componente (`Aviso.svelte`) admite una prop
 `accion` (texto opcional). Con `accion`, el aviso tiene renglón 1 `span.aviso-titular` (`--t-cuerpo` 600) y renglón 2
 `span.aviso-accion` (`--t-chico`). Lo usan el aviso "no puede salir" de la unidad (inicio, estados 6 y 7, y paso 1), el
-bloqueo por licencia (estado 5) y "Cerrar antes" (estado 5 bis y pantalla E). Hoy el corte en la última ". " está
-repetido en `ParteEncabezado.svelte` y falta en `PantallaConductor.svelte`: pasa a vivir solo en `Aviso.svelte`. Si la
-lógica entrega los dos renglones por separado, se usan tal cual (`texto` y `accion`); si entrega una sola cadena, la
-corta `Aviso.svelte`, en un único lugar.
+bloqueo por licencia (estado 5) y "Cerrar antes" (estado 5 bis y pantalla E). La lógica entrega
+el aviso ya partido en `{ titular, accion }` y la vista no corta ninguna cadena: `Aviso.svelte` recibe `texto` y `accion`
+tal cual.
 
 ### 5.19 Estados vacío y cargando (piezas)
 
@@ -1770,7 +1769,7 @@ sección 7**: el maquetador los ajusta y lo anota en `docs/registro.md`.
    con `min-height: 2.75rem`. Medir que "Usar otra unidad" empiece en la misma `x` que el primario y que el anillo de
    foco no se corte.
 3. **Aviso compacto** (C10, 5.18): `Aviso.svelte` con prop `accion` (renglón 1 `span.aviso-titular` 600; renglón 2
-   `span.aviso-accion` `--t-chico`). Sacar el corte de `ParteEncabezado.svelte` y usar el aviso compacto en
+   `span.aviso-accion` `--t-chico`). Sin cortar cadenas en la vista (el aviso llega como `{ titular, accion }`) y usar el aviso compacto en
    `PantallaConductor.svelte` (líneas ~91–93, aviso "no puede salir" de los estados 6 y 7).
 4. **Inicio, estado 7** (C3, 6.4): `PantallaConductor.svelte`, rama `sin-parte` (~95): `<p class="nota-estado">
    {inicio.hoyEstado.texto}</p>` antes de `div.accion-principal`.
