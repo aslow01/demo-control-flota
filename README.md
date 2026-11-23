@@ -6,9 +6,16 @@ y ¿qué documentos vencen pronto?** Además, el conductor completa su parte dia
 Funciona entera en el navegador: sin servidor, sin cuenta y sin conexiones externas. Los datos son ficticios y se guardan
 solo en el navegador de quien la abre. Forma parte del portafolio de Matías Ariel Ormeño.
 
-<!-- captura: después de la etapa 7 -->
 <!-- URL de la demo en vivo: pendiente -->
 **Demo en vivo:** todavía no está publicada. Cuando lo esté, el enlace va aquí.
+
+![Centro de alertas con el perfil Encargado: a la izquierda, las 4 unidades que no pueden salir hoy y la conductora sin licencia vigente con el botón «Renovar»; a la derecha, la operación diaria con 6 pendientes.](docs/img/centro-de-alertas.png)
+
+*Centro de alertas (perfil Encargado, 1280 px): qué unidades no pueden salir hoy y por qué (seguro vencido, falta de habilitación, en taller, novedad crítica en frenos), qué conductora no puede manejar hoy (persona ficticia, licencia vencida hace 3 días) y los 6 pendientes de la operación diaria.*
+
+<img src="docs/img/parte-revision-360.png" width="360" alt="Paso 1 del parte diario en un celular (360 px), perfil Conductor: aviso de que la unidad no puede salir por seguro vencido, kilometraje al iniciar y barra de envío con «Faltan 10 datos» y el botón «Enviar revisión».">
+
+*Revisión antes de salir (perfil Conductor, 360 px): el aviso de que la unidad no puede salir aparece antes de completar el parte; la barra inferior dice cuántos datos faltan para enviar.*
 
 ## Qué problema resuelve
 
