@@ -673,7 +673,7 @@ Específicos:
 - El campo "¿Qué encontró?" aparece con el radio (sin animación de alto); recibe el foco **solo** si la persona eligió
   con teclado y presiona Tab (no se mueve el foco solo).
 - **No hay** botón "Marcar todo en orden" (ver sección 10).
-- Encabezado de la sección: "2. Revisión de la unidad" + "Respondidos: 3 de 10" (`--t-chico`, se actualiza; no es
+- Encabezado de la sección: "2. Revisión de la unidad" + "Respondidos: 3 de 14" (`--t-chico`, se actualiza; no es
   región viva: lo anuncia la barra de envío al intentar enviar).
 
 ### 5.13 Selector de combustible
@@ -709,7 +709,7 @@ texto 600 e ícono `i-check`. El valor se lee por el radio, no por la barra.
   ese paso (P4). Los errores de reglas (K2–K4, P2, P8 y, con el perfil Encargado, L1 en el campo Conductor, primero de la
   lista) también van acá, con el texto de la regla. Títulos completos en la sección 7.
 - **Puntos de la revisión agrupados (D1, decidido por Matías el 22/11/2026):** si faltan **más de 3** puntos de la
-  revisión (sección 2 del paso 1), el resumen lleva **un solo enlace** "Faltan 10 puntos de la revisión", en el lugar
+  revisión (sección 2 del paso 1), el resumen lleva **un solo enlace** "Faltan 14 puntos de la revisión", en el lugar
   del primero de ellos (orden del formulario), que lleva al **primer punto sin responder** (foco en su primer radio).
   Con **3 o menos**, un enlace por punto ("Frenos: elija una opción"). En los dos casos, cada punto conserva su borde y
   su mensaje junto a los botones (5.12), y el título sigue contando todos los datos ("Faltan 11 datos para enviar la
@@ -1224,7 +1224,7 @@ el resto de este documento.
 ### 6.5 Parte diario (`#/parte/ZK214BD/2026-11-18`)
 
 Reescrita el 19/11/2026. El parte tiene **dos pasos** (`diseno.md` 17.2): la **revisión antes de salir** (kilometraje
-inicial, los 10 puntos y "Otra novedad") y el **cierre** (kilometraje final y combustible). Jerarquía: 1) qué paso es,
+inicial, los 14 puntos y "Otra novedad") y el **cierre** (kilometraje final y combustible). Jerarquía: 1) qué paso es,
 de qué unidad y qué día; 2) lo que falta; 3) enviar la revisión o cerrar.
 
 **Qué se muestra en la ruta** (la decide el estado: `diseno.md` 17.5):
@@ -1280,7 +1280,7 @@ anterior ("Parte del miércoles 18/11/2026" ocupaba dos renglones a 360 px), as�
 │ (parte del 17/11/2026).      │
 │ [ 84.320            ] km     │
 │ ─ 2. Revisión de la unidad ─ │ h2
-│   Respondidos: 3 de 10       │
+│   Respondidos: 3 de 14       │
 │ Frenos                       │
 │ [⬣ Punto crítico]            │ debajo del nombre a < 40rem (C12)
 │ [✓ En orden ][! Con novedad] │ 48 px
@@ -1328,7 +1328,7 @@ anterior ("Parte del miércoles 18/11/2026" ocupaba dos renglones a 360 px), as�
 │ │ Revisión enviada a las   │ │ borde 1 px --c-borde, --r-2, relleno --e-3
 │ │ 06:52 · Al iniciar:      │ │
 │ │ 84.320 km · Sin novedades│ │
-│ │ ▸ Ver la revisión        │ │ details: los 10 puntos en lectura
+│ │ ▸ Ver la revisión        │ │ details: los 14 puntos en lectura
 │ └──────────────────────────┘ │
 │ (resumen de errores, si hay) │
 │ ─ 1. Kilometraje al terminar │ h2
@@ -1521,7 +1521,7 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 | Historial | "Revisión antes de salir · 84.320 km · sin novedades" · "· 1 novedad: {punto}" · "· novedad crítica en {punto}: la unidad no salió" · "(fuera de plazo)" · "Parte cerrado · 132 km (84.320 → 84.452) · combustible 3/4" · "Ver 10 más" / "Ver 30 más" |
 | Ficha, kilometraje | "84.452 → en uso" · "Sin uso" |
 | Cómo funciona, regla "Vencido o faltante" | "El documento venció o, si es obligatorio, falta cargarlo. Si es de la unidad, la unidad figura como «No puede salir». Si es la licencia del conductor, no puede enviar la revisión ni salir con ninguna unidad." |
-| Cómo funciona, "El parte diario" | "Está pensado para usarse desde el celular y tiene dos pasos. Antes de salir, el conductor carga el kilometraje y controla 10 puntos de revisión de la unidad. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio en ese momento, y la unidad no sale hasta que el encargado resuelva la novedad. Al terminar la jornada, cierra el parte con el kilometraje final y el combustible. Sin licencia de conducir vigente no puede enviar la revisión." |
+| Cómo funciona, "El parte diario" | "Está pensado para usarse desde el celular y tiene dos pasos. Antes de salir, el conductor carga el kilometraje y controla 14 puntos de revisión de la unidad. Una novedad en un punto crítico, o marcada «Impide usar la unidad», deja la unidad fuera de servicio en ese momento, y la unidad no sale hasta que el encargado resuelva la novedad. Al terminar la jornada, cierra el parte con el kilometraje final y el combustible. Sin licencia de conducir vigente no puede enviar la revisión." |
 
 ---
 
@@ -1593,7 +1593,7 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 - Presentar la demo como copia de un sistema existente, nombrar empleadores o clientes, usar nombres de proyectos
   mineros reales.
 - Botones visibles que no hacen nada o que no aplican (si no aplica, no se muestra).
-- **Parte (19/11/2026):** mostrarle al conductor sin licencia vigente el formulario de la revisión (llenaría diez puntos
+- **Parte (19/11/2026):** mostrarle al conductor sin licencia vigente el formulario de la revisión (llenaría catorce puntos
   para nada); ofrecer "Enviar de todos modos" o cualquier advertencia aceptable por la licencia (L1 bloquea); deshabilitar el
   botón en lugar de explicar el bloqueo; pedir kilometraje final o combustible en la revisión, o checklist en el cierre;
   ofrecer "Descartar" en un parte en uso; dibujar un indicador de pasos gráfico (alcanza con "paso 1 de 2"); contar a
@@ -1682,11 +1682,11 @@ Decididas el 22/11/2026 (revisión de la etapa 6, informe de revisión interno (
 
 | # | Pregunta | Decisión | Dónde quedó |
 | --- | --- | --- | --- |
-| D1 | ¿Un enlace por punto sin responder en el resumen de errores? | Matías: agrupar con más de 3 ("Faltan 10 puntos de la revisión", lleva al primero); uno por punto con 3 o menos. | 5.15, 6.5, 7 |
+| D1 | ¿Un enlace por punto sin responder en el resumen de errores? | Matías: agrupar con más de 3 ("Faltan 14 puntos de la revisión", lleva al primero); uno por punto con 3 o menos. | 5.15, 6.5, 7 |
 | D2 | Marca de los nombres inventados | Matías: "(persona ficticia)" en toda la demo. | 4.2, 5.16, 6.1, 6.3, 6.4, 7 |
 | — | "fuera de término" | Matías: "fuera de plazo" en todos los textos. | 5.16, 6.5, 7 |
 | — | Regla "Cerrar antes" | Matías (la lógica la implementa el programador). Vista: estado 5 bis del inicio y E "Cerrar antes", tono semana, con primario. | 6.3, 6.4, 6.5, 7, 8, 12 |
-| — | Desvíos 1, 3 y 4 del maquetador | Matías, como los juzgó `disenador-ui`: "controla 10 puntos de revisión", nota corta en el paso 2, frase de "Antes de enviar" que no depende del número de avisos. | 5.17, 6.5, 7 |
+| — | Desvíos 1, 3 y 4 del maquetador | Matías, como los juzgó `disenador-ui`: "controla 14 puntos de revisión", nota corta en el paso 2, frase de "Antes de enviar" que no depende del número de avisos. | 5.17, 6.5, 7 |
 | — | "Enviar igual" / "Cerrar igual" | `disenador-ui`, sobre la propuesta de `redactor-ux`: "Enviar de todos modos" / "Cerrar de todos modos" (entran a 360 px). | 5.17, 6.5, 7 |
 | — | Enter en los campos del parte (B5 de QA) | `disenador-ui`: no envía; `enterkeyhint` para el teclado del celular. | 5.11 |
 
@@ -1769,7 +1769,7 @@ sección 7**: el maquetador los ajusta y lo anota en `docs/registro.md`.
    - `conductorElegido` y `conductorFicticio`: `` `${nombre} (persona ficticia)` ``; en `Muestras.svelte`, "Lucía
      Ferreyra (persona ficticia)". Actualizar los comentarios que citan "(ficticia)" (`BarraApp`, `ParteEncabezado`,
      `SelectorPerfil`).
-   - `TEXTO_COMO_FUNCIONA.parte`: "… carga el kilometraje y controla 10 puntos de revisión de la unidad. …" (el resto
+   - `TEXTO_COMO_FUNCIONA.parte`: "… carga el kilometraje y controla 14 puntos de revisión de la unidad. …" (el resto
      igual, sección 7).
    - `antesDeEnviar.introRevision`: "Antes de enviar la revisión, lea esto."; `introCierre`: "Antes de cerrar el
      parte, lea esto."; `enviarIgual`: "Enviar de todos modos"; `cerrarIgual`: "Cerrar de todos modos" (se pueden
