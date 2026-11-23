@@ -79,6 +79,9 @@ par("Texto", "texto", "ventana-barra", 4.5);
 par("Texto", "texto-2", "ventana-barra", 4.5);
 par("Texto", "texto-3", "ventana-barra", 4.5);
 par("Texto", "texto", "acento-suave", 4.5);
+// M1: la marca «Para probar: …» del diálogo de conductores (`pendiente-t`) sobre la fila elegida (acento-suave) y con el cursor encima (superficie-2).
+par("Marca «Para probar» (M1, fila elegida)", "pendiente-t", "acento-suave", 4.5);
+par("Marca «Para probar» (M1, cursor encima)", "pendiente-t", "superficie-2", 4.5);
 
 for (const f of ["superficie", "superficie-2", "escritorio", "ventana-barra", "patente-fondo"]) par("Acento (enlace, texto)", "acento", f, 4.5);
 par("Botón primario", "acento-texto", "acento", 4.5);
