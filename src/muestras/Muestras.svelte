@@ -272,7 +272,7 @@
     {@const noPuedeSalir = textoUnidadNoPuedeSalir("ZK 214 BD", ["Seguro vencido hace 1 día"], true)}
     <div data-muestra="no-puede-salir"><Aviso tono="critico" icono="vencido" accion={noPuedeSalir.accion}>{noPuedeSalir.titular}</Aviso></div>
     <p class="nota">De un renglón, para un parte cerrado sin salida (estado 2):</p>
-    <Aviso tono="critico" icono="octogono">Revisión de las 06:52: novedad crítica en Frenos. La unidad no salió.</Aviso>
+    <Aviso tono="critico" icono="octogono">Revisión de las 06:52: novedad crítica en frenos. La unidad no salió.</Aviso>
   </Panel>
 
   <Panel titulo="Horizonte de vencimientos" meta="5.6, paso 4.1" icono="calendario">

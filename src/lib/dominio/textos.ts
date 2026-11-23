@@ -194,10 +194,15 @@ export const TEXTO_ALERTA = {
   sinParte: (ayer: FechaCivil) => `Sin parte de ayer (${formatearFecha(ayer)})`,
 } as const;
 
+/** B2: el nombre de un punto del checklist dentro de una frase va en minúscula («novedad crítica en frenos», no «en Frenos»). */
+export function puntoEnFrase(nombre: string): string {
+  return nombre.toLowerCase();
+}
+
 /** Motivo con que una novedad crítica deja la unidad fuera de servicio (A3). */
 export const MOTIVO_NOVEDAD_CRITICA = {
-  /** El parte se nombra solo si es de otro día que el «Desde» del motivo (`desde`): «Desde el 20/11/2026: novedad crítica en Frenos» no repite la fecha (C3 de la revisión visual). */
-  delParte: (fecha: FechaCivil, items: string, desde: FechaCivil) => `Novedad crítica en ${items}${fecha === desde ? "" : `, parte del ${formatearFecha(fecha)}`}`,
+  /** El parte se nombra solo si es de otro día que el «Desde» del motivo (`desde`): «Desde el 20/11/2026: novedad crítica en frenos» no repite la fecha (C3 de la revisión visual). */
+  delParte: (fecha: FechaCivil, items: string, desde: FechaCivil) => `Novedad crítica en ${puntoEnFrase(items)}${fecha === desde ? "" : `, parte del ${formatearFecha(fecha)}`}`,
   cargada: (fecha: FechaCivil, descripcion: string) => `Novedad crítica cargada el ${formatearFecha(fecha)}: ${descripcion}`,
 } as const;
 
@@ -736,8 +741,8 @@ export function textoDocumentoCargado(tipo: TipoDocumento, titular: string): str
 export const TEXTO_RENOVAR = {
   titulo: (nombre: string, titular: string) => `Renovar: ${nombre} de ${titular}`,
   primario: "Guardar renovación",
-  /** «Vigente: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día).» */
-  vigente: (numero: string, estado: string, sustantivo: string) => `Vigente: ${sustantivo} ${numero}, ${estado}.`,
+  /** «Actual: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día).» */
+  vigente: (numero: string, estado: string, sustantivo: string) => `Actual: ${sustantivo} ${numero}, ${estado}.`,
   vencio: (vence: FechaCivil, dias: number) => `venció el ${formatearFecha(vence)} (hace ${pluralizar(dias, "día", "días")})`,
   venceHoy: (vence: FechaCivil) => `vence hoy (${formatearFecha(vence)})`,
   vence: (vence: FechaCivil, dias: number) => `vence el ${formatearFecha(vence)} (en ${pluralizar(dias, "día", "días")})`,
@@ -1004,11 +1009,11 @@ export function textoKmEnUso(km: number): string {
 
 /**
  * Evento «revision-enviada» en el historial: «Revisión antes de salir · 84.320 km · sin novedades» · «… · 1 novedad: Niveles de aceite y agua» ·
- * «… · novedad crítica en Frenos: la unidad no salió», y «(fuera de plazo)» al final.
+ * «… · novedad crítica en frenos: la unidad no salió», y «(fuera de plazo)» al final.
  */
 export function textoRevisionEnHistorial(r: { kmInicio: number; normales: readonly string[]; criticas: readonly string[]; fueraDePlazo: boolean }): string {
   const partes = ["Revisión antes de salir", `${formatearKm(r.kmInicio)} km`];
-  if (r.criticas.length > 0) partes.push(`novedad crítica en ${r.criticas.join(", ")}: la unidad no salió`);
+  if (r.criticas.length > 0) partes.push(`novedad crítica en ${r.criticas.map(puntoEnFrase).join(", ")}: la unidad no salió`);
   else if (r.normales.length === 0) partes.push("sin novedades");
   else partes.push(`${pluralizar(r.normales.length, "novedad", "novedades")}: ${r.normales.join(", ")}`);
   return `${partes.join(" · ")}${r.fueraDePlazo ? " (fuera de plazo)" : ""}`;
@@ -1292,10 +1297,10 @@ export function textoEnUsoDesde(hora: string): string {
   return `En uso desde las ${hora}`;
 }
 
-/** Parte cerrado sin salida (P16), en el inicio del conductor: «Revisión de las 06:52: novedad crítica en Frenos. La unidad no salió.» */
+/** Parte cerrado sin salida (P16), en el inicio del conductor: «Revisión de las 06:52: novedad crítica en frenos. La unidad no salió.» */
 export function textoSinSalidaDelConductor(hora: string | null, puntos: readonly string[]): string {
   const cuando = hora === null ? "Revisión" : `Revisión de las ${hora}`;
-  const donde = puntos.length === 0 ? "novedad crítica" : `novedad crítica en ${puntos.join(", ")}`;
+  const donde = puntos.length === 0 ? "novedad crítica" : `novedad crítica en ${puntos.map(puntoEnFrase).join(", ")}`;
   return `${cuando}: ${donde}. La unidad no salió.`;
 }
 

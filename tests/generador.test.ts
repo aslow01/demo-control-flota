@@ -371,7 +371,7 @@ describe("D2: casos garantizados (docs/diseno.md, 9.2)", () => {
 
   it("C11: fuera de servicio por una novedad crítica de frenos del parte de H - 2 (y A4 impide volver)", () => {
     const u = unidad(11);
-    expect(u.estado).toMatchObject({ tipo: "fuera-de-servicio", desde: d(-2), origen: "novedad-critica", motivo: "Novedad crítica en Frenos" });
+    expect(u.estado).toMatchObject({ tipo: "fuera-de-servicio", desde: d(-2), origen: "novedad-critica", motivo: "Novedad crítica en frenos" });
     const n = e.novedades.find((x) => x.unidadId === u.id && x.estado === "abierta")!;
     expect(n).toMatchObject({ gravedad: "critica", fecha: d(-2), origen: { tipo: "parte", item: "frenos" } });
     expect(u.estado.tipo === "fuera-de-servicio" && u.estado.novedadIds).toEqual([n.id]);
@@ -698,4 +698,4 @@ describe("el ejemplo reacciona a los comandos (criterio de la pantalla 4.2)", ()
   });
 });
 
-const HASH_DEL_EJEMPLO = "384d0e9e";
+const HASH_DEL_EJEMPLO = "08ce263e";

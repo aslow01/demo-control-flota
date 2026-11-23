@@ -826,7 +826,7 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   usa las etiquetas de 5.7 (Crítica, Abierta, Sin enviar, Sin parte, Con documentación vencida). Acciones: «Resolver» (la novedad; el diálogo es del paso 4.4, hasta
   entonces la fila ofrece su `href` de ficha), «Abrir parte» (al parte de esa fecha) y «Ver ficha».
   (6) *Diálogos.* El primario y el título siguen 5.17 («Renovar: Seguro de ZK 214 BD», «Guardar renovación», «Guardar documento»); «Cargar» lleva el mismo título con «Cargar:».
-  La línea de contexto dice «póliza» para el seguro y «número» para el resto («Vigente: número DEMO-RT-1234, vence el 25/11/2026 (en 7 días).»). `contextoDeRenovar`
+  La línea de contexto dice «póliza» para el seguro y «número» para el resto («Actual: número DEMO-RT-1234, vence el 25/11/2026 (en 7 días).»). `contextoDeRenovar`
   devuelve `null` si el documento ya no es el vigente (se renovó en otra pestaña o ya) y `contextoDeCargar` si ya hay uno vigente: en ese caso no hay diálogo que abrir.
   El `select` «Tipo» de «Cargar otro documento» (ficha) es del paso 4.4.
   (7) *Errores por campo.* El dominio devuelve solo el primer error; para decir todo junto (resumen de 5.15) `validarValores` corre **los mismos validadores** del dominio

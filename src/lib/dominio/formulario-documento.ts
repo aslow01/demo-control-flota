@@ -32,7 +32,7 @@ export interface ContextoRenovar {
   documentoId: string;
   /** «Renovar: Seguro de ZK 214 BD». */
   titulo: string;
-  /** «Vigente: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día).» */
+  /** «Actual: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día).» */
   contexto: string;
   nombreDocumento: string;
   titularEtiqueta: string;

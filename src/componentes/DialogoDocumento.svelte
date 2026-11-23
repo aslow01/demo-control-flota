@@ -3,7 +3,7 @@
 
   export interface ContextoDeDocumento {
     titulo: string;
-    /** Línea de contexto («Vigente: póliza …» al renovar; la nota de «Use esto para corregir…» al corregir). */
+    /** Línea de contexto («Actual: póliza …» al renovar; la nota de «Use esto para corregir…» al corregir). */
     contexto?: string;
     /** La ayuda del emisor, si no es la de siempre (al corregir, el emisor no viene «del documento anterior»). */
     ayudaEmisor?: string;

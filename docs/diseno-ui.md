@@ -729,7 +729,7 @@ texto 600 e ícono `i-check`. El valor se lee por el radio, no por la barra.
   Relleno vertical del evento `--e-2`. **Meta (S8):** ≤ 64 px por evento cerrado a 1280 (medido: 60) y ≤ 100 px a 360
   (medido: 97).
 - **Revisión enviada** (evento `revision-enviada`, ícono `i-parte`): una línea, sin `details`: "Revisión antes de salir
-  · 84.320 km · sin novedades" / "· 1 novedad: Niveles de aceite y agua" / "· novedad crítica en Frenos: la unidad no
+  · 84.320 km · sin novedades" / "· 1 novedad: Niveles de aceite y agua" / "· novedad crítica en frenos: la unidad no
   salió". Fuera de plazo: "(fuera de plazo)" al final.
 - **Parte cerrado** (evento `parte-enviado`): es un `details`; `summary` "Parte cerrado · 132 km (84.320 → 84.452) ·
   combustible 3/4"; al abrir: kilometraje, combustible, litros, los puntos con novedad (texto completo), "8 puntos en
@@ -763,7 +763,7 @@ Inventario de diálogos (los textos finales los pule `redactor-ux`):
 
 | Diálogo | Contenido | Primario |
 | --- | --- | --- |
-| Renovar documento | Título "Renovar: Seguro de ZK 214 BD". Línea de contexto: "Vigente: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día)." Campos: Número*, Emisor (precargado con el anterior), Vence*, Emitido. Errores V10, V11. | "Guardar renovación" |
+| Renovar documento | Título "Renovar: Seguro de ZK 214 BD". Línea de contexto: "Actual: póliza DEMO-88-4471, venció el 17/11/2026 (hace 1 día)." Campos: Número*, Emisor (precargado con el anterior), Vence*, Emitido. Errores V10, V11. | "Guardar renovación" |
 | Cargar documento | Igual sin contexto; si viene de "Cargar otro documento", primero un `select` Tipo. | "Guardar documento" |
 | Corregir documento | Campos precargados + nota "Use esto para corregir un error de carga. Si el documento se renovó, use Renovar." | "Guardar corrección" |
 | Resolver novedad | Texto de la novedad, origen y fecha; campo "¿Qué se hizo?"* (5–500); si aplica N2, casilla marcada "Volver a servicio ahora" con nota. | "Marcar como resuelta" |
@@ -1130,7 +1130,7 @@ unidad (patente, interno, modelo, último registro) se ve en todos menos en el 1
 | # | Situación | Qué se ve | Primario | Otros |
 | --- | --- | --- | --- | --- |
 | 1 | Sin unidad asignada (o de baja) | `select` (solo unidades en servicio) con la primera opción "Elija una unidad" (C14: "Elija otra unidad" queda solo para "Usar otra unidad" y para la unidad fuera de servicio) | "Empezar la revisión", cuando elige una | — |
-| 2 | El parte de hoy está **cerrado** | Etiqueta "Cerrado a las 18:42" (vigente, `i-check`). **Sin salida:** en su lugar, aviso crítico compacto "Revisión de las 06:52: novedad crítica en Frenos. La unidad no salió." | — | "Ver el parte" (secundario); "Usar otra unidad" |
+| 2 | El parte de hoy está **cerrado** | Etiqueta "Cerrado a las 18:42" (vigente, `i-check`). **Sin salida:** en su lugar, aviso crítico compacto "Revisión de las 06:52: novedad crítica en frenos. La unidad no salió." | — | "Ver el parte" (secundario); "Usar otra unidad" |
 | 3 | El parte de hoy está **en uso** | Etiqueta "En uso desde las 06:52" (quincena, `i-flecha-der`) + "Al terminar la jornada, cierre el parte con el kilometraje y el combustible." (`--t-chico` `--c-texto-2`) | "Cerrar el parte" | "Usar otra unidad" |
 | 4 | Unidad fuera de servicio (sin parte de hoy o con borrador) | Aviso semana "ZK 214 BD está fuera de servicio desde el 13/11/2026 (En taller: cambio de embrague). No hace falta parte." | — | "Usar otra unidad" |
 | 5 | **Su licencia no ampara hoy (L1)** | Aviso crítico de bloqueo (abajo) | — (ninguno) | Si hay borrador: "Tiene una revisión empezada: se conserva." + "Descartar borrador" (botón-texto, dos pasos). **No** se ofrece "Usar otra unidad" (no cambia nada) |
@@ -1493,7 +1493,7 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 | Inicio, sin unidad (estado 1) | Primera opción del `select`: "Elija una unidad" ("Elija otra unidad" solo con "Usar otra unidad" o la unidad fuera de servicio) |
 | Inicio, "Cerrar antes" (estado 5 bis) | Renglón 1: "{P}: el parte del {dia F} quedó sin cerrar." · Renglón 2: "Ciérrelo primero; después podrá empezar la revisión de hoy." · primario "Cerrar el parte anterior" · con borrador: "Tiene una revisión empezada: se conserva." |
 | Parte, pantalla E "Cerrar antes" (los dos perfiles) | `h1` "No se puede cargar este parte" · Renglón 1: "{P}: el parte del {dia F} quedó sin cerrar." · Renglón 2: "Ciérrelo primero; después se puede empezar la revisión del {F2}." · primario "Cerrar el parte anterior" · con borrador: "Tiene una revisión empezada para el {F2}: se conserva." · Ficha: "Cerrar el parte del {F}" |
-| Inicio, panel "Hoy" | "Antes de salir, revise la unidad y envíe la revisión." · "Empezar la revisión" · "Tiene una revisión empezada: faltan N datos." · "Tiene una revisión empezada y está lista para enviar." · "Continuar la revisión" · "En uso desde las 06:52" · "Al terminar la jornada, cierre el parte con el kilometraje y el combustible." · "Cerrar el parte" · "Cerrado a las 18:42" · "Ver el parte" · "Revisión de las 06:52: novedad crítica en Frenos. La unidad no salió." |
+| Inicio, panel "Hoy" | "Antes de salir, revise la unidad y envíe la revisión." · "Empezar la revisión" · "Tiene una revisión empezada: faltan N datos." · "Tiene una revisión empezada y está lista para enviar." · "Continuar la revisión" · "En uso desde las 06:52" · "Al terminar la jornada, cierre el parte con el kilometraje y el combustible." · "Cerrar el parte" · "Cerrado a las 18:42" · "Ver el parte" · "Revisión de las 06:52: novedad crítica en frenos. La unidad no salió." |
 | Inicio, bloqueo (L1, segunda persona) | Renglón 1: vencida "No puede manejar hoy: su licencia de conducir venció el 15/11/2026." · faltante "No puede manejar hoy: no tiene una licencia de conducir cargada." · posterior "No puede manejar hoy: su licencia nueva vale desde el 20/11/2026." Renglón 2: "Avise al encargado: cuando cargue una licencia vigente, podrá empezar la revisión." Con borrador: "Tiene una revisión empezada: se conserva." |
 | Pendientes | "{P}: el parte del {F} quedó sin cerrar." · "Cerrarlo" (los de borrador y sin parte, sin cambios) |
 | Parte, pantalla E por licencia (segunda persona) | "Para el {F} no tiene licencia de conducir vigente ({detalle}). Sin licencia vigente no se puede enviar la revisión ni salir con la unidad." con {detalle} = "venció el 15/11/2026" · "no hay ninguna cargada" · "la nueva vale desde el 20/11/2026". Si la fecha es hoy y hay borrador: "El borrador se conserva: cuando el encargado cargue una licencia vigente, podrá enviarlo." |
