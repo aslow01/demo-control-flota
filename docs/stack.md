@@ -128,7 +128,7 @@ demo-control-flota/
   empresas reales ni datos personales. Los nombres de terceros se buscan **por huella** (SHA-256 del término normalizado;
   `scripts/huellas-prohibidas.mjs`), porque un repositorio público no puede nombrarlos ni en la herramienta que los
   busca; los correos, con una regla genérica (cualquier correo que no sea de un dominio de ejemplo o `noreply`).
-- Tamaño: medir el JS y el CSS de la compilación en el paso 0; tope de 120 KB de JS comprimido con gzip (subido de 100 el 19/11/2026: hoy mide ~106).
+- Tamaño: tope de 120 kB de JS comprimido con gzip (subido de 100 el 19/11/2026; no se vuelve a subir). Medido el 22/11/2026 con `npm run build`: **411 kB de JS (119,5 kB con gzip)**, 95 kB de CSS (15,5 kB con gzip). El mapa de fuentes (`vite build --sourcemap`, atribuido byte a byte sin dependencias) reparte el JS así: vistas `.svelte` 23 %; lógica de dominio 16 % más sus textos 9 % (`textos.ts`) y 2 % (`textos-marco.ts`); estado de la aplicación 15 %; runtime de Svelte 12 % más un 16 % que el mapa no atribuye y es en su mayoría de Svelte; generador de datos 3,5 %; persistencia 3 %. No hay otras dependencias. Los textos pesan lo que dicen: no hay una reducción segura sin tocar el contenido.
 
 ## 8. Publicación
 
