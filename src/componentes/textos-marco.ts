@@ -114,6 +114,8 @@ export const TEXTO_PIE = {
 
 /** Centro de alertas (6.1): lo que dice la pantalla y no sale del dominio. Los textos de las alertas y de los diálogos vienen de `textos.ts`. */
 export const TEXTO_ALERTAS = {
+  /** M6: bajo el título, lo que cuenta la insignia de la pestaña «Alertas» (alertas críticas: documentos vencidos o faltantes y novedades críticas abiertas). Con 0 no se muestra. */
+  criticas: (n: number) => `${n} ${n === 1 ? "alerta crítica" : "alertas críticas"}: documentos vencidos o faltantes y novedades críticas abiertas.`,
   /** Dato breve del panel del protagonista: «al 18/11/2026». */
   alFecha: (fecha: string) => `al ${fecha}`,
   /** Botón de cada fila de «Operación diaria»; el resto del nombre accesible es el texto de la fila. */

@@ -25,7 +25,7 @@
     seccion: SeccionActiva;
     /** `true` si la pantalla actual está dentro de la sección pero no es su inicio (la ficha de una unidad, un parte). */
     seccionContieneLaPantalla?: boolean;
-    /** Alertas críticas (insignia de "Alertas"); con 0 no hay insignia. */
+    /** Alertas críticas (insignia de "Alertas", que dice «N críticas»; el centro de alertas repite la cuenta bajo el título); con 0 no hay insignia. */
     criticas: number;
     nombreConductor?: string;
     alElegirPerfil: (tipo: "encargado" | "conductor") => void;
@@ -61,7 +61,7 @@
             >
               {p.texto}
               {#if p.id === "alertas" && criticas > 0}
-                <span class="insignia num" data-tono="critico" aria-hidden="true">{criticas}</span>
+                <span class="insignia" data-tono="critico" aria-hidden="true"><span class="num">{criticas}</span> {criticas === 1 ? "crítica" : "críticas"}</span>
               {/if}
             </a>
           </li>
@@ -132,6 +132,7 @@
     font-weight: 600;
     line-height: 1.25rem;
     text-align: center;
+    white-space: nowrap;
   }
 
   .perfil {

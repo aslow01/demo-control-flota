@@ -49,6 +49,8 @@
   const ID_TITULO_PROTAGONISTA = "titulo-protagonista";
 
   const c = $derived(app.centroDeAlertas);
+  /** M6: la misma cuenta que la insignia de la pestaña «Alertas». */
+  const criticas = $derived(app.alertas?.resumen.criticas ?? 0);
 
   // ---------- Filtros de vencimientos ----------
   let filtro = $state<IdFiltro>("todos");
@@ -230,6 +232,8 @@
       <div class="solo-angosto"><EtiquetaDemo /></div>
       <h1 tabindex="-1">{c.titulo}</h1>
       <p class="linea">{c.encabezado.linea}</p>
+      <!-- M6: lo que cuenta el número de la pestaña «Alertas». Texto visible (también lo anuncia el lector de pantalla al recorrer la página). -->
+      {#if criticas > 0}<p class="linea">{T.criticas(criticas)}</p>{/if}
     </div>
 
     <!-- 1 y 2: el protagonista y la operación diaria. -->
@@ -462,10 +466,12 @@
   }
 
   /* Protagonista (columnas 1-7) y operación diaria (8-12) en escritorio; una debajo de la otra en tableta y teléfono. */
+  /* B7: cada tarjeta mide lo que necesita su contenido (con `stretch`, «Operación diaria» se estiraba a la altura de «No pueden salir hoy» y dejaba un hueco bajo la lista). */
   .principales {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--e-5);
+    align-items: start;
   }
   @media (min-width: 68.75rem) {
     .principales {
