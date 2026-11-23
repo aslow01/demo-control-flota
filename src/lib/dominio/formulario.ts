@@ -69,7 +69,9 @@ export function opcionesDeConductor(
   const lista: OpcionDeConductor[] = [{ valor: "", etiqueta: TEXTO_AGREGAR.sinConductor, asignadoA: null, licenciaVigente: true }];
   for (const c of estado.conductores) {
     if (c.activo) lista.push({ valor: c.id, etiqueta: c.nombre, asignadoA: asignada(c.id), licenciaVigente: vigente(c.id) });
-    else if (c.id === opciones.conservarId) lista.push({ valor: c.id, etiqueta: TEXTO_DIALOGOS_FICHA.asignacion.inactivo(c.nombre), asignadoA: asignada(c.id), licenciaVigente: vigente(c.id) });
+    else if (c.id === opciones.conservarId) {
+      lista.push({ valor: c.id, etiqueta: TEXTO_DIALOGOS_FICHA.asignacion.inactivo(c.nombre), asignadoA: asignada(c.id), licenciaVigente: vigente(c.id) });
+    }
   }
   return lista;
 }

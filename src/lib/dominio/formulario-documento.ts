@@ -232,7 +232,9 @@ export interface ContextoCargarOtro {
 export function tiposParaCargar(estado: Estado, unidadId: string): TipoDocumento[] {
   const u = estado.unidades.find((x) => x.id === unidadId);
   if (u === undefined || u.estado.tipo === "baja") return [];
-  return REQUISITOS.filter((r) => r.titular === "unidad" && documentoVigente(estado.documentos, { tipo: "unidad", id: u.id }, r.tipo) === undefined).map((r) => r.tipo);
+  return REQUISITOS.filter((r) => r.titular === "unidad" && documentoVigente(estado.documentos, { tipo: "unidad", id: u.id }, r.tipo) === undefined).map(
+    (r) => r.tipo,
+  );
 }
 
 /** `null` si no hay ningún tipo para cargar. */

@@ -6,7 +6,15 @@
 import type { Comando } from "./comandos.ts";
 import { armarErrores, type ErroresDeFormularioDe } from "./formulario.ts";
 import { parsearKm, textoRecorrido } from "./kilometraje.ts";
-import { ITEMS_CHECKLIST, faltantesDeCierre, faltantesDeRevision, parsearLitros, type CampoDeCierre, type CampoDeRevision, type CampoFaltante } from "./parte.ts";
+import {
+  ITEMS_CHECKLIST,
+  faltantesDeCierre,
+  faltantesDeRevision,
+  parsearLitros,
+  type CampoDeCierre,
+  type CampoDeRevision,
+  type CampoFaltante,
+} from "./parte.ts";
 import { TEXTO_FORMULARIO_PARTE as T, formatearKm, textoFaltantes } from "./textos.ts";
 import type { ErrorDeNegocio, ItemChecklist, NivelCombustible, Parte, RespuestaItem } from "./tipos.ts";
 import { validarTextoDeBorrador } from "./validacion.ts";
@@ -22,7 +30,10 @@ export const CAMPOS_DE_REVISION: readonly CampoDeRevision[] = ["conductor", "kmI
 /** Los campos del cierre (paso 2), en el orden del formulario. */
 export const CAMPOS_DE_CIERRE: readonly (CampoDeCierre | "litrosCargados")[] = ["kmFin", "combustible", "litrosCargados"];
 
-/** El orden del formulario: primero la revisión y después el cierre. Es el del resumen de errores de cada paso (se filtra por paso) y el de las listas de faltantes (P4). */
+/**
+ * El orden del formulario: primero la revisión y después el cierre. Es el del resumen de errores de cada paso (se filtra por paso) y el de las listas de
+ * faltantes (P4).
+ */
 export const CAMPOS_PARTE: readonly CampoParte[] = [...CAMPOS_DE_REVISION, ...CAMPOS_DE_CIERRE];
 
 function camposDelPaso(paso: PasoDelParte): readonly CampoParte[] {
@@ -205,8 +216,10 @@ function enOrden(errores: Map<CampoParte, string>): { campo: CampoParte; mensaje
 const PUNTOS_SIN_AGRUPAR = 3;
 
 /**
- * D1: el resumen de errores con los puntos de la revisión sin completar agrupados. Un punto sin completar es el que no tiene respuesta o el «Con novedad» sin descripción;
- * un texto demasiado largo es otro error y no se agrupa. Con más de 3, un solo enlace «Faltan 10 puntos de la revisión» (en el lugar del primero y apuntando a él); con 3 o
+ * D1: el resumen de errores con los puntos de la revisión sin completar agrupados. Un punto sin completar es el que no tiene respuesta o el «Con novedad» sin
+ * descripción;
+ * un texto demasiado largo es otro error y no se agrupa. Con más de 3, un solo enlace «Faltan 10 puntos de la revisión» (en el lugar del primero y apuntando a
+ * él); con 3 o
  * menos, la lista queda como está.
  */
 export function agruparResumen(lista: readonly { campo: CampoParte; mensaje: string }[]): { campo: CampoParte; mensaje: string }[] {
@@ -228,7 +241,13 @@ export function agruparResumen(lista: readonly { campo: CampoParte; mensaje: str
   return resumen;
 }
 
-function conTitulo(lista: { campo: CampoParte; mensaje: string }[], general: string | null, faltan: number, tituloGeneral: string = T.tituloGeneral, paso: PasoDelParte = "revision"): ErroresDeParte {
+function conTitulo(
+  lista: { campo: CampoParte; mensaje: string }[],
+  general: string | null,
+  faltan: number,
+  tituloGeneral: string = T.tituloGeneral,
+  paso: PasoDelParte = "revision",
+): ErroresDeParte {
   const base = armarErrores<CampoParte>(lista, general);
   let titulo: string;
   if (lista.length === 0) titulo = tituloGeneral;
@@ -280,7 +299,10 @@ export function comandoDeCierre(parteId: string, valores: ValoresParte): { ok: t
 
 // --- Qué falta para enviar la revisión o cerrar (P4) -------------------------------------------------
 
-/** P4: lo que falta para enviar la revisión (o cerrar el parte), en el orden del formulario. Un campo con un error de formato no cuenta: es otro problema (ver `validarParaEnviar`). */
+/**
+ * P4: lo que falta para enviar la revisión (o cerrar el parte), en el orden del formulario. Un campo con un error de formato no cuenta: es otro problema (ver
+ * `validarParaEnviar`).
+ */
 export function faltantesDeValores(v: ValoresParte, paso: PasoDelParte = "revision"): CampoFaltante[] {
   const { datos, errores } = convertir(v, paso);
   const faltan: CampoFaltante[] = paso === "revision" ? faltantesDeRevision(datos) : faltantesDeCierre(datos);
@@ -294,7 +316,8 @@ function mensajeDeFaltante(campo: CampoFaltante, v: ValoresParte): string {
 }
 
 /**
- * 5.15: todo lo que impide enviar la revisión (o cerrar el parte), en el orden del formulario: los faltantes de P4 y los errores de formato. `null` si se puede intentar
+ * 5.15: todo lo que impide enviar la revisión (o cerrar el parte), en el orden del formulario: los faltantes de P4 y los errores de formato. `null` si se puede
+ * intentar
  * el envío (las reglas de licencia, kilometraje, fecha y unidad las dice el comando). El `titulo` es el del resumen de ese paso.
  */
 export function validarParaEnviar(v: ValoresParte, paso: PasoDelParte = "revision"): ErroresDeParte | null {
@@ -314,11 +337,13 @@ export function erroresDeNegocioParte(error: ErrorDeNegocio, paso: PasoDelParte 
   const campoDeError = error.campo === "conductorId" ? "conductor" : error.campo;
   const campo = CAMPOS_PARTE.find((c) => c === campoDeError);
   const tituloGeneral = paso === "revision" ? T.tituloGeneral : T.tituloGeneralCierre;
-  return campo === undefined ? conTitulo([], error.mensaje, 0, tituloGeneral, paso) : conTitulo([{ campo, mensaje: error.mensaje }], null, 0, tituloGeneral, paso);
+  if (campo === undefined) return conTitulo([], error.mensaje, 0, tituloGeneral, paso);
+  return conTitulo([{ campo, mensaje: error.mensaje }], null, 0, tituloGeneral, paso);
 }
 
 /**
- * m3 (accesibilidad): un error de regla del kilometraje (K3, K4) que el comando todavía no llegó a decir porque faltan datos se suma al resumen de los faltantes, en su lugar del
+ * m3 (accesibilidad): un error de regla del kilometraje (K3, K4) que el comando todavía no llegó a decir porque faltan datos se suma al resumen de los
+ * faltantes, en su lugar del
  * formulario, para que la persona vea todo junto y no de a uno al ir corrigiendo. Si ese campo ya tiene un error (formato o faltante), no se pisa.
  */
 export function sumarErrorDeRegla(v: ValoresParte, previos: ErroresDeParte, regla: ErrorDeNegocio, paso: PasoDelParte = "revision"): ErroresDeParte {
@@ -328,7 +353,10 @@ export function sumarErrorDeRegla(v: ValoresParte, previos: ErroresDeParte, regl
   return conTitulo(lista, previos.general, faltantesDeValores(v, paso).length, paso === "revision" ? T.tituloGeneral : T.tituloGeneralCierre, paso);
 }
 
-/** Solo un error general (sin datos, sin permiso, guardado fallido, algo que cambió en otra pestaña). El título por defecto es el del envío de la revisión; otras acciones pasan el suyo. */
+/**
+ * Solo un error general (sin datos, sin permiso, guardado fallido, algo que cambió en otra pestaña). El título por defecto es el del envío de la revisión;
+ * otras acciones pasan el suyo.
+ */
 export function errorGeneralParte(mensaje: string, titulo: string = T.tituloGeneral): ErroresDeParte {
   return conTitulo([], mensaje, 0, titulo);
 }
@@ -337,11 +365,17 @@ export function errorGeneralParte(mensaje: string, titulo: string = T.tituloGene
 
 /**
  * Barra de envío (5.14): «Faltan 5 datos» o «Listo para enviar» («Listo para cerrar» en el cierre). Cuenta también lo que tiene un error de formato.
- * `camposDelIntento` son los campos con error del último intento de envío que siguen vigentes (la persona no los tocó): si alguno no es un faltante ni un error de
- * formato (una regla: la licencia, el kilometraje), la barra dice «Revise N datos» —el mismo N que el título del resumen— en lugar de «Listo para enviar». `lista` dice si
+ * `camposDelIntento` son los campos con error del último intento de envío que siguen vigentes (la persona no los tocó): si alguno no es un faltante ni un error
+ * de
+ * formato (una regla: la licencia, el kilometraje), la barra dice «Revise N datos» —el mismo N que el título del resumen— en lugar de «Listo para enviar».
+ * `lista` dice si
  * la vista puede mostrar el tilde.
  */
-export function barraDeEnvio(v: ValoresParte, paso: PasoDelParte = "revision", camposDelIntento: readonly CampoParte[] = []): { texto: string; lista: boolean } {
+export function barraDeEnvio(
+  v: ValoresParte,
+  paso: PasoDelParte = "revision",
+  camposDelIntento: readonly CampoParte[] = [],
+): { texto: string; lista: boolean } {
   const actuales = new Set((validarParaEnviar(v, paso)?.lista ?? []).map((x) => x.campo));
   const deReglas = new Set(camposDelIntento.filter((c) => !actuales.has(c)));
   const n = actuales.size + deReglas.size;
@@ -359,7 +393,9 @@ export function respondidos(v: ValoresParte): number {
   return ITEMS_CHECKLIST.filter((i) => v.checklist[i.id].respuesta !== "").length;
 }
 
-/** `<output>` del recorrido (6.5): «132 km», «Sin uso», o «—» si falta un dato, no es un número o el fin es menor que el inicio (K2 lo dice en «Al terminar»). */
+/**
+ * `<output>` del recorrido (6.5): «132 km», «Sin uso», o «—» si falta un dato, no es un número o el fin es menor que el inicio (K2 lo dice en «Al terminar»).
+ */
 export function recorridoDe(kmInicio: string, kmFin: string): string {
   const inicio = parsearKm(kmInicio);
   const fin = parsearKm(kmFin);

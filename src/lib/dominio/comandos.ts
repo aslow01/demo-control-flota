@@ -442,7 +442,9 @@ function darDeBaja(estado: Estado, c: Extract<Comando, { tipo: "darDeBaja" }>, c
   const u = unidad.valor;
   // El cierre de un parte en uso se rechaza para una unidad de baja (A7): el parte quedaría huérfano. Primero hay que cerrarlo.
   const sinCerrar = partePendienteDeCierre(estado.partes, u.id);
-  if (sinCerrar !== undefined) return fallo("unidad-con-parte-en-uso", errUnidadConParteEnUso(pat(u), sinCerrar.fecha), { detalle: { parteId: sinCerrar.id, fecha: sinCerrar.fecha } });
+  if (sinCerrar !== undefined) {
+    return fallo("unidad-con-parte-en-uso", errUnidadConParteEnUso(pat(u), sinCerrar.fecha), { detalle: { parteId: sinCerrar.id, fecha: sinCerrar.fecha } });
+  }
   return ok({
     cambios: { unidades: [{ ...u, estado: { tipo: "baja", desde: ctx.hoy, motivo: motivo.valor } }] },
     eventos: [
@@ -541,11 +543,14 @@ function corregirKilometraje(
   // el kilometraje actual ni K3/K4 aunque el historial dijera que sí. Se rechaza en vez de aceptar algo que no tiene efecto.
   const posterior = registrosDeKm(u.id, estado.partes, estado.correccionesKm).filter((r) => r.fecha > desde.valor).pop();
   if (posterior !== undefined) {
-    return fallo("km-correccion-anterior", errKmCorreccionAnterior(posterior.tipo === "correccion" ? "correccion" : "parte", posterior.fecha), { campo: "desde" });
+    const registro = posterior.tipo === "correccion" ? "correccion" : "parte";
+    return fallo("km-correccion-anterior", errKmCorreccionAnterior(registro, posterior.fecha), { campo: "desde" });
   }
   // La salida de un parte en uso fija su kilometraje inicial (P7): una corrección desde ese mismo día dejaría su cierre sin salida posible.
   const enUso = estado.partes.find((p) => p.unidadId === u.id && p.estado === "en-uso" && p.fecha >= desde.valor);
-  if (enUso !== undefined) return fallo("km-correccion-parte-en-uso", errKmCorreccionParteEnUso(enUso.fecha), { campo: "desde", detalle: { parteId: enUso.id } });
+  if (enUso !== undefined) {
+    return fallo("km-correccion-parte-en-uso", errKmCorreccionParteEnUso(enUso.fecha), { campo: "desde", detalle: { parteId: enUso.id } });
+  }
   const anterior = kmActual(u.id, estado.partes, estado.correccionesKm);
   const correccion = {
     id: ctx.nuevoId(),
@@ -1083,7 +1088,8 @@ function parteEnUso(estado: Estado, parteId: string): Resultado<Parte> {
 
 /**
  * La revisión antes de salir (P14, P16, L1; sección 17.3). El primero que falla corta: parte, unidad (P8), fecha (P2), licencia (L1, antes de pedir los diez
- * puntos: es un hecho sobre quién maneja), documentación de la unidad (P21), cierre pendiente (P18, P20), faltantes (P4), kilometraje (K3, K4), advertencias (K6). Sin novedad crítica el parte queda en uso; con una, se
+ * puntos: es un hecho sobre quién maneja), documentación de la unidad (P21), cierre pendiente (P18, P20), faltantes (P4), kilometraje (K3, K4), advertencias
+ * (K6). Sin novedad crítica el parte queda en uso; con una, se
  * cierra sin salida y la unidad queda fuera de servicio (A3, P16), todo en la misma operación (P12).
  */
 function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevision" }>, ctx: Contexto): Resultado<Parcial> {
@@ -1114,18 +1120,21 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
     }
   }
 
-  // P21: la documentación de la unidad como estaba a la fecha del parte (M1). Es un hecho sobre la unidad, como la licencia lo es sobre quien maneja: va antes de pedir nada más.
+  // P21: la documentación de la unidad como estaba a la fecha del parte (M1). Es un hecho sobre la unidad, como la licencia lo es sobre quien maneja: va antes
+  // de pedir nada más.
   const proyecto = buscarProyecto(estado, u.proyectoId);
   if (!proyecto.ok) return proyecto;
   const sinPapeles = documentacionQueBloquea({ fecha: borrador.fecha, unidad: u, proyecto: proyecto.valor, documentos: estado.documentos });
   if (sinPapeles !== null) {
-    return fallo("documentacion-de-la-unidad-vencida", errDocumentacionDeLaUnidad(sinPapeles.documentos, sinPapeles.contexto, false), { detalle: { documentos: sinPapeles.documentos } });
+    const mensaje = errDocumentacionDeLaUnidad(sinPapeles.documentos, sinPapeles.contexto, false);
+    return fallo("documentacion-de-la-unidad-vencida", mensaje, { detalle: { documentos: sinPapeles.documentos } });
   }
 
   // P18: con un parte en uso anterior de la misma unidad, primero hay que cerrarlo (si no, la revisión de hoy arrancaría con el kilometraje de salida de ayer).
   const sinCerrar = partePendienteDeCierre(estado.partes, u.id, borrador.fecha);
   if (sinCerrar !== undefined) {
-    return fallo("parte-anterior-sin-cerrar", errParteAnteriorSinCerrar(pat(u), sinCerrar.fecha, borrador.fecha), { detalle: { parteId: sinCerrar.id, fecha: sinCerrar.fecha } });
+    const mensaje = errParteAnteriorSinCerrar(pat(u), sinCerrar.fecha, borrador.fecha);
+    return fallo("parte-anterior-sin-cerrar", mensaje, { detalle: { parteId: sinCerrar.id, fecha: sinCerrar.fecha } });
   }
   // P20: un conductor con un parte en uso en otra unidad tampoco empieza otra revisión: primero cierra el anterior.
   if (conductor.valor !== null) {

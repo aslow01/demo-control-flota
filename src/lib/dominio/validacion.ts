@@ -30,7 +30,8 @@ export interface ReglaTexto {
 }
 
 /**
- * U7: saca los caracteres de control y de control bidireccional, recorta los espacios de los extremos y controla el largo, que se cuenta en caracteres (un emoji es
+ * U7: saca los caracteres de control y de control bidireccional, recorta los espacios de los extremos y controla el largo, que se cuenta en caracteres (un
+ * emoji es
  * uno). Nunca interpreta el texto como HTML.
  */
 export function validarTexto(valor: string, regla: ReglaTexto): Resultado<string> {
@@ -66,7 +67,10 @@ export const REGLAS = {
   modelo: { campo: "modelo", min: 1, max: 40, ...TEXTOS_DE_CAMPO.modelo },
 } satisfies Record<string, ReglaTexto>;
 
-/** Texto de un ítem del parte mientras es borrador: se guarda como se escribió (sin recortar), pero sin caracteres de control; solo se controla el tope (500 caracteres). */
+/**
+ * Texto de un ítem del parte mientras es borrador: se guarda como se escribió (sin recortar), pero sin caracteres de control; solo se controla el tope (500
+ * caracteres).
+ */
 export function validarTextoDeBorrador(valor: string, campo: string): Resultado<string> {
   const texto = limpiarTexto(valor);
   if (largoDeTexto(texto) > REGLAS.novedad.max) {

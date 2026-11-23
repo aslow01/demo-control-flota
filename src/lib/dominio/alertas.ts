@@ -56,7 +56,10 @@ export interface Alerta {
   etapaParte: "borrador" | "en-uso" | null;
 }
 
-/** L6: un conductor activo cuya licencia no ampara hoy. `alertaId` es la alerta de vencimiento de su licencia (la que abre «Renovar» o «Cargar»); `null` si no tiene una. */
+/**
+ * L6: un conductor activo cuya licencia no ampara hoy. `alertaId` es la alerta de vencimiento de su licencia (la que abre «Renovar» o «Cargar»); `null` si no
+ * tiene una.
+ */
 export interface ConductorSinLicencia {
   conductorId: string;
   nombre: string;
@@ -262,7 +265,9 @@ function alertaDeNovedad(n: Novedad, hoy: FechaCivil): Alerta {
   };
 }
 
-function operacion(base: Pick<Alerta, "id" | "tipo" | "gravedad" | "texto" | "fecha"> & { unidadId: string; conductorId?: string | null; etapaParte?: Alerta["etapaParte"] }): Alerta {
+function operacion(
+  base: Pick<Alerta, "id" | "tipo" | "gravedad" | "texto" | "fecha"> & { unidadId: string; conductorId?: string | null; etapaParte?: Alerta["etapaParte"] },
+): Alerta {
   return {
     categoria: "operacion",
     grupo: null,
