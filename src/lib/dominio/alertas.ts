@@ -132,7 +132,7 @@ function alertasDeTitular(
     // V17: un documento no obligatorio que falta no alerta; si está cargado, alerta como cualquier otro.
     const exigido = tiposObligatorios.includes(tipo);
     if (vigente === undefined && !exigido) continue;
-    // M4 (a confirmar): un documento que solo se exige en ciertos proyectos y este no lo exige (la habilitación de ingreso en
+    // M4 (confirmado por Matías el 18/11/2026): un documento que solo se exige en ciertos proyectos y este no lo exige (la habilitación de ingreso en
     // la base de mantenimiento) alerta con gravedad baja: la aptitud (A1) no lo considera bloqueante y no tiene que subir la insignia.
     const noExigidoAqui = req.obligatorio === "si-proyecto-requiere" && !exigido;
     const evaluacion = evaluarObligatorio(vigente, hoy);

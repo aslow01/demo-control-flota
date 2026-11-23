@@ -514,7 +514,7 @@ function corregirKilometraje(
   if (!motivo.ok) return motivo;
 
   const u = unidad.valor;
-  // M3 (a confirmar): kmActual es el último registro por fecha; una corrección anterior a un registro ya cargado no cambiaría
+  // M3 (confirmado por Matías el 18/11/2026): kmActual es el último registro por fecha; una corrección anterior a un registro ya cargado no cambiaría
   // el kilometraje actual ni K3/K4 aunque el historial dijera que sí. Se rechaza en vez de aceptar algo que no tiene efecto.
   const posterior = registrosDeKm(u.id, estado.partes, estado.correccionesKm).filter((r) => r.fecha > desde.valor).pop();
   if (posterior !== undefined) {
@@ -1091,7 +1091,7 @@ function enviarRevision(estado: Estado, c: Extract<Comando, { tipo: "enviarRevis
     }
   }
 
-  // A1: con un parte en uso anterior de la misma unidad, primero hay que cerrarlo (si no, la revisión de hoy arrancaría con el kilometraje de salida de ayer).
+  // P18: con un parte en uso anterior de la misma unidad, primero hay que cerrarlo (si no, la revisión de hoy arrancaría con el kilometraje de salida de ayer).
   const sinCerrar = partePendienteDeCierre(estado.partes, u.id, borrador.fecha);
   if (sinCerrar !== undefined) {
     return fallo("parte-anterior-sin-cerrar", errParteAnteriorSinCerrar(pat(u), sinCerrar.fecha, borrador.fecha), { detalle: { parteId: sinCerrar.id, fecha: sinCerrar.fecha } });

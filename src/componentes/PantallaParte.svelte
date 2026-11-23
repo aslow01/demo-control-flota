@@ -7,7 +7,7 @@
   //    hasta que la persona elige una acción: la vista del resultado es estado de esta pantalla (`recienEnviado`), no de la ruta.
   //  - «Completar el cierre» (C1) lleva a la misma ruta: la dirección no cambia, así que la pantalla suelta el resultado y muestra el cierre (B) con el foco en su `h1`.
   //  - «Descartar borrador» (de dos pasos, botón-texto) en E es la salida (P5). Después el foco va al título y un `role="status"` dice «Borrador descartado.».
-  //  - E «Cerrar antes» (A1, P20): en lugar del párrafo de la regla, el aviso compacto en tono semana (una tarea pendiente, no una prohibición) y el primario «Cerrar el parte anterior»;
+  //  - E «Cerrar antes» (P18, P20): en lugar del párrafo de la regla, el aviso compacto en tono semana (una tarea pendiente, no una prohibición) y el primario «Cerrar el parte anterior»;
   //    «Descartar borrador» (si hay) y el enlace de vuelta quedan como botones-texto. Es la única E con primario: la regla tiene un remedio inmediato y es de la misma persona.
   import { tick } from "svelte";
   import { app } from "../lib/estado/instancia.ts";

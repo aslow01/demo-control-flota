@@ -1,11 +1,16 @@
 // Búsqueda de términos prohibidos por huellas (`scripts/prohibidos.mjs`). Los términos de estos tests son inventados:
 // el repositorio público no puede traer los reales ni siquiera en las pruebas.
+import { spawnSync } from "node:child_process";
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   correosNoPermitidos,
   crearHuella,
   contieneProhibido,
   huellasDeLiterales,
+  marcaPendienteDeConfirmar,
   normalizar,
   tokenizar,
 } from "../scripts/prohibidos.mjs";
@@ -152,5 +157,42 @@ describe("HUELLAS del repositorio", () => {
   });
   it("no repite huellas", () => {
     expect(new Set(HUELLAS.map((h) => h.huella)).size).toBe(HUELLAS.length);
+  });
+});
+
+describe("buscar: «a confirmar» en src/ (decisiones sin confirmar no pueden quedar en el código)", () => {
+  it("la función reconoce la marca en un comentario, con cualquier caja", () => {
+    expect(marcaPendienteDeConfirmar("// M1 (a confirmar): vigencia")).toBe(true);
+    expect(marcaPendienteDeConfirmar(" * A confirmar con el encargado")).toBe(true);
+    expect(marcaPendienteDeConfirmar("// M1 (confirmado por Matías el 18/11/2026)")).toBe(false);
+    expect(marcaPendienteDeConfirmar("para confirmar la baja, pulse el botón")).toBe(false);
+  });
+
+  /** Copia los scripts a una raíz temporal con un `src/` plantado y corre `buscar-prohibidos.mjs` ahí. */
+  function correrBuscarCon(texto: string) {
+    const raiz = mkdtempSync(join(tmpdir(), "buscar-"));
+    try {
+      mkdirSync(join(raiz, "scripts"));
+      mkdirSync(join(raiz, "src"));
+      for (const nombre of readdirSync("scripts")) {
+        if (nombre.endsWith(".mjs")) copyFileSync(join("scripts", nombre), join(raiz, "scripts", nombre));
+      }
+      writeFileSync(join(raiz, "src", "plantado.ts"), texto);
+      return spawnSync(process.execPath, [join(raiz, "scripts", "buscar-prohibidos.mjs")], { encoding: "utf8" });
+    } finally {
+      rmSync(raiz, { recursive: true, force: true });
+    }
+  }
+
+  it("npm run buscar falla con un caso plantado y nombra el archivo y la línea", () => {
+    const r = correrBuscarCon("export const x = 1;\n// M9 (a confirmar): no se sabe todavía\n");
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("src/plantado.ts:2");
+    expect(r.stderr).toContain("a confirmar");
+  });
+
+  it("y pasa con el mismo archivo sin la marca", () => {
+    const r = correrBuscarCon("export const x = 1;\n// M9 (confirmado por Matías el 18/11/2026)\n");
+    expect(r.status).toBe(0);
   });
 });

@@ -277,20 +277,20 @@ export function errKmCorreccionAnterior(registro: "parte" | "correccion", fecha:
 }
 
 /**
- * «ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar.» Renglón 1 del aviso «Cerrar antes» (inicio y pantalla E) y del error de A1. Un parte de hoy (P20: el conductor lo
- * tiene en otra unidad) no «quedó» sin cerrar, sigue en curso: «ZK 214 BD: el parte de hoy está en uso.». `hoy` es `null` si no se sabe (el parte de A1 es siempre anterior a la revisión).
+ * «ZK 214 BD: el parte del martes 17/11/2026 quedó sin cerrar.» Renglón 1 del aviso «Cerrar antes» (inicio y pantalla E) y del error de P18. Un parte de hoy (P20: el conductor lo
+ * tiene en otra unidad) no «quedó» sin cerrar, sigue en curso: «ZK 214 BD: el parte de hoy está en uso.». `hoy` es `null` si no se sabe (el parte de P18 es siempre anterior a la revisión).
  */
 export function textoParteSinCerrarDeLaUnidad(patente: string, fecha: FechaCivil, hoy: FechaCivil | null): string {
   if (fecha === hoy) return `${patente}: el parte de hoy está en uso.`;
   return `${patente}: el parte del ${diaDeLaSemana(fecha)} ${formatearFecha(fecha)} quedó sin cerrar.`;
 }
 
-/** Renglón 2 del aviso «Cerrar antes» en la pantalla E y en el error de A1: «Ciérrelo primero; después se puede empezar la revisión del 18/11/2026.» */
+/** Renglón 2 del aviso «Cerrar antes» en la pantalla E y en el error de P18: «Ciérrelo primero; después se puede empezar la revisión del 18/11/2026.» */
 export function textoCerrarAntesDeLaRevision(fechaDeLaRevision: FechaCivil): string {
   return `Ciérrelo primero; después se puede empezar la revisión del ${formatearFecha(fechaDeLaRevision)}.`;
 }
 
-/** A1: la unidad tiene un parte en uso de una fecha anterior: hay que cerrarlo antes de empezar la revisión de una fecha posterior. */
+/** P18: la unidad tiene un parte en uso de una fecha anterior: hay que cerrarlo antes de empezar la revisión de una fecha posterior. */
 export function errParteAnteriorSinCerrar(patente: string, fecha: FechaCivil, fechaDeLaRevision: FechaCivil): string {
   return `${textoParteSinCerrarDeLaUnidad(patente, fecha, null)} ${textoCerrarAntesDeLaRevision(fechaDeLaRevision)}`;
 }
@@ -1433,7 +1433,7 @@ export function textoPuntosEnOrdenConNombres(nombres: readonly string[]): string
 }
 
 /**
- * Escrituras desde una pestaña que quedó atrás de otra (QA A1, etapa 4). Texto nuevo, a revisar por el redactor: lo ve quien
+ * Escrituras desde una pestaña que quedó atrás de otra (D12; QA A1, etapa 4). Texto nuevo, a revisar por el redactor: lo ve quien
  * intenta guardar algo mientras el aviso «Se hicieron cambios en otra pestaña» sigue sin atender.
  */
 export const ERRORES_PESTANAS = {

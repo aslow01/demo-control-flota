@@ -84,7 +84,7 @@ type Tono = "critico" | "semana" | "quincena" | "mes";
 /**
  * Lo que dice el panel «Hoy». Se decide en este orden (docs/diseno.md, 17.5; el primero que aplica gana): sin unidad → `sin-unidad`; parte de hoy cerrado →
  * `enviado`; en uso → `en-uso` (la licencia no se mira: L3); unidad fuera de servicio → `fuera-de-servicio`; licencia que no ampara hoy → `licencia-no-vigente`;
- * un parte anterior de la unidad en uso, o del conductor en otra unidad → `cierre-pendiente` (estado 5 bis, A1 y P20); borrador → `borrador`; si no, `sin-parte`.
+ * un parte anterior de la unidad en uso, o del conductor en otra unidad → `cierre-pendiente` (estado 5 bis, P18 y P20); borrador → `borrador`; si no, `sin-parte`.
  */
 export type EstadoDelDia =
   /** «Antes de salir, revise la unidad y envíe la revisión.» + «Empezar la revisión». */

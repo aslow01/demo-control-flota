@@ -455,7 +455,7 @@ export class EstadoApp {
     const repositorio = this.repositorio;
     if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
     if (perfil.tipo === "conductor" && !COMANDOS_DEL_CONDUCTOR.has(comando.tipo)) return fallo("sin-permiso", ERRORES.sinPermiso);
-    // A1: los comandos se evalúan contra el estado de esta pestaña; si otra ya escribió y esta no se actualizó, se pisarían sus
+    // D12: los comandos se evalúan contra el estado de esta pestaña; si otra ya escribió y esta no se actualizó, se pisarían sus
     // cambios (una baja desaparecería, una renovación se duplicaría). Hasta que se pulse «Actualizar» no se escribe nada.
     if (this.hayCambiosEnOtraPestana) return fallo("cambios-en-otra-pestana", ERRORES_PESTANAS.escrituraConCambiosEnOtraPestana);
 
@@ -873,7 +873,7 @@ export class EstadoApp {
     const borrador = this.estado?.partes.find((p) => donde(p));
     // Abrir el formulario y enviarlo vacío no crea un borrador (D11): lo que falta se dice igual.
     if (borrador === undefined) return this.erroresDeEnvio(previos ?? errorGeneralParte(ERRORES.parteInexistente));
-    // L1, A1 y P20 van antes que los faltantes (como en el comando): a quien no puede manejar, o tiene un parte anterior sin cerrar, no se le piden los diez puntos.
+    // L1, P18 y P20 van antes que los faltantes (como en el comando): a quien no puede manejar, o tiene un parte anterior sin cerrar, no se le piden los diez puntos.
     const r = await this.ejecutarAhora({ tipo: "enviarRevision", parteId: borrador.id, advertenciasAceptadas: aceptadas }, perfil);
     if (!r.ok) {
       if (r.error.codigo === "licencia-no-vigente" || r.error.codigo === "parte-anterior-sin-cerrar" || r.error.codigo === "escritura-fallida") return this.erroresDeEnvio(erroresDeNegocioParte(r.error));

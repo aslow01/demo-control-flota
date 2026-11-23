@@ -401,7 +401,7 @@ describe("enviarRevision: kilometraje (K3, K4, K6, K10)", () => {
   });
 });
 
-describe("enviarRevision: cerrar antes (A1)", () => {
+describe("enviarRevision: cerrar antes (P18)", () => {
   /** u1 con el parte de ayer EN USO (revisión enviada, sin cerrar) en lugar del cerrado. */
   function conParteDeAyerEnUso(): Estado {
     const base = flotaDePrueba();

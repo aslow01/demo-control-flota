@@ -140,7 +140,7 @@
           </div>
         {/if}
       {:else if inicio.hoyEstado.tipo === "cierre-pendiente"}
-        <!-- Estado 5 bis, «Cerrar antes» (A1, P20): una tarea pendiente (tono semana, `i-lapiz`), no una prohibición; por eso hay primario. Tampoco es `role="alert"`. -->
+        <!-- Estado 5 bis, «Cerrar antes» (P18, P20): una tarea pendiente (tono semana, `i-lapiz`), no una prohibición; por eso hay primario. Tampoco es `role="alert"`. -->
         {@const c = inicio.hoyEstado}
         <Aviso tono="semana" icono="lapiz" accion={c.renglon2} idTexto={ID_AVISO_CERRAR_ANTES}>{c.renglon1}</Aviso>
         <div class="accion-principal"><EnlaceAccion href={c.primario.href} variante="primario" tamano="grande">{c.primario.texto}</EnlaceAccion></div>

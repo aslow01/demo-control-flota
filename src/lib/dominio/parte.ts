@@ -163,7 +163,7 @@ export function novedadesDelParte(parte: Parte): NovedadDelParte[] {
 }
 
 /**
- * A1: el parte en uso más antiguo de la unidad con fecha anterior a `fecha` (sin `fecha`, el más antiguo de todos). Mientras exista, no se puede enviar la
+ * P18: el parte en uso más antiguo de la unidad con fecha anterior a `fecha` (sin `fecha`, el más antiguo de todos). Mientras exista, no se puede enviar la
  * revisión de una fecha posterior de esa unidad, corregir su kilometraje desde ese día ni darla de baja: primero hay que cerrarlo.
  */
 export function partePendienteDeCierre(partes: readonly Parte[], unidadId: string, fecha?: FechaCivil): Parte | undefined {

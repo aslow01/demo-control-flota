@@ -101,3 +101,8 @@ export function correosNoPermitidos(texto) {
   }
   return salida;
 }
+
+/** Una decisión sin confirmar («a confirmar») escrita en el código: no puede quedar en `src/` (el README dice que cada decisión figura con quién y cuándo). */
+export function marcaPendienteDeConfirmar(linea) {
+  return /\ba confirmar\b/i.test(linea);
+}

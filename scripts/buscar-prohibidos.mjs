@@ -7,7 +7,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HUELLAS } from "./huellas-prohibidas.mjs";
-import { contieneProhibido, correosNoPermitidos, huellasDeLiterales } from "./prohibidos.mjs";
+import { contieneProhibido, correosNoPermitidos, huellasDeLiterales, marcaPendienteDeConfirmar } from "./prohibidos.mjs";
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ignorar = new Set(["node_modules", "dist", ".git", "coverage"]);
@@ -37,6 +37,7 @@ const reglas = [
   { nombre: "Math.random en src/lib (todo sale del generador con semilla)", donde: /^src\/lib\//, patron: /Math\.random/, excepto: [] },
   { nombre: "reloj del sistema fuera de estado/reloj.ts (new Date() o Date.now)", donde: /^src\//, patron: /new Date\(\s*\)|Date\.now\s*\(/, excepto: ["src/lib/estado/reloj.ts"] },
   { nombre: "transiciones de Svelte (el movimiento va por CSS)", donde: /^src\/.*\.svelte$/, patron: /\b(transition|in|out|animate):[a-z]/, excepto: [] },
+  { nombre: "decisión «a confirmar» en el código (confirmarla y anotar quién y cuándo)", donde: /^src\//, coincide: marcaPendienteDeConfirmar, excepto: [] },
   { nombre: "nombres de terceros (por huella)", donde: /^(?!node_modules)/, coincide: (linea) => contieneProhibido(linea, huellas), excepto: [] },
   { nombre: "correos que no son de ejemplo ni noreply", donde: /^(?!node_modules)/, coincide: (linea) => correosNoPermitidos(linea).length > 0, excepto: [] },
 ];
