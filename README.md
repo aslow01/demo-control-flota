@@ -155,7 +155,7 @@ Cifras medidas el 22/11/2026:
 | Las mismas en tres zonas horarias | `npm run test:tz` | 1.608 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
 | Tipos | `npm run check` | 0 errores y 0 avisos en 339 archivos |
 | Contraste de la paleta | `npm run contraste` | 182 mediciones, 0 fallan, 9 pasan por poco margen |
-| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (8 reglas, 196 archivos): sin `{@html}`, sin `eval`, sin `Math.random` en `src/lib`, sin reloj del sistema fuera de `estado/reloj.ts` |
+| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (8 reglas, 198 archivos): sin `{@html}`, sin `eval`, sin `Math.random` en `src/lib`, sin reloj del sistema fuera de `estado/reloj.ts` |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
 **Probado en un navegador** (Chromium con Playwright, contra la compilación servida con la CSP real; detalle en
