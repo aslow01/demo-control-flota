@@ -98,8 +98,9 @@
   }
   .pestana {
     display: inline-flex;
+    flex-wrap: wrap; /* texto agrandado: la insignia baja debajo del nombre en lugar de ensanchar la página */
     align-items: center;
-    gap: var(--e-2);
+    gap: var(--e-1) var(--e-2);
     min-height: 3.25rem;
     padding: 0 var(--e-4);
     color: var(--c-texto-2);
