@@ -48,6 +48,8 @@ export interface OpcionConductor {
   unidad: string | null;
   /** L1: su licencia ampara hoy. Sigue siendo elegible (es un punto de vista): el diálogo agrega la marca «Sin licencia vigente» en el renglón 2. */
   licenciaVigente: boolean;
+  /** M1: si el conductor permite probar un caso, `etiqueta` es la marca «Para probar: …» (la lee el lector de pantalla como parte de la opción); `sinLicencia` evita repetir «Sin licencia vigente». */
+  paraProbar?: { etiqueta: string; sinLicencia: boolean } | null;
 }
 
 /** La pestaña de la barra de la aplicación que corresponde a la pantalla actual. */

@@ -118,6 +118,7 @@ import { fichaDeUnidad as armarFicha, type FichaDeUnidad, type FichaNoEncontrada
 import { panelDeFlota, type PanelFlota } from "./flota.ts";
 import { generarId } from "./ids.ts";
 import {
+  conductoresParaProbar,
   inicioDelConductor as armarInicio,
   opcionesParaElegirConductor as armarOpcionesDeConductor,
   panelDeParteEnviado,
@@ -711,9 +712,17 @@ export class EstadoApp {
     return armarInicio(this.estado, this.alertas, this.hoy, this.perfil, unidadElegidaId);
   }
 
-  /** Las opciones del diálogo «¿Quién completa el parte?»: todo conductor activo, con su unidad y si su licencia ampara hoy (L1). */
-  opcionesDeConductor(): OpcionParaElegirConductor[] {
-    return this.estado === null ? [] : armarOpcionesDeConductor(this.estado, this.hoy);
+  /**
+   * Las opciones del diálogo «¿Quién completa el parte?»: todo conductor activo, con su unidad y si su licencia ampara hoy (L1). `paraProbar` (M1) marca a los que sirven para ver
+   * cada caso (`conductoresParaProbar`); el diálogo los pone primero.
+   */
+  opcionesDeConductor(): (OpcionParaElegirConductor & { paraProbar: { etiqueta: string; sinLicencia: boolean } | null })[] {
+    if (this.estado === null) return [];
+    const sugeridos = new Map((this.alertas === null ? [] : conductoresParaProbar(this.estado, this.alertas, this.hoy)).map((s) => [s.conductorId, s]));
+    return armarOpcionesDeConductor(this.estado, this.hoy).map((o) => {
+      const s = sugeridos.get(o.id);
+      return { ...o, paraProbar: s === undefined ? null : { etiqueta: s.etiqueta, sinLicencia: s.caso === "sin-licencia" } };
+    });
   }
 
   /**

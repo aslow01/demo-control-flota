@@ -1,6 +1,8 @@
 <script lang="ts">
   // Diálogo "¿Quién completa el parte?" (5.2 y 5.17): lista de conductores activos (ficticios) con su unidad, en radios. En el renglón 2, junto a la unidad, el conductor cuya licencia no ampara hoy (L1)
   // lleva `i-vencido` + «Sin licencia vigente» (texto crítico, sin fondo). Sigue siendo elegible (es un punto de vista): así el visitante encuentra el caso del bloqueo.
+  // M1: los conductores que permiten probar un caso (`paraProbar`) van primero, cada uno con su marca «Para probar: …» como tercer renglón de la etiqueta (así la lee el lector de pantalla
+  // junto al nombre y la unidad), y una línea «Los demás conductores» los separa del resto. Siguen siendo opciones del mismo grupo de radios.
   // El foco inicial va al conductor elegido (o al primero). "Continuar" no se deshabilita: sin elección muestra el error en el diálogo.
   // Quien lo usa recibe la lista armada y hace el cambio de perfil (`alConfirmar`); si falla, `error` se muestra acá y el diálogo sigue abierto.
   import { untrack } from "svelte";
@@ -46,7 +48,9 @@
     }
   });
 
-  const idFoco = $derived(elegido ?? conductores[0]?.id ?? null);
+  const sugeridos = $derived(conductores.filter((c) => c.paraProbar != null));
+  const resto = $derived(conductores.filter((c) => c.paraProbar == null));
+  const idFoco = $derived(elegido ?? sugeridos[0]?.id ?? conductores[0]?.id ?? null);
   const mensaje = $derived(sinElegir ? T.elegir : error);
 
   function continuar(): void {
@@ -59,6 +63,36 @@
   }
 </script>
 
+{#snippet opcion(c: OpcionConductor)}
+  <li>
+    <label class="opcion">
+      <input
+        type="radio"
+        name="conductor-del-parte"
+        value={c.id}
+        checked={elegido === c.id}
+        data-foco-inicial={c.id === idFoco ? "" : undefined}
+        onchange={() => {
+          elegido = c.id;
+          sinElegir = false;
+        }}
+      />
+      <span class="datos">
+        <span class="nombre">{c.nombre}</span>
+        <span class="renglon-2">
+          <span class="nota">{c.unidad === null ? T.sinUnidad : T.unidad(c.unidad)}</span>
+          {#if !c.licenciaVigente && !(c.paraProbar?.sinLicencia ?? false)}
+            <span class="sin-licencia"><Icono nombre="vencido" />{ETIQUETAS_DE_PARTE["sin-licencia-vigente"].texto}</span>
+          {/if}
+        </span>
+        {#if c.paraProbar != null}
+          <span class="para-probar">{c.paraProbar.etiqueta}</span>
+        {/if}
+      </span>
+    </label>
+  </li>
+{/snippet}
+
 <Dialogo titulo={T.titulo} bind:abierto bloqueado={cargando} descripcionId={idAyuda} {focoDestino}>
   <p id={idAyuda} class="nota">{T.ayuda}</p>
   <fieldset aria-describedby={mensaje !== "" ? idError : undefined}>
@@ -66,34 +100,23 @@
     {#if mensaje !== ""}
       <p class="error" id={idError} role="alert"><Icono nombre="vencido" /><span>{mensaje}</span></p>
     {/if}
-    <ul class="lista" bind:this={lista}>
-      {#each conductores as c (c.id)}
-        <li>
-          <label class="opcion">
-            <input
-              type="radio"
-              name="conductor-del-parte"
-              value={c.id}
-              checked={elegido === c.id}
-              data-foco-inicial={c.id === idFoco ? "" : undefined}
-              onchange={() => {
-                elegido = c.id;
-                sinElegir = false;
-              }}
-            />
-            <span class="datos">
-              <span class="nombre">{c.nombre}</span>
-              <span class="renglon-2">
-                <span class="nota">{c.unidad === null ? T.sinUnidad : T.unidad(c.unidad)}</span>
-                {#if !c.licenciaVigente}
-                  <span class="sin-licencia"><Icono nombre="vencido" />{ETIQUETAS_DE_PARTE["sin-licencia-vigente"].texto}</span>
-                {/if}
-              </span>
-            </span>
-          </label>
-        </li>
-      {/each}
-    </ul>
+    <div bind:this={lista}>
+      {#if sugeridos.length > 0}
+        <ul class="lista">
+          {#each sugeridos as c (c.id)}
+            {@render opcion(c)}
+          {/each}
+        </ul>
+        {#if resto.length > 0}<p class="nota separador">{T.losDemas}</p>{/if}
+      {/if}
+      {#if resto.length > 0}
+        <ul class="lista">
+          {#each resto as c (c.id)}
+            {@render opcion(c)}
+          {/each}
+        </ul>
+      {/if}
+    </div>
   </fieldset>
   {#snippet pie()}
     <Boton {cargando} onclick={continuar}>{T.continuar}</Boton>
@@ -166,6 +189,17 @@
     font-size: var(--t-chico);
     font-weight: 600;
     color: var(--c-critico-t);
+  }
+  .para-probar {
+    font-size: var(--t-chico);
+    font-weight: 600;
+    color: var(--c-pendiente-t);
+  }
+  .separador {
+    margin-block: var(--e-3) 0;
+    padding-top: var(--e-3);
+    border-top: 1px solid var(--c-borde-fuerte);
+    font-weight: 600;
   }
   .error {
     --icono-tam: 1rem;

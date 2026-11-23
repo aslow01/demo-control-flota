@@ -66,6 +66,8 @@ export const TEXTO_ELEGIR_CONDUCTOR = {
   titulo: "¿Quién completa el parte?",
   ayuda: "Es solo un punto de vista de la demo: no hay usuarios ni contraseñas.",
   leyenda: "Conductores",
+  /** M1: separa a los conductores sugeridos para probar de los demás. */
+  losDemas: "Los demás conductores",
   unidad: (patente: string) => `Unidad ${patente}`,
   sinUnidad: "Sin unidad asignada",
   continuar: "Ver como este conductor",
