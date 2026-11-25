@@ -5,7 +5,7 @@
 // El parte tiene dos pasos (docs/diseno.md, sección 17): la revisión antes de salir y el cierre de la jornada. Qué se muestra en cada ruta lo decide el
 // estado del parte: sin parte o borrador → revisión; en uso → cierre; cerrado → lectura.
 
-import type { ResultadoAlertas } from "../dominio/alertas.ts";
+import type { Alerta, ResultadoAlertas } from "../dominio/alertas.ts";
 import { aptitud } from "../dominio/aptitud.ts";
 import { diaDeLaSemana, diasEntre, fechaEnArgentina, formatearFecha, formatearHora, parsearInstante } from "../dominio/fechas.ts";
 import { opcionesDeConductor, type OpcionDeConductor } from "../dominio/formulario.ts";
@@ -15,6 +15,7 @@ import { ITEMS_CHECKLIST, conductorParaParte, documentacionQueBloquea, novedades
 import { formatearPatente } from "../dominio/patente.ts";
 import {
   NOMBRES_COMBUSTIBLE,
+  NOMBRES_DOCUMENTO,
   type AvisoDeAptitud,
   type RenglonDeAviso,
   TEXTO_BORRADOR_CONSERVADO,
@@ -61,8 +62,9 @@ import {
   textoUnidadNoEncontrada,
   textoUnidadNoPuedeSalir,
   textoUnidadQuedoFueraDeServicio,
+  textoVencimiento,
 } from "../dominio/textos.ts";
-import type { Conductor, Estado, FechaCivil, ItemChecklist, NivelCombustible, Parte, Perfil, Unidad } from "../dominio/tipos.ts";
+import type { Conductor, Documento, Estado, FechaCivil, ItemChecklist, NivelCombustible, Parte, Perfil, TipoDocumento, Unidad } from "../dominio/tipos.ts";
 import { documentoVigente, estadoDeLicencia, evaluarObligatorio } from "../dominio/vencimientos.ts";
 import { aHash, nombreDePantalla, rutaPorDefecto } from "./enrutador.ts";
 
@@ -162,6 +164,28 @@ export interface FilaDeParteReciente {
   href: string;
 }
 
+/**
+ * Un documento de la unidad que vence en `DIAS_DE_AVISO_DE_VENCIMIENTO` días o menos (hoy incluido) y todavía vale: el conductor puede salir, pero tiene que saberlo.
+ * Es solo la información; la frase («La revisión técnica vence hoy») la arma la vista con los textos.
+ */
+export interface AvisoDeVencimientoDeUnidad {
+  tipoDocumento: TipoDocumento;
+  /** «Revisión técnica». */
+  documento: string;
+  /** Días que faltan: 0 es hoy. */
+  dias: number;
+  venceHoy: boolean;
+  /** `dd/mm/aaaa`. */
+  vence: string;
+  /** «Vence hoy» · «Vence en 3 días». */
+  estado: string;
+}
+
+/** Desde cuántos días antes se le avisa al conductor que algo de su unidad vence (el del prototipo aprobado). */
+export const DIAS_DE_AVISO_DE_VENCIMIENTO = 7;
+/** Cuántos partes muestra el panel «Mis últimos partes» de Hoy; el resto se ve en Mis partes. */
+export const PARTES_EN_HOY = 3;
+
 export interface InicioDelConductor {
   /** El `h1`: «Parte diario». */
   titulo: string;
@@ -182,13 +206,30 @@ export interface InicioDelConductor {
    * Solo en los estados `borrador` y `sin-parte` (arriba del botón, que sigue disponible).
    */
   avisoAptitud: AvisoDeAptitud | null;
+  /**
+   * Lo que vence pronto en su unidad (el que vence primero), mientras la unidad pueda salir y la revisión se pueda empezar o seguir (`sin-parte` y `borrador`, los mismos que
+   * `avisoAptitud`). Un documento ya vencido no es un aviso: bloquea y lo dice el estado del día. `null` si no hay nada cerca.
+   */
+  avisoDeUnidad: AvisoDeVencimientoDeUnidad | null;
   /** `modo: "otra"` = botón-texto «Usar otra unidad» que abre el `select`; `"elegir"` = el `select` «Elija la unidad» ya a la vista. Solo unidades en servicio. */
   elegirUnidad: { modo: "otra" | "elegir"; etiqueta: string; opciones: OpcionDeUnidad[] };
   /** Panel «Pendientes»: solo si hay. */
   pendientes: PendienteDelConductor[];
   /** Panel «Su licencia»: solo si vence en 30 días o menos, está vencida o falta; `null` también cuando el aviso del panel «Hoy» ya lo dice (`licencia-no-vigente`). */
   licencia: { titulo: string; texto: string; tono: Tono } | null;
-  ultimosPartes: { titulo: string; filas: FilaDeParteReciente[]; vacio: string | null };
+  /** Hasta cinco; el panel de Hoy muestra los primeros `PARTES_EN_HOY` y `verTodos` lleva a Mis partes (`null` si no hay ninguno). */
+  ultimosPartes: { titulo: string; filas: FilaDeParteReciente[]; vacio: string | null; verTodos: { href: string } | null };
+}
+
+/** La pantalla Mis partes del conductor: los últimos cinco partes cerrados, los mismos de «Mis últimos partes» de Hoy. */
+export interface MisPartes {
+  /** El `h1`: «Mis partes». */
+  titulo: string;
+  /** El nombre del conductor del perfil. */
+  conductor: string;
+  filas: FilaDeParteReciente[];
+  /** «Todavía no cerró partes. Los últimos cinco aparecerán aquí.» si no hay ninguno. */
+  vacio: string | null;
 }
 
 const MAXIMO_ULTIMOS_PARTES = 5;
@@ -346,20 +387,9 @@ export function inicioDelConductor(
   }
   pendientes.sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : a.clave < b.clave ? -1 : 1));
 
-  // Mis últimos partes: solo los cerrados (uno sin salida dice «Sin uso»).
-  const filas: FilaDeParteReciente[] = estado.partes
-    .flatMap((crudo) => parteLegible(crudo) ?? [])
-    .filter((p) => p.estado === "enviado" && p.conductorId === conductor.id && p.kmInicio !== null && p.kmFin !== null)
-    .sort((a, b) => (a.fecha !== b.fecha ? (a.fecha < b.fecha ? 1 : -1) : (b.enviado ?? "") < (a.enviado ?? "") ? -1 : 1))
-    .slice(0, MAXIMO_ULTIMOS_PARTES)
-    .flatMap((p) => {
-      const u = estado.unidades.find((x) => x.id === p.unidadId);
-      if (u === undefined || p.kmInicio === null || p.kmFin === null) return [];
-      const patenteTexto = formatearPatente(u.patente);
-      const recorrido = textoRecorrido(p.kmFin - p.kmInicio);
-      const fecha = formatearFecha(p.fecha);
-      return [{ parteId: p.id, fecha, patenteTexto, recorrido, href: hrefDelParte(u, p.fecha) }];
-    });
+  const filas = ultimosPartesDe(estado, conductor.id);
+  // Lo que vence pronto en la unidad: solo cuando puede salir y la revisión se puede empezar o seguir (los estados con aviso de aptitud).
+  const avisoDeUnidad = unidad === null || !conAviso ? null : avisoDeVencimientoDe(alertas, unidad.id, estado.documentos);
 
   return {
     titulo: nombreDePantalla({ tipo: "conductor" }),
@@ -377,6 +407,7 @@ export function inicioDelConductor(
           },
     hoyEstado,
     avisoAptitud: unidad === null || !conAviso ? null : textoDeNoPuedeSalir(estado, unidad, hoy, true),
+    avisoDeUnidad,
     elegirUnidad: {
       modo: unidad === null ? "elegir" : "otra",
       etiqueta: unidad === null ? TI.elegirUnidad : TI.usarOtra,
@@ -384,8 +415,53 @@ export function inicioDelConductor(
     },
     pendientes: pendientes.map(({ fecha: _fecha, ...p }) => p),
     licencia: hoyEstado.tipo === "licencia-no-vigente" ? null : licenciaDe(estado, conductor, hoy),
-    ultimosPartes: { titulo: TI.ultimosTitulo, filas, vacio: filas.length === 0 ? TI.ultimosVacio : null },
+    ultimosPartes: {
+      titulo: TI.ultimosTitulo,
+      filas,
+      vacio: filas.length === 0 ? TI.ultimosVacio : null,
+      verTodos: filas.length === 0 ? null : { href: aHash({ tipo: "mis-partes" }) },
+    },
   };
+}
+
+/** Mis últimos partes: solo los cerrados de este conductor, el más nuevo primero, hasta cinco (uno sin salida dice «Sin uso»). */
+function ultimosPartesDe(estado: Estado, conductorId: string): FilaDeParteReciente[] {
+  return estado.partes
+    .flatMap((crudo) => parteLegible(crudo) ?? [])
+    .filter((p) => p.estado === "enviado" && p.conductorId === conductorId && p.kmInicio !== null && p.kmFin !== null)
+    .sort((a, b) => (a.fecha !== b.fecha ? (a.fecha < b.fecha ? 1 : -1) : (b.enviado ?? "") < (a.enviado ?? "") ? -1 : 1))
+    .slice(0, MAXIMO_ULTIMOS_PARTES)
+    .flatMap((p) => {
+      const u = estado.unidades.find((x) => x.id === p.unidadId);
+      if (u === undefined || p.kmInicio === null || p.kmFin === null) return [];
+      return [{ parteId: p.id, fecha: formatearFecha(p.fecha), patenteTexto: formatearPatente(u.patente), recorrido: textoRecorrido(p.kmFin - p.kmInicio), href: hrefDelParte(u, p.fecha) }];
+    });
+}
+
+/** El documento de la unidad que vence primero dentro de `DIAS_DE_AVISO_DE_VENCIMIENTO` días (hoy incluido), o `null`. Las alertas de «por vencer» ya excluyen lo vencido. */
+function avisoDeVencimientoDe(alertas: ResultadoAlertas, unidadId: string, documentos: readonly Documento[]): AvisoDeVencimientoDeUnidad | null {
+  const proxima = alertas.alertas
+    .filter((a) => a.tipo === "documento-por-vencer" && a.unidadId === unidadId && a.d !== null && a.d <= DIAS_DE_AVISO_DE_VENCIMIENTO && a.tipoDocumento !== null)
+    .reduce<Alerta | null>((m, a) => (m === null || (a.d ?? 0) < (m.d ?? 0) ? a : m), null);
+  const doc = proxima === null ? undefined : documentos.find((d) => d.id === proxima.documentoId);
+  if (proxima === null || proxima.tipoDocumento === null || proxima.d === null || doc === undefined) return null;
+  return {
+    tipoDocumento: proxima.tipoDocumento,
+    documento: NOMBRES_DOCUMENTO[proxima.tipoDocumento],
+    dias: proxima.d,
+    venceHoy: proxima.d === 0,
+    vence: formatearFecha(doc.vence),
+    estado: textoVencimiento(proxima.d, doc.vence, proxima.tipoDocumento),
+  };
+}
+
+/** La pantalla Mis partes del perfil Conductor (`#/conductor/partes`). `null` con el perfil Encargado o un conductor que no existe. */
+export function misPartes(estado: Estado, perfil: Perfil): MisPartes | null {
+  if (perfil.tipo !== "conductor") return null;
+  const conductor = estado.conductores.find((c) => c.id === perfil.conductorId);
+  if (conductor === undefined) return null;
+  const filas = ultimosPartesDe(estado, conductor.id);
+  return { titulo: nombreDePantalla({ tipo: "mis-partes" }), conductor: conductor.nombre, filas, vacio: filas.length === 0 ? TI.ultimosVacio : null };
 }
 
 /** Una opción del diálogo «¿Quién completa el parte?»: todo conductor activo es elegible (es un punto de vista); `licenciaVigente` es la de hoy (L1). */

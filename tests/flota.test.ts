@@ -322,10 +322,11 @@ describe("proyecto", () => {
 });
 
 describe("filtros por estado con conteo (5.8, 6.2)", () => {
-  it("los cinco de la especificación, con sus cantidades en la flota entera", () => {
-    expect(ver().filtros).toEqual([
+  it("los seis, en el orden del prototipo, con sus cantidades en la flota entera", () => {
+    expect(ver().filtros.map(({ id, etiqueta, cantidad }) => ({ id, etiqueta, cantidad }))).toEqual([
       { id: "activas", etiqueta: "Activas", cantidad: 23 },
       { id: "pueden-salir", etiqueta: "Disponibles", cantidad: 19 },
+      { id: "no-disponibles", etiqueta: "No disponibles hoy", cantidad: 4 },
       { id: "no-pueden-salir", etiqueta: "Bloqueadas por documentos", cantidad: 2 },
       { id: "fuera-de-servicio", etiqueta: "Fuera de servicio", cantidad: 2 },
       { id: "de-baja", etiqueta: "De baja", cantidad: 1 },
@@ -334,7 +335,7 @@ describe("filtros por estado con conteo (5.8, 6.2)", () => {
 
   it("los conteos no cambian con la búsqueda ni con el proyecto", () => {
     const filtrado = ver({ busqueda: "zk214", proyecto: "proy-base" });
-    expect(filtrado.filtros.map((f) => f.cantidad)).toEqual([23, 19, 2, 2, 1]);
+    expect(filtrado.filtros.map((f) => f.cantidad)).toEqual([23, 19, 4, 2, 2, 1]);
   });
 
   it.each([
@@ -363,11 +364,17 @@ describe("filtros por estado con conteo (5.8, 6.2)", () => {
     expect(patentes(v.filas).sort()).toEqual(centro.protagonista.items.map((i) => i.patente).sort());
   });
 
-  it("«No disponibles hoy» aparece como sexta opción solo cuando está elegido (viene de la ruta), con su cantidad", () => {
-    const v = ver({ filtro: "no-disponibles" });
-    expect(v.filtros.map((f) => f.id)).toEqual(["activas", "pueden-salir", "no-pueden-salir", "fuera-de-servicio", "de-baja", "no-disponibles"]);
-    expect(v.filtros.at(-1)).toEqual({ id: "no-disponibles", etiqueta: "No disponibles hoy", cantidad: 4 });
-    expect(ver({ filtro: "activas" }).filtros).toHaveLength(5);
+  it("«No disponibles hoy» es una pastilla más, siempre, esté o no elegida", () => {
+    for (const filtro of ["activas", "no-disponibles", "de-baja"] as const) {
+      const v = ver({ filtro });
+      expect(v.filtros.map((f) => f.id)).toEqual(["activas", "pueden-salir", "no-disponibles", "no-pueden-salir", "fuera-de-servicio", "de-baja"]);
+      expect(v.filtros.find((f) => f.id === "no-disponibles")?.cantidad).toBe(4);
+    }
+  });
+
+  it("la cuenta de «No disponibles hoy» es la suma de bloqueadas y fuera de servicio", () => {
+    const [, , noDisp, bloqueadas, fuera] = ver().filtros;
+    expect(noDisp?.cantidad).toBe((bloqueadas?.cantidad ?? 0) + (fuera?.cantidad ?? 0));
   });
 });
 
