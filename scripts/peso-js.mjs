@@ -5,7 +5,7 @@
 //   - Total = todo `dist/assets/*.js` (con los trozos que se bajan al entrar a la ficha, el parte o el conductor). Solo avisa si pasa TOPE_TOTAL_AVISO.
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
 
 /** Tope de la carga inicial, en bytes con gzip nivel 9 (kB = 1.000 B). Es el de 120 kB de siempre (docs/stack.md, sección 5). */
@@ -68,7 +68,9 @@ function main() {
   }
 }
 
-if (process.argv[1] !== undefined && import.meta.url === new URL(`file:///${process.argv[1].replace(/\\/g, "/")}`).href) {
+// `pathToFileURL` arma la misma URL que `import.meta.url` en Windows y en Linux (CI). Armarla a mano con
+// "file:///" + ruta deja cuatro barras en Linux: la comparación nunca coincide y el control no corre.
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     main();
   } catch (e) {
