@@ -575,7 +575,7 @@ export const TEXTO_CENTRO = {
   /** Barra de estado de «Operación diaria»: el botón-texto cambia la vista a Conductor, y el texto lo dice. */
   conductor: { intro: "Así lo carga el conductor:", accion: "Abrir el parte diario", aclaracion: "(cambia la vista a Conductor)" },
   vencimientos: "Vencimientos",
-  vencimientosVacio: "No hay vencimientos en los próximos 30 días.",
+  vencimientosVacio: "Nada vence en los próximos 30 días.",
   grupoVacio: "No hay documentos en este grupo.",
   detalle: "Operación diaria: detalle",
   /** Etiqueta de las columnas de las listas sin valor (documento faltante). */
@@ -650,8 +650,68 @@ export function textoMotivoSinLicencia(
 export const TEXTO_GRUPO_OPERACION = {
   "novedad-critica": "Novedades críticas",
   "parte-sin-enviar": "Partes sin enviar",
-  "sin-parte": "Sin parte de ayer",
+  "sin-parte": "Unidades sin parte de ayer",
   "novedad-abierta": "Novedades abiertas",
+} as const;
+
+/**
+ * R3: textos de las tres pantallas del encargado en la interfaz tipo app (Inicio, Vencimientos y Operación diaria): rótulos de las cifras, leyenda del
+ * horizonte, estados vacíos (título + qué va ahí) y líneas de contexto. Vocabulario del prototipo aprobado; las cifras llevan su unidad y su período.
+ */
+export const TEXTO_INICIO = {
+  /** Rótulos de las cuatro cifras secundarias (la principal es `TEXTO_CENTRO.protagonista`). */
+  cifraVencidos: "Vencidos o faltantes",
+  cifraProximos: "Vencen en 30 días",
+  cifraPartes: "Partes pendientes",
+  cifraNovedadCritica: (n: number) => (n === 1 ? "Novedad crítica" : "Novedades críticas"),
+  /** Bajo la cifra principal cuando vale 0. */
+  sinNoDisponibles: "Ninguna unidad bloqueada ni fuera de servicio",
+  /** Panel «No disponibles hoy» sin unidades: no afirma nada sobre licencias, que no entran en la cifra. */
+  noDisponiblesVacio: { titulo: "Todas las unidades activas están disponibles.", ayuda: "Ninguna está bloqueada por documentos ni fuera de servicio." },
+  /** Enlace del panel de vencimientos; el nombre accesible dice a dónde lleva. */
+  verTodosVencimientos: { visible: "Ver todos", nombre: "Ver todos los vencimientos" },
+  /** Segunda línea del panel «Operación diaria» sin pendientes (la primera es `TEXTO_CENTRO.operacionVacia`). */
+  operacionVaciaAyuda: "Aquí aparecerán los partes sin enviar o sin cerrar, las unidades sin parte y las novedades abiertas.",
+} as const;
+
+/** Leyenda del horizonte: una forma, su período y cuántos documentos hay. Los rótulos son los de los filtros de Vencimientos. */
+export const TEXTO_LEYENDA_HORIZONTE = {
+  vencidos: "Vencido o faltante",
+  "7": TEXTO_GRUPO_VENCIMIENTOS["7"].filtro,
+  "15": TEXTO_GRUPO_VENCIMIENTOS["15"].filtro,
+  "30": TEXTO_GRUPO_VENCIMIENTOS["30"].filtro,
+  /** Escala bajo la pista: «Hoy · 7 · 15 · 30 días». */
+  escala: { hoy: "Hoy", sieteDias: "7", quinceDias: "15", treintaDias: "30 días" },
+  /** Nombre accesible de la pista. */
+  nombrePista: "Regla de vencimientos, de hoy a 30 días",
+  /** Ayuda para quien navega con teclado o lector de pantalla. */
+  ayudaTeclado: "Use las flechas para recorrerlos y Enter para ver el detalle.",
+  /** Antes de elegir un punto (sin «Toque»: sirve con mouse, teclado y pantalla táctil). */
+  ayudaDetalle: "Elija un punto para ver qué vence y de qué unidad.",
+} as const;
+
+/** Un número de la leyenda dicho completo: «4 documentos, 7 días o menos». */
+export function textoLeyendaConCantidad(rotulo: string, n: number): string {
+  return `${pluralizar(n, "documento", "documentos")}, ${rotulo.charAt(0).toLowerCase()}${rotulo.slice(1)}`;
+}
+
+/** Línea de contexto de Vencimientos: «3 vencidos o faltantes · 9 vencen en 30 días» (los vencidos no se cuentan en los de 30 días). */
+export function textoContextoVencimientos(vencidos: number, proximos: number): string {
+  return `${pluralizar(vencidos, "vencido o faltante", "vencidos o faltantes")} · ${textoRotuloVencimientos(proximos)}`;
+}
+
+/** Línea de contexto de Operación diaria: «6 pendientes · al 25/11/2026». */
+export function textoContextoOperacion(pendientes: number, hoy: FechaCivil): string {
+  return `${textoPendientes(pendientes)} · al ${formatearFecha(hoy)}`;
+}
+
+/** Estados vacíos de Vencimientos y de las dos solapas de Operación: qué pasó y qué va a aparecer ahí. */
+export const TEXTO_VACIO_PANTALLAS = {
+  vencimientos: { titulo: "Nada vence en los próximos 30 días.", ayuda: "Cuando un documento entre en esa ventana, aparecerá aquí con su fecha." },
+  checklists: { titulo: "No hay partes pendientes.", ayuda: "Si un conductor deja un parte sin enviar o sin cerrar, o una unidad queda sin parte, aparecerá aquí." },
+  novedades: { titulo: "No hay novedades abiertas.", ayuda: "Las novedades que se cargan en un parte o en una ficha aparecerán aquí hasta que se resuelvan." },
+  /** Un grupo sin filas dentro de una lista con otros grupos (por ejemplo, «Partes sin cerrar (0)»). */
+  grupoSinFilas: "Ninguno.",
 } as const;
 
 /** «Unidades» junto a la cifra del protagonista: «1 unidad», «4 unidades» (con 0, «unidades»). */

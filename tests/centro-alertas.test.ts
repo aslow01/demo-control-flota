@@ -256,7 +256,7 @@ describe("vencimientos con el ejemplo: 12 en los grupos esperados", () => {
   it("sin vencimientos: texto de lista vacía y todos los grupos vacíos", () => {
     const sana = centroDe(flotaDePrueba()).vencimientos;
     expect(sana.total).toBe(0);
-    expect(sana.textoVacio).toBe("No hay vencimientos en los próximos 30 días.");
+    expect(sana.textoVacio).toBe("Nada vence en los próximos 30 días.");
     expect(sana.grupos.every((g) => g.filas.length === 0)).toBe(true);
   });
 });
@@ -293,7 +293,7 @@ describe("filtro de la lista (5.8 y 5.9)", () => {
     const sana = centroDe(flotaDePrueba()).vencimientos;
     const r = vencimientosVisibles(sana, "todos");
     expect(r.grupos).toEqual([]);
-    expect(r.textoVacio).toBe("No hay vencimientos en los próximos 30 días.");
+    expect(r.textoVacio).toBe("Nada vence en los próximos 30 días.");
   });
 });
 
@@ -304,7 +304,7 @@ describe("detalle de operación (6.1)", () => {
     expect(d.grupos.map((g) => [g.tipo, g.cantidad, g.tituloConCantidad])).toEqual([
       ["novedad-critica", 1, "Novedades críticas (1)"],
       ["parte-sin-enviar", 1, "Partes sin enviar (1)"],
-      ["sin-parte", 2, "Sin parte de ayer (2)"],
+      ["sin-parte", 2, "Unidades sin parte de ayer (2)"],
       ["novedad-abierta", 1, "Novedades abiertas (1)"],
     ]);
   });
