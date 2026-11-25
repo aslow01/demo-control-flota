@@ -8,7 +8,14 @@ import {
   TEXTO_ALERTA,
   TEXTO_AVISO,
   TEXTO_ERROR_ARRANQUE,
+  TEXTO_GRUPO_OPERACION,
+  TEXTO_INICIO,
+  TEXTO_LEYENDA_HORIZONTE,
   TEXTO_PARTE,
+  TEXTO_VACIO_PANTALLAS,
+  textoContextoOperacion,
+  textoContextoVencimientos,
+  textoLeyendaConCantidad,
   errDocumentoExistente,
   errKmCorreccionAnterior,
   errKmExcedido,
@@ -119,6 +126,43 @@ describe("horizonte: resumen para lectores de pantalla", () => {
     expect(textoHorizonte({ vencidos: 3, "7": 0, "15": 0, "30": 0 })).toBe(
       "Nada vence en los próximos 30 días. 3 documentos vencidos o faltantes.",
     );
+  });
+});
+
+describe("R3: textos de Inicio, Vencimientos y Operación diaria", () => {
+  it("rótulos de las cifras de Inicio, con singular y plural", () => {
+    expect(TEXTO_INICIO.cifraVencidos).toBe("Vencidos o faltantes");
+    expect(TEXTO_INICIO.cifraProximos).toBe("Vencen en 30 días");
+    expect(TEXTO_INICIO.cifraPartes).toBe("Partes pendientes");
+    expect(TEXTO_INICIO.cifraNovedadCritica(1)).toBe("Novedad crítica");
+    expect(TEXTO_INICIO.cifraNovedadCritica(2)).toBe("Novedades críticas");
+    expect(TEXTO_INICIO.cifraNovedadCritica(0)).toBe("Novedades críticas");
+  });
+
+  it("la leyenda del horizonte usa los mismos períodos que los filtros de Vencimientos", () => {
+    expect([TEXTO_LEYENDA_HORIZONTE["7"], TEXTO_LEYENDA_HORIZONTE["15"], TEXTO_LEYENDA_HORIZONTE["30"]]).toEqual(["7 días o menos", "8 a 15 días", "16 a 30 días"]);
+    expect(textoLeyendaConCantidad("7 días o menos", 4)).toBe("4 documentos, 7 días o menos");
+    expect(textoLeyendaConCantidad("16 a 30 días", 1)).toBe("1 documento, 16 a 30 días");
+  });
+
+  it("línea de contexto de Vencimientos: cada cifra con su unidad y su período", () => {
+    expect(textoContextoVencimientos(3, 9)).toBe("3 vencidos o faltantes · 9 vencen en 30 días");
+    expect(textoContextoVencimientos(1, 1)).toBe("1 vencido o faltante · 1 vence en 30 días");
+    expect(textoContextoVencimientos(0, 0)).toBe("0 vencidos o faltantes · 0 vencen en 30 días");
+  });
+
+  it("línea de contexto de Operación diaria: pendientes y fecha", () => {
+    expect(textoContextoOperacion(6, "2026-11-25")).toBe("6 pendientes · al 25/11/2026");
+    expect(textoContextoOperacion(1, "2026-11-25")).toBe("1 pendiente · al 25/11/2026");
+  });
+
+  it("estados vacíos: dicen qué pasó y qué va a aparecer ahí", () => {
+    expect(TEXTO_VACIO_PANTALLAS.vencimientos.titulo).toBe("Nada vence en los próximos 30 días.");
+    expect(TEXTO_VACIO_PANTALLAS.checklists.titulo).toBe("No hay partes pendientes.");
+    expect(TEXTO_VACIO_PANTALLAS.novedades.titulo).toBe("No hay novedades abiertas.");
+    expect(TEXTO_VACIO_PANTALLAS.grupoSinFilas).toBe("Ninguno.");
+    expect(TEXTO_INICIO.noDisponiblesVacio.ayuda).toBe("Ninguna está bloqueada por documentos ni fuera de servicio.");
+    expect(TEXTO_GRUPO_OPERACION["sin-parte"]).toBe("Unidades sin parte de ayer");
   });
 });
 
