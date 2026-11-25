@@ -9,7 +9,7 @@
   //    a la región de estado del encabezado; solo hay un mensaje a la vez (la acción siguiente lo reemplaza). El foco va adonde dice `r.foco`
   //    (5.17), que cada diálogo recibe al cerrarse (`focoDestino`): la fila o el botón que abrió el diálogo puede haber cambiado. Al cancelar, vuelve al botón.
   //  - La pantalla se vuelve a crear al llegar a otra ficha (`{#key}` en App.svelte): el filtro del historial, los mensajes y los diálogos arrancan limpios.
-  import { flushSync, tick } from "svelte";
+  import { flushSync, tick, untrack } from "svelte";
   import { avisoDeAsignacion, contextoDeAsignacion, contextoDeBaja, contextoDeFueraDeServicio, contextoDeKilometraje, contextoDeVolverAServicio } from "../lib/dominio/formulario-ficha.ts";
   import { contextoDeCargarOtro, contextoDeCargar, contextoDeCorregir, contextoDeRenovar, type CampoDocumento, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
   import { contextoDeCargarNovedad, contextoDeResolver } from "../lib/dominio/formulario-novedad.ts";
@@ -47,12 +47,13 @@
   // ---------- Solapas (solo en pantallas angostas) ----------
   // Por debajo de 64 rem (cuando el marco no tiene lateral) las secciones se ven de a una, con solapas; desde 64 rem, todas juntas en dos columnas y sin solapas ni roles de pestaña.
   // Es solo presentación: qué solapa se ve no cambia nada de lo que hace la pantalla. Cada solapa muestra un panel: Resumen = Kilometraje, y los otros tres, el suyo.
-  // PENDIENTE (E3): la solapa inicial sale de `ficha.solapaInicial` (la de la causa del bloqueo); hasta entonces abre en Resumen.
+  // La solapa inicial sale de `ficha.solapaInicial`: la de la causa del bloqueo (documentos o novedades) y, sin causa, Resumen. Se lee UNA vez, al abrir la pantalla (la ficha se vuelve a crear al llegar a otra,
+  // `{#key}` en App.svelte): si después se resuelve la causa, la solapa no se mueve sola. Cruzar los 64 rem con la ficha abierta no la cambia (solo se muestra o se esconde el resto).
   const ESCRITORIO = "(min-width: 64rem)";
   const idSolapa = (id: SolapaDeFicha): string => `solapa-${id}`;
   const idSeccion = (id: SolapaDeFicha): string => `seccion-${id}`;
   let angosto = $state(typeof matchMedia === "function" ? !matchMedia(ESCRITORIO).matches : false);
-  let solapa = $state<SolapaDeFicha>("resumen");
+  let solapa = $state<SolapaDeFicha>(untrack(() => (f !== null && f.encontrada ? f.solapaInicial : "resumen")));
   $effect(() => {
     if (typeof matchMedia !== "function") return;
     const consulta = matchMedia(ESCRITORIO);
