@@ -167,10 +167,11 @@
       width: 12.5rem;
     }
     [data-variante="flota"] th[data-col="proximo"] {
-      width: 15rem;
+      width: 14rem;
     }
+    /* Seis cifras con puntos y «km» («141.711 km») necesitan 6,25 rem con el relleno de 8 px: con 5,5 rem se pegaban a la fecha del último parte. */
     [data-variante="flota"] th[data-col="km"] {
-      width: 5.5rem;
+      width: 6.25rem;
     }
     [data-variante="flota"] th[data-col="parte"] {
       width: 6.5rem;
