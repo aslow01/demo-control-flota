@@ -85,7 +85,7 @@ Cifras medidas el 25/11/2026:
 | Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 202 archivos con el archivo local de términos; 8 reglas sin él) |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
-También se recorrió la demo en un navegador (Playwright: 456 combinaciones de pantalla, tema y ancho sin desbordes; axe-core: 0 violaciones en 36 pantallas). No se puede reproducir con un comando. La integración continua nunca corrió y no respalda ninguna cifra. Detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3.
+También se recorrió la demo en un navegador (Playwright: 456 combinaciones de pantalla, tema y ancho sin desbordes; axe-core: 0 violaciones en 36 pantallas). No se puede reproducir con un comando. La integración continua (GitHub Actions) corrió por primera vez el 25/11/2026, al publicar el repositorio, y pasó; las cifras de esta sección se midieron en una computadora local, no en ella. Detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3.
 
 ## Límites conocidos
 
