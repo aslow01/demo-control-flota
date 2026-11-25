@@ -14,10 +14,7 @@
   import EtiquetaDemo from "./componentes/EtiquetaDemo.svelte";
   import EnlaceAccion from "./componentes/EnlaceAccion.svelte";
   import PantallaAlertas from "./componentes/PantallaAlertas.svelte";
-  import PantallaConductor from "./componentes/PantallaConductor.svelte";
-  import PantallaFicha from "./componentes/PantallaFicha.svelte";
   import PantallaFlota from "./componentes/PantallaFlota.svelte";
-  import PantallaParte from "./componentes/PantallaParte.svelte";
   import Pie from "./componentes/Pie.svelte";
   import { TEXTO_MARCO, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { ItemMenu, OpcionConductor, SeccionActiva } from "./componentes/tipos.ts";
@@ -173,9 +170,21 @@
   });
 
   // La primera pantalla no roba el foco al cargar: solo los cambios posteriores (y el error de arranque) lo mueven al h1.
+  // La ficha, el parte y el conductor se bajan al entrar (`{#await import()}`): si todavía no llegaron no hay h1, y el foco queda
+  // pendiente hasta que llegan (`alLlegarLaPantalla`). Sin esto, la primera apertura con red lenta dejaría el foco en el `body`.
   let versionVista: number | null = null;
+  let tituloPendiente = false;
   function enfocarTitulo(): void {
-    document.querySelector<HTMLElement>("main h1")?.focus();
+    const titulo = document.querySelector<HTMLElement>("main h1");
+    tituloPendiente = titulo === null;
+    titulo?.focus();
+  }
+  function alLlegarLaPantalla(): void {
+    if (tituloPendiente) void tick().then(enfocarTitulo);
+  }
+  // Un trozo que no se pudo bajar (sin red, o un trozo de una versión anterior) cae en la red de seguridad de `main`: error con «Recargar».
+  function fallarCarga(error: unknown): never {
+    throw error;
   }
   $effect(() => {
     const version = app.versionDePantalla;
@@ -242,6 +251,15 @@
     (document.querySelector<HTMLElement>("main h1") ?? document.getElementById("principal"))?.focus();
   }
 </script>
+
+<!-- Mientras llega el trozo de la ficha, el parte o el conductor: lo mismo que el arranque (nada al principio, después el texto y un
+     <progress> indeterminado). Al desmontarse (llegó la pantalla, o se fue a otra) se devuelve el foco al título si había quedado pendiente. -->
+{#snippet cargandoPantalla()}
+  <div class="preparando diferida" role="status" {@attach () => alLlegarLaPantalla}>
+    <p id="texto-cargando">{TEXTO_AVISO.preparando}</p>
+    <progress aria-labelledby="texto-cargando"></progress>
+  </div>
+{/snippet}
 
 <a class="saltar" href="#principal" onclick={saltarAlContenido}>{TEXTO_MARCO.saltar}</a>
 
@@ -328,14 +346,32 @@
       {:else if app.ruta.tipo === "unidad"}
         <!-- Una ficha nueva (otra patente, o el alta de una unidad) arranca limpia: filtro del historial, mensajes y diálogos. -->
         {#key app.versionDePantalla}
-          <PantallaFicha />
+          {#await import("./componentes/PantallaFicha.svelte")}
+            {@render cargandoPantalla()}
+          {:then { default: PantallaFicha }}
+            <PantallaFicha />
+          {:catch error}
+            {fallarCarga(error)}
+          {/await}
         {/key}
       {:else if app.ruta.tipo === "conductor" || app.ruta.tipo === "mis-partes"}
-        <PantallaConductor />
+        {#await import("./componentes/PantallaConductor.svelte")}
+          {@render cargandoPantalla()}
+        {:then { default: PantallaConductor }}
+          <PantallaConductor />
+        {:catch error}
+          {fallarCarga(error)}
+        {/await}
       {:else if app.ruta.tipo === "parte"}
         <!-- Un parte nuevo (otra unidad u otra fecha) arranca limpio: formulario, errores y el panel de «Parte enviado». -->
         {#key app.versionDePantalla}
-          <PantallaParte bind:titulo={tituloDelParte} />
+          {#await import("./componentes/PantallaParte.svelte")}
+            {@render cargandoPantalla()}
+          {:then { default: PantallaParte }}
+            <PantallaParte bind:titulo={tituloDelParte} />
+          {:catch error}
+            {fallarCarga(error)}
+          {/await}
         {/key}
       {:else}
         <!-- Una dirección que no corresponde a ninguna pantalla (8: Error): nunca una pantalla en blanco, y el camino de vuelta. -->
@@ -438,5 +474,14 @@
   }
   progress {
     width: 100%;
+  }
+  /* Los trozos locales llegan en un instante: el texto no aparece hasta pasados 300 ms (como en el arranque) para que no parpadee. */
+  .diferida {
+    animation: aparecer-tarde 0s linear 300ms backwards;
+  }
+  @keyframes aparecer-tarde {
+    from {
+      visibility: hidden;
+    }
   }
 </style>
