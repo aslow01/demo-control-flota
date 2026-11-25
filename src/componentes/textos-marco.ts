@@ -366,3 +366,57 @@ export const TEXTO_PARTE_VISTA = {
     critica: "crítica",
   },
 } as const;
+
+/**
+ * Marco nuevo «tipo app» (etapa E1, `maquetador`): barra inferior, lateral, barra superior móvil, migas. Todavía no lo usa ninguna pantalla.
+ * Los nombres de las pantallas salen de `NOMBRES_DE_PANTALLA` (dominio/textos.ts): acá no se repiten.
+ */
+export const TEXTO_NAVEGACION = {
+  /** Nombre accesible de la barra inferior y del lateral. */
+  secciones: "Secciones",
+  /** Nombre accesible de las migas de pan (escritorio). */
+  migas: "Ruta",
+  /** «Operación diaria» se corta a «Operación» en la barra inferior y en el botón de volver; el resto del nombre lo lee el lector de pantalla. */
+  operacionCorto: "Operación",
+  operacionOculto: " diaria",
+  /** Botón de la barra superior móvil: visible «Movilidades», nombre accesible «Volver a Movilidades». */
+  volverA: (nombre: string) => `Volver a ${nombre}`,
+  atras: "Atrás",
+  /** Insignias: se leen después del nombre de la sección («Inicio, 4 alertas críticas»). */
+  insignias: {
+    alertasCriticas: (n: number) => (n === 1 ? "1 alerta crítica" : `${n} alertas críticas`),
+    pendientes: (n: number) => (n === 1 ? "1 pendiente" : `${n} pendientes`),
+    vencidosOFaltantes: (n: number) => (n === 1 ? "1 vencido o faltante" : `${n} vencidos o faltantes`),
+    abiertas: (n: number) => (n === 1 ? "1 abierta" : `${n} abiertas`),
+  },
+  /** Chip del perfil en la barra superior: «Ver como: Encargado. Cambiar perfil». */
+  chipPerfil: (perfil: string) => `Ver como: ${perfil}. Cambiar perfil`,
+  /** Lateral: «Conductor · Tamara» (solo el nombre de pila). */
+  conductorCorto: (nombreDePila: string) => `Conductor · ${nombreDePila}`,
+} as const;
+
+/** Pantalla «Más» y diálogo «Ver como» del marco nuevo (E1). */
+export const TEXTO_MAS = {
+  verComo: {
+    titulo: "Ver como",
+    /** Ayuda de la pantalla «Más». */
+    ayuda: "Es solo un punto de vista de la demo: no hay usuarios ni contraseñas.",
+    /** Ayuda del diálogo: el cambio se confirma con «Aplicar». */
+    ayudaDialogo: "Es solo un punto de vista de la demo: no hay usuarios ni contraseñas. El cambio se aplica al pulsar «Aplicar».",
+    cambiarPerfil: "Cambiar perfil",
+    aplicar: "Aplicar",
+    cancelar: "Cancelar",
+    leyendaPerfil: "Perfil",
+    encargadoAyuda: "Perfil de entrada",
+    conductorAyuda: "Completa el parte diario",
+    /** Debajo del perfil actual en «Más». */
+    encargadoDescripcion: "Inicio, movilidades, vencimientos y operación diaria.",
+    conductorDescripcion: (nombre: string, patente: string) => `${nombre} (persona ficticia) · unidad ${patente}`,
+  },
+  laDemo: {
+    titulo: "La demo",
+    comoFunciona: { rotulo: "Cómo funciona", ayuda: "Qué vence y cuándo, el parte diario y dónde se guardan los datos" },
+    reiniciar: { rotulo: "Reiniciar demo", ayuda: "Borra los cambios y vuelve a la flota de ejemplo" },
+    portafolio: { rotulo: "Volver al portafolio", ayuda: "matiasormeno.com.ar" },
+  },
+} as const;
