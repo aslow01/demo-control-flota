@@ -1,0 +1,10 @@
+Fuentes alojadas de la demo (la política de seguridad del sitio solo permite recursos del propio origen).
+
+Tres familias variables, solo el subconjunto latino, descargadas el 25/11/2026 de Google Fonts (fonts.gstatic.com) con los mismos ejes que pidió el prototipo:
+- Bricolage Grotesque (opsz 12-96, wdth 75-100, wght 400-800): títulos, cifras y nombre de la marca. OFL-bricolage-grotesque.txt
+- Schibsted Grotesk (wght 400-800): texto. OFL-schibsted-grotesk.txt
+- Red Hat Mono (wght 500-600): patentes, números de documento y fechas. OFL-red-hat-mono.txt
+
+Las tres se publican bajo la licencia SIL Open Font License 1.1: se pueden usar, estudiar, modificar y redistribuir (incluso con el sitio) con tal de conservar el aviso de derechos y la licencia, que son los archivos OFL-*.txt de esta carpeta. Los textos de licencia son los del repositorio google/fonts (carpeta ofl/).
+
+Las declaraciones @font-face están en ../fuentes.css.

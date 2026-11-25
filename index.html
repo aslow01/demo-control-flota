@@ -4,12 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ecece7" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121110" />
     <title>Control de flota (demo)</title>
     <link
       rel="icon"
       type="image/svg+xml"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230B6B70' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 17h18'/%3E%3Cpath d='M4 14.5v5'/%3E%3Cpath d='M12 14.5v5'/%3E%3Cpath d='M20 14.5v5'/%3E%3Ccircle cx='4' cy='8' r='2.5' fill='%230B6B70' stroke='none'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231C1A17' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 17h18'/%3E%3Cpath d='M4 14.5v5'/%3E%3Cpath d='M12 14.5v5'/%3E%3Cpath d='M20 14.5v5'/%3E%3Ccircle cx='4' cy='8' r='2.5' fill='%231C1A17' stroke='none'/%3E%3C/svg%3E"
     />
+    <!-- Solo las fuentes de la primera pantalla (texto y títulos); la de las patentes baja sola al usarse. Vite reescribe estas rutas con el nombre con huella. -->
+    <link rel="preload" href="/src/estilos/fuentes/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/src/estilos/fuentes/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <!-- Sprite de íconos (docs/diseno-ui.md 5.20): dibujados a mano, 24 × 24, trazo 1.75, currentColor.

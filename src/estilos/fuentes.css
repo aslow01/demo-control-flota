@@ -1,0 +1,90 @@
+/* Fuentes alojadas (la CSP del sitio es `font-src 'self'`: nada de Google Fonts). Tres familias variables, solo el subconjunto latino
+   (cubre el español completo: ñ, tildes, ¿ ¡ « » · — …). Cada una con su licencia OFL junto a los archivos (src/estilos/fuentes/OFL-*.txt).
+   `font-display: swap`: el texto aparece enseguida con la fuente de reemplazo y se cambia al llegar la propia. Las «… Ajustada» son esa
+   fuente de reemplazo con las medidas corregidas (size-adjust y márgenes de línea) para que el cambio no mueva el diseño. */
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 400 800;
+  font-stretch: 75% 100%;
+  font-display: swap;
+  src: url("./fuentes/bricolage-grotesque-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Schibsted Grotesk";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("./fuentes/schibsted-grotesk-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Red Hat Mono";
+  font-style: normal;
+  font-weight: 500 600;
+  font-display: swap;
+  src: url("./fuentes/red-hat-mono-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- Fuentes de reemplazo con las medidas corregidas ----------
+   Cifras medidas en Chromium (25/11/2026) con un texto en español de unos 230 caracteres: ancho de la fuente propia ÷ ancho de Arial (o Courier New).
+   Los márgenes de línea son (ascenso o descenso de la propia) ÷ size-adjust. Si el sistema no tiene la fuente local, se sigue con el resto de la lista y no pasa nada. */
+@font-face {
+  font-family: "Schibsted Grotesk Ajustada";
+  font-weight: 400 500;
+  src: local("Arial"), local("ArialMT");
+  size-adjust: 103.7%;
+  ascent-override: 94.3%;
+  descent-override: 24.9%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Schibsted Grotesk Ajustada";
+  font-weight: 600 800;
+  src: local("Arial Bold"), local("Arial-BoldMT");
+  size-adjust: 101.3%;
+  ascent-override: 96.4%;
+  descent-override: 25.5%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Bricolage Grotesque Ajustada";
+  font-weight: 400 500;
+  src: local("Arial"), local("ArialMT");
+  size-adjust: 75%;
+  ascent-override: 124%;
+  descent-override: 36%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Bricolage Grotesque Ajustada";
+  font-weight: 600 800;
+  src: local("Arial Bold"), local("Arial-BoldMT");
+  size-adjust: 75%;
+  ascent-override: 124%;
+  descent-override: 36%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Red Hat Mono Ajustada";
+  font-weight: 400 500;
+  src: local("Courier New"), local("CourierNewPSMT");
+  size-adjust: 100%;
+  ascent-override: 101.8%;
+  descent-override: 30.5%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Red Hat Mono Ajustada";
+  font-weight: 600 800;
+  src: local("Courier New Bold"), local("CourierNewPS-BoldMT");
+  size-adjust: 100%;
+  ascent-override: 101.8%;
+  descent-override: 30.5%;
+  line-gap-override: 0%;
+}
