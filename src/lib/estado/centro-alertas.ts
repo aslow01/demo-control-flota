@@ -11,6 +11,7 @@ import { diasEntre, formatearFecha } from "../dominio/fechas.ts";
 import { rotuloNovedad } from "../dominio/novedades.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import {
+  NOMBRES_DE_PANTALLA,
   NOMBRES_DOCUMENTO,
   TEXTO_CENTRO,
   TEXTO_ESTADO_OPERACION,
@@ -19,9 +20,15 @@ import {
   TEXTO_GRUPO_OPERACION,
   TEXTO_ESTADO_PARTE_INCOMPLETO,
   TEXTO_GRUPO_VENCIMIENTOS,
+  TEXTO_INICIO,
+  TEXTO_LEYENDA_HORIZONTE,
+  TEXTO_VACIO_PANTALLAS,
   palabraUnidades,
   pluralizar,
   textoAccionDocumento,
+  textoContextoOperacion,
+  textoContextoVencimientos,
+  textoLeyendaConCantidad,
   textoDesgloseNoDisponibles,
   textoDisponibles,
   textoFilaOperacion,
@@ -41,8 +48,17 @@ import {
 } from "../dominio/textos.ts";
 import type { Conductor, Estado, FechaCivil, Novedad, Parte, TipoDocumento, Titular, Unidad } from "../dominio/tipos.ts";
 import { documentoVigente, type Grupo } from "../dominio/vencimientos.ts";
-import { horizonteCompleto, type Horizonte } from "../dominio/horizonte.ts";
-import { aHash } from "./enrutador.ts";
+import {
+  MAX_POR_DIA_EN_REGLA,
+  formaDeGrupo,
+  horizonteCompleto,
+  recorridoDeRegla,
+  type ElementoDeRegla,
+  type FormaDeMarca,
+  type Horizonte,
+  type TramoHorizonte,
+} from "../dominio/horizonte.ts";
+import { aHash, type FiltroDeVencimientosEnRuta, type SolapaDeOperacion } from "./enrutador.ts";
 
 /** Unidades que lista el protagonista; las demás quedan detrás de «Ver las N en la flota» (6.1). */
 export const MAX_PROTAGONISTA = 6;
@@ -205,12 +221,58 @@ export interface FiltroVencimientos {
   cantidad: number;
 }
 
+/** Los filtros de la pantalla Vencimientos: los mismos de la dirección (`?filtro=`), más «todos», que no viaja. */
+export type IdFiltroVencimientos = "todos" | FiltroDeVencimientosEnRuta;
+
+/** Una pastilla de filtro que es un enlace (`aria-current` en la elegida): lleva a la dirección de ese filtro. */
+export interface FiltroEnlaceVencimientos {
+  id: IdFiltroVencimientos;
+  etiqueta: string;
+  cantidad: number;
+  /** Sin tono ni forma en «Todos» y «Vencen en 30 días», que juntan varios grupos. */
+  tono: "critico" | "semana" | "quincena" | "mes" | null;
+  forma: FormaDeMarca | null;
+  href: string;
+}
+
+/** Lo que se elige en la regla: un documento (con todo lo que muestra el detalle) o «y N más» (lleva a la lista del tramo, no abre detalle). */
+export type PuntoDeRegla =
+  | (Extract<ElementoDeRegla, { tipo: "marca" }> & {
+      /** Lo que se escribe junto al punto cuando entra: la patente (`ZK 214 BD`) o el nombre abreviado del conductor (`I. Aguirre`). */
+      etiquetaCorta: string;
+      /** La fila de la lista de Vencimientos: documento, titular, estado, fecha y acción (`Renovar`). Es la misma que dibuja la lista. */
+      vencimiento: FilaVencimiento;
+      /** «Ver ficha»: la de la unidad o, en la licencia de un conductor, la de su unidad; `null` si no tiene. */
+      fichaHref: string | null;
+    })
+  | (Extract<ElementoDeRegla, { tipo: "mas" }> & { href: string });
+
+export interface ReglaDeVencimientos {
+  /** En el orden de recorrido de las flechas (de hoy hacia adelante); con `fila` ya asignada. */
+  elementos: PuntoDeRegla[];
+  /** La caja «Vencidos o faltantes»: no entran en la pista. `quienes` son patentes y nombres abreviados, sin repetir. */
+  vencidos: { cantidad: number; quienes: string[]; href: string };
+  /** Una forma por grupo, con cuántos documentos hay: la leyenda bajo la pista y su texto para lectores. */
+  leyenda: { grupo: Grupo; forma: FormaDeMarca; rotulo: string; cantidad: number; textoLector: string }[];
+  /** El nombre accesible de la pista (cuenta los de cada tramo, se dibujen o no). */
+  etiquetaAria: string | null;
+  /** «Nada vence en los próximos 30 días» si no hay ninguna marca. */
+  vacio: string | null;
+}
+
 export interface PanelVencimientos {
   titulo: string;
   /** Vencidos, faltantes y los de los próximos 30 días: el número de «Todos». El rótulo «próximos 30 días · 9» no cuenta los vencidos. */
   total: number;
   rotuloCantidad: string;
+  /** «3 vencidos o faltantes · 9 vencen en 30 días». */
+  contexto: string;
+  /** La pista de las pantallas viejas (hasta 4 por día). Las pantallas nuevas usan `regla`. */
   horizonte: Horizonte;
+  /** La regla interactiva de Inicio y Vencimientos (hasta 2 por día, y «y N más»). */
+  regla: ReglaDeVencimientos;
+  /** Los filtros de la pantalla Vencimientos como enlaces, en este orden: todos, vencidos, próximos (30 días), 7, 15 y 30. */
+  filtrosEnlace: FiltroEnlaceVencimientos[];
   filtros: FiltroVencimientos[];
   /** Los cuatro grupos (también los vacíos); ver `vencimientosVisibles`. */
   grupos: GrupoVencimientos[];
@@ -253,11 +315,79 @@ export interface PanelDetalle {
   grupos: GrupoOperacion[];
 }
 
+/** Una cifra de Inicio: el número, su rótulo y adónde lleva. `tono` y `forma` solo si hay algo que atender (la forma acompaña al color). */
+export interface CifraDeInicio {
+  valor: number;
+  rotulo: string;
+  tono: "critico" | "semana" | "vigente" | "neutro";
+  forma: FormaDeMarca | null;
+  href: string;
+}
+
+export interface CifrasDeInicio {
+  /** La principal, la de color: «No disponibles hoy». Es la del protagonista (`protagonista.cifra`), con su bajada y las disponibles. */
+  noDisponibles: CifraDeInicio & {
+    /** «2 bloqueadas por documentos · 2 fuera de servicio», o «Ninguna unidad bloqueada ni fuera de servicio» si es 0. */
+    bajada: string;
+    /** «Disponibles hoy: 19 de 23 unidades activas.» */
+    disponibles: string;
+  };
+  vencidos: CifraDeInicio;
+  /** Solo los que vencen en 30 días o menos (7, 15 y 30): los vencidos tienen su cifra. */
+  proximos: CifraDeInicio;
+  /** Partes sin enviar, sin cerrar y unidades sin parte de ayer. */
+  partes: CifraDeInicio;
+  novedadCritica: CifraDeInicio;
+}
+
+/** Un grupo dentro de una solapa de Operación diaria. Los grupos de una solapa están siempre, también sin filas (`sinFilas` dice «Ninguno.»). */
+export interface GrupoDeSolapa {
+  id: "sin-enviar" | "sin-cerrar" | "sin-parte" | "criticas" | "abiertas";
+  titulo: string;
+  /** «Partes sin enviar (1)». */
+  tituloConCantidad: string;
+  cantidad: number;
+  filas: FilaOperacion[];
+  /** «Ninguno.» si el grupo no tiene filas; `null` si tiene. */
+  sinFilas: string | null;
+}
+
+export interface PanelSolapaOperacion {
+  id: SolapaDeOperacion;
+  /** «Checklists» · «Novedades». */
+  rotulo: string;
+  /** Pendientes de la solapa: la cifra de su pestaña. */
+  cantidad: number;
+  /** Solo Novedades: hay alguna crítica (la cifra de la pestaña va en tono crítico). */
+  critica: boolean;
+  href: string;
+  /** Vacía si la solapa no tiene nada (el estado vacío es `vacio`). */
+  grupos: GrupoDeSolapa[];
+  /** Título y ayuda del estado vacío; `null` si hay algo. */
+  vacio: { titulo: string; ayuda: string } | null;
+}
+
+/** Operación diaria de la pantalla nueva: el reparto del detalle en dos solapas (Checklists y Novedades). */
+export interface OperacionDiaria {
+  titulo: string;
+  total: number;
+  /** «5 pendientes». */
+  rotuloTotal: string;
+  /** «5 pendientes · al 18/11/2026». */
+  contexto: string;
+  solapas: [PanelSolapaOperacion, PanelSolapaOperacion];
+}
+
 export interface CentroDeAlertas {
   titulo: string;
   encabezado: Encabezado;
   protagonista: Protagonista;
+  /** Las cinco cifras de Inicio, cada una con su destino. */
+  cifras: CifrasDeInicio;
+  /** El panel de operación de las pantallas viejas. */
   operacion: PanelOperacion;
+  /** La pantalla Operación diaria: dos solapas con sus grupos y filas. */
+  operacionDiaria: OperacionDiaria;
   vencimientos: PanelVencimientos;
   detalle: PanelDetalle;
 }
@@ -444,6 +574,62 @@ function filaDeVencimiento(estado: Estado, a: Alerta): FilaVencimiento | null {
   };
 }
 
+/** `I. Aguirre`: lo que cabe junto al punto de un conductor. Un nombre de una sola palabra queda como está. */
+function nombreAbreviado(nombre: string): string {
+  const [primero = "", ...resto] = nombre.trim().split(/\s+/);
+  return resto.length === 0 ? primero : `${primero.charAt(0)}. ${resto.join(" ")}`;
+}
+
+const GRUPO_DE_TRAMO: Record<TramoHorizonte, "7" | "15" | "30"> = { semana: "7", quincena: "15", mes: "30" };
+
+function armarRegla(r: ResultadoAlertas, filas: readonly FilaVencimiento[]): ReglaDeVencimientos {
+  const horizonte = horizonteCompleto(r, { maxApiladas: MAX_POR_DIA_EN_REGLA });
+  const porAlerta = new Map(filas.map((f) => [f.alertaId, f]));
+  const quien = (f: FilaVencimiento): string => (f.titular.tipo === "unidad" ? f.titular.patenteTexto : nombreAbreviado(f.titular.nombre));
+  const elementos = recorridoDeRegla(horizonte).flatMap((x): PuntoDeRegla[] => {
+    if (x.tipo === "mas") return [{ ...x, href: aHash({ tipo: "vencimientos", filtro: GRUPO_DE_TRAMO[x.tramo] }) }];
+    const f = porAlerta.get(x.alertaId);
+    if (f === undefined) return [];
+    const t = f.titular;
+    return [{ ...x, etiquetaCorta: quien(f), vencimiento: f, fichaHref: t.tipo === "unidad" ? t.href : (t.unidad?.href ?? null) }];
+  });
+  const rotulos: Record<Grupo, string> = { vencidos: TEXTO_LEYENDA_HORIZONTE.vencidos, "7": TEXTO_LEYENDA_HORIZONTE["7"], "15": TEXTO_LEYENDA_HORIZONTE["15"], "30": TEXTO_LEYENDA_HORIZONTE["30"] };
+  return {
+    elementos,
+    vencidos: {
+      cantidad: horizonte.vencidos,
+      quienes: [...new Set(filas.filter((f) => f.grupo === "vencidos").map(quien))],
+      href: aHash({ tipo: "vencimientos", filtro: "vencidos" }),
+    },
+    leyenda: GRUPOS.map((grupo) => {
+      const cantidad = horizonte.porGrupo[grupo];
+      return { grupo, forma: formaDeGrupo(grupo), rotulo: rotulos[grupo], cantidad, textoLector: textoLeyendaConCantidad(rotulos[grupo], cantidad) };
+    }),
+    etiquetaAria: horizonte.etiquetaAria,
+    vacio: horizonte.textoVacio,
+  };
+}
+
+function armarFiltrosEnlace(r: ResultadoAlertas, total: number, proximos: number): FiltroEnlaceVencimientos[] {
+  const g = r.resumen.porGrupo;
+  const filtro = (id: IdFiltroVencimientos, etiqueta: string, cantidad: number, grupo: Grupo | null): FiltroEnlaceVencimientos => ({
+    id,
+    etiqueta,
+    cantidad,
+    tono: grupo === null ? null : TONO_GRUPO[grupo],
+    forma: grupo === null ? null : formaDeGrupo(grupo),
+    href: aHash(id === "todos" ? { tipo: "vencimientos" } : { tipo: "vencimientos", filtro: id }),
+  });
+  return [
+    filtro("todos", "Todos", total, null),
+    filtro("vencidos", TEXTO_GRUPO_VENCIMIENTOS.vencidos.filtro, g.vencidos, "vencidos"),
+    filtro("proximos", TEXTO_INICIO.cifraProximos, proximos, null),
+    filtro("7", TEXTO_GRUPO_VENCIMIENTOS["7"].filtro, g["7"], "7"),
+    filtro("15", TEXTO_GRUPO_VENCIMIENTOS["15"].filtro, g["15"], "15"),
+    filtro("30", TEXTO_GRUPO_VENCIMIENTOS["30"].filtro, g["30"], "30"),
+  ];
+}
+
 function armarVencimientos(estado: Estado, r: ResultadoAlertas): PanelVencimientos {
   const filas = r.alertas.filter((a) => a.categoria === "vencimientos").flatMap((a) => filaDeVencimiento(estado, a) ?? []);
   const grupos: GrupoVencimientos[] = GRUPOS.map((id) => {
@@ -458,12 +644,16 @@ function armarVencimientos(estado: Estado, r: ResultadoAlertas): PanelVencimient
     };
   });
   const total = contarVencimientos(r);
+  const proximos = total - r.resumen.porGrupo.vencidos;
   return {
     titulo: TEXTO_CENTRO.vencimientos,
     total,
     // «próximos 30 días» no cuenta lo ya vencido o faltante (tiene su propio grupo y filtro); «Todos» sí.
-    rotuloCantidad: textoRotuloVencimientos(total - r.resumen.porGrupo.vencidos),
+    rotuloCantidad: textoRotuloVencimientos(proximos),
+    contexto: textoContextoVencimientos(r.resumen.porGrupo.vencidos, proximos),
     horizonte: horizonteCompleto(r),
+    regla: armarRegla(r, filas),
+    filtrosEnlace: armarFiltrosEnlace(r, total, proximos),
     filtros: [
       { id: "todos", etiqueta: "Todos", cantidad: total },
       ...grupos.map((g): FiltroVencimientos => ({ id: g.id, etiqueta: TEXTO_GRUPO_VENCIMIENTOS[g.id].filtro, cantidad: g.cantidad })),
@@ -482,14 +672,14 @@ export interface VencimientosVisibles {
   anuncio: string;
 }
 
-export function vencimientosVisibles(v: PanelVencimientos, filtro: IdFiltro): VencimientosVisibles {
+export function vencimientosVisibles(v: PanelVencimientos, filtro: IdFiltro | IdFiltroVencimientos): VencimientosVisibles {
   if (filtro === "todos") {
     const conFilas = v.grupos.filter((g) => g.cantidad > 0);
     return { grupos: conFilas, textoVacio: conFilas.length === 0 ? v.textoVacio : null, anuncio: textoMostrando(v.total, v.total) };
   }
-  const grupo = v.grupos.find((g) => g.id === filtro);
-  const elegidos = grupo === undefined ? [] : [grupo];
-  const cantidad = grupo?.cantidad ?? 0;
+  // «proximos» junta los tres grupos de 30 días o menos y deja afuera los vencidos y faltantes.
+  const elegidos = filtro === "proximos" ? v.grupos.filter((g) => g.id !== "vencidos" && g.cantidad > 0) : v.grupos.filter((g) => g.id === filtro);
+  const cantidad = elegidos.reduce((n, g) => n + g.cantidad, 0);
   return {
     grupos: elegidos,
     textoVacio: cantidad === 0 ? TEXTO_CENTRO.grupoVacio : null,
@@ -497,7 +687,8 @@ export function vencimientosVisibles(v: PanelVencimientos, filtro: IdFiltro): Ve
   };
 }
 
-function armarDetalle(estado: Estado, r: ResultadoAlertas): PanelDetalle {
+/** Arma la fila de una alerta de operación (la misma en el detalle viejo y en las solapas de Operación diaria); `null` si su unidad ya no existe. */
+function armadorDeFilasDeOperacion(estado: Estado): (a: Alerta, tipo: TipoAlertaOperacion) => FilaOperacion | null {
   const unidades = new Map(estado.unidades.map((u) => [u.id, u]));
   const novedades = new Map<string, Novedad>(estado.novedades.map((n) => [`novedad:${n.id}`, n]));
   const partes = new Map<string, Parte>();
@@ -506,7 +697,7 @@ function armarDetalle(estado: Estado, r: ResultadoAlertas): PanelDetalle {
     partes.set(`uso-doc:${p.id}`, p);
   }
 
-  const fila = (a: Alerta, tipo: TipoAlertaOperacion): FilaOperacion | null => {
+  return (a, tipo) => {
     const u = a.unidadId === null ? undefined : unidades.get(a.unidadId);
     if (u === undefined) return null;
     const patenteTexto = formatearPatente(u.patente);
@@ -537,7 +728,10 @@ function armarDetalle(estado: Estado, r: ResultadoAlertas): PanelDetalle {
       accion,
     };
   };
+}
 
+function armarDetalle(estado: Estado, r: ResultadoAlertas): PanelDetalle {
+  const fila = armadorDeFilasDeOperacion(estado);
   const grupos: GrupoOperacion[] = [];
   for (const tipo of TIPOS_OPERACION) {
     const filas = r.alertas.filter((a) => a.tipo === tipo).flatMap((a) => fila(a, tipo) ?? []);
@@ -561,19 +755,104 @@ function armarDetalle(estado: Estado, r: ResultadoAlertas): PanelDetalle {
   return { titulo: TEXTO_CENTRO.detalle, grupos };
 }
 
+// --- Cifras de Inicio (3.5) ----------------------------------------------------------------------
+
+/** Una cifra con algo que atender lleva su tono y su forma (rombo crítico, triángulo azufre); en cero, o sin tono (`null`), es neutra. */
+function cifra(valor: number, rotulo: string, tonoConValor: "critico" | "semana" | null, href: string): CifraDeInicio {
+  return valor > 0 && tonoConValor !== null
+    ? { valor, rotulo, tono: tonoConValor, forma: tonoConValor === "critico" ? "rombo" : "triangulo", href }
+    : { valor, rotulo, tono: "neutro", forma: null, href };
+}
+
+function armarCifras(r: ResultadoAlertas, protagonista: Protagonista): CifrasDeInicio {
+  const g = r.resumen.porGrupo;
+  const op = r.resumen.operacion;
+  return {
+    noDisponibles: {
+      valor: protagonista.cifra,
+      rotulo: protagonista.titulo,
+      tono: protagonista.tono,
+      forma: null,
+      href: aHash({ tipo: "movilidades", filtro: "no-disponibles" }),
+      bajada: protagonista.desglose ?? TEXTO_INICIO.sinNoDisponibles,
+      disponibles: protagonista.disponibles,
+    },
+    vencidos: cifra(g.vencidos, TEXTO_INICIO.cifraVencidos, "critico", aHash({ tipo: "vencimientos", filtro: "vencidos" })),
+    proximos: cifra(g["7"] + g["15"] + g["30"], TEXTO_INICIO.cifraProximos, "semana", aHash({ tipo: "vencimientos", filtro: "proximos" })),
+    partes: cifra(op["parte-sin-enviar"] + op["sin-parte"], TEXTO_INICIO.cifraPartes, null, aHash({ tipo: "operacion", solapa: "checklists" })),
+    novedadCritica: cifra(op["novedad-critica"], TEXTO_INICIO.cifraNovedadCritica(op["novedad-critica"]), "critico", aHash({ tipo: "operacion", solapa: "novedades" })),
+  };
+}
+
+// --- Operación diaria en dos solapas (3.6) ----------------------------------------------------------
+
+function grupoDeSolapa(id: GrupoDeSolapa["id"], titulo: string, filas: FilaOperacion[]): GrupoDeSolapa {
+  return {
+    id,
+    titulo,
+    tituloConCantidad: textoGrupoConCantidad(titulo, filas.length),
+    cantidad: filas.length,
+    filas,
+    sinFilas: filas.length === 0 ? TEXTO_VACIO_PANTALLAS.grupoSinFilas : null,
+  };
+}
+
+function armarOperacionDiaria(estado: Estado, r: ResultadoAlertas, hoy: FechaCivil): OperacionDiaria {
+  const fila = armadorDeFilasDeOperacion(estado);
+  const de = (tipo: TipoAlertaOperacion, etapa?: "en-uso" | "no-en-uso"): FilaOperacion[] =>
+    r.alertas
+      .filter((a) => a.tipo === tipo && (etapa === undefined || (etapa === "en-uso") === (a.etapaParte === "en-uso")))
+      .flatMap((a) => fila(a, tipo) ?? []);
+  const sinEnviar = de("parte-sin-enviar", "no-en-uso");
+  const sinCerrar = de("parte-sin-enviar", "en-uso");
+  const sinParte = de("sin-parte");
+  const criticas = de("novedad-critica");
+  const abiertas = de("novedad-abierta");
+  const total = r.resumen.totalOperacion;
+  const solapa = (id: SolapaDeOperacion, cantidad: number, critica: boolean, grupos: GrupoDeSolapa[]): PanelSolapaOperacion => ({
+    id,
+    rotulo: id === "checklists" ? NOMBRES_DE_PANTALLA.operacionChecklists : NOMBRES_DE_PANTALLA.operacionNovedades,
+    cantidad,
+    critica,
+    href: aHash({ tipo: "operacion", solapa: id }),
+    grupos: cantidad === 0 ? [] : grupos,
+    vacio: cantidad === 0 ? TEXTO_VACIO_PANTALLAS[id] : null,
+  });
+  return {
+    titulo: TEXTO_CENTRO.operacion,
+    total,
+    rotuloTotal: textoPendientes(total),
+    contexto: textoContextoOperacion(total, hoy),
+    solapas: [
+      solapa("checklists", r.resumen.operacion["parte-sin-enviar"] + r.resumen.operacion["sin-parte"], false, [
+        grupoDeSolapa("sin-enviar", tituloGrupoPartesIncompletos(1, 0), sinEnviar),
+        grupoDeSolapa("sin-cerrar", tituloGrupoPartesIncompletos(0, 1), sinCerrar),
+        grupoDeSolapa("sin-parte", TEXTO_GRUPO_OPERACION["sin-parte"], sinParte),
+      ]),
+      solapa("novedades", r.resumen.operacion["novedad-critica"] + r.resumen.operacion["novedad-abierta"], r.resumen.operacion["novedad-critica"] > 0, [
+        grupoDeSolapa("criticas", TEXTO_GRUPO_OPERACION["novedad-critica"], criticas),
+        grupoDeSolapa("abiertas", TEXTO_GRUPO_OPERACION["novedad-abierta"], abiertas),
+      ]),
+    ],
+  };
+}
+
 /**
  * Arma el centro de alertas. `r` es `calcularAlertas(estado, hoy)` (en un componente, `app.alertas`); `empresa` es el nombre
  * de la empresa ficticia (`EMPRESA.nombre`).
  */
 export function centroDeAlertas(estado: Estado, r: ResultadoAlertas, hoy: FechaCivil, empresa: string): CentroDeAlertas {
+  const protagonista = armarProtagonista(estado, r, hoy);
   return {
     titulo: TEXTO_CENTRO.titulo,
     encabezado: {
       linea: `${textoHoy(hoy)} · ${empresa} · ${pluralizar(r.resumen.activas, "unidad", "unidades")}`,
       bajada: TEXTO_CENTRO.bajada,
     },
-    protagonista: armarProtagonista(estado, r, hoy),
+    protagonista,
+    cifras: armarCifras(r, protagonista),
     operacion: armarOperacion(r, hoy),
+    operacionDiaria: armarOperacionDiaria(estado, r, hoy),
     vencimientos: armarVencimientos(estado, r),
     detalle: armarDetalle(estado, r),
   };

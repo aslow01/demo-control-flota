@@ -194,6 +194,67 @@ function construir(
   };
 }
 
+// --- Regla interactiva (Inicio y Vencimientos) -----------------------------------------------------
+
+/** La forma dice el tramo sin depender del color: triángulo hasta 7 días, círculo hasta 15, aro hasta 30 y rombo para lo vencido o faltante. */
+export type FormaDeMarca = "rombo" | "triangulo" | "circulo" | "aro";
+
+const FORMA_DE_TRAMO: Record<TramoHorizonte, FormaDeMarca> = { semana: "triangulo", quincena: "circulo", mes: "aro" };
+
+export function formaDeTramo(tramo: TramoHorizonte): FormaDeMarca {
+  return FORMA_DE_TRAMO[tramo];
+}
+
+export function formaDeGrupo(grupo: Grupo): FormaDeMarca {
+  return grupo === "vencidos" ? "rombo" : FORMA_DE_TRAMO[TRAMO_DE_GRUPO[grupo]];
+}
+
+/** La regla interactiva tiene dos filas: por día entran dos marcas, o una marca y «y N más». */
+export const FILAS_DE_REGLA = 2;
+export const MAX_POR_DIA_EN_REGLA = 2;
+/** Dos marcas más cerca que esto (en días) no entran en la misma fila: se pisarían sus etiquetas. */
+export const SEPARACION_MINIMA_EN_DIAS = 2.7;
+
+/**
+ * A qué fila va cada marca, dadas las fechas (días desde hoy) en orden de recorrido: la primera fila donde entra sin pisar a la anterior; si no entra en
+ * ninguna, la que quedó más lejos. No cambia lo que recibe.
+ */
+export function asignarFilas(dias: readonly number[]): (0 | 1)[] {
+  const ultimo: (number | undefined)[] = Array.from({ length: FILAS_DE_REGLA }, () => undefined);
+  return dias.map((dia) => {
+    let fila = ultimo.findIndex((u) => u === undefined || dia - u >= SEPARACION_MINIMA_EN_DIAS);
+    if (fila < 0) fila = ultimo.reduce<number>((mejor, u, j) => ((u ?? -Infinity) < (ultimo[mejor] ?? -Infinity) ? j : mejor), 0);
+    ultimo[fila] = dia;
+    return fila === 0 ? 0 : 1;
+  });
+}
+
+interface BaseDeElemento {
+  /** Para «y N más», la primera alerta que quedó sin marca propia. */
+  alertaId: string;
+  dia: number;
+  /** Día + 1: la línea de la grilla de 31 columnas. */
+  columna: number;
+  tramo: TramoHorizonte;
+  fila: 0 | 1;
+}
+
+/** Cada cosa que se puede elegir en la regla, en el orden en que la recorren las flechas. */
+export type ElementoDeRegla =
+  | (BaseDeElemento & { tipo: "marca"; forma: FormaDeMarca })
+  /** «y N más»: los documentos de ese día que no tienen marca propia. Lleva a la lista de ese tramo, no abre un detalle. */
+  | (BaseDeElemento & { tipo: "mas"; mas: number });
+
+/** Aplana las columnas de un horizonte en el orden de recorrido (de hoy hacia adelante) y le da su fila a cada elemento. */
+export function recorridoDeRegla(h: Horizonte): ElementoDeRegla[] {
+  const marcas = h.columnas.flatMap((c) => c.marcas.map((m) => ({ m, c })));
+  const filas = asignarFilas(marcas.map(({ m }) => m.dia));
+  return marcas.map(({ m, c }, i): ElementoDeRegla => {
+    const base = { alertaId: m.alertaId, dia: m.dia, columna: c.columna, tramo: m.tramo, fila: filas[i] ?? 0 };
+    return m.hueca ? { ...base, tipo: "mas", mas: c.ocultas } : { ...base, tipo: "marca", forma: formaDeTramo(m.tramo) };
+  });
+}
+
 type Entrada = Pick<ResultadoAlertas, "alertas">;
 
 /** Centro de alertas: todos los vencimientos de unidades y de conductores. */
