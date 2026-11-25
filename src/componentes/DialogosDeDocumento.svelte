@@ -1,7 +1,10 @@
 <script lang="ts">
-  // ESQUELETO (E3-M, paso 0): UN solo juego de diálogos (Renovar / Cargar / Corregir un documento y Resolver una novedad) para Inicio, Vencimientos y Operación
-  // diaria. El estado vive en `dialogos` (`dialogos-instancia.ts`, módulo de E2-P); las pantallas lo abren con `dialogos.abrirRenovar(...)`, `abrirLicencia(...)` o
-  // `abrirResolver(...)` y lo que se dice al guardar sale de `dialogos.mensaje(origen)`. Este componente se monta UNA vez dentro de cada pantalla que lo usa.
+  // UN solo juego de diálogos (Renovar / Cargar / Corregir un documento y Resolver una novedad) para Inicio, Vencimientos y Operación diaria. El estado vive en `dialogos`
+  // (`dialogos-instancia.ts`, módulo de E2-P); la pantalla lo abre con `dialogos.abrirRenovar(...)`, `abrirLicencia(...)` o `abrirResolver(...)` y lo que se dice al guardar sale de
+  // `dialogos.mensaje(origen)`. Este componente se monta UNA vez dentro de cada pantalla que lo usa y no dibuja nada propio: solo enlaza los dos diálogos con ese estado.
+  //  - Al guardar bien, el foco va a lo que devuelva `focoDestino(origen)` (la fila que abrió el diálogo ya no existe): el título de lo que cambió.
+  //  - Al cancelar (Esc, «Cancelar» o la X), no se llama a `focoDestino`: el foco vuelve al botón que lo abrió (lo hace `Dialogo`).
+  //  - «Atrás» del navegador (o cualquier cambio de pantalla) cierra el diálogo abierto: `dialogos.abierto` y `dialogos.resolverAbierto` valen `false` apenas cambia `versionDePantalla`.
   import type { DestinoDelFoco } from "./DialogoFormulario.svelte";
   import DialogoDocumento from "./DialogoDocumento.svelte";
   import DialogoResolver from "./DialogoResolver.svelte";
