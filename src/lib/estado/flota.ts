@@ -35,7 +35,7 @@ import {
 } from "../dominio/textos.ts";
 import type { Estado, FechaCivil, Unidad } from "../dominio/tipos.ts";
 import { REQUISITOS, documentoVigente, estadoDeLicencia } from "../dominio/vencimientos.ts";
-import { horizonteMinimo, type Horizonte } from "../dominio/horizonte.ts";
+import { horizonteMinimo, type FormaDeMarca, type Horizonte } from "../dominio/horizonte.ts";
 import { aHash, type FiltroDeFlotaEnRuta, type Ruta } from "./enrutador.ts";
 
 // --- Consulta ------------------------------------------------------------------------------------
@@ -60,12 +60,28 @@ export interface ConsultaFlota {
 export const CONSULTA_INICIAL: ConsultaFlota = { filtro: "activas", busqueda: "", proyecto: TODOS_LOS_PROYECTOS, orden: "prioridad" };
 
 const ORDENES: readonly OrdenFlota[] = ["prioridad", "patente", "interno", "proximo-vencimiento", "ultimo-parte"];
-const FILTROS_BASE: readonly IdFiltroFlota[] = ["activas", "pueden-salir", "no-pueden-salir", "fuera-de-servicio", "de-baja"];
+/** Las pastillas, en el orden del prototipo: «No disponibles hoy» (bloqueadas + fuera de servicio) va antes de sus dos partes. */
+const FILTROS_BASE: readonly IdFiltroFlota[] = ["activas", "pueden-salir", "no-disponibles", "no-pueden-salir", "fuera-de-servicio", "de-baja"];
+
+/** Lo crítico lleva el color y la forma: la forma acompaña al color para que no sea lo único que lo diga. */
+const ASPECTO_DE_FILTRO: Partial<Record<IdFiltroFlota, { tono: "critico" | "semana"; forma: FormaDeMarca }>> = {
+  "no-disponibles": { tono: "critico", forma: "rombo" },
+  "no-pueden-salir": { tono: "critico", forma: "rombo" },
+  "fuera-de-servicio": { tono: "semana", forma: "triangulo" },
+};
 
 /** La consulta con que se abre la pantalla: el filtro y la búsqueda de la ruta (`#/movilidades?filtro=no-disponibles&q=hilux`) o los de por defecto. */
 export function consultaDeRuta(ruta: Ruta): ConsultaFlota {
   if (ruta.tipo !== "movilidades") return { ...CONSULTA_INICIAL };
   return { ...CONSULTA_INICIAL, filtro: ruta.filtro ?? CONSULTA_INICIAL.filtro, busqueda: ruta.q ?? "" };
+}
+
+/** La ruta de una consulta, para escribirla en la dirección: solo viajan el filtro (si no es «activas») y la búsqueda; el proyecto y el orden son de la vista. */
+export function rutaDeConsulta(consulta: ConsultaFlota): Ruta {
+  const ruta: Ruta = { tipo: "movilidades" };
+  if (consulta.filtro !== "activas") ruta.filtro = consulta.filtro;
+  if (consulta.busqueda !== "") ruta.q = consulta.busqueda;
+  return ruta;
 }
 
 /** «Quitar filtros» (vacío por filtro): vuelve a todo, menos el orden, que no es un filtro. */
@@ -344,6 +360,13 @@ export interface FiltroDeFlota {
   etiqueta: string;
   /** En la flota entera, sin tener en cuenta la búsqueda ni el proyecto. */
   cantidad: number;
+  /** Solo las pastillas de lo crítico llevan tono y forma. */
+  tono: "critico" | "semana" | null;
+  forma: FormaDeMarca | null;
+  /** La dirección del filtro, con la búsqueda de ahora: la pastilla es un enlace. */
+  href: string;
+  /** Es el filtro elegido (`aria-current`). */
+  actual: boolean;
 }
 
 export type VacioDeFlota =
@@ -352,7 +375,7 @@ export type VacioDeFlota =
   | { tipo: "por-filtro"; texto: string; conQuitarFiltros: boolean };
 
 export interface VistaFlota {
-  /** Los cinco de 6.2, más «No disponibles» solo cuando es el elegido. */
+  /** Los seis de 6.2 y del prototipo: activas, disponibles, no disponibles hoy, bloqueadas, fuera de servicio y de baja. */
   filtros: FiltroDeFlota[];
   filas: FilaFlota[];
   mostradas: number;
@@ -415,10 +438,14 @@ function textoEco(busqueda: string): string {
  */
 export function vistaDeFlota(panel: PanelFlota, consulta: ConsultaFlota): VistaFlota {
   const cuenta = (id: IdFiltroFlota) => panel.filas.filter((f) => pasaFiltro(f, id)).length;
-  const filtros: FiltroDeFlota[] = (consulta.filtro === "no-disponibles" ? [...FILTROS_BASE, "no-disponibles" as const] : FILTROS_BASE).map((id) => ({
+  const filtros: FiltroDeFlota[] = FILTROS_BASE.map((id) => ({
     id,
     etiqueta: TEXTO_FLOTA.filtros[id],
     cantidad: cuenta(id),
+    tono: ASPECTO_DE_FILTRO[id]?.tono ?? null,
+    forma: ASPECTO_DE_FILTRO[id]?.forma ?? null,
+    href: aHash(rutaDeConsulta({ ...consulta, filtro: id })),
+    actual: id === consulta.filtro,
   }));
 
   const proyecto = panel.proyectos.find((p) => p.valor === consulta.proyecto && p.valor !== TODOS_LOS_PROYECTOS);
