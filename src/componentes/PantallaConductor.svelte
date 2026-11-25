@@ -101,7 +101,7 @@
             {@const frase = textoFraseDelAviso(au.dias)}
             {@const titular = textoAvisoDeDocumento(au.tipoDocumento, au.dias)}
             {#if titular !== null}
-              <Aviso tono="semana" icono="reloj" accion={frase ?? ""}>{titular} ({au.vence})</Aviso>
+              <Aviso tono="semana" icono="reloj" accion={frase ?? ""}>{T.avisoDeUnidad(titular, au.vence)}</Aviso>
             {/if}
           {/if}
 

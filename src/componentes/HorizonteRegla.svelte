@@ -31,14 +31,6 @@
 
   const uid = $props.id();
 
-  /** Texto de «Ver ficha» y de «y N más» (no están en los módulos de textos: pendientes de `redactor-ux`). */
-  const TEXTO_REGLA = {
-    verFicha: "Ver ficha",
-    verFichaDe: (patente: string) => ` de ${patente}`,
-    yMas: (n: number) => `y ${n} más`,
-    yMasLector: ": vencimientos de ese día",
-  } as const;
-
   const TONO_DE_FORMA: Record<FormaDeMarca, Tono> = { rombo: "critico", triangulo: "semana", circulo: "quincena", aro: "mes" };
 
   const clave = (e: PuntoDeRegla): string => `${e.tipo}-${e.alertaId}`;
@@ -204,7 +196,7 @@
               style:--dia={e.dia}
               onfocus={() => (activaClave = id)}
             >
-              <span class="mas-texto">{TEXTO_REGLA.yMas(e.mas)}<span class="solo-lectores">{TEXTO_REGLA.yMasLector}</span></span>
+              <span class="mas-texto">{T.yMas(e.mas)}<span class="solo-lectores">{T.yMasLector}</span></span>
             </a>
           {/if}
         {/each}
@@ -251,7 +243,7 @@
             {/if}
             {#if elegido.fichaHref !== null}
               <EnlaceAccion href={elegido.fichaHref} tamano="chico">
-                {TEXTO_REGLA.verFicha}<span class="solo-lectores">{TEXTO_REGLA.verFichaDe(v.titular.tipo === "unidad" ? v.titular.patenteTexto : (v.titular.unidad?.patenteTexto ?? v.titular.nombre))}</span>
+                {T.verFicha}<span class="solo-lectores">{T.verFichaDe(v.titular.tipo === "unidad" ? v.titular.patenteTexto : (v.titular.unidad?.patenteTexto ?? v.titular.nombre))}</span>
               </EnlaceAccion>
             {/if}
           </div>

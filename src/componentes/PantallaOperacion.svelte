@@ -19,7 +19,7 @@
   import OperacionSolapas from "./OperacionSolapas.svelte";
   import OperacionVacio from "./OperacionVacio.svelte";
   import Panel from "./Panel.svelte";
-  import { TEXTO_NAVEGACION } from "./textos-marco.ts";
+  import { TEXTO_ALERTAS, TEXTO_NAVEGACION } from "./textos-marco.ts";
 
   let {
     alAbrirParte,
@@ -100,6 +100,10 @@
             {/each}
           {/if}
 
+          {#if actual.id === "novedades" && actual.vacio === null}
+            <p class="pie-hoja">{TEXTO_ALERTAS.pieNovedades}</p>
+          {/if}
+
           {#if actual.id === "checklists" && conductor !== null}
             <div class="conductor">
               <span id="conductor-intro">{conductor.intro}</span>
@@ -166,6 +170,14 @@
   .sin-filas {
     padding: var(--e-1) var(--e-4) var(--e-4);
     color: var(--c-texto-3);
+  }
+
+  /* Pie de la solapa Novedades: una línea de aclaración, con el mismo filete y tamaño que el pie de Checklists. */
+  .pie-hoja {
+    padding: var(--e-3) var(--e-4);
+    border-top: 1px solid var(--c-borde);
+    font-size: var(--t-tabla);
+    color: var(--c-texto-2);
   }
 
   /* «Así lo carga el conductor: Abrir el parte diario → (cambia la vista a Conductor)»: las tres partes juntas, en el mismo renglón si entran. */

@@ -133,6 +133,18 @@ export const TEXTO_ALERTAS = {
   yaNoPendiente: "Ese documento ya no está pendiente. La lista está al día.",
   /** Ídem para una novedad que se resolvió mientras tanto (otra pestaña, o ya resuelta desde la ficha). */
   novedadYaResuelta: "Esa novedad ya no está abierta. La lista está al día.",
+  /** Operación diaria, solapa Novedades: pie de la hoja (prototipo «Turno»). */
+  pieNovedades: "Las novedades abiertas no críticas de menos de 7 días se ven en la ficha de cada unidad.",
+  /** Texto oculto delante de la patente que lleva a la ficha de la unidad: «Ficha de ZK 214 BD». */
+  fichaDe: "Ficha de ",
+  /** Vencimientos, fila de un conductor: «Licencia de conducir de » y a continuación el enlace con la patente de su unidad. */
+  detalleDe: (detalle: string) => `${detalle} de `,
+  /** La regla de vencimientos (detalle del punto elegido): «Ver ficha» y, para lectores de pantalla, de qué unidad («Ver ficha de ZK 214 BD»). */
+  verFicha: "Ver ficha",
+  verFichaDe: (patente: string) => ` de ${patente}`,
+  /** Enlace «y 3 más» de un día con más vencimientos de los que caben, y lo que se agrega para lectores de pantalla. */
+  yMas: (n: number) => `y ${n} más`,
+  yMasLector: ": vencimientos de ese día",
 } as const;
 
 /** Diálogos «Renovar» y «Cargar documento» (5.11, 5.15 y 5.17). Los títulos y los botones primarios salen de `textos.ts`. */
@@ -314,6 +326,8 @@ export const TEXTO_CONDUCTOR_VISTA = {
   /** Se anuncia en la barra de estado del panel «Hoy» al elegir una unidad con «Usar otra unidad» (el panel cambia de unidad y de destino sin otro aviso). */
   unidadElegida: (patente: string, interno: string) => `Unidad elegida: ${patente} (${interno}).`,
   confirmarDescartar: "Confirmar descarte",
+  /** Aviso de «su unidad vence hoy» (o en 7 días o menos): el titular de la lógica y, entre paréntesis, la fecha de vencimiento. */
+  avisoDeUnidad: (titular: string, vence: string) => `${titular} (${vence})`,
   /** Texto oculto delante de cada fila de «Mis últimos partes» (el enlace dice «Parte del 17/11/2026 ZK 214 BD 132 km»). */
   parteDel: "Parte del ",
 } as const;

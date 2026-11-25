@@ -1,12 +1,12 @@
 <script lang="ts">
-  // Vencimientos (`#/vencimientos?filtro=`), según el prototipo «Turno»: título y línea de contexto; la regla de 0 a 30 días con su leyenda; los filtros como enlaces
+  // Vencimientos (`#/vencimientos?filtro=`), según el prototipo «Turno»: título y línea de contexto; la regla interactiva de 0 a 30 días (con su leyenda); los filtros como enlaces
   // (`FiltrosEnlace`, `aria-current` en el elegido) y un panel por grupo con una fila por documento y su acción (Renovar, Cargar).
   // No tiene reglas de negocio: todo sale de `app.centroDeAlertas.vencimientos` y el filtro, de `app.ruta` (la dirección). Cambiar de filtro es navegar a un enlace: no
   // cambia la pantalla, así que el foco y el desplazamiento se quedan donde estaban (y en la región `role="status"` aparte se dice «Mostrando 4 de 11 vencimientos.»).
   // Los diálogos son los de `DialogosDeDocumento` (uno solo para Inicio, Vencimientos y Operación): al renovar o cargar bien, la fila desaparece, el foco va al título del
   // primer grupo que quede (o al h1) y la barra de estado de abajo de los filtros dice qué pasó (5.17). Al cancelar, el foco vuelve al botón que abrió el diálogo.
   import { untrack } from "svelte";
-  import { TEXTO_LEYENDA_HORIZONTE, TEXTO_VACIO_PANTALLAS } from "../lib/dominio/textos.ts";
+  import { TEXTO_VACIO_PANTALLAS } from "../lib/dominio/textos.ts";
   import { vencimientosVisibles, type FilaVencimiento, type IdFiltroVencimientos } from "../lib/estado/centro-alertas.ts";
   import { app } from "../lib/estado/instancia.ts";
   import { textoAnunciado } from "./anuncio.svelte.ts";
@@ -19,9 +19,6 @@
   import Forma, { formaDeTono } from "./Forma.svelte";
   import Horizonte from "./Horizonte.svelte";
   import { TEXTO_ALERTAS as T } from "./textos-marco.ts";
-
-  // `App.svelte` todavía le pasa `alAbrirParte` (lo pedía la pantalla de alertas provisoria): ya no se usa y se va con ese paso final.
-  let {}: { alAbrirParte?: () => void } = $props();
 
   const ID_LISTA = "lista-vencimientos";
 
@@ -69,9 +66,9 @@
 {#snippet titular(f: FilaVencimiento)}
   {@const t = f.titular}
   {#if t.tipo === "unidad"}
-    <a href={t.href}><span class="solo-lectores">Ficha de </span>{t.patenteTexto}</a> · {t.interno} · {t.descripcion}
+    <a href={t.href}><span class="solo-lectores">{T.fichaDe}</span>{t.patenteTexto}</a> · {t.interno} · {t.descripcion}
   {:else}
-    {T.conductorFicticio(t.nombre)} · {t.detalle}{#if t.unidad !== null}{" de "}<a href={t.unidad.href}><span class="solo-lectores">Ficha de </span>{t.unidad.patenteTexto}</a>{/if}
+    {T.conductorFicticio(t.nombre)} · {#if t.unidad !== null}{T.detalleDe(t.detalle)}<a href={t.unidad.href}><span class="solo-lectores">{T.fichaDe}</span>{t.unidad.patenteTexto}</a>{:else}{t.detalle}{/if}
   {/if}
   {#if f.proyecto !== null}{" · "}{f.proyecto}{/if}
 {/snippet}
@@ -83,20 +80,10 @@
       <p class="contexto"><strong>{contexto.fuerte}</strong>{contexto.resto}</p>
     </div>
 
-    <!-- La regla de 0 a 30 días y su leyenda: una forma por período, con cuántos documentos hay. La variante interactiva de `Horizonte` (puntos que se eligen con teclado,
-         detalle con «Renovar» y «Ver ficha») es del carril A: se activa acá con `c.vencimientos.regla`. -->
-    <section class="caja regla" aria-label={TEXTO_LEYENDA_HORIZONTE.nombrePista}>
-      <Horizonte horizonte={c.vencimientos.horizonte} />
-      <ul class="leyenda">
-        {#each c.vencimientos.regla.leyenda as l (l.grupo)}
-          <li>
-            <Forma forma={l.forma} tono={c.vencimientos.grupos.find((g) => g.id === l.grupo)?.tono} />
-            <span aria-hidden="true">{l.rotulo} <strong class="num">{l.cantidad}</strong></span>
-            <span class="solo-lectores">{l.textoLector}</span>
-          </li>
-        {/each}
-      </ul>
-    </section>
+    <!-- La regla de 0 a 30 días, interactiva (puntos que se eligen con teclado, detalle con «Renovar» y «Ver ficha»), y su propia leyenda. -->
+    <div class="caja regla">
+      <Horizonte regla={c.vencimientos.regla} alRenovar={(accion) => dialogos.abrirRenovar(accion, "vencimientos")} />
+    </div>
 
     <FiltrosEnlace leyenda={T.mostrar} opciones={c.vencimientos.filtrosEnlace} valor={filtro} />
     <div class="solo-lectores" role="status">{anunciadoFiltro.valor}</div>
@@ -169,10 +156,6 @@
     align-items: flex-start;
     gap: var(--e-2);
   }
-  /* «Vencimientos» es una sola palabra de 12 letras: con el texto al 200 % a 320 px el título de siempre (56 px) no entra y ensanchaba la página. */
-  h1 {
-    font-size: min(var(--t-h1), 14vw);
-  }
   .contexto {
     color: var(--c-texto-2);
   }
@@ -207,22 +190,6 @@
     .regla {
       padding: var(--e-5);
     }
-  }
-  .leyenda {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--e-1) var(--e-5);
-    font-size: var(--t-tabla);
-    color: var(--c-texto-2);
-  }
-  .leyenda li {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--e-2);
-  }
-  .leyenda strong {
-    color: var(--c-texto);
-    font-weight: 700;
   }
 
   /* ---------- Lo que pasó al renovar o cargar ---------- */
