@@ -1,34 +1,37 @@
 <script lang="ts">
-  // El marco de la aplicación (docs/diseno-ui.md, secciones 2, 4, 5.2, 5.3, 5.18 y 5.19): enlace "Ir al contenido", barra superior,
-  // barra de la aplicación con el selector de perfil, avisos globales, `main` (estado de arranque, error o la pantalla) y pie.
-  // Lee todo del estado (`app`); no tiene reglas de negocio. Las pantallas son el centro de alertas (4.2), la flota (4.3), la ficha (4.4), el inicio del conductor y el parte (4.5);
-  // una dirección que no corresponde a ninguna muestra «Página no encontrada».
+  // El marco de la aplicación «tipo app» (docs/diseno-ui.md, secciones 2, 4, 5.17 a 5.19; el prototipo «Turno» manda donde difieren): enlace «Ir al contenido»,
+  // lateral oscuro (escritorio), barra superior con «Atrás» y chip de perfil (celular y tableta), migas y fecha (escritorio), avisos globales,
+  // `main` (estado de arranque, error o la pantalla) y barra inferior (celular y tableta). Lee todo del estado (`app`); no tiene reglas de negocio.
+  // Hasta que lleguen las pantallas nuevas (E3), Inicio, Vencimientos y Operación diaria se muestran con la pantalla de alertas de siempre.
+  // Una dirección que no corresponde a ninguna pantalla muestra «Página no encontrada».
   import { tick } from "svelte";
   import Aviso from "./componentes/Aviso.svelte";
-  import BarraApp from "./componentes/BarraApp.svelte";
+  import BarraInferior, { type ItemNavegacion } from "./componentes/BarraInferior.svelte";
   import BarraSuperior from "./componentes/BarraSuperior.svelte";
   import Boton from "./componentes/Boton.svelte";
   import DialogoComoFunciona from "./componentes/DialogoComoFunciona.svelte";
   import DialogoConductor from "./componentes/DialogoConductor.svelte";
   import DialogoReiniciar from "./componentes/DialogoReiniciar.svelte";
-  import EtiquetaDemo from "./componentes/EtiquetaDemo.svelte";
   import EnlaceAccion from "./componentes/EnlaceAccion.svelte";
+  import Lateral from "./componentes/Lateral.svelte";
+  import Migas from "./componentes/Migas.svelte";
   import PantallaAlertas from "./componentes/PantallaAlertas.svelte";
   import PantallaFlota from "./componentes/PantallaFlota.svelte";
-  import Pie from "./componentes/Pie.svelte";
-  import { TEXTO_MARCO, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
-  import type { ItemMenu, OpcionConductor, SeccionActiva } from "./componentes/tipos.ts";
-  import { nombreDePantalla, rutaPorDefecto, aHash } from "./lib/estado/enrutador.ts";
-  import { TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_PANTALLA, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
+  import PantallaMas from "./componentes/PantallaMas.svelte";
+  import { TEXTO_MARCO, TEXTO_MAS, TEXTO_NAVEGACION, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
+  import type { OpcionConductor } from "./componentes/tipos.ts";
+  import { aHash, migasDe, nombreDePantalla, rutaPorDefecto, type Ruta } from "./lib/estado/enrutador.ts";
+  import { formatearFechaConDia } from "./lib/dominio/fechas.ts";
+  import { NOMBRES_DE_PANTALLA, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_PANTALLA, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
   import { app } from "./lib/estado/instancia.ts";
 
   const TITULO_BASE = `${TEXTO_MARCO.nombreApp} (demo)`;
   const MINUTO_MS = 60_000;
 
-  // ---------- Diálogos (5.17): "Cómo funciona", "Reiniciar demo" y "¿Quién completa el parte?" ----------
+  // ---------- Diálogos (5.17): "Cómo funciona", "Reiniciar demo" y "Ver como" ----------
   let dialogoComoFuncionaAbierto = $state(false);
   let dialogoReiniciarAbierto = $state(false);
-  let dialogoConductorAbierto = $state(false);
+  let dialogoVerComoAbierto = $state(false);
 
   // A dónde va el foco al cerrar un diálogo cuando el botón que lo abrió ya no sirve (o cuando hay una pantalla nueva): el h1.
   let irAlTitulo = false;
@@ -83,77 +86,154 @@
     }
   }
 
-  // Elegir "Conductor" (o "Cambiar"): diálogo con la lista de conductores activos y su unidad.
+  // «Ver como»: elegir el perfil y, con Conductor, quién completa el parte. Lo abren el chip de la barra superior, el lateral, «Más» y «Abrir el parte diario» de Inicio
+  // (este último con Conductor ya elegido). El error se muestra dentro del diálogo, que no se puede cerrar mientras trabaja.
   let cambiandoPerfil = $state(false);
-  let errorAlElegirConductor = $state("");
+  let errorAlCambiarPerfil = $state("");
+  let perfilInicialDelDialogo = $state<"encargado" | "conductor">("encargado");
   const conductores = $derived<OpcionConductor[]>(app.opcionesDeConductor());
   const conductorActual = $derived(app.perfil.tipo === "conductor" ? app.perfil.conductorId : null);
+  const opcionActual = $derived(conductores.find((c) => c.id === conductorActual));
+  const esConductor = $derived(app.perfil.tipo === "conductor");
+  const perfilTexto = $derived(esConductor ? TEXTO_MARCO.perfilConductor : TEXTO_MARCO.perfilEncargado);
 
-  function pedirConductor(): void {
-    errorAlElegirConductor = "";
-    dialogoConductorAbierto = true;
+  function pedirVerComo(inicial: "encargado" | "conductor" = app.perfil.tipo): void {
+    errorAlCambiarPerfil = "";
+    perfilInicialDelDialogo = inicial;
+    dialogoVerComoAbierto = true;
   }
-  async function confirmarConductor(conductorId: string): Promise<void> {
+  async function confirmarPerfil(perfil: { tipo: "encargado" } | { tipo: "conductor"; conductorId: string }): Promise<void> {
     if (cambiandoPerfil) return;
+    // Sin cambios: se cierra y listo (volver a aplicar el mismo perfil llevaría a su inicio sin motivo).
+    const igual = perfil.tipo === "encargado" ? !esConductor : conductorActual === perfil.conductorId;
+    if (igual) {
+      dialogoVerComoAbierto = false;
+      return;
+    }
     cambiandoPerfil = true;
-    errorAlElegirConductor = "";
-    const r = await app.cambiarPerfil({ tipo: "conductor", conductorId });
+    errorAlCambiarPerfil = "";
+    const r = await app.cambiarPerfil(perfil);
     cambiandoPerfil = false;
     if (r.ok) {
-      irAlTitulo = true; // cambió la pantalla: el foco va a su título, no al selector
-      errorAlCambiarVista = ""; // un error viejo de "Encargado" ya no corresponde
-      dialogoConductorAbierto = false;
+      irAlTitulo = true; // cambió la pantalla: el foco va a su título, no al botón que abrió el diálogo
+      dialogoVerComoAbierto = false;
     } else {
-      errorAlElegirConductor = r.error.mensaje;
+      errorAlCambiarPerfil = r.error.mensaje;
     }
   }
 
-  // Elegir "Encargado" no lleva diálogo; si falla, el mensaje queda en un aviso.
-  let errorAlCambiarVista = $state("");
-  async function elegirEncargado(): Promise<void> {
-    const r = await app.cambiarPerfil({ tipo: "encargado" });
-    errorAlCambiarVista = r.ok ? "" : r.error.mensaje;
-  }
+  // ---------- Navegación: destinos, insignias, «Atrás» y migas ----------
+  // Cuentas de las insignias: lo que ya calcula el dominio (alertas críticas, vencidos o faltantes, pendientes de operación).
+  const cuentas = $derived.by(() => {
+    const resumen = app.alertas?.resumen;
+    const operacion = resumen?.operacion;
+    return {
+      criticas: resumen?.criticas ?? 0,
+      vencidos: resumen?.porGrupo.vencidos ?? 0,
+      checklists: (operacion?.["parte-sin-enviar"] ?? 0) + (operacion?.["sin-parte"] ?? 0),
+      novedades: (operacion?.["novedad-critica"] ?? 0) + (operacion?.["novedad-abierta"] ?? 0),
+    };
+  });
 
-  // Con el arranque en error no hay nada que reiniciar ni que explicar: solo se ofrece recargar (en `main`).
-  const acciones = $derived<ItemMenu[]>(
-    app.fase === "lista"
-      ? [
-          { id: "como-funciona", texto: TEXTO_MARCO.comoFunciona, alActivar: abrirComoFunciona },
-          { id: "reiniciar", texto: TEXTO_MARCO.reiniciarDemo, alActivar: pedirReinicio },
-        ]
-      : [],
-  );
-
-  // ---------- Pestaña activa ----------
-  function seccionDe(tipo: string, esConductor: boolean): SeccionActiva {
-    switch (tipo) {
+  /** Qué destino de la navegación contiene la pantalla actual. `parte` es de Operación (encargado) o de Hoy (conductor). */
+  function seccionDe(ruta: Ruta, conductor: boolean): string | null {
+    switch (ruta.tipo) {
       case "inicio":
-      case "vencimientos":
-      case "operacion":
-        return "alertas";
+        return "inicio";
       case "movilidades":
       case "unidad":
-        return "flota";
+        return "movilidades";
+      case "vencimientos":
+        return "vencimientos";
+      case "operacion":
+        return "operacion";
       case "conductor":
+        return "hoy";
       case "mis-partes":
-        return "conductor";
+        return "partes";
       case "parte":
-        return esConductor ? "conductor" : null;
+        return conductor ? "hoy" : "operacion";
+      case "mas":
+        return "mas";
       default:
         return null;
     }
   }
-  const seccion = $derived(seccionDe(app.ruta.tipo, app.perfil.tipo === "conductor"));
-  const seccionContieneLaPantalla = $derived(app.ruta.tipo === "unidad" || app.ruta.tipo === "parte");
+  const seccion = $derived(seccionDe(app.ruta, esConductor));
+  /** `page` en la pantalla de la sección; `true` en la ficha o el parte, que están dentro de ella. */
+  function actual(id: string): "page" | "true" | undefined {
+    if (seccion !== id) return undefined;
+    return app.ruta.tipo === "unidad" || app.ruta.tipo === "parte" ? "true" : "page";
+  }
+  const conInsignia = (cantidad: number, texto: string, critica: boolean): ItemNavegacion["insignia"] => (cantidad > 0 ? { cantidad, texto, critica } : undefined);
+
+  const destinos = $derived.by(() => {
+    const t = TEXTO_NAVEGACION;
+    const solapa = app.ruta.tipo === "operacion" ? app.ruta.solapa : null;
+    const pendientes = cuentas.checklists + cuentas.novedades;
+    return {
+      inicio: { id: "inicio", href: aHash({ tipo: "inicio" }), texto: NOMBRES_DE_PANTALLA.inicio, icono: "inicio", actual: actual("inicio"), insignia: conInsignia(cuentas.criticas, t.insignias.alertasCriticas(cuentas.criticas), true) },
+      movilidades: { id: "movilidades", href: aHash({ tipo: "movilidades" }), texto: NOMBRES_DE_PANTALLA.movilidades, icono: "unidad", actual: actual("movilidades") },
+      vencimientos: { id: "vencimientos", href: aHash({ tipo: "vencimientos" }), texto: NOMBRES_DE_PANTALLA.vencimientos, icono: "calendario", actual: actual("vencimientos"), insignia: conInsignia(cuentas.vencidos, t.insignias.vencidosOFaltantes(cuentas.vencidos), true) },
+      operacion: {
+        id: "operacion",
+        href: aHash({ tipo: "operacion", solapa: "checklists" }),
+        texto: t.operacionCorto,
+        textoOculto: t.operacionOculto,
+        icono: "parte",
+        actual: actual("operacion"),
+        insignia: conInsignia(pendientes, t.insignias.pendientes(pendientes), false),
+        subitems: [
+          { id: "checklists", href: aHash({ tipo: "operacion", solapa: "checklists" }), texto: NOMBRES_DE_PANTALLA.operacionChecklists, actual: solapa === "checklists" ? "page" : undefined, insignia: conInsignia(cuentas.checklists, t.insignias.pendientes(cuentas.checklists), false) },
+          { id: "novedades", href: aHash({ tipo: "operacion", solapa: "novedades" }), texto: NOMBRES_DE_PANTALLA.operacionNovedades, actual: solapa === "novedades" ? "page" : undefined, insignia: conInsignia(cuentas.novedades, t.insignias.abiertas(cuentas.novedades), false) },
+        ],
+      },
+      hoy: { id: "hoy", href: aHash({ tipo: "conductor" }), texto: NOMBRES_DE_PANTALLA.conductor, icono: "parte", actual: actual("hoy") },
+      partes: { id: "partes", href: aHash({ tipo: "mis-partes" }), texto: NOMBRES_DE_PANTALLA.conductorPartes, icono: "partes", actual: actual("partes") },
+      mas: { id: "mas", href: aHash({ tipo: "mas" }), texto: NOMBRES_DE_PANTALLA.mas, icono: "mas", actual: actual("mas") },
+    } satisfies Record<string, ItemNavegacion>;
+  });
+  // La barra inferior y el lateral no ordenan igual (en el lateral Vencimientos va antes que Operación y «Más» no está: es la pantalla de abajo del lateral).
+  const itemsDeLaBarra = $derived<ItemNavegacion[]>(
+    esConductor ? [destinos.hoy, destinos.partes, destinos.mas] : [destinos.inicio, destinos.movilidades, destinos.operacion, destinos.vencimientos, destinos.mas],
+  );
+  const itemsDelLateral = $derived<ItemNavegacion[]>(
+    esConductor ? [destinos.hoy, destinos.partes] : [destinos.inicio, destinos.movilidades, destinos.vencimientos, destinos.operacion],
+  );
+
+  const lista = $derived(app.fase === "lista");
+  const fecha = $derived(formatearFechaConDia(app.hoy));
+  const enParte = $derived(app.ruta.tipo === "parte");
   const nombreDeLaPantalla = $derived(app.nombrePantalla);
+  /** El nombre que se ve en la barra superior al bajar: el de la solapa en Operación diaria. */
+  const tituloDeLaBarra = $derived(
+    app.ruta.tipo === "operacion" ? (app.ruta.solapa === "checklists" ? NOMBRES_DE_PANTALLA.operacionChecklists : NOMBRES_DE_PANTALLA.operacionNovedades) : nombreDeLaPantalla,
+  );
+  // «Atrás» lleva al padre (la ficha, a Movilidades con el filtro y la búsqueda que tenía); en las pantallas de la barra no hay.
+  const atras = $derived.by(() => {
+    const padre = app.padre;
+    if (padre === null) return null;
+    const nombre = nombreDePantalla(padre);
+    return { href: aHash(padre), texto: padre.tipo === "operacion" ? TEXTO_NAVEGACION.operacionCorto : nombre, nombreAccesible: TEXTO_NAVEGACION.volverA(nombre) };
+  });
+  // Migas: las pantallas de la barra llevan un solo tramo (su nombre); la primera miga de las demás vuelve al padre tal como estaba.
+  const tramos = $derived.by(() => {
+    const migas = migasDe(app.ruta, app.perfil);
+    if (migas.length === 0) return [{ nombre: tituloDeLaBarra, href: null }];
+    return migas.map((m, i) => ({ nombre: m.nombre, href: m.ruta === null ? null : aHash(i === 0 && app.padre !== null ? app.padre : m.ruta) }));
+  });
+  const descripcionDelPerfil = $derived(
+    !esConductor
+      ? TEXTO_MAS.verComo.encargadoDescripcion
+      : opcionActual === undefined
+        ? ""
+        : opcionActual.unidad === null
+          ? TEXTO_MARCO.conductorElegido(opcionActual.nombre)
+          : TEXTO_MAS.verComo.conductorDescripcion(opcionActual.nombre, opcionActual.unidad),
+  );
+  const perfilDelLateral = $derived(esConductor ? TEXTO_NAVEGACION.conductorCorto(app.autor.split(" ")[0] ?? app.autor) : perfilTexto);
   // Título de pestaña propio del parte («Parte enviado», «No se puede cargar este parte», «No se encontró la unidad»): `PantallaParte` lo informa con `bind:titulo`.
   let tituloDelParte = $state("");
-
-  function elegirPerfil(tipo: "encargado" | "conductor"): void {
-    if (tipo === "encargado") void elegirEncargado();
-    else pedirConductor();
-  }
 
   // ---------- D9: "Actualizar" ----------
   let errorAlActualizar = $state("");
@@ -182,9 +262,9 @@
   function alLlegarLaPantalla(): void {
     if (tituloPendiente) void tick().then(enfocarTitulo);
   }
-  // Un trozo que no se pudo bajar (sin red, o un trozo de una versión anterior) cae en la red de seguridad de `main`: error con «Recargar».
-  function fallarCarga(error: unknown): never {
-    throw error;
+  // Un trozo que no se pudo bajar (sin red, o un trozo de una versión anterior): título y «Recargar»; el foco va a ese título.
+  function alMostrarseElErrorDeCarga(): void {
+    void tick().then(enfocarTitulo);
   }
   $effect(() => {
     const version = app.versionDePantalla;
@@ -261,24 +341,38 @@
   </div>
 {/snippet}
 
+{#snippet errorDeCarga()}
+  <h1 tabindex="-1" {@attach () => alMostrarseElErrorDeCarga()}>{TEXTO_ERROR_PANTALLA.titulo}</h1>
+  <div class="acciones-error">
+    <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
+  </div>
+{/snippet}
+
 <a class="saltar" href="#principal" onclick={saltarAlContenido}>{TEXTO_MARCO.saltar}</a>
 
-<div class="pagina">
-  <header>
-    <BarraSuperior {acciones} />
-    {#if app.fase === "lista"}
-      <BarraApp
-        perfil={app.perfil.tipo}
-        {seccion}
-        {seccionContieneLaPantalla}
-        criticas={app.alertas?.resumen.criticas ?? 0}
-        nombreConductor={app.perfil.tipo === "conductor" ? app.autor : undefined}
-        alElegirPerfil={elegirPerfil}
-        alCambiarConductor={pedirConductor}
-      />
+<div class="app">
+  <Lateral
+    items={itemsDelLateral}
+    cargada={lista}
+    inicioHref={aHash(rutaPorDefecto(app.perfil))}
+    perfilTexto={perfilDelLateral}
+    alComoFunciona={abrirComoFunciona}
+    alReiniciar={pedirReinicio}
+    alVerComo={() => pedirVerComo()}
+  />
+
+  <div class="marco">
+    <BarraSuperior cargada={lista} {atras} titulo={tituloDeLaBarra} perfil={perfilTexto} {esConductor} {fecha} alVerComo={() => pedirVerComo()} />
+    {#if lista}
+      <header class="barra-escritorio">
+        <div class="ancho interior">
+          <Migas {tramos} />
+          <span class="fecha">{fecha}</span>
+        </div>
+      </header>
     {/if}
     <!-- Región viva siempre presente (vacía, sin relleno): lo que llega con la página abierta (D9) se anuncia como un cambio dentro de ella. -->
-    <div class="avisos contenedor" class:hay={app.fase === "lista" && (app.avisos.length > 0 || app.hayCambiosEnOtraPestana)} role="status">
+    <div class="avisos ancho" class:hay={lista && (app.avisos.length > 0 || app.hayCambiosEnOtraPestana)} role="status">
       {#if app.fase === "lista"}
         <div class="lista-avisos">
           {#each app.avisos as aviso (aviso.tipo)}
@@ -311,93 +405,80 @@
         </div>
       {/if}
     </div>
-    <!-- El error de una acción de la persona (cambiar de vista) se inserta suelto y se anuncia como alerta. -->
-    {#if app.fase === "lista" && errorAlCambiarVista !== ""}
-      <div class="avisos contenedor hay">
-        <Aviso tono="critico" icono="vencido" rol="alert" alCerrar={() => (errorAlCambiarVista = "")}>{errorAlCambiarVista}</Aviso>
-      </div>
-    {/if}
-  </header>
 
-  <main id="principal" class="contenedor" tabindex="-1">
-    <svelte:boundary onerror={(_error, reponer) => (reponerPantalla = reponer)}>
-      {#if app.fase === "arrancando"}
-        <!-- 5.19: nada durante 300 ms; después, el texto y un <progress> indeterminado. La región existe desde el principio para que se anuncie. -->
-        <div class="preparando" role="status">
-          {#if app.preparando}
-            <p id="texto-preparando">{TEXTO_AVISO.preparando}</p>
-            <progress aria-labelledby="texto-preparando"></progress>
-          {/if}
-        </div>
-      {:else if app.fase === "error"}
-        <div class="encabezado">
-          <div class="solo-angosto"><EtiquetaDemo /></div>
+    <main id="principal" class="ancho" class:en-parte={enParte} tabindex="-1">
+      <svelte:boundary onerror={(_error, reponer) => (reponerPantalla = reponer)}>
+        {#if app.fase === "arrancando"}
+          <!-- 5.19: nada durante 300 ms; después, el texto y un <progress> indeterminado. La región existe desde el principio para que se anuncie. -->
+          <div class="preparando" role="status">
+            {#if app.preparando}
+              <p id="texto-preparando">{TEXTO_AVISO.preparando}</p>
+              <progress aria-labelledby="texto-preparando"></progress>
+            {/if}
+          </div>
+        {:else if app.fase === "error"}
           <h1 tabindex="-1">{TEXTO_ERROR_ARRANQUE.titulo}</h1>
-        </div>
-        <p class="parrafo">{app.errorDeArranque}</p>
-        <div class="acciones-error">
-          <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
-        </div>
-      {:else if app.ruta.tipo === "inicio" || app.ruta.tipo === "vencimientos" || app.ruta.tipo === "operacion"}
-        <!-- Hasta E3 las tres se muestran con la pantalla de alertas de siempre. -->
-        <PantallaAlertas alAbrirParte={pedirConductor} />
-      {:else if app.ruta.tipo === "movilidades"}
-        <PantallaFlota />
-      {:else if app.ruta.tipo === "unidad"}
-        <!-- Una ficha nueva (otra patente, o el alta de una unidad) arranca limpia: filtro del historial, mensajes y diálogos. -->
-        {#key app.versionDePantalla}
-          {#await import("./componentes/PantallaFicha.svelte")}
+          <p class="parrafo">{app.errorDeArranque}</p>
+          <div class="acciones-error">
+            <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
+          </div>
+        {:else if app.ruta.tipo === "inicio" || app.ruta.tipo === "vencimientos" || app.ruta.tipo === "operacion"}
+          <!-- Hasta E3 las tres se muestran con la pantalla de alertas de siempre. -->
+          <PantallaAlertas alAbrirParte={() => pedirVerComo("conductor")} />
+        {:else if app.ruta.tipo === "movilidades"}
+          <PantallaFlota />
+        {:else if app.ruta.tipo === "mas"}
+          <PantallaMas perfil={perfilTexto} {descripcionDelPerfil} alCambiarPerfil={() => pedirVerComo()} alComoFunciona={abrirComoFunciona} alReiniciar={pedirReinicio} />
+        {:else if app.ruta.tipo === "unidad"}
+          <!-- Una ficha nueva (otra patente, o el alta de una unidad) arranca limpia: filtro del historial, mensajes y diálogos. -->
+          {#key app.versionDePantalla}
+            {#await import("./componentes/PantallaFicha.svelte")}
+              {@render cargandoPantalla()}
+            {:then { default: PantallaFicha }}
+              <PantallaFicha />
+            {:catch}
+              {@render errorDeCarga()}
+            {/await}
+          {/key}
+        {:else if app.ruta.tipo === "conductor" || app.ruta.tipo === "mis-partes"}
+          {#await import("./componentes/PantallaConductor.svelte")}
             {@render cargandoPantalla()}
-          {:then { default: PantallaFicha }}
-            <PantallaFicha />
-          {:catch error}
-            {fallarCarga(error)}
+          {:then { default: PantallaConductor }}
+            <PantallaConductor />
+          {:catch}
+            {@render errorDeCarga()}
           {/await}
-        {/key}
-      {:else if app.ruta.tipo === "conductor" || app.ruta.tipo === "mis-partes"}
-        {#await import("./componentes/PantallaConductor.svelte")}
-          {@render cargandoPantalla()}
-        {:then { default: PantallaConductor }}
-          <PantallaConductor />
-        {:catch error}
-          {fallarCarga(error)}
-        {/await}
-      {:else if app.ruta.tipo === "parte"}
-        <!-- Un parte nuevo (otra unidad u otra fecha) arranca limpio: formulario, errores y el panel de «Parte enviado». -->
-        {#key app.versionDePantalla}
-          {#await import("./componentes/PantallaParte.svelte")}
-            {@render cargandoPantalla()}
-          {:then { default: PantallaParte }}
-            <PantallaParte bind:titulo={tituloDelParte} />
-          {:catch error}
-            {fallarCarga(error)}
-          {/await}
-        {/key}
-      {:else}
-        <!-- Una dirección que no corresponde a ninguna pantalla (8: Error): nunca una pantalla en blanco, y el camino de vuelta. -->
-        <div class="encabezado">
-          <div class="solo-angosto"><EtiquetaDemo /></div>
+        {:else if app.ruta.tipo === "parte"}
+          <!-- Un parte nuevo (otra unidad u otra fecha) arranca limpio: formulario, errores y el panel de «Parte enviado». -->
+          {#key app.versionDePantalla}
+            {#await import("./componentes/PantallaParte.svelte")}
+              {@render cargandoPantalla()}
+            {:then { default: PantallaParte }}
+              <PantallaParte bind:titulo={tituloDelParte} />
+            {:catch}
+              {@render errorDeCarga()}
+            {/await}
+          {/key}
+        {:else}
+          <!-- Una dirección que no corresponde a ninguna pantalla (8: Error): nunca una pantalla en blanco, y el camino de vuelta. -->
           <h1 tabindex="-1">{nombreDeLaPantalla}</h1>
-        </div>
-        <p class="parrafo">{TEXTO_MARCO.paginaNoEncontrada}</p>
-        <div><EnlaceAccion href={aHash(rutaPorDefecto(app.perfil))}>{TEXTO_MARCO.irA(nombreDePantalla(rutaPorDefecto(app.perfil)))}</EnlaceAccion></div>
-      {/if}
-      {#snippet failed()}
-        <div class="encabezado">
-          <div class="solo-angosto"><EtiquetaDemo /></div>
+          <p class="parrafo">{TEXTO_MARCO.paginaNoEncontrada}</p>
+          <div><EnlaceAccion href={aHash(rutaPorDefecto(app.perfil))}>{TEXTO_MARCO.irA(nombreDePantalla(rutaPorDefecto(app.perfil)))}</EnlaceAccion></div>
+        {/if}
+        {#snippet failed()}
           <h1 tabindex="-1">{TEXTO_ERROR_PANTALLA.titulo}</h1>
-        </div>
-        <p class="parrafo">{TEXTO_ERROR_PANTALLA.mensaje}</p>
-        <div class="acciones-error">
-          <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
-          <Boton variante="secundario" onclick={pedirReinicio}>{TEXTO_MARCO.reiniciarDemo}</Boton>
-        </div>
-      {/snippet}
-    </svelte:boundary>
-  </main>
-
-  <Pie />
+          <p class="parrafo">{TEXTO_ERROR_PANTALLA.mensaje}</p>
+          <div class="acciones-error">
+            <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
+            <Boton variante="secundario" onclick={pedirReinicio}>{TEXTO_MARCO.reiniciarDemo}</Boton>
+          </div>
+        {/snippet}
+      </svelte:boundary>
+    </main>
+  </div>
 </div>
+
+<BarraInferior items={itemsDeLaBarra} oculta={enParte || !lista} />
 
 <!-- Lo que pasó sin que se vea en pantalla (por ejemplo, "Demo reiniciada"), para lectores de pantalla. -->
 <div class="solo-lectores" role="status">{anuncio}</div>
@@ -412,22 +493,83 @@
   alConfirmar={confirmarReinicio}
 />
 <DialogoConductor
-  bind:abierto={dialogoConductorAbierto}
+  bind:abierto={dialogoVerComoAbierto}
+  perfilInicial={perfilInicialDelDialogo}
   {conductores}
   elegidoInicial={conductorActual}
   cargando={cambiandoPerfil}
-  error={errorAlElegirConductor}
+  error={errorAlCambiarPerfil}
   focoDestino={destinoDelFoco}
-  alConfirmar={confirmarConductor}
+  alConfirmar={confirmarPerfil}
 />
 
 <style>
-  .pagina {
-    display: flex;
-    flex-direction: column;
+  /* El foco y el desplazamiento de «saltar al foco» no quedan bajo las barras fijas: arriba la superior (con su franja), abajo la inferior; en escritorio, arriba la de migas. */
+  :global(html) {
+    scroll-padding-top: calc(var(--alto-barra) + var(--alto-franja) + var(--e-4));
+    scroll-padding-bottom: calc(var(--alto-pestanas) + var(--e-4));
+  }
+  @media (min-width: 64rem) {
+    :global(html) {
+      scroll-padding-top: 4.5rem;
+      scroll-padding-bottom: var(--e-4);
+    }
+  }
+
+  /* Celular y tableta: una columna. Desde 64 rem el lateral fijo a la izquierda y el marco a la derecha. */
+  .app {
     min-height: 100vh;
     min-height: 100dvh;
   }
+  .marco {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  @media (min-width: 64rem) {
+    .app {
+      display: grid;
+      grid-template-columns: var(--ancho-lateral) minmax(0, 1fr);
+    }
+  }
+
+  /* Ancho y medianil del contenido: alineados con las migas y la fecha de la barra de escritorio. Pegado a la izquierda, no centrado. */
+  .ancho {
+    width: 100%;
+    max-width: 82.5rem;
+    padding-inline: var(--gutter);
+  }
+
+  /* Barra de escritorio: migas a la izquierda y la fecha a la derecha. Fija arriba al desplazar. */
+  .barra-escritorio {
+    display: none;
+  }
+  @media (min-width: 64rem) {
+    .barra-escritorio {
+      display: block;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: var(--c-fondo);
+      border-bottom: 1px solid var(--c-borde);
+      color: var(--c-texto-2);
+      font-size: var(--t-tabla);
+    }
+    .interior {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--e-4);
+      min-height: 3.5rem;
+    }
+    .fecha {
+      flex: none;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
   /* La región viva existe siempre; sin avisos no ocupa lugar. */
   .avisos.hay {
     padding-block: var(--e-3) 0;
@@ -437,25 +579,28 @@
     flex-direction: column;
     gap: var(--e-2);
   }
+
   main {
     display: flex;
     flex: 1;
     flex-direction: column;
     align-items: flex-start;
     gap: var(--e-4);
-    padding-block: var(--e-5) var(--e-6);
+    /* Abajo deja lugar a la barra inferior fija (en el parte no hay: manda la barra de envío). */
+    padding-block: var(--e-5) calc(var(--alto-pestanas) + env(safe-area-inset-bottom, 0px) + var(--e-6));
   }
-  .encabezado {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--e-2);
+  main.en-parte {
+    padding-bottom: var(--e-6);
   }
-  /* El rótulo "Demo con datos ficticios" baja acá cuando la barra superior no tiene lugar (menos de 40 rem). */
-  @media (min-width: 40rem) {
-    .solo-angosto {
-      display: none;
+  @media (min-width: 64rem) {
+    main {
+      padding-bottom: var(--e-7);
     }
+  }
+  /* Las pantallas todavía sin rehacer llevan el rótulo «Demo con datos ficticios» arriba del título cuando no hay lugar en la barra: el marco nuevo
+     ya lo muestra siempre (franja y lateral). Se va con cada pantalla (E2 y E3). */
+  main :global(.solo-angosto) {
+    display: none;
   }
   .acciones-error {
     display: flex;

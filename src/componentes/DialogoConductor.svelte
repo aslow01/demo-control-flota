@@ -1,19 +1,24 @@
 <script lang="ts">
-  // Diálogo "¿Quién completa el parte?" (5.2 y 5.17): lista de conductores activos (ficticios) con su unidad, en radios. En el renglón 2, junto a la unidad, el conductor cuya licencia no ampara hoy (L1)
-  // lleva `i-vencido` + «Sin licencia vigente» (texto crítico, sin fondo). Sigue siendo elegible (es un punto de vista): así el visitante encuentra el caso del bloqueo.
+  // Diálogo «Ver como» (5.2 y 5.17): elige el perfil (Encargado o Conductor) y, con Conductor, quién completa el parte: lista de conductores activos (ficticios) con su unidad, en radios.
+  // El cambio se aplica al pulsar «Aplicar» (WCAG 3.2.2: elegir un radio no cambia la pantalla). Es solo un punto de vista de la demo: no hay usuarios ni contraseñas.
+  // En el renglón 2, junto a la unidad, el conductor cuya licencia no ampara hoy (L1) lleva `i-vencido` + «Sin licencia vigente» (texto crítico, sin fondo). Sigue siendo elegible (es un punto
+  // de vista): así el visitante encuentra el caso del bloqueo.
   // M1: los conductores que permiten probar un caso (`paraProbar`) van primero, cada uno con su marca «Para probar: …» como tercer renglón de la etiqueta (así la lee el lector de pantalla
   // junto al nombre y la unidad), y una línea «Los demás conductores» los separa del resto. Siguen siendo opciones del mismo grupo de radios.
-  // El foco inicial va al conductor elegido (o al primero). "Continuar" no se deshabilita: sin elección muestra el error en el diálogo.
+  // El foco inicial va al perfil de ahora. «Aplicar» no se deshabilita: con Conductor y sin elección muestra el error en el diálogo.
   // Quien lo usa recibe la lista armada y hace el cambio de perfil (`alConfirmar`); si falla, `error` se muestra acá y el diálogo sigue abierto.
   import { untrack } from "svelte";
   import Boton from "./Boton.svelte";
   import Dialogo from "./Dialogo.svelte";
   import Icono from "./Icono.svelte";
-  import { TEXTO_ELEGIR_CONDUCTOR as T } from "./textos-marco.ts";
+  import { TEXTO_ELEGIR_CONDUCTOR as T, TEXTO_MARCO, TEXTO_MAS } from "./textos-marco.ts";
   import { ETIQUETAS_DE_PARTE, type OpcionConductor } from "./tipos.ts";
+
+  type TipoPerfil = "encargado" | "conductor";
 
   let {
     abierto = $bindable(false),
+    perfilInicial = "encargado",
     conductores,
     elegidoInicial = null,
     cargando = false,
@@ -22,27 +27,32 @@
     alConfirmar,
   }: {
     abierto?: boolean;
+    /** El perfil con el que arranca la elección: el de ahora, o Conductor si se abrió desde «Abrir el parte diario». */
+    perfilInicial?: TipoPerfil;
     conductores: OpcionConductor[];
     /** El conductor del perfil actual, si el perfil es Conductor. */
     elegidoInicial?: string | null;
     cargando?: boolean;
     error?: string;
     focoDestino?: () => HTMLElement | null;
-    alConfirmar: (conductorId: string) => void;
+    alConfirmar: (perfil: { tipo: "encargado" } | { tipo: "conductor"; conductorId: string }) => void;
   } = $props();
 
+  const V = TEXTO_MAS.verComo;
   const uid = $props.id();
   const idError = $derived(`${uid}-error`);
   const idAyuda = $derived(`${uid}-ayuda`);
 
+  let tipo = $state<TipoPerfil>("encargado");
   let elegido = $state<string | null>(null);
   let sinElegir = $state(false);
   let lista = $state<HTMLElement | null>(null);
 
-  // Cada vez que se abre, parte del conductor actual y sin errores.
+  // Cada vez que se abre, parte del perfil y el conductor actuales y sin errores.
   // `untrack`: si el perfil cambia con el diálogo abierto (al confirmar), no se reinicia lo elegido.
   $effect(() => {
     if (abierto) {
+      tipo = untrack(() => perfilInicial);
       elegido = untrack(() => elegidoInicial);
       sinElegir = false;
     }
@@ -51,15 +61,21 @@
   const sugeridos = $derived(conductores.filter((c) => c.paraProbar != null));
   const resto = $derived(conductores.filter((c) => c.paraProbar == null));
   const idFoco = $derived(elegido ?? sugeridos[0]?.id ?? conductores[0]?.id ?? null);
-  const mensaje = $derived(sinElegir ? T.elegir : error);
+  const mensaje = $derived(sinElegir && tipo === "conductor" ? T.elegir : error);
 
-  function continuar(): void {
+  const perfiles: { valor: TipoPerfil; texto: string; ayuda: string }[] = [
+    { valor: "encargado", texto: TEXTO_MARCO.perfilEncargado, ayuda: V.encargadoAyuda },
+    { valor: "conductor", texto: TEXTO_MARCO.perfilConductor, ayuda: V.conductorAyuda },
+  ];
+
+  function aplicar(): void {
+    if (tipo === "encargado") return alConfirmar({ tipo: "encargado" });
     if (elegido === null) {
       sinElegir = true;
-      lista?.querySelector<HTMLElement>("[data-foco-inicial]")?.focus();
+      lista?.querySelector<HTMLElement>("[data-foco-lista]")?.focus();
       return;
     }
-    alConfirmar(elegido);
+    alConfirmar({ tipo: "conductor", conductorId: elegido });
   }
 </script>
 
@@ -71,7 +87,7 @@
         name="conductor-del-parte"
         value={c.id}
         checked={elegido === c.id}
-        data-foco-inicial={c.id === idFoco ? "" : undefined}
+        data-foco-lista={c.id === idFoco ? "" : undefined}
         onchange={() => {
           elegido = c.id;
           sinElegir = false;
@@ -93,33 +109,66 @@
   </li>
 {/snippet}
 
-<Dialogo titulo={T.titulo} bind:abierto bloqueado={cargando} descripcionId={idAyuda} {focoDestino}>
-  <p id={idAyuda} class="nota">{T.ayuda}</p>
-  <fieldset aria-describedby={mensaje !== "" ? idError : undefined}>
-    <legend class="nota">{T.leyenda}</legend>
-    {#if mensaje !== ""}
-      <p class="error" id={idError} role="alert"><Icono nombre="vencido" /><span>{mensaje}</span></p>
-    {/if}
-    <div bind:this={lista}>
-      {#if sugeridos.length > 0}
-        <ul class="lista">
-          {#each sugeridos as c (c.id)}
-            {@render opcion(c)}
-          {/each}
-        </ul>
-        {#if resto.length > 0}<p class="nota separador">{T.losDemas}</p>{/if}
-      {/if}
-      {#if resto.length > 0}
-        <ul class="lista">
-          {#each resto as c (c.id)}
-            {@render opcion(c)}
-          {/each}
-        </ul>
-      {/if}
-    </div>
+<Dialogo titulo={V.titulo} bind:abierto bloqueado={cargando} descripcionId={idAyuda} {focoDestino}>
+  <p id={idAyuda} class="nota">{V.ayudaDialogo}</p>
+
+  <fieldset>
+    <legend class="nota">{V.leyendaPerfil}</legend>
+    <ul class="lista">
+      {#each perfiles as p (p.valor)}
+        <li>
+          <label class="opcion">
+            <input
+              type="radio"
+              name="perfil-ver-como"
+              value={p.valor}
+              checked={tipo === p.valor}
+              data-foco-inicial={p.valor === perfilInicial ? "" : undefined}
+              onchange={() => {
+                tipo = p.valor;
+                sinElegir = false;
+              }}
+            />
+            <span class="datos">
+              <span class="nombre">{p.texto}</span>
+              <span class="nota">{p.ayuda}</span>
+            </span>
+          </label>
+        </li>
+      {/each}
+    </ul>
   </fieldset>
+
+  {#if tipo === "conductor"}
+    <fieldset aria-describedby={mensaje !== "" ? idError : undefined}>
+      <legend class="nota">{T.titulo}</legend>
+      {#if mensaje !== ""}
+        <p class="error" id={idError} role="alert"><Icono nombre="vencido" /><span>{mensaje}</span></p>
+      {/if}
+      <div bind:this={lista}>
+        {#if sugeridos.length > 0}
+          <ul class="lista">
+            {#each sugeridos as c (c.id)}
+              {@render opcion(c)}
+            {/each}
+          </ul>
+          {#if resto.length > 0}<p class="nota separador">{T.losDemas}</p>{/if}
+        {/if}
+        {#if resto.length > 0}
+          <ul class="lista">
+            {#each resto as c (c.id)}
+              {@render opcion(c)}
+            {/each}
+          </ul>
+        {/if}
+      </div>
+    </fieldset>
+  {:else if mensaje !== ""}
+    <p class="error" id={idError} role="alert"><Icono nombre="vencido" /><span>{mensaje}</span></p>
+  {/if}
+
   {#snippet pie()}
-    <Boton {cargando} onclick={continuar}>{T.continuar}</Boton>
+    <Boton {cargando} onclick={aplicar}>{V.aplicar}</Boton>
   {/snippet}
 </Dialogo>
 
