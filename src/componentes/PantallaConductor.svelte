@@ -160,7 +160,7 @@
                 </Campo>
               </div>
             {:else}
-              <div class="secundaria"><Boton variante="secundario" tamano="chico" onclick={mostrarSelect}>{inicio.elegirUnidad.etiqueta}</Boton></div>
+              <div class="secundaria"><Boton variante="secundario" onclick={mostrarSelect}>{inicio.elegirUnidad.etiqueta}</Boton></div>
             {/if}
           {/if}
         </Panel>

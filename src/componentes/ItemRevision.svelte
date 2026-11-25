@@ -114,18 +114,10 @@
   .item.con-error {
     --riel: var(--c-critico-r);
   }
-  /* Texto agrandado: menos relleno a los lados y los dos segmentos uno debajo del otro, así ninguna palabra se parte (S5 de la etapa 7). */
+  /* Texto agrandado (el parte mide 17 rem o menos): casi sin relleno a los lados (el riel de 4 px y un poco más) y el nombre del punto en el tamaño del cuerpo, para que una palabra\n     como «Documentación» entre entera en su renglón (S5 de la etapa 7). */
   @container parte (max-width: 17rem) {
     .item {
-      padding-inline: var(--e-3) var(--e-2);
-    }
-    .segmentos {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-  @container parte (max-width: 8.5rem) {
-    .item {
-      padding-inline: var(--e-2) var(--e-1);
+      padding-inline: calc(var(--e-1) + 4px) var(--e-1);
     }
   }
   /* El nombre y la marca de «Punto crítico» en un renglón; si no entran, la marca baja. Flotado, el `legend` deja de ser «el rótulo sobre el borde» y es un hijo más:
@@ -143,11 +135,16 @@
     clear: both;
   }
   .nombre {
-    font-size: var(--t-h3);
+    font-size: 1.0625rem;
     font-weight: 650;
     line-height: 1.3;
     /* m1 de la etapa 7: si el nombre del punto no entra ni en su propio renglón (320 px con el texto al 200 %), se parte en vez de ensanchar la página. */
     overflow-wrap: anywhere;
+  }
+  @container parte (max-width: 17rem) {
+    .nombre {
+      font-size: var(--t-cuerpo);
+    }
   }
 
   .error {
@@ -182,6 +179,12 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--e-2);
+  }
+  /* Texto agrandado: los dos segmentos uno debajo del otro (va después de la regla base: a igual especificidad, gana la última). */
+  @container parte (max-width: 17rem) {
+    .segmentos {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
   .segmento {
     position: relative;
