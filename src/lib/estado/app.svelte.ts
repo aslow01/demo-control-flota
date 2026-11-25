@@ -120,12 +120,14 @@ import { generarId } from "./ids.ts";
 import {
   conductoresParaProbar,
   inicioDelConductor as armarInicio,
+  misPartes as armarMisPartes,
   opcionesParaElegirConductor as armarOpcionesDeConductor,
   panelDeParteEnviado,
   panelDeRevisionEnviada,
   panelDeSinSalida,
   vistaDeParte,
   type InicioDelConductor,
+  type MisPartes,
   type OpcionParaElegirConductor,
   type PanelParteEnviado,
   type ParteEnCierre,
@@ -742,6 +744,11 @@ export class EstadoApp {
   inicioDelConductor(unidadElegidaId: string | null = null): InicioDelConductor | null {
     if (this.estado === null || this.alertas === null) return null;
     return armarInicio(this.estado, this.alertas, this.hoy, this.perfil, unidadElegidaId);
+  }
+
+  /** La pantalla Mis partes (`#/conductor/partes`): los últimos cinco partes cerrados del conductor del perfil. `null` con el perfil Encargado o antes de terminar el arranque. */
+  misPartes(): MisPartes | null {
+    return this.estado === null ? null : armarMisPartes(this.estado, this.perfil);
   }
 
   /**

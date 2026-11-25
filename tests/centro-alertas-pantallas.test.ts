@@ -7,7 +7,9 @@ import { sumarDias } from "../src/lib/dominio/fechas.ts";
 import { MAX_POR_DIA_EN_REGLA } from "../src/lib/dominio/horizonte.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { centroDeAlertas, vencimientosVisibles, type CentroDeAlertas } from "../src/lib/estado/centro-alertas.ts";
-import { PROYECTO_BASE, documento, estadoVacio, flotaDePrueba, novedad, parte, unidad } from "./ayuda.ts";
+import { parsearHash } from "../src/lib/estado/enrutador.ts";
+import { CONSULTA_INICIAL, panelDeFlota, vistaDeFlota } from "../src/lib/estado/flota.ts";
+import { PROYECTO_BASE, conductor, documento, estadoVacio, flotaDePrueba, novedad, parte, unidad } from "./ayuda.ts";
 
 const H = "2026-11-18";
 const e: Estado = generar(SEMILLA_POR_DEFECTO, H);
@@ -353,5 +355,50 @@ describe("Vencimientos como pantalla: filtros por enlace (3.5 y 3.7)", () => {
 
   it("el filtro viejo de dos valores sigue funcionando para la pantalla actual", () => {
     expect(v.filtros.map((x) => x.id)).toEqual(["todos", "vencidos", "7", "15", "30"]);
+  });
+
+  it("cada filtro de la ruta (`?filtro=`) existe como pastilla y lleva a la dirección que el enrutador entiende", () => {
+    for (const f of v.filtrosEnlace) {
+      const ruta = parsearHash(f.href);
+      expect(ruta.tipo, f.id).toBe("vencimientos");
+      expect(ruta.tipo === "vencimientos" ? (ruta.filtro ?? "todos") : null, f.id).toBe(f.id);
+    }
+  });
+
+  it("la suma de las pastillas cierra: vencidos + próximos = todos, y 7 + 15 + 30 = próximos", () => {
+    const n = Object.fromEntries(v.filtrosEnlace.map((x) => [x.id, x.cantidad]));
+    expect(n["vencidos"]! + n["proximos"]!).toBe(n["todos"]);
+    expect(n["7"]! + n["15"]! + n["30"]!).toBe(n["proximos"]);
+  });
+});
+
+describe("coherencia entre Inicio, Movilidades y las listas (3.5)", () => {
+  it("«No disponibles hoy» de Inicio cuenta lo mismo que la pastilla homónima de Movilidades, y su enlace lleva a esa pastilla", () => {
+    const flota = panelDeFlota(e, r, H);
+    const pastilla = vistaDeFlota(flota, { ...CONSULTA_INICIAL, filtro: "no-disponibles" }).filtros.find((f) => f.id === "no-disponibles");
+    expect(c.cifras.noDisponibles.valor).toBe(pastilla?.cantidad);
+    expect(c.cifras.noDisponibles.href).toBe(pastilla?.href);
+  });
+
+  it("las cinco direcciones de las cifras son direcciones que el enrutador conoce (ninguna es «desconocida»)", () => {
+    for (const x of [c.cifras.noDisponibles, c.cifras.vencidos, c.cifras.proximos, c.cifras.partes, c.cifras.novedadCritica]) {
+      expect(parsearHash(x.href).tipo, x.href).not.toBe("desconocida");
+    }
+  });
+
+  it("un conductor con un solo nombre se abrevia a sí mismo (sin «N. »)", () => {
+    const u = unidad({ id: "u1", proyectoId: PROYECTO_BASE.id, conductorId: "c1", creada: `${H}T12:00:00.000Z` });
+    const docs = (["seguro", "revision-tecnica", "matafuego"] as const).map((tipo) => documento({ id: `d-${tipo}`, titular: { tipo: "unidad", id: "u1" }, tipo, vence: sumarDias(H, 400) }));
+    const licencia = documento({ id: "d-lic", titular: { tipo: "conductor", id: "c1" }, tipo: "licencia", vence: sumarDias(H, 3) });
+    const estado = estadoVacio({ unidades: [u], documentos: [...docs, licencia], conductores: [conductor({ id: "c1", nombre: "Madonna" })], proyectos: [PROYECTO_BASE] });
+    const x = centroDe(estado).vencimientos.regla.elementos[0];
+    expect(x).toMatchObject({ tipo: "marca", etiquetaCorta: "Madonna" });
+    expect(x?.tipo === "marca" ? x.fichaHref : null).toBe("#/unidad/ZK214BD");
+  });
+
+  it("un conductor sin unidad asignada no tiene «Ver ficha»", () => {
+    const docs = [documento({ id: "d-lic", titular: { tipo: "conductor", id: "c1" }, tipo: "licencia", vence: sumarDias(H, 3) })];
+    const x = centroDe(estadoVacio({ documentos: docs, conductores: [conductor({ id: "c1", nombre: "Luis Ferreyra" })], proyectos: [PROYECTO_BASE] })).vencimientos.regla.elementos[0];
+    expect(x).toMatchObject({ tipo: "marca", etiquetaCorta: "L. Ferreyra", fichaHref: null });
   });
 });
