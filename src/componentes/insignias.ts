@@ -5,8 +5,6 @@ import type { CentroDeAlertas } from "../lib/estado/centro-alertas.ts";
 export interface CuentasDeNavegacion {
   /** Inicio: «No disponibles hoy» (bloqueadas por documentos más fuera de servicio). */
   noDisponibles: number;
-  /** El rótulo de esa cifra, para el texto que leen los lectores de pantalla («No disponibles hoy»). */
-  rotuloNoDisponibles: string;
   /** Vencimientos: vencidos o faltantes. */
   vencidos: number;
   /** Operación diaria, solapa Checklists: partes sin enviar o sin cerrar y unidades sin parte. */
@@ -16,11 +14,10 @@ export interface CuentasDeNavegacion {
 }
 
 export function cuentasDeNavegacion(centro: CentroDeAlertas | null): CuentasDeNavegacion {
-  if (centro === null) return { noDisponibles: 0, rotuloNoDisponibles: "", vencidos: 0, checklists: 0, novedades: 0 };
+  if (centro === null) return { noDisponibles: 0, vencidos: 0, checklists: 0, novedades: 0 };
   const [checklists, novedades] = centro.operacionDiaria.solapas;
   return {
     noDisponibles: centro.cifras.noDisponibles.valor,
-    rotuloNoDisponibles: centro.cifras.noDisponibles.rotulo,
     vencidos: centro.cifras.vencidos.valor,
     checklists: checklists.cantidad,
     novedades: novedades.cantidad,

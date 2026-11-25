@@ -19,7 +19,7 @@ async function iniciada(): Promise<EstadoApp> {
 
 describe("cuentas de las insignias del marco", () => {
   it("sin datos cargados no hay ninguna cuenta", () => {
-    expect(cuentasDeNavegacion(null)).toEqual({ noDisponibles: 0, rotuloNoDisponibles: "", vencidos: 0, checklists: 0, novedades: 0 });
+    expect(cuentasDeNavegacion(null)).toEqual({ noDisponibles: 0, vencidos: 0, checklists: 0, novedades: 0 });
   });
 
   it("salen de las cifras de Inicio y de las solapas de Operación diaria, no de otro cálculo", async () => {
@@ -29,7 +29,6 @@ describe("cuentas de las insignias del marco", () => {
     if (centro === null) return;
     const c = cuentasDeNavegacion(centro);
     expect(c.noDisponibles).toBe(centro.cifras.noDisponibles.valor);
-    expect(c.rotuloNoDisponibles).toBe(centro.cifras.noDisponibles.rotulo);
     expect(c.vencidos).toBe(centro.cifras.vencidos.valor);
     expect(c.checklists).toBe(centro.operacionDiaria.solapas[0].cantidad);
     expect(c.novedades).toBe(centro.operacionDiaria.solapas[1].cantidad);
