@@ -1,7 +1,7 @@
 <script lang="ts">
   // Diálogo «Ver como» (5.2 y 5.17): elige el perfil (Encargado o Conductor) y, con Conductor, quién completa el parte: lista de conductores activos (ficticios) con su unidad, en radios.
   // El cambio se aplica al pulsar «Aplicar» (WCAG 3.2.2: elegir un radio no cambia la pantalla). Es solo un punto de vista de la demo: no hay usuarios ni contraseñas.
-  // En el renglón 2, junto a la unidad, el conductor cuya licencia no ampara hoy (L1) lleva `i-vencido` + «Sin licencia vigente» (texto crítico, sin fondo). Sigue siendo elegible (es un punto
+  // En el renglón 2, junto a la unidad, el conductor cuya licencia no ampara hoy (L1) lleva el rombo crítico + «Sin licencia vigente» (texto crítico, sin fondo). Sigue siendo elegible (es un punto
   // de vista): así el visitante encuentra el caso del bloqueo.
   // M1: los conductores que permiten probar un caso (`paraProbar`) van primero, cada uno con su marca «Para probar: …» como tercer renglón de la etiqueta (así la lee el lector de pantalla
   // junto al nombre y la unidad), y una línea «Los demás conductores» los separa del resto. Siguen siendo opciones del mismo grupo de radios.
@@ -10,7 +10,7 @@
   import { untrack } from "svelte";
   import Boton from "./Boton.svelte";
   import Dialogo from "./Dialogo.svelte";
-  import Icono from "./Icono.svelte";
+  import Forma from "./Forma.svelte";
   import { TEXTO_ELEGIR_CONDUCTOR as T, TEXTO_MARCO, TEXTO_MAS } from "./textos-marco.ts";
   import { ETIQUETAS_DE_PARTE, type OpcionConductor } from "./tipos.ts";
 
@@ -98,7 +98,7 @@
         <span class="renglon-2">
           <span class="nota">{c.unidad === null ? T.sinUnidad : T.unidad(c.unidad)}</span>
           {#if !c.licenciaVigente && !(c.paraProbar?.sinLicencia ?? false)}
-            <span class="sin-licencia"><Icono nombre="vencido" />{ETIQUETAS_DE_PARTE["sin-licencia-vigente"].texto}</span>
+            <span class="sin-licencia"><Forma forma="rombo" tono="critico" />{ETIQUETAS_DE_PARTE["sin-licencia-vigente"].texto}</span>
           {/if}
         </span>
         {#if c.paraProbar != null}
@@ -143,7 +143,7 @@
     <fieldset aria-describedby={mensaje !== "" ? idError : undefined}>
       <legend class="nota">{T.titulo}</legend>
       {#if mensaje !== ""}
-        <p class="error" id={idError} role="alert"><Icono nombre="vencido" /><span>{mensaje}</span></p>
+        <p class="error" id={idError} role="alert"><Forma forma="rombo" tono="critico" /><span>{mensaje}</span></p>
       {/if}
       <div bind:this={lista}>
         {#if sugeridos.length > 0}
@@ -164,7 +164,7 @@
       </div>
     </fieldset>
   {:else if mensaje !== ""}
-    <p class="error" id={idError} role="alert"><Icono nombre="vencido" /><span>{mensaje}</span></p>
+    <p class="error" id={idError} role="alert"><Forma forma="rombo" tono="critico" /><span>{mensaje}</span></p>
   {/if}
 
   {#snippet pie()}
@@ -183,9 +183,13 @@
     margin-bottom: var(--e-2);
     font-weight: 600;
   }
+  /* Las opciones forman una lista con borde (como las de «Más»): filas de 56 px, una sobre otra. */
   .lista {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--c-borde);
+    border-radius: var(--r-2);
   }
   .lista li + li {
     border-top: 1px solid var(--c-borde);
@@ -194,27 +198,33 @@
     display: flex;
     align-items: center;
     gap: var(--e-3);
-    min-height: 3rem;
-    padding: var(--e-2) var(--e-1);
+    min-height: 3.5rem;
+    padding: var(--e-2) var(--e-4);
     cursor: pointer;
   }
+  /* La elegida lleva el riel de tinta (la tinta es la acción) y el fondo de la superficie hundida; el color de estado queda para el estado. */
   .opcion:has(input:checked) {
-    background: var(--c-acento-suave);
+    background: var(--c-superficie-2);
+    box-shadow: inset 4px 0 0 var(--c-acento);
+  }
+  .opcion:has(input:focus-visible) {
+    outline: 3px solid var(--c-foco);
+    outline-offset: -3px;
   }
   @media (hover: hover) {
     .opcion:hover {
       background: var(--c-superficie-2);
     }
-    .opcion:has(input:checked):hover {
-      background: var(--c-acento-suave);
-    }
   }
   input {
     flex: none;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.375rem;
+    height: 1.375rem;
     margin: 0;
     accent-color: var(--c-acento);
+  }
+  input:focus-visible {
+    outline: none;
   }
   .datos {
     display: flex;
@@ -231,12 +241,11 @@
     gap: 0 var(--e-3);
   }
   .sin-licencia {
-    --icono-tam: 1rem;
     display: inline-flex;
     align-items: center;
-    gap: var(--e-1);
+    gap: var(--e-2);
     font-size: var(--t-chico);
-    font-weight: 600;
+    font-weight: 650;
     color: var(--c-critico-t);
   }
   .para-probar {
@@ -251,16 +260,15 @@
     font-weight: 600;
   }
   .error {
-    --icono-tam: 1rem;
     display: flex;
     align-items: flex-start;
     gap: var(--e-2);
     font-size: var(--t-chico);
-    font-weight: 600;
+    font-weight: 650;
     line-height: 1.4;
     color: var(--c-critico-t);
   }
-  .error :global(.icono) {
-    margin-top: 0.1rem;
+  .error :global(.forma) {
+    margin-top: 0.3125rem;
   }
 </style>

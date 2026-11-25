@@ -75,7 +75,7 @@
   // 5.17 Diálogo modal base. <dialog> con showModal(): el resto de la página queda inerte de forma nativa.
   //  - >= 40 rem: centrado, ancho min(34 rem, 100% - 2 rem), alto máximo 85 %, barra de título con botón cerrar (44 × 44),
   //    interior con desplazamiento propio y pie con los botones a la izquierda, primario primero y después "Cancelar" (botón-texto).
-  //  - < 40 rem: hoja a pantalla completa; pie fijo abajo con el primario a todo el ancho y "Cancelar" debajo.
+  //  - < 40 rem: hoja inferior (pegada abajo, a todo el ancho, hasta el 92 % del alto, esquinas de arriba redondeadas); pie con el primario a todo el ancho y "Cancelar" debajo.
   //  - Foco al abrir: el primer campo (o el elemento con data-foco-inicial); `focoInicial="cancelar"` en confirmaciones destructivas;
   //    `focoInicial="titulo"` en los que solo informan (se lee el nombre y se sigue desde el principio).
   //    Al cerrar: va a `focoDestino()` si lo hay (por ejemplo, el h1 de la pantalla nueva o el h2 del panel); si no, vuelve al botón
@@ -304,29 +304,30 @@
 <style>
   dialog {
     padding: 0;
-    border: 1px solid var(--c-ventana-borde);
+    border: 0;
     background: var(--c-superficie);
     color: var(--c-texto);
     box-shadow: var(--s-flotante);
-    /* Pantalla completa a menos de 40 rem (hoja). */
+    /* Hoja inferior a menos de 40 rem: pegada abajo, a todo el ancho, con las esquinas de arriba redondeadas y hasta el 92 % del alto. */
     width: 100%;
     max-width: none;
-    height: 100dvh;
-    max-height: none;
-    margin: 0;
-    border-radius: 0;
+    height: auto;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-radius: var(--r-3) var(--r-3) 0 0;
     overscroll-behavior: contain;
   }
+  /* El velo es denso (64 %): el fondo se ve pero no compite con el diálogo. */
   dialog::backdrop {
     background: var(--c-velo);
   }
   dialog[open] {
-    animation: subir var(--m-lento) var(--m-curva);
+    animation: subir var(--m-medio) var(--m-curva);
   }
   @keyframes subir {
     from {
-      transform: translateY(2rem);
-      opacity: 0;
+      transform: translateY(1.5rem);
+      opacity: 0.6;
     }
   }
   @keyframes aparecer {
@@ -339,7 +340,6 @@
     container: dialogo / inline-size;
     display: flex;
     flex-direction: column;
-    height: 100%;
     max-height: inherit;
   }
 
@@ -349,16 +349,16 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--e-2);
-    min-height: 2.75rem;
-    padding: 0 var(--e-1) 0 var(--e-4);
-    background: var(--c-ventana-barra);
+    min-height: 3.5rem;
+    padding: var(--e-1) var(--e-1) var(--e-1) var(--e-4);
     border-bottom: 1px solid var(--c-borde);
   }
+  /* El título es el único lugar del diálogo con la fuente de títulos. */
   h2 {
     padding-block: var(--e-2);
-    font-size: 1rem;
-    font-weight: 600;
-    line-height: 1.3;
+    font-size: 1.3125rem;
+    font-weight: 750;
+    line-height: 1.2;
   }
 
   .cuerpo {
@@ -385,7 +385,6 @@
     gap: var(--e-2);
     padding: var(--e-3) var(--e-4);
     padding-bottom: calc(var(--e-3) + env(safe-area-inset-bottom, 0px));
-    background: var(--c-ventana-barra);
     border-top: 1px solid var(--c-borde);
   }
   .acciones {
@@ -422,29 +421,30 @@
       height: fit-content; /* no `auto`: un cuadro con top y bottom fijos se estiraría hasta el alto máximo */
       max-height: 85dvh;
       margin: auto;
-      border-radius: var(--r-4);
+      border-radius: var(--r-3);
     }
     dialog[open] {
       animation: aparecer var(--m-medio) var(--m-curva);
     }
     .caja {
-      height: auto;
       max-height: 85dvh;
-    }
-    .barra {
-      border-radius: calc(var(--r-4) - 1px) calc(var(--r-4) - 1px) 0 0;
     }
     .pie {
       flex-direction: row;
       flex-wrap: wrap;
       align-items: center;
       padding-bottom: var(--e-3);
-      border-radius: 0 0 calc(var(--r-4) - 1px) calc(var(--r-4) - 1px);
     }
     .acciones {
       flex-direction: row;
       flex-wrap: wrap;
       align-items: center;
+    }
+  }
+
+  @media (forced-colors: active) {
+    dialog {
+      border: 1px solid CanvasText;
     }
   }
 
