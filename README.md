@@ -4,8 +4,7 @@ Demo web que responde, en una pantalla, a dos preguntas: **¿qué unidades no pu
 
 Funciona entera en el navegador: sin servidor, sin cuenta y sin conexiones externas. Los datos son ficticios. Parte del portafolio de Matías Ariel Ormeño.
 
-<!-- URL de la demo en vivo: pendiente. Quitar este comentario al publicar. -->
-**Demo en vivo:** todavía no está publicada. Cuando lo esté, el enlace va aquí.
+**Demo en vivo:** <https://flota.matiasormeno.com.ar>
 
 ![Centro de alertas, perfil Encargado, insignia «4 críticas». A la izquierda, «No pueden salir hoy» con 4 unidades (ZK 214 BD, ZZD 563, ZR 536 MZ y ZU 899 QE) e Ivana Aguirre, sin licencia vigente, con «Renovar»; a la derecha, «Operación diaria» con 5 pendientes.](docs/img/centro-de-alertas.png)
 
@@ -24,8 +23,8 @@ Funciona entera en el navegador: sin servidor, sin cuenta y sin conexiones exter
 La barra «Ver como» cambia entre **Encargado** (perfil de entrada) y **Conductor**. Es una perspectiva, no un control de acceso. **Reiniciar demo** vuelve al estado inicial.
 
 1. **Encargado.** Abra la demo: el centro de alertas muestra 4 unidades que no pueden salir.
-2. **Un seguro vencido bloquea el parte.** En «Ver como», elija **Conductor** y Tamara Olivera («Para probar: la unidad tiene la documentación vencida»): el parte dice «No se puede cargar este parte», porque el seguro de ZK 214 BD venció.
-3. **Renovarlo.** Vuelva a Encargado y pulse «Renovar» en el seguro de ZK 214 BD: la alerta desaparece y la unidad deja de figurar en «No pueden salir».
+2. **Un seguro vencido bloquea el parte.** En «Ver como», elija **Conductor** y Tamara Olivera («Para probar: la unidad tiene la documentación vencida»): el inicio dice que el seguro de ZK 214 BD venció y que la unidad no puede salir, indica avisar al encargado y no ofrece «Empezar la revisión». Si se abre el parte de esa unidad, la pantalla dice «No se puede cargar este parte».
+3. **Renovarlo.** Vuelva a Encargado y pulse «Renovar» en el seguro de ZK 214 BD: se abre un formulario con el número y el vencimiento del documento, ambos obligatorios. Al pulsar «Guardar renovación», la alerta desaparece y la unidad deja de figurar en «No pueden salir».
 4. **Una conductora sin licencia.** En «Conductores que no pueden manejar hoy» figura Ivana Aguirre. Como Conductor, elíjala: en lugar de «Empezar la revisión», el inicio dice que no puede manejar hoy. Como Encargado, pulse «Renovar» en su fila y ya puede empezar.
 5. **Una falla grave.** Como Andrés Echegaray (unidad ZYN 469, «unidad apta y sin parte hoy»), complete el kilometraje y los 14 puntos, con los frenos con novedad, y envíe. La unidad queda fuera de servicio y aparece en «No pueden salir».
 6. **Una jornada normal.** Como Tamara Olivera, con el seguro al día, envíe una revisión sin novedades: el inicio muestra «En uso». Pulse «Cerrar el parte» y cargue kilometraje final y combustible: queda en solo lectura.
@@ -55,13 +54,15 @@ npm run build        # compilación en dist/
 npm run servir       # sirve dist/ con las mismas cabeceras de seguridad que se usarán al publicar
 ```
 
+`npm run buscar` revisa que el repositorio no contenga lo prohibido (por ejemplo `{@html}`, el reloj del sistema fuera de `src/lib/estado/reloj.ts` o correos que no sean de ejemplo). La regla de nombres de terceros lee su lista de `scripts/prohibidos.local.json` (`{ "palabras": [...] }`), un archivo que no se versiona; si no existe, esa regla se omite con un aviso y las demás corren igual.
+
 ## Cómo está hecha
 
 - **Tecnología:** Vite 8, TypeScript 6 y Svelte 5, sin SvelteKit; la única dependencia de producción es `svelte`. Alternativas: [`docs/stack.md`](docs/stack.md).
 - **Todo en el navegador:** datos en IndexedDB; si no se puede guardar, la demo sigue en memoria y avisa.
 - **Reglas en TypeScript puro** (`src/lib/dominio`), probadas en tres zonas horarias.
 - **Seguridad:** política de contenido estricta (`public/_headers`) con `connect-src 'none'`: la página no puede conectarse a ningún servidor.
-- **Tamaño:** 119,62 KB de JavaScript comprimido con gzip (`npm run build`, 22/11/2026; tope fijado: 120 KB).
+- **Tamaño:** 119,62 KB de JavaScript comprimido con gzip (`npm run build`, 25/11/2026; tope fijado: 120 KB).
 - **Accesibilidad:** teclado, foco visible, controles de 44 px, modo claro y oscuro, desde 320 px.
 
 ## Cómo se usó la IA
@@ -70,19 +71,18 @@ npm run servir       # sirve dist/ con las mismas cabeceras de seguridad que se 
 - **La IA (Claude, de Anthropic) escribió el código, las pruebas y los documentos;** Matías no escribió el código a mano.
 - **Método:** diseño primero, plan por pasos ([`docs/plan.md`](docs/plan.md)) y lógica con pruebas primero (TDD).
 - **Los roles de `docs/`** («programador», «QA», «revisor», «auditor») son agentes de IA dirigidos por Matías, no personas. Las revisiones por etapa también las hicieron agentes de IA, no terceras personas.
-<!-- Falta (crítica R2): lo que Matías verificó en persona; la prueba en el celular está pendiente. Completar o quitar al publicar. -->
 
 ## Cómo se verificó
 
-Cifras medidas el 22/11/2026:
+Cifras medidas el 25/11/2026:
 
 | Comprobación | Comando | Resultado |
 | --- | --- | --- |
-| Pruebas automáticas | `npm test` | 1.612 pruebas en 60 archivos, todas pasan |
-| Las mismas en tres zonas horarias | `npm run test:tz` | 1.612 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
-| Tipos | `npm run check` | 0 errores y 0 avisos en 341 archivos |
+| Pruebas automáticas | `npm test` | 1.613 pruebas en 60 archivos, todas pasan |
+| Las mismas en tres zonas horarias | `npm run test:tz` | 1.613 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
+| Tipos | `npm run check` | 0 errores y 0 avisos en 340 archivos |
 | Contraste de la paleta | `npm run contraste` | 186 mediciones, 0 fallan |
-| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas, 204 archivos) |
+| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 202 archivos con el archivo local de términos; 8 reglas sin él) |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
 También se recorrió la demo en un navegador (Playwright: 456 combinaciones de pantalla, tema y ancho sin desbordes; axe-core: 0 violaciones en 36 pantallas). No se puede reproducir con un comando. La integración continua nunca corrió y no respalda ninguna cifra. Detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3.
@@ -103,7 +103,7 @@ Todo es inventado y sale de una semilla fija (24 unidades, 24 conductores y 45 d
 
 ## Origen
 
-Iniciada el 18/11/2026 y escrita **desde cero** a partir de un enunciado propio. No usa código, datos ni capturas de terceros; solo reutiliza código propio y público del autor (la validación de CUIT de su demo «Lector de facturas»).
+Iniciada el 18/11/2026 y escrita **desde cero** a partir de un enunciado propio. No usa código, datos ni capturas de terceros; solo reutiliza código propio y público del autor (la validación de CUIT de su demo [«Lector de facturas»](https://github.com/aslow01/demo-lector-facturas)).
 
 ## Documentos
 
