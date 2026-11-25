@@ -120,6 +120,12 @@
       padding-inline: calc(var(--e-1) + 4px) var(--e-1);
     }
   }
+  /* 320 px con el texto agrandado (el parte mide 8 rem): sin relleno a la derecha, para que una palabra de 7 rem entre entera. */
+  @container parte (max-width: 8.5rem) {
+    .item {
+      padding-inline: calc(var(--e-1) + 2px) 0;
+    }
+  }
   /* El nombre y la marca de «Punto crítico» en un renglón; si no entran, la marca baja. Flotado, el `legend` deja de ser «el rótulo sobre el borde» y es un hijo más:
      el relleno del `fieldset` queda arriba, como en el resto de la fila. */
   legend {
@@ -144,6 +150,7 @@
   @container parte (max-width: 17rem) {
     .nombre {
       font-size: var(--t-cuerpo);
+      font-weight: 600;
     }
   }
 

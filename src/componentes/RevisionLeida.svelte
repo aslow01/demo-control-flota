@@ -79,7 +79,10 @@
       gap: var(--e-1) var(--e-2);
     }
     .novedad {
-      padding-inline: var(--e-2);
+      padding-inline: var(--e-1) 0;
+    }
+    .novedad > :last-child {
+      font-size: var(--t-chico);
     }
     .en-orden > :last-child,
     .novedad > :last-child {

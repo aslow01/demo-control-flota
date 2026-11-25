@@ -185,7 +185,15 @@
     gap: var(--e-2) var(--e-3);
   }
   .interno {
-    font-weight: 600;
+    font-weight: 650;
+  }
+  /* Texto agrandado (la pantalla mide 17 rem o menos): la chapa grande, que no se parte, sale de su caja; pasa a su tamaño chico (como en el inicio del conductor). */
+  @container pagina-parte (max-width: 17rem) {
+    .identidad :global(.patente[data-tamano="grande"]) {
+      --alto: 1.5rem;
+      --relleno: 0.375rem;
+      --tam: var(--t-patente-chica);
+    }
   }
   .largo {
     overflow-wrap: anywhere;

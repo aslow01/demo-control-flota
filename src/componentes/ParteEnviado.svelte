@@ -196,7 +196,7 @@
   /* 320 px con el texto agrandado (la pantalla mide 8 rem): el relleno baja otro escalón, para que «Documentación» (7 rem) entre entera. */
   @container pagina-parte (max-width: 8.5rem) {
     .resultado {
-      padding-inline: calc(var(--e-1) + 4px) var(--e-1);
+      padding-inline: calc(var(--e-1) + 4px) 0;
     }
   }
 </style>

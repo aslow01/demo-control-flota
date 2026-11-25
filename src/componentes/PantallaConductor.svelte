@@ -267,24 +267,6 @@
   .interno {
     font-weight: 650;
   }
-  /* C9 y m1 de la etapa 7: con el texto agrandado (el interior mide 17 rem o menos) la patente grande, que no se parte, sale de su caja; pasa a su tamaño chico (5.5). */
-  @container interior (max-width: 17rem) {
-    .identidad :global(.patente[data-tamano="grande"]) {
-      --alto: 1.5rem;
-      --relleno: 0.375rem;
-      --tam: var(--t-patente-chica);
-    }
-    .pendiente :global(.enlace-accion) {
-      grid-column: 1 / -1;
-      padding-inline: var(--e-1);
-    }
-    .pendiente {
-      padding-inline: var(--e-3) var(--e-2);
-    }
-    .licencia {
-      padding-inline: var(--e-3) var(--e-2);
-    }
-  }
   .descripcion {
     overflow-wrap: anywhere;
   }
@@ -458,5 +440,25 @@
   .vacio :global(.icono) {
     flex: none;
     color: var(--c-texto-3);
+  }
+
+  /* Texto agrandado (va al final: a igual especificidad gana la última regla). C9 y m1 de la etapa 7: con el texto agrandado (el interior mide 17 rem o menos) la patente grande, que no se parte, sale de su caja; pasa a su tamaño chico (5.5). */
+  @container interior (max-width: 17rem) {
+    .identidad :global(.patente[data-tamano="grande"]) {
+      --alto: 1.5rem;
+      --relleno: 0.375rem;
+      --tam: var(--t-patente-chica);
+    }
+    .pendiente :global(.enlace-accion) {
+      grid-column: 1 / -1;
+      padding-inline: var(--e-1);
+    }
+    .pendiente {
+      column-gap: var(--e-2);
+      padding-inline: calc(var(--e-1) + 4px) var(--e-1);
+    }
+    .licencia {
+      padding-inline: calc(var(--e-1) + 4px) var(--e-1);
+    }
   }
 </style>
