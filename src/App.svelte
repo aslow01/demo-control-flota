@@ -164,7 +164,7 @@
     const solapa = app.ruta.tipo === "operacion" ? app.ruta.solapa : null;
     const pendientes = cuentas.checklists + cuentas.novedades;
     return {
-      inicio: { id: "inicio", href: aHash({ tipo: "inicio" }), texto: NOMBRES_DE_PANTALLA.inicio, icono: "inicio", actual: actual("inicio"), insignia: conInsignia(cuentas.noDisponibles, `${cuentas.rotuloNoDisponibles}: ${cuentas.noDisponibles}`, true) },
+      inicio: { id: "inicio", href: aHash({ tipo: "inicio" }), texto: NOMBRES_DE_PANTALLA.inicio, icono: "inicio", actual: actual("inicio"), insignia: conInsignia(cuentas.noDisponibles, t.insignias.noDisponibles(cuentas.noDisponibles), true) },
       movilidades: { id: "movilidades", href: aHash({ tipo: "movilidades" }), texto: NOMBRES_DE_PANTALLA.movilidades, icono: "unidad", actual: actual("movilidades") },
       vencimientos: { id: "vencimientos", href: aHash({ tipo: "vencimientos" }), texto: NOMBRES_DE_PANTALLA.vencimientos, icono: "calendario", actual: actual("vencimientos"), insignia: conInsignia(cuentas.vencidos, t.insignias.vencidosOFaltantes(cuentas.vencidos), true) },
       operacion: {

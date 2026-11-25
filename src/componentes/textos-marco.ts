@@ -384,6 +384,8 @@ export const TEXTO_NAVEGACION = {
     pendientes: (n: number) => (n === 1 ? "1 pendiente" : `${n} pendientes`),
     vencidosOFaltantes: (n: number) => (n === 1 ? "1 vencido o faltante" : `${n} vencidos o faltantes`),
     abiertas: (n: number) => (n === 1 ? "1 abierta" : `${n} abiertas`),
+    /** Inicio: unidades que hoy no pueden salir («Inicio, 4 no disponibles hoy»). */
+    noDisponibles: (n: number) => (n === 1 ? "1 no disponible hoy" : `${n} no disponibles hoy`),
   },
   /** Chip del perfil en la barra superior: «Ver como: Encargado. Cambiar perfil». */
   chipPerfil: (perfil: string) => `Ver como: ${perfil}. Cambiar perfil`,

@@ -43,6 +43,8 @@ describe("textos del marco nuevo", () => {
     expect(TEXTO_NAVEGACION.insignias.vencidosOFaltantes(3)).toBe("3 vencidos o faltantes");
     expect(TEXTO_NAVEGACION.insignias.pendientes(1)).toBe("1 pendiente");
     expect(TEXTO_NAVEGACION.insignias.abiertas(2)).toBe("2 abiertas");
+    expect(TEXTO_NAVEGACION.insignias.noDisponibles(1)).toBe("1 no disponible hoy");
+    expect(TEXTO_NAVEGACION.insignias.noDisponibles(4)).toBe("4 no disponibles hoy");
   });
 
   it("«Más» y «Ver como»", () => {
