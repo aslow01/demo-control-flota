@@ -7,7 +7,7 @@
 // y, para el historial, `vistaDeHistorial(ficha.historial, filtro, limite)` con el filtro y el límite como estado de la vista (`$state`).
 
 import type { ResultadoAlertas } from "../dominio/alertas.ts";
-import { aptitud } from "../dominio/aptitud.ts";
+import { aptitud, type Motivo } from "../dominio/aptitud.ts";
 import { diaDeLaSemana, fechaEnArgentina, formatearFecha, formatearInstante } from "../dominio/fechas.ts";
 import { ofreceVolverAServicio, origenDeNovedad } from "../dominio/formulario-novedad.ts";
 import { tiposParaCargar } from "../dominio/formulario-documento.ts";
@@ -293,6 +293,36 @@ export interface PanelHistorial {
   eventos: FilaEvento[];
 }
 
+/** Las solapas de la ficha en pantallas angostas (en las anchas se ven las secciones juntas). */
+export const SOLAPAS_DE_FICHA = ["resumen", "documentos", "novedades", "historial"] as const;
+export type SolapaDeFicha = (typeof SOLAPAS_DE_FICHA)[number];
+
+/** El número de la pestaña de una solapa (`cantidad`, 0 si no lleva) y si va en tono crítico. */
+export interface NumeroDeSolapa {
+  id: SolapaDeFicha;
+  cantidad: number;
+  critica: boolean;
+}
+
+/**
+ * En qué solapa abre la ficha: la de la causa principal de que la unidad no esté disponible (el primer motivo de la aptitud). Documento vencido o faltante →
+ * `documentos`; novedad crítica abierta, o fuera de servicio por una novedad crítica → `novedades`. Sin causa (disponible, fuera de servicio por decisión del
+ * encargado, de baja, o una crítica de hoy que ya se resolvió) → `resumen`.
+ */
+export function solapaInicial(motivos: readonly Pick<Motivo, "tipo">[], estadoDeLaUnidad: Unidad["estado"]): SolapaDeFicha {
+  switch (motivos[0]?.tipo) {
+    case "documento-vencido":
+    case "documento-faltante":
+      return "documentos";
+    case "novedad-critica":
+      return "novedades";
+    case "fuera-de-servicio":
+      return estadoDeLaUnidad.tipo === "fuera-de-servicio" && estadoDeLaUnidad.origen === "novedad-critica" ? "novedades" : "resumen";
+    default:
+      return "resumen";
+  }
+}
+
 export interface FichaDeUnidad {
   encontrada: true;
   unidadId: string;
@@ -328,6 +358,10 @@ export interface FichaDeUnidad {
   estadoOperativo: EstadoOperativoDeFicha;
   /** El perfil Encargado. Con otro perfil no hay ninguna acción (la ficha no se muestra al conductor: es la perspectiva de la demo). */
   puedeEditar: boolean;
+  /** La solapa con que abre la ficha en pantallas angostas (`solapaInicial`). La vista la lee una vez, al abrir: si después se resuelve la causa, la solapa no se mueve sola. */
+  solapaInicial: SolapaDeFicha;
+  /** Las cuatro solapas con su número: documentos vencidos o faltantes (crítico) y novedades abiertas (crítico si alguna lo es). */
+  solapas: NumeroDeSolapa[];
   acciones: { encabezado: AccionDeFicha[]; masAcciones: AccionDeFicha[] };
   documentos: PanelDocumentos;
   novedades: PanelNovedades;
@@ -362,6 +396,9 @@ export function fichaDeUnidad(
   const km = kmDeLaUnidad(estado, unidad);
   const criticas = criticasAbiertasDeUnidad(estado.novedades, unidad.id);
   const fuera = unidad.estado.tipo === "fuera-de-servicio";
+  const documentos = panelDeDocumentos(estado, alertas, unidad, hoy, puedeEditar && !baja);
+  const novedades = panelDeNovedades(estado, unidad, puedeEditar, !baja);
+  const malos = documentos.filas.filter((f) => f.estado.tipo === "vencido" || f.estado.tipo === "faltante").length;
 
   return {
     encontrada: true,
@@ -397,9 +434,16 @@ export function fichaDeUnidad(
       novedadesQueImpiden: fuera ? criticas : [],
     },
     puedeEditar,
+    solapaInicial: solapaInicial(a.motivos, unidad.estado),
+    solapas: [
+      { id: "resumen", cantidad: 0, critica: false },
+      { id: "documentos", cantidad: malos, critica: malos > 0 },
+      { id: "novedades", cantidad: novedades.abiertas.length, critica: novedades.abiertas.some((n) => n.gravedad === "critica") },
+      { id: "historial", cantidad: 0, critica: false },
+    ],
     acciones: accionesDe(unidad, hoy, puedeEditar, fuera && criticas.length > 0 ? errNovedadesCriticasAbiertas(criticas.map((c) => c.texto)) : null, estado.partes),
-    documentos: panelDeDocumentos(estado, alertas, unidad, hoy, puedeEditar && !baja),
-    novedades: panelDeNovedades(estado, unidad, puedeEditar, !baja),
+    documentos,
+    novedades,
     kilometraje: panelDeKilometraje(estado, unidad, km, puedeEditar && !baja),
     historial: panelDeHistorial(estado, unidad),
   };
