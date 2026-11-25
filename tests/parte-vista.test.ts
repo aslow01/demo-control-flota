@@ -66,7 +66,7 @@ describe("inicio del conductor (6.4)", () => {
   it("sin parte de hoy: la unidad asignada, el último registro y «Empezar la revisión»", () => {
     const v = inicio(flotaDePrueba());
     expect(v).toMatchObject({
-      titulo: "Parte diario",
+      titulo: "Hoy",
       hoy: { titulo: "Hoy, miércoles 18/11/2026" },
       unidad: { unidadId: "u1", patente: "ZK214BD", patenteTexto: "ZK 214 BD", interno: "Int. 07", ultimoRegistro: "Último registro: 84.320 km (parte del 17/11/2026)." },
       hoyEstado: { tipo: "sin-parte", texto: "Antes de salir, revise la unidad y envíe la revisión.", primario: { texto: "Empezar la revisión", href: "#/parte/ZK214BD/2026-11-18" } },
@@ -665,9 +665,9 @@ describe("pantalla del parte, edición (6.5)", () => {
       tipo: "no-encontrada",
       titulo: "No se encontró la unidad",
       mensaje: "No hay ninguna unidad con la patente ZZ 999 ZZ.",
-      enlace: { texto: "Ir a Parte diario", href: "#/conductor" },
+      enlace: { texto: "Ir a Hoy", href: "#/conductor" },
     });
-    expect(ver(flotaDePrueba(), ENC, "ZZ999ZZ")).toMatchObject({ tipo: "no-encontrada", enlace: { texto: "Ir a Centro de alertas", href: "#/alertas" } });
+    expect(ver(flotaDePrueba(), ENC, "ZZ999ZZ")).toMatchObject({ tipo: "no-encontrada", enlace: { texto: "Ir a Inicio", href: "#/inicio" } });
   });
 });
 
@@ -681,7 +681,7 @@ describe("pantalla del parte, lo que no se puede cargar (P2, P8)", () => {
       mensaje: "La fecha no puede ser posterior a hoy.",
       nota: null,
       borrador: null,
-      enlace: { texto: "Ir a Parte diario", href: "#/conductor" },
+      enlace: { texto: "Ir a Hoy", href: "#/conductor" },
       cerrarAntes: null,
     });
   });
@@ -720,7 +720,7 @@ describe("pantalla del parte, lo que no se puede cargar (P2, P8)", () => {
   });
 
   it("el enlace de vuelta depende del perfil", () => {
-    expect(ver(flotaDePrueba(), "2026-11-19", ENC)).toMatchObject({ enlace: { href: "#/alertas" } });
+    expect(ver(flotaDePrueba(), "2026-11-19", ENC)).toMatchObject({ enlace: { href: "#/inicio" } });
   });
 });
 
@@ -751,7 +751,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       completarCierre: null,
       volverAlInicio: { texto: "Volver al inicio", href: "#/conductor" },
     });
-    expect(panelDeParteEnviado(estado, p, ENC).volverAlInicio.href).toBe("#/alertas");
+    expect(panelDeParteEnviado(estado, p, ENC).volverAlInicio.href).toBe("#/inicio");
   });
 
   it("sin carga de combustible y sin recorrido: «No cargó» y «Sin uso»", () => {
@@ -915,7 +915,7 @@ describe("pantalla del parte y licencia (L1, P13; 17.5)", () => {
       mensaje: "Para el 18/11/2026 no tiene licencia de conducir vigente (venció el 15/11/2026). Sin licencia vigente no se puede enviar la revisión ni salir con la unidad.",
       nota: null,
       borrador: null,
-      enlace: { texto: "Ir a Parte diario", href: "#/conductor" },
+      enlace: { texto: "Ir a Hoy", href: "#/conductor" },
       cerrarAntes: null,
     });
   });

@@ -118,11 +118,59 @@ describe("arranque del estado de la aplicación", () => {
 });
 
 describe("rutas", () => {
-  it("sin hash, el encargado cae en alertas y el hash se corrige", async () => {
+  it("sin hash, el encargado cae en Inicio y el hash se corrige", async () => {
     const { app, ubicacion } = await iniciada();
-    expect(app.ruta).toEqual({ tipo: "alertas" });
-    expect(ubicacion.hash).toBe("#/alertas");
-    expect(app.titulo).toBe("Centro de alertas · Control de flota (demo)");
+    expect(app.ruta).toEqual({ tipo: "inicio" });
+    expect(ubicacion.hash).toBe("#/inicio");
+    expect(app.titulo).toBe("Inicio · Control de flota (demo)");
+  });
+
+  it("un enlace viejo guardado abre la pantalla equivalente y la dirección se reescribe a la forma nueva", async () => {
+    for (const [viejo, nueva, ruta] of [
+      ["#/alertas", "#/inicio", { tipo: "inicio" }],
+      ["#/flota", "#/movilidades", { tipo: "movilidades" }],
+      ["#/flota?filtro=de-baja", "#/movilidades?filtro=baja", { tipo: "movilidades", filtro: "de-baja" }],
+      ["#/operacion", "#/operacion/checklists", { tipo: "operacion", solapa: "checklists" }],
+    ] as const) {
+      const { app, ubicacion } = armar();
+      ubicacion.hash = viejo;
+      await app.iniciar();
+      expect(app.ruta).toEqual(ruta);
+      expect(ubicacion.hash).toBe(nueva);
+      expect(ubicacion.entradas).toBe(1); // se reemplaza, no se apila
+    }
+  });
+
+  it("#/parte/PATENTE (sin fecha) abre el parte de hoy y la dirección pasa a llevar la fecha", async () => {
+    const { app, ubicacion } = armar();
+    ubicacion.hash = "#/parte/zk214bd";
+    await app.iniciar();
+    expect(app.ruta).toEqual({ tipo: "parte", patente: "ZK214BD", fecha: HOY });
+    expect(ubicacion.hash).toBe(`#/parte/ZK214BD/${HOY}`);
+  });
+
+  it("las rutas nuevas del encargado y del conductor, cada una en su perfil", async () => {
+    const { app, ubicacion } = await iniciada();
+    for (const [hash, ruta] of [
+      ["#/vencimientos", { tipo: "vencimientos" }],
+      ["#/operacion/novedades", { tipo: "operacion", solapa: "novedades" }],
+      ["#/mas", { tipo: "mas" }],
+    ] as const) {
+      ubicacion.irA(hash);
+      expect(app.ruta).toEqual(ruta);
+    }
+    ubicacion.irA("#/conductor/partes"); // del conductor: el encargado no la ve
+    expect(app.ruta).toEqual({ tipo: "inicio" });
+    expect(ubicacion.hash).toBe("#/inicio");
+
+    await app.cambiarPerfil({ tipo: "conductor", conductorId: estadoDe(app).conductores[0]!.id });
+    ubicacion.irA("#/conductor/partes");
+    expect(app.ruta).toEqual({ tipo: "mis-partes" });
+    expect(app.nombrePantalla).toBe("Mis partes");
+    ubicacion.irA("#/mas");
+    expect(app.ruta).toEqual({ tipo: "mas" });
+    ubicacion.irA("#/vencimientos");
+    expect(app.ruta).toEqual({ tipo: "conductor" });
   });
 
   it("un hash con la patente en minúsculas se muestra y se deja en su forma canónica", async () => {
@@ -136,10 +184,10 @@ describe("rutas", () => {
   it("cambiar el hash cambia la pantalla y avisa a la vista para mover el foco al h1", async () => {
     const { app, ubicacion } = await iniciada();
     const v0 = app.versionDePantalla;
-    ubicacion.irA("#/flota");
-    expect(app.ruta).toEqual({ tipo: "flota" });
-    expect(app.titulo).toBe("Flota · Control de flota (demo)");
-    expect(app.nombrePantalla).toBe("Flota");
+    ubicacion.irA("#/movilidades");
+    expect(app.ruta).toEqual({ tipo: "movilidades" });
+    expect(app.titulo).toBe("Movilidades · Control de flota (demo)");
+    expect(app.nombrePantalla).toBe("Movilidades");
     expect(app.versionDePantalla).toBe(v0 + 1);
     ubicacion.irA("#/unidad/zk214bd");
     expect(app.versionDePantalla).toBe(v0 + 2);
@@ -147,9 +195,11 @@ describe("rutas", () => {
 
   it("volver a la misma pantalla (por ejemplo, la forma canónica del mismo hash) no mueve el foco otra vez", async () => {
     const { app, ubicacion } = await iniciada();
-    ubicacion.irA("#/flota");
+    ubicacion.irA("#/movilidades");
     const v = app.versionDePantalla;
-    ubicacion.irA("#/flota/");
+    ubicacion.irA("#/movilidades/");
+    expect(app.versionDePantalla).toBe(v);
+    ubicacion.irA("#/flota"); // el alias viejo es la misma pantalla
     expect(app.versionDePantalla).toBe(v);
   });
 
@@ -165,7 +215,7 @@ describe("rutas", () => {
     const { app, ubicacion } = await iniciada();
     const conductorId = estadoDe(app).conductores[0]!.id;
     await app.cambiarPerfil({ tipo: "conductor", conductorId });
-    ubicacion.irA("#/flota");
+    ubicacion.irA("#/movilidades");
     expect(app.ruta).toEqual({ tipo: "conductor" });
     expect(ubicacion.hash).toBe("#/conductor");
   });
@@ -173,9 +223,127 @@ describe("rutas", () => {
   it("después de cerrar, la aplicación deja de escuchar la barra de direcciones", async () => {
     const { app, ubicacion, pestanas } = await iniciada();
     app.cerrar();
-    ubicacion.irA("#/flota");
-    expect(app.ruta).toEqual({ tipo: "alertas" });
+    ubicacion.irA("#/movilidades");
+    expect(app.ruta).toEqual({ tipo: "inicio" });
     expect(pestanas.cerrado).toBe(true);
+  });
+});
+
+describe("pantalla y consulta: filtrar o escribir en el buscador no sube la página ni roba el foco (riesgo R3)", () => {
+  it("cambiar el filtro o la búsqueda NO sube versionDePantalla; sube versionDeConsulta", async () => {
+    const { app, ubicacion } = await iniciada();
+    ubicacion.irA("#/movilidades");
+    const pantalla = app.versionDePantalla;
+    const consulta = app.versionDeConsulta;
+    ubicacion.irA("#/movilidades?filtro=bloqueadas");
+    expect(app.ruta).toEqual({ tipo: "movilidades", filtro: "no-pueden-salir" });
+    expect(app.versionDePantalla).toBe(pantalla);
+    expect(app.versionDeConsulta).toBe(consulta + 1);
+    ubicacion.irA("#/movilidades?filtro=bloqueadas&q=h");
+    ubicacion.irA("#/movilidades?filtro=bloqueadas&q=hi");
+    expect(app.versionDePantalla).toBe(pantalla);
+    expect(app.versionDeConsulta).toBe(consulta + 3);
+    ubicacion.irA("#/movilidades"); // quitar los filtros
+    expect(app.versionDePantalla).toBe(pantalla);
+    expect(app.versionDeConsulta).toBe(consulta + 4);
+  });
+
+  it("lo mismo en Vencimientos", async () => {
+    const { app, ubicacion } = await iniciada();
+    ubicacion.irA("#/vencimientos");
+    const pantalla = app.versionDePantalla;
+    ubicacion.irA("#/vencimientos?filtro=vencidos");
+    ubicacion.irA("#/vencimientos?filtro=7");
+    expect(app.versionDePantalla).toBe(pantalla);
+  });
+
+  it("cambiar de pantalla sí sube versionDePantalla (también la solapa de Operación, la ficha y el parte)", async () => {
+    const { app, ubicacion } = await iniciada();
+    const v0 = app.versionDePantalla;
+    ubicacion.irA("#/operacion/checklists");
+    ubicacion.irA("#/operacion/novedades");
+    ubicacion.irA("#/unidad/ZK214BD");
+    ubicacion.irA("#/unidad/ZKB482");
+    ubicacion.irA("#/parte/ZK214BD/2026-11-17");
+    ubicacion.irA("#/parte/ZK214BD/2026-11-18");
+    expect(app.versionDePantalla).toBe(v0 + 6);
+  });
+
+  it("filtrar apila una entrada del historial (Atrás deshace el filtro) y tipear no apila una por letra", async () => {
+    const { app, ubicacion } = await iniciada();
+    ubicacion.irA("#/movilidades");
+    const entradas = ubicacion.entradas;
+    app.irA({ tipo: "movilidades", filtro: "de-baja" });
+    expect(ubicacion.hash).toBe("#/movilidades?filtro=baja");
+    expect(ubicacion.entradas).toBe(entradas + 1);
+    app.ajustarConsulta({ tipo: "movilidades", filtro: "de-baja", q: "h" });
+    app.ajustarConsulta({ tipo: "movilidades", filtro: "de-baja", q: "hi" });
+    app.ajustarConsulta({ tipo: "movilidades", filtro: "de-baja", q: "hil" });
+    expect(ubicacion.hash).toBe("#/movilidades?filtro=baja&q=hil");
+    expect(ubicacion.entradas).toBe(entradas + 1);
+    expect(app.ruta).toEqual({ tipo: "movilidades", filtro: "de-baja", q: "hil" });
+  });
+
+  it("ajustarConsulta no cambia de pantalla ni de versión de pantalla; si la ruta es de otra pantalla, es una navegación común (con su entrada)", async () => {
+    const { app, ubicacion } = await iniciada();
+    ubicacion.irA("#/movilidades");
+    const v = app.versionDePantalla;
+    app.ajustarConsulta({ tipo: "movilidades", q: "zk" });
+    expect(app.versionDePantalla).toBe(v);
+    const entradas = ubicacion.entradas;
+    app.ajustarConsulta({ tipo: "vencimientos", filtro: "7" });
+    expect(ubicacion.hash).toBe("#/vencimientos?filtro=7");
+    expect(ubicacion.entradas).toBe(entradas + 1);
+    expect(app.versionDePantalla).toBe(v + 1);
+  });
+
+  it("una dirección con la búsqueda sin forma canónica se corrige sin mover nada", async () => {
+    const { app, ubicacion } = armar();
+    ubicacion.hash = "#/flota?q=zk+214&filtro=baja";
+    await app.iniciar();
+    expect(app.ruta).toEqual({ tipo: "movilidades", filtro: "de-baja", q: "zk 214" });
+    expect(ubicacion.hash).toBe("#/movilidades?filtro=baja&q=zk%20214");
+  });
+
+  it("al tipear un espacio al final la dirección lo conserva (no se recorta y se vuelve a leer)", async () => {
+    const { app, ubicacion } = await iniciada();
+    ubicacion.irA("#/movilidades");
+    app.ajustarConsulta({ tipo: "movilidades", q: "zk " });
+    expect(app.ruta).toEqual({ tipo: "movilidades", q: "zk " });
+    expect(ubicacion.hash).toBe("#/movilidades?q=zk%20");
+  });
+});
+
+describe("ruta padre («Atrás» y migas)", () => {
+  it("la ficha vuelve a Movilidades con el filtro y la búsqueda con que se salió", async () => {
+    const { app, ubicacion } = await iniciada();
+    ubicacion.irA("#/movilidades?filtro=baja&q=hil");
+    expect(app.padre).toBeNull();
+    ubicacion.irA("#/unidad/ZK214BD");
+    expect(app.padre).toEqual({ tipo: "movilidades", filtro: "de-baja", q: "hil" });
+  });
+
+  it("si se llegó a la ficha por otro camino, vuelve a Movilidades sin filtro; y se olvida al pasar por otra pantalla", async () => {
+    const { app, ubicacion } = await iniciada();
+    ubicacion.irA("#/inicio");
+    ubicacion.irA("#/unidad/ZK214BD");
+    expect(app.padre).toEqual({ tipo: "movilidades" });
+    ubicacion.irA("#/movilidades?filtro=baja");
+    ubicacion.irA("#/vencimientos");
+    ubicacion.irA("#/unidad/ZK214BD");
+    expect(app.padre).toEqual({ tipo: "movilidades" });
+  });
+
+  it("de ficha a ficha (el filtro no se pierde), y el parte vuelve a Operación diaria", async () => {
+    const { app, ubicacion } = await iniciada();
+    ubicacion.irA("#/movilidades?filtro=baja");
+    ubicacion.irA("#/unidad/ZK214BD");
+    ubicacion.irA("#/unidad/ZKB482");
+    expect(app.padre).toEqual({ tipo: "movilidades", filtro: "de-baja" });
+    ubicacion.irA("#/parte/ZK214BD/2026-11-17");
+    expect(app.padre).toEqual({ tipo: "operacion", solapa: "checklists" });
+    ubicacion.irA("#/inicio");
+    expect(app.padre).toBeNull();
   });
 });
 
@@ -299,12 +467,12 @@ describe("perfil", () => {
     expect(ubicacion.hash).toBe("#/conductor");
     expect(app.ruta).toEqual({ tipo: "conductor" });
     await app.cambiarPerfil({ tipo: "encargado" });
-    expect(ubicacion.hash).toBe("#/alertas");
+    expect(ubicacion.hash).toBe("#/inicio");
   });
 
   it("QA B5: cambiar de perfil reemplaza la entrada actual del historial en vez de agregar otra (que Atrás reescribiría)", async () => {
     const { app, ubicacion } = await iniciada();
-    ubicacion.irA("#/flota");
+    ubicacion.irA("#/movilidades");
     const entradas = ubicacion.entradas;
     const v0 = app.versionDePantalla;
     await app.cambiarPerfil({ tipo: "conductor", conductorId: estadoDe(app).conductores[0]!.id });
@@ -314,7 +482,7 @@ describe("perfil", () => {
     expect(app.versionDePantalla).toBe(v0 + 1); // la vista igual mueve el foco al h1
     await app.cambiarPerfil({ tipo: "encargado" });
     expect(ubicacion.entradas).toBe(entradas);
-    expect(ubicacion.hash).toBe("#/alertas");
+    expect(ubicacion.hash).toBe("#/inicio");
   });
 
   it("D11: el primer comando del visitante sí la marca como modificada", async () => {
@@ -329,7 +497,7 @@ describe("reiniciar la demo (D6)", () => {
   it("vuelve al ejemplo, conserva el perfil, avisa a las otras pestañas y vuelve al inicio", async () => {
     const { app, repo, pestanas, ubicacion } = await iniciada();
     await app.ejecutar(renovarSeguroDeC01(estadoDe(app)));
-    ubicacion.irA("#/flota");
+    ubicacion.irA("#/movilidades");
     const avisosAntes = pestanas.avisos;
     const r = await app.reiniciar();
     expect(r.ok).toBe(true);
@@ -337,7 +505,7 @@ describe("reiniciar la demo (D6)", () => {
     expect(await repo.cargar()).toEqual(app.estado);
     expect(app.alertas?.resumen.protagonista).toBe(4);
     expect(pestanas.avisos).toBe(avisosAntes + 1);
-    expect(ubicacion.hash).toBe("#/alertas");
+    expect(ubicacion.hash).toBe("#/inicio");
   });
 
   it("conserva el perfil elegido", async () => {
@@ -422,7 +590,7 @@ describe("D9: cambios en otra pestaña", () => {
       expect(r.error.mensaje).toBe(ERRORES.cambiosEnOtraPestana);
     }
     expect(app.perfil).toEqual({ tipo: "encargado" });
-    expect(ubicacion.hash).toBe("#/alertas");
+    expect(ubicacion.hash).toBe("#/inicio");
     expect(await repo.cargar()).toEqual(guardado); // no se escribió nada (no pisa el meta de la otra pestaña)
     expect(pestanas.avisos).toBe(0);
 

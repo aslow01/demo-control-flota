@@ -35,7 +35,7 @@ describe("unidad que no existe", () => {
       titulo: "No se encontró la unidad",
       mensaje: "No hay ninguna unidad con la patente ZZ 999 ZZ.",
       patenteTexto: "ZZ 999 ZZ",
-      enlace: { texto: "Ir a Movilidades", href: "#/flota" },
+      enlace: { texto: "Ir a Movilidades", href: "#/movilidades" },
     });
   });
 });
@@ -53,7 +53,7 @@ describe("encabezado de ZK 214 BD (C01: seguro vencido hace 1 día)", () => {
       descripcion: "Toyota Hilux 2022 · Camioneta",
     });
     expect(f.migas).toEqual([
-      { texto: "Movilidades", href: "#/flota" },
+      { texto: "Movilidades", href: "#/movilidades" },
       { texto: "ZK 214 BD", href: null },
     ]);
   });

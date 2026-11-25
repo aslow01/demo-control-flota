@@ -85,7 +85,7 @@ describe("protagonista «No disponibles hoy» con el ejemplo", () => {
     expect(MAX_PROTAGONISTA).toBe(6);
     expect(p.items).toHaveLength(6);
     expect(p.cifra).toBeGreaterThan(6);
-    expect(p.masEnLaFlota).toEqual({ texto: `Ver las ${p.cifra} no disponibles en Movilidades`, href: "#/flota?filtro=no-disponibles" });
+    expect(p.masEnLaFlota).toEqual({ texto: `Ver las ${p.cifra} no disponibles en Movilidades`, href: "#/movilidades?filtro=no-disponibles" });
   });
 
   it("con 0 es vigente, dice que todas pueden salir y no lista unidades", () => {

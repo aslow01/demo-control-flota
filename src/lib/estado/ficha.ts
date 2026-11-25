@@ -352,7 +352,7 @@ export function fichaDeUnidad(
       titulo: TEXTO_FICHA.noEncontrada.titulo,
       mensaje: textoUnidadNoEncontrada(patenteTexto),
       patenteTexto,
-      enlace: { texto: TEXTO_FICHA.noEncontrada.enlace, href: aHash({ tipo: "flota" }) },
+      enlace: { texto: TEXTO_FICHA.noEncontrada.enlace, href: aHash({ tipo: "movilidades" }) },
     };
   }
   const patenteTexto = formatearPatente(unidad.patente);
@@ -372,7 +372,7 @@ export function fichaDeUnidad(
     internoNumero: unidad.interno,
     descripcion: textoDescripcionUnidad(unidad.marca, unidad.modelo, unidad.anio, unidad.tipo),
     migas: [
-      { texto: TEXTO_FICHA.migaFlota, href: aHash({ tipo: "flota" }) },
+      { texto: TEXTO_FICHA.migaFlota, href: aHash({ tipo: "movilidades" }) },
       { texto: patenteTexto, href: null },
     ],
     aptitud: {

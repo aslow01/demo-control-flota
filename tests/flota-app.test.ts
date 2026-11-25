@@ -98,10 +98,10 @@ describe("la flota en la aplicación (aceptación del paso 4.3)", () => {
 });
 
 describe("el filtro viene de la ruta («Ver las N no disponibles en Movilidades»)", () => {
-  it("#/flota?filtro=no-disponibles abre la flota con ese filtro y la barra de direcciones queda como está", async () => {
-    const { app, ubicacion } = await iniciada(new RepositorioMemoria(), "#/flota?filtro=no-disponibles");
-    expect(app.ruta).toEqual({ tipo: "flota", filtro: "no-disponibles" });
-    expect(ubicacion.hash).toBe("#/flota?filtro=no-disponibles");
+  it("#/movilidades?filtro=no-disponibles abre Movilidades con ese filtro y la barra de direcciones queda como está", async () => {
+    const { app, ubicacion } = await iniciada(new RepositorioMemoria(), "#/movilidades?filtro=no-disponibles");
+    expect(app.ruta).toEqual({ tipo: "movilidades", filtro: "no-disponibles" });
+    expect(ubicacion.hash).toBe("#/movilidades?filtro=no-disponibles");
     const consulta = consultaDeRuta(app.ruta);
     expect(consulta.filtro).toBe("no-disponibles");
     const v = vistaDeFlota(panelDe(app), consulta);
@@ -109,19 +109,30 @@ describe("el filtro viene de la ruta («Ver las N no disponibles en Movilidades�
     expect(v.filas).toHaveLength(centroDe(app).protagonista.cifra);
   });
 
-  it("un filtro desconocido en la barra de direcciones se corrige a #/flota (no se repite lo que se escribió)", async () => {
-    const { app, ubicacion } = await iniciada(new RepositorioMemoria(), "#/flota?filtro=<b>zz9</b>");
-    expect(app.ruta).toEqual({ tipo: "flota" });
-    expect(ubicacion.hash).toBe("#/flota");
+  it("un filtro desconocido en la barra de direcciones se corrige a #/movilidades (no se repite lo que se escribió)", async () => {
+    const { app, ubicacion } = await iniciada(new RepositorioMemoria(), "#/movilidades?filtro=<b>zz9</b>");
+    expect(app.ruta).toEqual({ tipo: "movilidades" });
+    expect(ubicacion.hash).toBe("#/movilidades");
     expect(consultaDeRuta(app.ruta)).toEqual(CONSULTA_INICIAL);
   });
 
-  it("cambiar de #/flota?filtro=… a #/flota es otra pantalla (la vista vuelve a leer la consulta)", async () => {
-    const { app, ubicacion } = await iniciada(new RepositorioMemoria(), "#/flota?filtro=de-baja");
-    const antes = app.versionDePantalla;
-    ubicacion.irA("#/flota");
-    expect(app.ruta).toEqual({ tipo: "flota" });
-    expect(app.versionDePantalla).toBe(antes + 1);
+  it("cambiar de #/movilidades?filtro=… a #/movilidades cambia la consulta (la vista vuelve a leerla) pero no es otra pantalla: el foco y la página quedan donde están", async () => {
+    const { app, ubicacion } = await iniciada(new RepositorioMemoria(), "#/movilidades?filtro=baja");
+    const pantalla = app.versionDePantalla;
+    const consulta = app.versionDeConsulta;
+    ubicacion.irA("#/movilidades");
+    expect(app.ruta).toEqual({ tipo: "movilidades" });
+    expect(app.versionDePantalla).toBe(pantalla);
+    expect(app.versionDeConsulta).toBe(consulta + 1);
+  });
+
+  it("la búsqueda de la ruta (&q=) llega a la consulta y filtra: «zk214» encuentra una unidad", async () => {
+    const { app, ubicacion } = await iniciada(new RepositorioMemoria(), "#/movilidades?q=zk214");
+    expect(app.ruta).toEqual({ tipo: "movilidades", q: "zk214" });
+    expect(ubicacion.hash).toBe("#/movilidades?q=zk214");
+    const consulta = consultaDeRuta(app.ruta);
+    expect(consulta.busqueda).toBe("zk214");
+    expect(vistaDeFlota(panelDe(app), consulta).filas.map((f) => f.patente)).toEqual(["ZK214BD"]);
   });
 });
 

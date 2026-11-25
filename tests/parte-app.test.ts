@@ -79,7 +79,7 @@ describe("las vistas según la ruta y el perfil", () => {
     await t.iniciar();
     expect(t.parteDeLaRuta?.tipo).toBe("edicion");
     const { app } = await iniciada();
-    expect(app.parteDeLaRuta).toBeNull(); // #/alertas
+    expect(app.parteDeLaRuta).toBeNull(); // #/inicio
   });
 
   it("perfil Conductor en #/parte/ZYN469/…: el parte nuevo con su kilometraje inicial (P13) y el conductor fijo", async () => {

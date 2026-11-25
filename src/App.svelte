@@ -131,12 +131,15 @@
   // ---------- Pestaña activa ----------
   function seccionDe(tipo: string, esConductor: boolean): SeccionActiva {
     switch (tipo) {
-      case "alertas":
+      case "inicio":
+      case "vencimientos":
+      case "operacion":
         return "alertas";
-      case "flota":
+      case "movilidades":
       case "unidad":
         return "flota";
       case "conductor":
+      case "mis-partes":
         return "conductor";
       case "parte":
         return esConductor ? "conductor" : null;
@@ -317,16 +320,17 @@
         <div class="acciones-error">
           <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
         </div>
-      {:else if app.ruta.tipo === "alertas"}
+      {:else if app.ruta.tipo === "inicio" || app.ruta.tipo === "vencimientos" || app.ruta.tipo === "operacion"}
+        <!-- Hasta E3 las tres se muestran con la pantalla de alertas de siempre. -->
         <PantallaAlertas alAbrirParte={pedirConductor} />
-      {:else if app.ruta.tipo === "flota"}
+      {:else if app.ruta.tipo === "movilidades"}
         <PantallaFlota />
       {:else if app.ruta.tipo === "unidad"}
         <!-- Una ficha nueva (otra patente, o el alta de una unidad) arranca limpia: filtro del historial, mensajes y diálogos. -->
         {#key app.versionDePantalla}
           <PantallaFicha />
         {/key}
-      {:else if app.ruta.tipo === "conductor"}
+      {:else if app.ruta.tipo === "conductor" || app.ruta.tipo === "mis-partes"}
         <PantallaConductor />
       {:else if app.ruta.tipo === "parte"}
         <!-- Un parte nuevo (otra unidad u otra fecha) arranca limpio: formulario, errores y el panel de «Parte enviado». -->

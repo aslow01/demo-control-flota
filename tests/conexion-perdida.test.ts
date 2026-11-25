@@ -51,7 +51,7 @@ describe("la aplicación con la base borrada a mitad de un parte", () => {
     const app = new EstadoApp({
       reloj: crearReloj(() => new Date(Date.parse(MEDIODIA))),
       abrirAlmacenamiento: () => abrirIndexedDB(fabrica),
-      ubicacion: ubicacionEnMemoria("#/alertas"),
+      ubicacion: ubicacionEnMemoria("#/inicio"),
       crearAvisoPestanas: () => ({ avisarCambio: () => {}, cerrar: () => {} }),
       nuevoId: (() => {
         let n = 0;

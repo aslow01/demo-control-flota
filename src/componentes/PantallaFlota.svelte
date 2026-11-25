@@ -3,7 +3,7 @@
   // Horizonte mínimo en «Próximo vencimiento»), 3) agregar una unidad (diálogo). No tiene reglas de negocio: todo lo que muestra lo arma
   // `app.panelDeFlota` y `vistaDeFlota(panel, consulta)` (lib/estado/flota.ts); el diálogo usa `contextoDeAgregarUnidad` y `app.agregarUnidad`.
   //  - La consulta es estado de esta pantalla (no escribe el hash): arranca en `consultaDeRuta(app.ruta)` y se vuelve a leer cuando sube
-  //    `app.versionDePantalla` (por ejemplo, «Ver las 4 en la flota» estando ya en la flota).
+  //    `app.versionDePantalla` o `app.versionDeConsulta` (por ejemplo, «Ver las 4 en la flota» estando ya en la flota).
   //  - La barra de estado del panel dice «Mostrando 23 de 23 unidades.» y es la región viva: al escribir se actualiza con 500 ms de pausa; al elegir
   //    un filtro, un proyecto o un orden, al instante.
   //  - Al agregar bien la aplicación navega sola a la ficha de la unidad nueva (`app.agregarUnidad`) y el cambio de pantalla lleva el foco al título de la ficha,
@@ -80,10 +80,10 @@
     });
   });
 
-  // Llegar a la flota por otro enlace sin salir de la pantalla: volver a leer la ruta.
-  let versionLeida = app.versionDePantalla;
+  // Llegar a la flota por otro enlace sin salir de la pantalla: volver a leer la ruta (el filtro y la búsqueda ya no suben `versionDePantalla`).
+  let versionLeida = app.versionDePantalla + app.versionDeConsulta;
   $effect(() => {
-    const version = app.versionDePantalla;
+    const version = app.versionDePantalla + app.versionDeConsulta;
     if (version === versionLeida) return;
     versionLeida = version;
     consulta = consultaDeRuta(app.ruta);

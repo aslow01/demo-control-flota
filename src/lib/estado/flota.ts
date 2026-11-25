@@ -62,9 +62,10 @@ export const CONSULTA_INICIAL: ConsultaFlota = { filtro: "activas", busqueda: ""
 const ORDENES: readonly OrdenFlota[] = ["prioridad", "patente", "interno", "proximo-vencimiento", "ultimo-parte"];
 const FILTROS_BASE: readonly IdFiltroFlota[] = ["activas", "pueden-salir", "no-pueden-salir", "fuera-de-servicio", "de-baja"];
 
-/** La consulta con que se abre la pantalla: el filtro de la ruta (`#/flota?filtro=no-disponibles`) o el de por defecto. */
+/** La consulta con que se abre la pantalla: el filtro y la búsqueda de la ruta (`#/movilidades?filtro=no-disponibles&q=hilux`) o los de por defecto. */
 export function consultaDeRuta(ruta: Ruta): ConsultaFlota {
-  return ruta.tipo === "flota" && ruta.filtro !== undefined ? { ...CONSULTA_INICIAL, filtro: ruta.filtro } : { ...CONSULTA_INICIAL };
+  if (ruta.tipo !== "movilidades") return { ...CONSULTA_INICIAL };
+  return { ...CONSULTA_INICIAL, filtro: ruta.filtro ?? CONSULTA_INICIAL.filtro, busqueda: ruta.q ?? "" };
 }
 
 /** «Quitar filtros» (vacío por filtro): vuelve a todo, menos el orden, que no es un filtro. */

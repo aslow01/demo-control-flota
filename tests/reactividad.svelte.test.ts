@@ -2,6 +2,7 @@ import { tick } from "svelte";
 import { describe, expect, it } from "vitest";
 import type { Comando } from "../src/lib/dominio/comandos.ts";
 import { EstadoApp } from "../src/lib/estado/app.svelte.ts";
+import { aHash } from "../src/lib/estado/enrutador.ts";
 import { crearReloj } from "../src/lib/estado/reloj.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
@@ -30,10 +31,43 @@ describe("reactividad del estado de la aplicación", () => {
       });
     });
     await tick();
-    ubicacion.irA("#/flota");
+    ubicacion.irA("#/movilidades");
     await tick();
     limpiar();
-    expect(vistas).toEqual(["alertas|Centro de alertas · Control de flota (demo)", "flota|Flota · Control de flota (demo)"]);
+    expect(vistas).toEqual(["inicio|Inicio · Control de flota (demo)", "movilidades|Movilidades · Control de flota (demo)"]);
+  });
+
+  it("R3: el efecto que mueve el foco y sube la página (lee versionDePantalla) NO corre con un filtro ni con cada letra del buscador; el que relee la consulta sí", async () => {
+    const { app, ubicacion } = await iniciada();
+    ubicacion.irA("#/movilidades");
+    let focoYScroll = 0;
+    const consultas: string[] = [];
+    const limpiar = $effect.root(() => {
+      $effect(() => {
+        void app.versionDePantalla; // lo que lee App.svelte para llevar el foco al h1
+        focoYScroll++;
+      });
+      $effect(() => {
+        void app.versionDeConsulta; // lo que lee la pantalla de Movilidades para releer su filtro y búsqueda
+        consultas.push(aHash(app.ruta));
+      });
+    });
+    await tick();
+    expect([focoYScroll, consultas]).toEqual([1, ["#/movilidades"]]);
+
+    app.irA({ tipo: "movilidades", filtro: "no-pueden-salir" });
+    await tick();
+    for (const q of ["h", "hi", "hil"]) {
+      app.ajustarConsulta({ tipo: "movilidades", filtro: "no-pueden-salir", q });
+      await tick(); // una letra por vez, como el teclado
+    }
+    expect(focoYScroll).toBe(1);
+    expect(consultas).toEqual(["#/movilidades", "#/movilidades?filtro=bloqueadas", "#/movilidades?filtro=bloqueadas&q=h", "#/movilidades?filtro=bloqueadas&q=hi", "#/movilidades?filtro=bloqueadas&q=hil"]);
+
+    ubicacion.irA("#/vencimientos"); // otra pantalla: ahora sí
+    await tick();
+    limpiar();
+    expect(focoYScroll).toBe(2);
   });
 
   it("un comando actualiza al mismo tiempo las alertas y el estado que ven los efectos (y no se recalcula por gusto)", async () => {
@@ -81,7 +115,7 @@ describe("reactividad del estado de la aplicación", () => {
     expect(vistas).toEqual(["4|12", "3|11"]);
   });
   it("la ficha se recalcula sola con cada comando y el mensaje de llegada se va al salir de ella (paso 4.4)", async () => {
-    const ubicacion = ubicacionEnMemoria("#/flota");
+    const ubicacion = ubicacionEnMemoria("#/movilidades");
     const app = new EstadoApp({
       reloj: crearReloj(() => new Date("2026-11-18T15:00:00.000Z")),
       abrirAlmacenamiento: async () => new RepositorioMemoria(),
@@ -103,7 +137,7 @@ describe("reactividad del estado de la aplicación", () => {
     expect(r.ok).toBe(true);
     await app.ponerFueraDeServicio(app.estado!.unidades.find((u) => u.patente === "ZK999AA")!.id, { motivo: "En taller: cambio de embrague" });
     await tick();
-    ubicacion.irA("#/flota");
+    ubicacion.irA("#/movilidades");
     await tick();
     limpiar();
     const mensaje = "Unidad agregada. Le faltan 3 documentos: cárguelos desde aquí.";

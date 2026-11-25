@@ -487,9 +487,14 @@ describe("vacío por filtro (8)", () => {
 
 describe("consulta desde la ruta («Ver las N no disponibles en Movilidades»)", () => {
   it("la ruta con filtro empieza con ese filtro; sin filtro, la consulta inicial", () => {
-    expect(consultaDeRuta({ tipo: "flota", filtro: "no-disponibles" })).toEqual({ ...CONSULTA_INICIAL, filtro: "no-disponibles" });
-    expect(consultaDeRuta({ tipo: "flota" })).toEqual(CONSULTA_INICIAL);
-    expect(consultaDeRuta({ tipo: "alertas" })).toEqual(CONSULTA_INICIAL);
+    expect(consultaDeRuta({ tipo: "movilidades", filtro: "no-disponibles" })).toEqual({ ...CONSULTA_INICIAL, filtro: "no-disponibles" });
+    expect(consultaDeRuta({ tipo: "movilidades" })).toEqual(CONSULTA_INICIAL);
+    expect(consultaDeRuta({ tipo: "inicio" })).toEqual(CONSULTA_INICIAL);
+  });
+
+  it("la búsqueda de la ruta (&q=) llega como lo escrito en el buscador, junto con el filtro", () => {
+    expect(consultaDeRuta({ tipo: "movilidades", q: "hilux" })).toEqual({ ...CONSULTA_INICIAL, busqueda: "hilux" });
+    expect(consultaDeRuta({ tipo: "movilidades", filtro: "de-baja", q: "zk " })).toEqual({ ...CONSULTA_INICIAL, filtro: "de-baja", busqueda: "zk " });
   });
 
   it("la consulta inicial: activas, sin búsqueda, todos los proyectos, por prioridad", () => {

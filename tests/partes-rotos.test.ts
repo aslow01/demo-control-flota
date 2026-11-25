@@ -107,7 +107,7 @@ describe("«Actualizar» (otra pestaña escribió): lo leído también se normal
   it("un parte roto que llega por `actualizar` se lee completo", async () => {
     const repo = new RepositorioMemoria();
     await repo.reemplazarTodo(generar(SEMILLA_POR_DEFECTO, HOY));
-    const app = await iniciarApp(repo, "#/alertas");
+    const app = await iniciarApp(repo, "#/inicio");
     const roto = (await repo.cargar()) as Estado;
     const p = roto.partes.find((x) => x.estado === "enviado")!;
     delete (p as unknown as Record<string, unknown>)["advertenciasAceptadas"];
@@ -121,7 +121,7 @@ describe("«Actualizar» (otra pestaña escribió): lo leído también se normal
   it("si llega un registro que no es un parte, `actualizar` falla con el mensaje de lectura y no toca lo que se ve", async () => {
     const repo = new RepositorioMemoria();
     await repo.reemplazarTodo(generar(SEMILLA_POR_DEFECTO, HOY));
-    const app = await iniciarApp(repo, "#/alertas");
+    const app = await iniciarApp(repo, "#/inicio");
     const antes = app.estado;
     const roto = (await repo.cargar()) as Estado;
     (roto.partes[0] as unknown as Record<string, unknown>)["estado"] = "raro";

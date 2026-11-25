@@ -113,7 +113,7 @@ import { RepositorioMemoria } from "../persistencia/memoria.ts";
 import { ErrorDeRepositorio, type Repositorio } from "../persistencia/repositorio.ts";
 import { crearAutoguardado, type Autoguardado, type DependenciasAutoguardado, type IndicadorDeGuardado, type ResultadoDeBorrador } from "./autoguardado.ts";
 import { centroDeAlertas, contarVencimientos, type CentroDeAlertas } from "./centro-alertas.ts";
-import { aHash, nombreDePantalla, resolverRuta, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
+import { aHash, claveConsulta, clavePantalla, nombreDePantalla, resolverRuta, rutaPadre, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
 import { fichaDeUnidad as armarFicha, type FichaDeUnidad, type FichaNoEncontrada } from "./ficha.ts";
 import { panelDeFlota, type PanelFlota } from "./flota.ts";
 import { generarId } from "./ids.ts";
@@ -235,14 +235,26 @@ export class EstadoApp {
   /** D9: otra pestaña escribió. Los datos de esta no cambian hasta `actualizar()`. */
   hayCambiosEnOtraPestana = $state(false);
   errorDeArranque = $state<string | null>(null);
-  /** Sube cada vez que se llega a otra pantalla: la vista mueve el foco al h1 y el título de la página. */
+  /**
+   * Sube cada vez que se llega a otra pantalla (`clavePantalla`: tipo, patente, fecha o solapa): la vista mueve el foco al h1 y sube la página.
+   * NO sube con un cambio de filtro o de búsqueda (R3): esos son de `versionDeConsulta`.
+   */
   versionDePantalla = $state(0);
+  /** Sube cada vez que cambia la consulta de la ruta (`?filtro=`, `&q=`: `claveConsulta`), en la misma pantalla o al llegar a otra. No mueve el foco ni el desplazamiento. */
+  versionDeConsulta = $state(0);
   /** El hash de la barra de direcciones, tal como está. */
   hash = $state("");
 
   perfil = $derived<Perfil>(this.estado?.meta.perfil ?? { tipo: "encargado" });
-  /** La pantalla que corresponde al hash y al perfil (rutas del conductor y del encargado, redirecciones). */
-  ruta = $derived<Ruta>(resolverRuta(this.hash, this.perfil));
+  /** La pantalla que corresponde al hash y al perfil (rutas del conductor y del encargado, redirecciones; `#/parte/PATENTE` es el de hoy). */
+  ruta = $derived<Ruta>(resolverRuta(this.hash, this.perfil, this.hoy));
+  /** La última Movilidades vista (con su filtro y búsqueda) mientras se pasa por una ficha; se olvida al ir a cualquier otra pantalla. */
+  private movilidades = $state.raw<Ruta | null>(null);
+  /**
+   * A dónde lleva «Atrás» (y la miga anterior) cuando no hay historia dentro de la aplicación; `null` en las pantallas raíz. La ficha vuelve a Movilidades
+   * con el filtro y la búsqueda que tenía al salir de ahí.
+   */
+  padre = $derived<Ruta | null>(this.ruta.tipo === "unidad" && this.movilidades !== null ? this.movilidades : rutaPadre(this.ruta, this.perfil));
   /** El nombre de la pantalla sin el sufijo (para el `h1` y los anuncios); `titulo` es el de `document.title`. */
   nombrePantalla = $derived(nombreDePantalla(this.ruta));
   titulo = $derived(tituloDePagina(this.ruta));
@@ -294,6 +306,7 @@ export class EstadoApp {
   private pestanas: AvisoEntrePestanas | null = null;
   private dejarDeEscucharUbicacion: (() => void) | null = null;
   private pantallaActual = "";
+  private consultaActual = "";
   private cola: Promise<unknown> = Promise.resolve();
 
   constructor(deps: DependenciasApp) {
@@ -397,18 +410,37 @@ export class EstadoApp {
         this.hash = canonico;
       }
     }
-    const clave = JSON.stringify(ruta);
-    if (clave !== this.pantallaActual) {
-      this.pantallaActual = clave;
+    // La pantalla y la consulta se miran por separado (R3): cambiar el filtro o escribir en el buscador no es llegar a otra pantalla.
+    const pantalla = clavePantalla(ruta);
+    if (pantalla !== this.pantallaActual) {
+      this.pantallaActual = pantalla;
       this.versionDePantalla += 1;
       if (this.llegada !== null && !(ruta.tipo === "unidad" && ruta.patente === this.llegada.patente)) this.llegada = null;
     }
+    const consulta = claveConsulta(ruta);
+    if (consulta !== this.consultaActual) {
+      this.consultaActual = consulta;
+      this.versionDeConsulta += 1;
+    }
+    // La ficha vuelve a Movilidades como la dejó la persona; en cualquier otra pantalla eso se olvida.
+    if (ruta.tipo === "movilidades") this.movilidades = ruta;
+    else if (ruta.tipo !== "unidad") this.movilidades = null;
   }
 
-  /** Cambia de pantalla (agrega una entrada al historial). */
+  /** Cambia de pantalla, o de filtro dentro de ella (agrega una entrada al historial: Atrás lo deshace). */
   irA(ruta: Ruta): void {
     this.deps.ubicacion.irA(aHash(ruta));
     this.leerUbicacion(); // en el navegador el aviso del cambio llega después: esto es idempotente
+  }
+
+  /**
+   * Cambia la consulta de la pantalla donde se está (cada letra del buscador) SIN agregar una entrada al historial y sin tocar el foco ni
+   * el desplazamiento. Una ruta de otra pantalla no es una consulta: se navega a ella como siempre (`irA`).
+   */
+  ajustarConsulta(ruta: Ruta): void {
+    if (clavePantalla(ruta) !== clavePantalla(this.ruta)) return this.irA(ruta);
+    this.deps.ubicacion.reemplazarHash(aHash(ruta));
+    this.leerUbicacion();
   }
 
   /**

@@ -1331,3 +1331,33 @@ Medidas puntuales: C6 (768 px) rótulos en 229 y 229, valor en 297,4 y 297,4; C2
 **Qué se hizo.** Los números ya salían de la misma función; lo que faltaba era decirlo igual. `protagonista.desglose` («2 no pueden salir · 2 fuera de servicio») se arma con `textoDesgloseNoDisponibles`, la misma función que arma esa parte del resumen de Flota. El rótulo «próximos 30 días · N» cuenta solo los grupos de 7, 15 y 30 días; «Todos» sigue contando los 12. Pruebas nuevas en `tests/cifras-coherentes.test.ts`. JS: 119,62 → 119,69 kB con gzip (margen contra el tope: 0,31 kB).
 
 **Pendiente de decidir (rótulos).** La línea de desglose bajo la cifra de Inicio es texto nuevo. El título «No pueden salir hoy» sigue contando 4 aunque Flota use «No pueden salir» para 2; el término «No disponibles» (que Flota ya usa en un filtro) queda como propuesta, no se adoptó.
+
+## 25/11/2026 (rama `interfaz-app`) — E1-P: la lógica de navegación de la interfaz «tipo app» (programador)
+
+**Qué se hizo.** Sin tocar estilos ni textos de interfaz: el enrutador y el estado de navegación quedan listos para el marco nuevo (etapa E1-M).
+
+| Ruta nueva (forma canónica) | Alias que se sigue entendiendo (y se reescribe) | Para el perfil |
+| --- | --- | --- |
+| `#/inicio` | `#/alertas` | encargado |
+| `#/movilidades?filtro=…&q=…` | `#/flota?filtro=…` | encargado |
+| `#/vencimientos?filtro=vencidos\|proximos\|7\|15\|30` | (nueva) | encargado |
+| `#/operacion/checklists`, `#/operacion/novedades` | `#/operacion` (lleva a Checklists) | encargado |
+| `#/conductor` | (igual) | conductor |
+| `#/conductor/partes` | (nueva) | conductor |
+| `#/mas` | (nueva) | los dos |
+| `#/parte/PATENTE/FECHA` | `#/parte/PATENTE` (sin fecha = hoy; la dirección pasa a llevar la fecha) | los dos |
+| `#/unidad/PATENTE` | (igual) | encargado |
+
+**Decisiones propias** (no estaban en la especificación; las más simples y honestas):
+
+- Los ids internos de los filtros de Movilidades no cambian (`pueden-salir`, `no-pueden-salir`, `fuera-de-servicio`, `de-baja`, `no-disponibles`); en la dirección se escriben `disponibles`, `bloqueadas`, `fuera`, `baja`, `no-disponibles`, y los valores viejos se siguen entendiendo. «activas» y «todos» (Vencimientos) son los de por defecto y no viajan.
+- `Ruta` cambia de nombre: `alertas` → `inicio`, `flota` → `movilidades`; se suman `vencimientos`, `operacion` (con `solapa`), `mis-partes` y `mas`. El marcador de «hash vacío» de `RutaLeida` pasa de `inicio` a `sin-ruta` para no chocar con la pantalla Inicio.
+- Pantalla ≠ consulta (riesgo R3 del plan): `clavePantalla` (tipo, patente, fecha, solapa) decide `versionDePantalla`, que mueve el foco al `h1` y sube la página; `claveConsulta` (`filtro` y `q`) sube `versionDeConsulta`, que no mueve nada. Un filtro agrega una entrada del historial (`app.irA`); cada letra del buscador no (`app.ajustarConsulta`, reemplaza el hash).
+- `q` se guarda tal cual (sin `trim`: si no, la dirección le comería el espacio a quien está tipeando «zk 214»), sin caracteres de control, hasta 60 caracteres y 150 una vez codificada, para que el hash entero nunca pase del límite de 200 y una búsqueda larga no termine en «Página no encontrada».
+- Un perfil que abre una ruta del otro no cambia de perfil (a diferencia del prototipo): lo lleva a su inicio, como antes.
+- `app.padre` (a dónde lleva «Atrás» si no hay historia) vuelve de la ficha a Movilidades **con el filtro y la búsqueda que tenía**; `migasDe` arma las migas de la ficha, el parte y las solapas de Operación. Los enlaces de la barra (`#/movilidades` sin filtro) no recuerdan nada.
+- `nombreDePantalla` sale de `NOMBRES_DE_PANTALLA`; en Operación diaria el `h1` es «Operación diaria» y el título de la pestaña, el de la solapa («Checklists · …»), como el prototipo.
+
+**Lo que queda provisorio hasta E1-M y E3-M.** `inicio`, `vencimientos` y `operacion` se muestran con `PantallaAlertas`; `mis-partes`, con `PantallaConductor`; `mas` cae en la pantalla de «Página no encontrada» (no hay enlaces que lleven ahí todavía). `PantallaFlota` relee su consulta cuando sube `versionDeConsulta` (un cambio de una línea).
+
+**Verificación.** `npm test` y `npm run test:tz`: 1711 pruebas (eran 1640); `npm run check`: 0 errores y 0 avisos; `npm run build` y `npm run buscar` sin hallazgos; JS: 118.597 → 119.469 B con gzip por `npm run peso` (margen contra el tope: 531 B).

@@ -307,7 +307,7 @@ function armarProtagonista(estado: Estado, r: ResultadoAlertas, hoy: FechaCivil)
     textoLector: desglose === null ? textoProtagonistaLector(cifra) : `${textoProtagonista(cifra)}: ${desglose.replace(" · ", ", ")}.`,
     desglose,
     items: todas.slice(0, MAX_PROTAGONISTA),
-    masEnLaFlota: todas.length > MAX_PROTAGONISTA ? { texto: textoVerTodasEnLaFlota(todas.length), href: aHash({ tipo: "flota", filtro: "no-disponibles" }) } : null,
+    masEnLaFlota: todas.length > MAX_PROTAGONISTA ? { texto: textoVerTodasEnLaFlota(todas.length), href: aHash({ tipo: "movilidades", filtro: "no-disponibles" }) } : null,
     disponibles: textoDisponibles(disponibles, activas),
     conductores: armarConductoresSinLicencia(estado, r, hoy),
     textoLectorConductores: r.resumen.conductoresSinLicencia.length === 0 ? null : TCL.lector(r.resumen.conductoresSinLicencia.length),

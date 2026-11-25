@@ -62,7 +62,7 @@ describe("la ficha según la ruta", () => {
   });
 
   it("fuera de una ficha no hay ficha; una patente que no existe es «No se encontró la unidad»", async () => {
-    expect((await iniciada("#/flota")).app.fichaDeUnidad).toBeNull();
+    expect((await iniciada("#/movilidades")).app.fichaDeUnidad).toBeNull();
     const { app } = await iniciada("#/unidad/ZZ999ZZ");
     expect(app.fichaDeUnidad).toMatchObject({ encontrada: false, titulo: "No se encontró la unidad", mensaje: "No hay ninguna unidad con la patente ZZ 999 ZZ." });
   });
@@ -187,7 +187,7 @@ describe("novedades: resolver (N1, N2) y cargar (N3)", () => {
   });
 
   it("desde el centro de alertas: el mensaje nombra la unidad, el foco va al título del panel y la operación diaria baja un pendiente", async () => {
-    const { app } = await iniciada("#/alertas");
+    const { app } = await iniciada("#/inicio");
     expect(app.centroDeAlertas?.operacion.total).toBe(5);
     const r = await app.resolverNovedad("n-005", { texto: "Se cambiaron las pastillas", volverAServicio: false });
     expect(r).toEqual({ ok: true, mensaje: "Novedad resuelta: Frenos (ZU 899 QE).", foco: "titulo-del-panel" });
@@ -404,7 +404,7 @@ describe("Agregar unidad lleva a la ficha, y ahí se pueden cargar los documento
   const NUEVA: ValoresUnidad = { patente: "zk 999 aa", interno: "30", tipo: "utilitario", marca: "Peugeot", modelo: "Partner", anio: "2025", proyectoId: "proy-piedra-lunar", conductorId: "" };
 
   it("al guardar bien navega a #/unidad/ZK999AA y la ficha ya está ahí, con el mensaje de llegada", async () => {
-    const { app, ubicacion } = await iniciada("#/flota");
+    const { app, ubicacion } = await iniciada("#/movilidades");
     expect(app.mensajeDeLlegada).toBeNull();
     const r = await app.agregarUnidad(NUEVA);
     expect(r).toMatchObject({ ok: true, href: "#/unidad/ZK999AA", foco: "titulo-de-la-ficha" });
@@ -416,7 +416,7 @@ describe("Agregar unidad lleva a la ficha, y ahí se pueden cargar los documento
   });
 
   it("«cárguelos desde aquí» es cierto: la ficha lista los 4 faltantes, cada uno con su botón Cargar", async () => {
-    const { app } = await iniciada("#/flota");
+    const { app } = await iniciada("#/movilidades");
     await app.agregarUnidad(NUEVA);
     const f = fichaDe(app);
     const faltantes = f.documentos.filas.filter((x) => x.estado.tipo === "faltante");
@@ -431,19 +431,19 @@ describe("Agregar unidad lleva a la ficha, y ahí se pueden cargar los documento
   });
 
   it("en la base de mantenimiento faltan 3, y el mensaje lo dice (coincide con lo que muestra la ficha)", async () => {
-    const { app } = await iniciada("#/flota");
+    const { app } = await iniciada("#/movilidades");
     const r = await app.agregarUnidad({ ...NUEVA, proyectoId: "proy-base" });
     expect(r.ok && r.mensaje).toBe("Unidad agregada. Le faltan 3 documentos: cárguelos desde aquí.");
     expect(fichaDe(app).documentos.filas.filter((x) => x.estado.tipo === "faltante")).toHaveLength(3);
   });
 
   it("el mensaje de llegada se va al salir de esa ficha; si no se guardó, no navega", async () => {
-    const { app, ubicacion } = await iniciada("#/flota");
+    const { app, ubicacion } = await iniciada("#/movilidades");
     const mal = await app.agregarUnidad({ ...NUEVA, patente: "" });
     expect(mal.ok).toBe(false);
-    expect(ubicacion.hash).toBe("#/flota");
+    expect(ubicacion.hash).toBe("#/movilidades");
     await app.agregarUnidad(NUEVA);
-    ubicacion.irA("#/flota");
+    ubicacion.irA("#/movilidades");
     expect(app.mensajeDeLlegada).toBeNull();
     ubicacion.irA("#/unidad/ZK999AA");
     expect(app.mensajeDeLlegada).toBeNull();
