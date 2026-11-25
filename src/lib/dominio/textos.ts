@@ -690,6 +690,24 @@ export const TEXTO_LEYENDA_HORIZONTE = {
   ayudaDetalle: "Elija un punto para ver qué vence y de qué unidad.",
 } as const;
 
+/**
+ * Nombre accesible de un punto de la regla de vencimientos: «ZK 214 BD, seguro: vence en 3 días» (de una unidad) o «licencia de conducir de Bruno Juárez: vence en 12 días»
+ * (de un conductor). `estado` es el texto de `clasificar` («Vence en 3 días», «Vence hoy»); aquí solo se pasa a minúscula inicial.
+ */
+export function textoPuntoDeLaRegla(titular: { patente: string } | { conductor: string }, tipo: TipoDocumento, estado: string): string {
+  const documento = NOMBRES_DOCUMENTO[tipo].toLowerCase();
+  const que = "patente" in titular ? `${titular.patente}, ${documento}` : `${documento} de ${titular.conductor}`;
+  return `${que}: ${estado.charAt(0).toLowerCase()}${estado.slice(1)}`;
+}
+
+/**
+ * Texto para lector de pantalla del aro hueco de un día con más vencimientos de los que caben: «y 1 vencimiento más ese día», «y 3 vencimientos más ese día».
+ * Sin vencimientos de más, vacío.
+ */
+export function textoYMasDelDia(ocultas: number): string {
+  return ocultas <= 0 ? "" : `y ${pluralizar(ocultas, "vencimiento", "vencimientos")} más ese día`;
+}
+
 /** Un número de la leyenda dicho completo: «4 documentos, 7 días o menos». */
 export function textoLeyendaConCantidad(rotulo: string, n: number): string {
   return `${pluralizar(n, "documento", "documentos")}, ${rotulo.charAt(0).toLowerCase()}${rotulo.slice(1)}`;
@@ -955,6 +973,24 @@ export const NOMBRES_COMBUSTIBLE = { reserva: "reserva", cuarto: "1/4", medio: "
 /** Rótulos fijos de la ficha (los que llevan datos se arman con las funciones de abajo). */
 export const TEXTO_FICHA = {
   migaFlota: "Movilidades",
+  /** Las cuatro solapas de la ficha en el celular (los tres últimos rótulos son los títulos de sus paneles). */
+  solapas: { resumen: "Resumen", documentos: "Documentos", novedades: "Novedades", historial: "Historial" },
+  /**
+   * Texto para lector de pantalla del número de cada solapa; se lee después del nombre («Documentos, 2 vencidos o faltantes»).
+   * Sin nada que contar, no hay número a la vista y el texto es vacío.
+   */
+  insigniaSolapa: {
+    documentos: (vencidosOFaltantes: number) => (vencidosOFaltantes <= 0 ? "" : pluralizar(vencidosOFaltantes, "vencido o faltante", "vencidos o faltantes")),
+    /** «1 abierta», «2 abiertas, 1 crítica», «3 abiertas, todas críticas». Las críticas son un subconjunto de las abiertas. */
+    novedades: (abiertas: number, criticas: number) => {
+      if (abiertas <= 0) return "";
+      const base = pluralizar(abiertas, "abierta", "abiertas");
+      const c = Math.min(Math.max(criticas, 0), abiertas);
+      if (c === 0) return base;
+      if (c === abiertas) return abiertas === 1 ? `${base}, crítica` : `${base}, todas críticas`;
+      return `${base}, ${pluralizar(c, "crítica", "críticas")}`;
+    },
+  },
   noEncontrada: { titulo: "No se encontró la unidad", enlace: "Ir a Movilidades" },
   acciones: {
     cargarParte: "Cargar parte",
@@ -1324,7 +1360,50 @@ export const TEXTO_INICIO_CONDUCTOR = {
   licenciaTitulo: "Su licencia",
   ultimosTitulo: "Mis últimos partes",
   ultimosVacio: "Todavía no cerró partes. Los últimos cinco aparecerán aquí.",
+  /** Enlace de «Mis últimos partes» a la pantalla «Mis partes»; el nombre accesible dice a dónde lleva (hay otro «Ver todos» en la página). */
+  verTodosPartes: { visible: "Ver todos", nombre: "Ver todos mis partes" },
 } as const;
+
+const NUMEROS_EN_LETRAS = ["cero", "un", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez"] as const;
+
+/**
+ * Línea de contexto de «Mis partes», a continuación del nombre: «los últimos cinco» (con 5), «el último» (con 1), «los últimos 12» (de 11 en adelante).
+ * Con 0 no hay nada que contar: devuelve «Sin partes cerrados».
+ */
+export function textoUltimosPartes(n: number): string {
+  if (n <= 0) return "Sin partes cerrados";
+  if (n === 1) return "el último";
+  return `los últimos ${n <= 10 ? NUMEROS_EN_LETRAS[n] : n}`;
+}
+
+/** Documentos de nombre femenino, con el artículo que les toca (el resto es masculino). */
+function articuloYNombreDeDocumento(tipo: TipoDocumento): string {
+  const nombre = NOMBRES_DOCUMENTO[tipo];
+  return `${concordar(tipo, "El", "La")} ${nombre.charAt(0).toLowerCase()}${nombre.slice(1)}`;
+}
+
+/** Hasta cuántos días antes del vencimiento se avisa al conductor (el mismo plazo que el grupo «7 días o menos»). */
+export const DIAS_DE_AVISO_AL_CONDUCTOR = 7;
+
+/**
+ * Título del aviso al conductor en «Su unidad»: «La revisión técnica vence hoy», «El seguro vence mañana», «La revisión técnica vence en 5 días».
+ * Sirve para cualquier documento. Fuera de 0 a 7 días no hay aviso (`null`): un documento vencido lo dice el bloqueo, no este aviso.
+ */
+export function textoAvisoDeDocumento(tipo: TipoDocumento, dias: number): string | null {
+  if (!Number.isInteger(dias) || dias < 0 || dias > DIAS_DE_AVISO_AL_CONDUCTOR) return null;
+  const cuando = dias === 0 ? "hoy" : dias === 1 ? "mañana" : `en ${dias} días`;
+  return `${articuloYNombreDeDocumento(tipo)} vence ${cuando}`;
+}
+
+/**
+ * La frase que acompaña al aviso: hasta el día del vencimiento incluido la unidad puede salir. Mismo rango que `textoAvisoDeDocumento`; fuera de él, `null`.
+ */
+export function textoFraseDelAviso(dias: number): string | null {
+  if (!Number.isInteger(dias) || dias < 0 || dias > DIAS_DE_AVISO_AL_CONDUCTOR) return null;
+  if (dias === 0) return "Hoy la unidad puede salir; desde mañana, no, hasta que se renueve.";
+  if (dias === 1) return "Hoy y mañana la unidad puede salir; desde pasado mañana, no. Avise al encargado para renovar el documento a tiempo.";
+  return "Hasta el día del vencimiento la unidad puede salir. Avise al encargado para renovar el documento a tiempo.";
+}
 
 /** Aviso «Cerrar antes» (estado 5 bis del inicio y pantalla E): el primario y el renglón 2 del inicio. */
 export const TEXTO_CERRAR_ANTES = {
@@ -1580,4 +1659,10 @@ export const TEXTO_ERROR_PANTALLA = {
   mensaje:
     "Los datos guardados en este navegador pueden estar dañados. Recargue la página; si el error sigue, " +
     "use «Reiniciar demo» para volver a la flota de ejemplo.",
+} as const;
+
+/** Cuando no se pudo bajar el código de una pantalla que llega diferida (sin conexión o con el sitio caído). El título va en el `h1` y el mensaje, debajo. */
+export const TEXTO_ERROR_DESCARGA = {
+  titulo: "No se pudo descargar esta pantalla",
+  mensaje: "Compruebe la conexión y recargue la página.",
 } as const;

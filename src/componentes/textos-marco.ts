@@ -9,28 +9,24 @@ export const URL_PORTAFOLIO = "https://matiasormeno.com.ar/";
 
 export const TEXTO_MARCO = {
   nombreApp: "Control de flota",
+  /** Entero; el marco lo parte en dos con `etiquetaDemoMarca` y `etiquetaDemoDatos` (esta clave se conserva mientras algún componente la use). */
   etiquetaDemo: "Demo con datos ficticios",
+  /** Las dos mitades de `etiquetaDemo`: «Demo» y «con datos ficticios». Juntas, separadas por un espacio, dicen lo mismo. */
+  etiquetaDemoMarca: "Demo",
+  etiquetaDemoDatos: "con datos ficticios",
   saltar: "Ir al contenido",
   comoFunciona: "Cómo funciona",
   reiniciarDemo: "Reiniciar demo",
-  volverAlPortafolio: "← Volver al portafolio",
-  volverAlPortafolioCorto: "← Portafolio",
   menuMas: "Más",
   navegacionSecciones: "Secciones",
-  pestanaAlertas: "Inicio",
-  pestanaFlota: "Movilidades",
-  pestanaParteDeHoy: "Hoy",
   verComo: "Ver como",
   perfilEncargado: "Encargado",
   perfilConductor: "Conductor",
   /** Junto al selector: «Tamara Olivera (persona ficticia)» (D2); el lector de pantalla antepone «Conductor: ». */
   conductorElegido: (nombre: string) => `${nombre} (persona ficticia)`,
-  /** Aviso previo (descripción del grupo "Ver como"): elegir Conductor abre un diálogo (WCAG 3.2.2). */
-  ayudaPerfilConductor: "Al elegir «Conductor» se abre una lista para elegir quién completa el parte.",
-  /** Nombre accesible del botón «Cambiar» (el texto visible es más corto). */
-  cambiarConductor: "Cambiar conductor",
-  cambiar: "Cambiar",
   cerrarAviso: "Cerrar aviso",
+  /** Mientras se baja una pantalla que llega diferida (ficha, parte, inicio del conductor); se anuncia y se ve en el lugar de la pantalla. */
+  cargandoPantalla: "Cargando la pantalla…",
   actualizar: "Actualizar",
   recargar: "Recargar la página",
   /** Una dirección que no corresponde a ninguna pantalla («Página no encontrada»). */
@@ -412,6 +408,8 @@ export const TEXTO_MAS = {
     /** Debajo del perfil actual en «Más». */
     encargadoDescripcion: "Inicio, movilidades, vencimientos y operación diaria.",
     conductorDescripcion: (nombre: string, patente: string) => `${nombre} (persona ficticia) · unidad ${patente}`,
+    /** Ídem cuando el conductor no tiene unidad asignada (o su unidad está de baja). */
+    conductorDescripcionSinUnidad: (nombre: string) => `${nombre} (persona ficticia) · sin unidad asignada`,
   },
   laDemo: {
     titulo: "La demo",
