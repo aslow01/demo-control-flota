@@ -18,7 +18,7 @@
   }: {
     href: string;
     variante?: "primario" | "secundario" | "texto";
-    tamano?: "normal" | "grande";
+    tamano?: "normal" | "grande" | "chico";
     etiqueta?: string;
     alActivar?: (evento: MouseEvent) => void;
     children: Snippet;
@@ -35,23 +35,34 @@
     min-height: var(--alto-tactil);
     padding: 0 var(--e-4);
     background: var(--c-superficie);
-    border: 1px solid var(--c-borde-fuerte);
-    border-radius: var(--r-2);
+    border: var(--b-control) solid var(--c-borde-fuerte);
+    border-radius: var(--r-1);
     color: var(--c-texto);
-    font-weight: 600;
+    font-size: 0.9375rem;
+    font-weight: 650;
     line-height: 1.2;
     text-align: center;
     text-decoration: none;
-    transition: background-color var(--m-rapido) var(--m-curva);
+    transition: background-color var(--m-rapido) linear;
   }
   .enlace-accion[data-tamano="grande"] {
-    min-height: 3rem;
+    min-height: 3.5rem;
     padding: 0 var(--e-5);
     font-size: 1.0625rem;
   }
+  .enlace-accion[data-tamano="chico"] {
+    min-height: 2.5rem;
+    padding: 0 var(--e-3);
+    font-size: 0.875rem;
+  }
+  @media (max-width: 63.99rem) {
+    .enlace-accion[data-tamano="chico"] {
+      min-height: var(--alto-tactil);
+    }
+  }
   .enlace-accion[data-variante="primario"] {
     background: var(--c-acento);
-    border-color: transparent;
+    border-color: var(--c-acento);
     color: var(--c-acento-texto);
   }
   /* Texto: sin fondo, acento, subrayado de 1 px (2 px con el cursor encima), como el botón-texto. */
@@ -87,6 +98,7 @@
     }
     .enlace-accion[data-variante="primario"]:hover {
       background: var(--c-acento-hover);
+      border-color: var(--c-acento-hover);
     }
     .enlace-accion[data-variante="texto"]:hover {
       background: none;

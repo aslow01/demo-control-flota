@@ -11,7 +11,7 @@
   import type { Snippet } from "svelte";
   import { reformatearKm } from "../lib/dominio/kilometraje.ts";
   import { largoDeTexto } from "../lib/dominio/texto.ts";
-  import Icono from "./Icono.svelte";
+  import Forma from "./Forma.svelte";
 
   let {
     etiqueta,
@@ -87,7 +87,7 @@
   <label for={idControl}>{etiqueta}{#if requerido}<span class="req" aria-hidden="true"> *</span>{/if}</label>
   {#if ayuda !== ""}<p class="ayuda" id={idAyuda}>{ayuda}</p>{/if}
   {#if error !== ""}
-    <p class="error" id={idError}><Icono nombre="vencido" /><span>{error}</span></p>
+    <p class="error" id={idError}><Forma forma="rombo" tono="critico" /><span>{error}</span></p>
   {/if}
   <div class="fila">
     {#if tipo === "select"}
@@ -147,9 +147,9 @@
   }
   label {
     font-size: var(--t-chico);
-    font-weight: 600;
+    font-weight: 650;
     line-height: 1.4;
-    color: var(--c-texto);
+    color: var(--c-texto-2);
   }
   .ayuda,
   .contador {
@@ -165,13 +165,12 @@
     align-items: flex-start;
     gap: var(--e-2);
     font-size: var(--t-chico);
-    font-weight: 600;
+    font-weight: 650;
     line-height: 1.4;
     color: var(--c-critico-t);
   }
-  .error :global(.icono) {
-    --icono-tam: 1rem;
-    margin-top: 0.1rem;
+  .error :global(.forma) {
+    margin-block: 0.3125rem 0;
   }
   /* Texto agrandado (el contenedor mide 17 rem o menos): el mensaje baja debajo de su ícono si no entra a su lado sin partir una palabra (S5 de la etapa 7). */
   @container (max-width: 17rem) {
@@ -203,9 +202,9 @@
     min-width: 0;
     width: 100%;
     height: var(--alto);
-    padding: 0 var(--e-3);
-    border: 1px solid var(--c-borde-fuerte);
-    border-radius: var(--r-2);
+    padding: 0 0.875rem;
+    border: var(--b-control) solid var(--c-borde-fuerte);
+    border-radius: var(--r-1);
     background: var(--c-superficie);
     color: var(--c-texto);
     font-size: var(--t-cuerpo); /* 16 px: evita el zoom automático de iOS */
@@ -219,7 +218,7 @@
   }
   input.corto {
     flex: 0 1 auto;
-    width: calc(10ch + 2 * var(--e-3) + 2px);
+    width: calc(10ch + 2 * 0.875rem + 2 * var(--b-control));
     font-variant-numeric: tabular-nums lining-nums;
   }
   textarea {
@@ -243,14 +242,22 @@
     }
   }
 
-  /* Inválido: borde de 2 px (el relleno baja 1 px para que el campo no se mueva) y el hover no lo apaga. */
+  /* Con el foco el borde pasa al azurita (el anillo de 3 px sigue afuera, pegado al campo). */
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline-offset: 0;
+    border-color: var(--c-foco);
+  }
+
+  /* Inválido: borde cobre con un filete adentro (más grueso sin mover nada) y el hover no lo apaga. */
   input[aria-invalid="true"],
   select[aria-invalid="true"],
   textarea[aria-invalid="true"],
   input[aria-invalid="true"]:hover,
   select[aria-invalid="true"]:hover,
   textarea[aria-invalid="true"]:hover {
-    padding-inline: calc(var(--e-3) - 1px);
-    border: 2px solid var(--c-critico-r);
+    border-color: var(--c-critico-r);
+    box-shadow: inset 0 0 0 1px var(--c-critico-r);
   }
 </style>

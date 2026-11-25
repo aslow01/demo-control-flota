@@ -13,7 +13,8 @@
 
   type Props = Omit<HTMLButtonAttributes, "children" | "class" | "style"> & {
     variante?: "primario" | "secundario" | "texto" | "peligro" | "icono";
-    tamano?: "normal" | "grande";
+    /** «chico» (40 px) es para las filas y los detalles con mouse; por debajo de 64 rem mide 44 px como todo lo que se pulsa. */
+    tamano?: "normal" | "grande" | "chico";
     /** Ícono a la izquierda del texto; en la variante `icono` es el único contenido. */
     icono?: NombreIcono;
     /** Nombre accesible del botón de ícono. */
@@ -67,23 +68,34 @@
     gap: var(--e-2);
     min-height: var(--alto-tactil);
     padding: 0 var(--e-4);
-    border: 1px solid transparent;
-    border-radius: var(--r-2);
+    border: var(--b-control) solid var(--c-acento);
+    border-radius: var(--r-1);
     background: var(--c-acento);
     color: var(--c-acento-texto);
-    font-weight: 600;
+    font-size: 0.9375rem;
+    font-weight: 650;
     line-height: 1.2;
     text-align: center;
     text-decoration: none;
     cursor: pointer;
     transition:
-      background-color var(--m-rapido) var(--m-curva),
-      border-color var(--m-rapido) var(--m-curva);
+      background-color var(--m-rapido) linear,
+      border-color var(--m-rapido) linear;
   }
   .boton[data-tamano="grande"] {
-    min-height: 3rem;
+    min-height: 3.5rem;
     padding: 0 var(--e-5);
     font-size: 1.0625rem;
+  }
+  .boton[data-tamano="chico"] {
+    min-height: 2.5rem;
+    padding: 0 var(--e-3);
+    font-size: 0.875rem;
+  }
+  @media (max-width: 63.99rem) {
+    .boton[data-tamano="chico"] {
+      min-height: var(--alto-tactil);
+    }
   }
   .boton[aria-disabled="true"] {
     cursor: progress;
@@ -94,6 +106,7 @@
   @media (hover: hover) {
     .boton:hover {
       background: var(--c-acento-hover);
+      border-color: var(--c-acento-hover);
     }
   }
 
@@ -106,6 +119,7 @@
   @media (hover: hover) {
     .boton[data-variante="secundario"]:hover {
       background: var(--c-superficie-2);
+      border-color: var(--c-borde-fuerte);
     }
   }
   /* Deshabilitado: solo el secundario (siempre con una explicación visible al lado, que pone quien lo usa). */
@@ -118,6 +132,7 @@
 
   /* Texto: sin fondo, acento, subrayado de 1 px (2 px con el cursor encima). */
   .boton[data-variante="texto"] {
+    border-color: transparent;
     /* C12: sin relleno horizontal, así empieza en la misma columna que el primario de arriba; el alto de 44 px lo da `min-height`. */
     padding-inline: 0;
     background: none;
@@ -136,6 +151,7 @@
   @media (hover: hover) {
     .boton[data-variante="texto"]:hover {
       background: none;
+      border-color: transparent;
       text-decoration-thickness: 2px;
     }
   }
@@ -143,11 +159,13 @@
   /* Peligro */
   .boton[data-variante="peligro"] {
     background: var(--c-critico-r);
+    border-color: var(--c-critico-r);
     color: var(--c-peligro-texto);
   }
   @media (hover: hover) {
     .boton[data-variante="peligro"]:hover {
       background: var(--c-peligro-hover);
+      border-color: var(--c-peligro-hover);
     }
   }
 
@@ -158,6 +176,7 @@
     width: var(--alto-tactil);
     padding: 0;
     background: none;
+    border-color: transparent;
     color: var(--c-texto-2);
   }
   .boton[data-variante="icono"]::before {
@@ -180,6 +199,7 @@
   @media (hover: hover) {
     .boton[data-variante="icono"]:hover {
       background: none;
+      border-color: transparent;
       color: var(--c-texto);
     }
     .boton[data-variante="icono"]:hover::before {

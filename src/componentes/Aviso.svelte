@@ -77,11 +77,11 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--e-2) var(--e-3);
-    padding: var(--e-3) var(--e-4);
+    padding: 0.75rem 0.875rem;
     background: var(--tono-f);
     border: 1px solid transparent;
     border-left: 4px solid var(--tono-r);
-    border-radius: var(--r-2);
+    border-radius: 0 var(--r-1) var(--r-1) 0;
     color: var(--c-texto);
   }
   .icono-aviso {

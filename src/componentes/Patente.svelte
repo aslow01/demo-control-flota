@@ -1,5 +1,5 @@
 <script lang="ts">
-  // 5.5 Patente: rótulo chico, monoespaciado, con borde fino y una banda superior de 3 px. No imita la placa oficial.
+  // 5.5 Patente: la «chapa». Rótulo monoespaciado con borde fino y una banda superior gruesa, como un cartel de matrícula; no imita la placa oficial.
   // Recibe la patente ya normalizada (`ZK214BD`) y la muestra con espacios (`ZK 214 BD`).
   // Sin `href` no es interactiva. Con `href` es el enlace a la ficha: el texto oculto dice "Ficha de ZK 214 BD".
   import { formatearPatente } from "../lib/dominio/patente.ts";
@@ -27,30 +27,38 @@
 
 <style>
   .patente {
-    --alto: 1.5rem;
-    --relleno: 0.375rem;
     --tam: var(--t-patente-chica);
-    display: inline-flex;
-    align-items: center;
-    height: var(--alto);
-    padding-inline: var(--relleno);
+    --banda: 4px;
+    --borde: 1.5px;
+    --color-banda: var(--c-patente-banda);
+    display: inline-block;
+    padding: 0.0625rem 0.375rem 0.125rem;
     background: var(--c-patente-fondo);
     color: var(--c-texto);
-    border: 1px solid var(--c-borde-fuerte);
-    border-top: 3px solid var(--c-patente-banda);
-    border-radius: var(--r-1);
+    border: var(--borde) solid var(--c-borde-fuerte);
+    border-top: var(--banda) solid var(--color-banda);
+    border-radius: 3px;
     font-family: var(--t-mono);
     font-size: var(--tam);
     font-weight: 600;
-    line-height: 1;
-    letter-spacing: 0.06em;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
     white-space: nowrap;
     vertical-align: middle;
   }
+  /* La grande es la de la ficha: banda de 6 px en el color del texto. */
   .patente[data-tamano="grande"] {
-    --alto: 2.25rem;
-    --relleno: 0.625rem;
     --tam: var(--t-patente-grande);
+    --banda: 6px;
+    --borde: 2px;
+    --color-banda: var(--c-texto);
+    padding: 0.125rem 0.75rem 0.25rem;
+  }
+  @media (max-width: 22.5rem) {
+    .patente[data-tamano="grande"] {
+      --tam: 1.375rem;
+      padding-inline: 0.625rem;
+    }
   }
 
   /* Dentro de un enlace: el rótulo es el enlace. El propio enlace mide 44 px de alto como mínimo (no solo un área invisible), con el rótulo centrado. */
@@ -71,17 +79,14 @@
   }
   @media (hover: hover) {
     .enlace-patente:hover .patente {
-      background: var(--c-acento-suave);
-      border-left-color: var(--c-acento);
-      border-right-color: var(--c-acento);
-      border-bottom-color: var(--c-acento);
+      border-color: var(--c-texto);
     }
   }
 
   @media (forced-colors: active) {
     .patente {
       border-color: CanvasText;
-      border-top: 3px solid CanvasText;
+      border-top: var(--banda) solid CanvasText;
     }
   }
 </style>

@@ -27,6 +27,7 @@
     contenidoEstado,
     herramientas,
     controles,
+    sinRelleno = false,
     children,
   }: {
     titulo: string;
@@ -40,6 +41,8 @@
     contenidoEstado?: Snippet;
     herramientas?: Snippet;
     controles?: Snippet;
+    /** El interior llega hasta los bordes y sin separación entre sus hijos: para las listas de filas con riel de color (cada fila trae su propio relleno). */
+    sinRelleno?: boolean;
     children: Snippet;
   } = $props();
 
@@ -65,7 +68,7 @@
   {#if herramientas !== undefined}
     <div class="herramientas">{@render herramientas()}</div>
   {/if}
-  <div class="interior">{@render children()}</div>
+  <div class="interior" class:sin-relleno={sinRelleno}>{@render children()}</div>
   {#if contenidoEstado !== undefined}
     <div class="estado">{@render contenidoEstado()}</div>
   {:else}
@@ -81,16 +84,9 @@
     flex-direction: column;
     min-width: 0;
     background: var(--c-superficie);
-    border: 1px solid var(--c-ventana-borde);
-    border-radius: var(--r-3);
-    box-shadow: var(--s-ventana);
-  }
-  /* Activo (foco adentro): orientación, no información. Sin hover. */
-  .panel:focus-within {
-    border-color: var(--c-borde-fuerte);
-  }
-  .panel:focus-within > .barra {
-    box-shadow: inset 0 2px 0 var(--c-acento);
+    border: 1px solid var(--c-borde);
+    border-radius: var(--r-2);
+    box-shadow: var(--s-panel);
   }
 
   /* ---------- Barra de título ---------- */
@@ -100,11 +96,9 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0 var(--e-2);
-    min-height: 2.75rem;
-    padding: 0 var(--e-1) 0 var(--e-3);
-    background: var(--c-ventana-barra);
+    min-height: 3rem;
+    padding: 0 var(--e-1) 0 var(--e-4);
     border-bottom: 1px solid var(--c-borde);
-    border-radius: calc(var(--r-3) - 1px) calc(var(--r-3) - 1px) 0 0;
   }
   .barra.con-icono {
     --sangria: calc(1.25rem + var(--e-2));
@@ -118,17 +112,18 @@
     flex: 0 1 auto;
     min-width: 0;
     padding-block: var(--e-2);
-    font-size: 1rem;
-    font-weight: 600;
+    /* El título del panel va en la fuente de texto (la de títulos queda para el h1 y las cifras). */
+    font-family: var(--t-familia);
+    font-stretch: 100%;
+    font-size: 1.0625rem;
+    font-weight: 700;
     line-height: 1.3;
+    letter-spacing: -0.005em;
   }
   .meta {
-    margin-left: var(--e-1);
-    padding-left: var(--e-3);
-    border-left: 1px solid var(--c-borde-fuerte);
     font-size: var(--t-chico);
     line-height: 1rem;
-    color: var(--c-texto-2);
+    color: var(--c-texto-3);
     font-variant-numeric: tabular-nums lining-nums;
   }
   .controles {
@@ -143,7 +138,6 @@
       flex: 1 0 100%;
       margin: 0;
       padding: 0 0 var(--e-2) var(--sangria);
-      border-left: 0;
     }
   }
 
@@ -195,9 +189,8 @@
     gap: var(--e-2) var(--e-4);
     min-height: 2.5rem;
     padding: var(--e-2) var(--e-3);
-    background: var(--c-ventana-barra);
     border-top: 1px solid var(--c-borde);
-    border-radius: 0 0 calc(var(--r-3) - 1px) calc(var(--r-3) - 1px);
+    border-radius: 0 0 calc(var(--r-2) - 1px) calc(var(--r-2) - 1px);
     font-size: var(--t-chico);
     line-height: 1.4;
     color: var(--c-texto);
@@ -206,7 +199,6 @@
     min-height: 0;
     padding-block: 0;
     border-top-width: 0;
-    background: transparent;
   }
   @media (min-width: 40rem) {
     .estado {
@@ -227,6 +219,11 @@
     .estado {
       padding-inline: var(--e-2);
     }
+  }
+  /* Sin relleno: va al final para ganarle a los tamaños de arriba. */
+  .interior.sin-relleno {
+    gap: 0;
+    padding: 0;
   }
 
 </style>

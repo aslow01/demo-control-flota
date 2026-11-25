@@ -22,6 +22,7 @@
   // El título de cada grupo es un `span` con `role="heading"` y `tabindex="-1"`: así "Ver" de la operación diaria puede llevar el foco ahí
   // (un `h3` no puede ir dentro de una celda de encabezado).
   import type { Snippet } from "svelte";
+  import Forma, { formaDeTono } from "./Forma.svelte";
   import { ENCABEZADO_DE_COLUMNA, ENCABEZADO_DE_GRUPO, FILA, GRUPO_DE_FILAS, TABLA } from "./lista-roles.ts";
 
   let {
@@ -64,7 +65,7 @@
         {#if g.titulo !== ""}
           <tr {...FILA} class="grupo" data-tono={g.tono}>
             <th scope="rowgroup" {...ENCABEZADO_DE_GRUPO} colspan={columnas.length}>
-              <span class="titulo-grupo" id={g.idTitulo} role="heading" aria-level="3" tabindex="-1">{g.titulo}</span>
+              <span class="titulo-grupo" id={g.idTitulo} role="heading" aria-level="3" tabindex="-1"><Forma forma={formaDeTono(g.tono)} />{g.titulo}</span>
             </th>
           </tr>
         {/if}
@@ -99,8 +100,8 @@
     border-bottom: 1px solid var(--c-borde-fuerte);
     font-size: var(--t-rotulo);
     line-height: 1.3;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    font-weight: 700;
+    letter-spacing: 0.07em;
     text-align: left;
     text-transform: uppercase;
     color: var(--c-texto-2);
@@ -119,17 +120,10 @@
     color: var(--c-texto);
   }
   .titulo-grupo {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e-2);
     font-family: var(--t-familia-titulo);
-  }
-  .titulo-grupo::before {
-    content: "";
-    display: inline-block;
-    width: 0.625rem;
-    height: 0.625rem;
-    margin-right: var(--e-2);
-    border-radius: 50%;
-    background: var(--tono-r);
   }
   .fila :global(td) {
     height: 3.5rem;
@@ -591,9 +585,6 @@
         box-shadow: none;
         border-left: 4px solid CanvasText;
       }
-    }
-    .titulo-grupo::before {
-      background: CanvasText;
     }
   }
 </style>

@@ -106,8 +106,8 @@
   --t-tabla: 0.875rem;
   --t-chico: 0.8125rem;
   --t-rotulo: 0.75rem;
-  --t-patente-chica: 0.8125rem;
-  --t-patente-grande: 1.25rem;
+  --t-patente-chica: 0.875rem;
+  --t-patente-grande: 1.625rem;
   /* 650 con fuente variable; los navegadores sin ella redondean a 600. */
   --t-peso-h2: 650;
 
@@ -131,7 +131,11 @@
   --r-4: 14px; /* alias de --r-3 hasta que las piezas viejas lo dejen de usar */
   --r-pildora: 999px;
 
+  /* Borde de los controles (botón, campo, opción): 1,5 px como el prototipo; en pantallas de 1x el navegador lo dibuja de 1 px. */
+  --b-control: 1.5px;
+
   /* ---------- Sombras ---------- */
+  --s-panel: 0 1px 0 rgb(28 26 23 / 0.04);
   --s-ventana: 0 1px 0 rgb(28 26 23 / 0.04), 0 6px 16px -4px rgb(28 26 23 / 0.1);
   --s-flotante: 0 10px 30px rgb(28 26 23 / 0.18), 0 2px 6px rgb(28 26 23 / 0.08);
 
@@ -216,6 +220,7 @@
     --c-lat-activo: #f1ede6;
     --c-lat-activo-tx: #121110;
 
+    --s-panel: 0 1px 0 rgb(0 0 0 / 0.3);
     --s-ventana: inset 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 20px -6px rgb(0 0 0 / 0.6);
     --s-flotante: 0 12px 34px rgb(0 0 0 / 0.55), 0 0 0 1px #34322d;
   }
