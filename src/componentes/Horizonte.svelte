@@ -1,8 +1,9 @@
 <script lang="ts">
   // 5.6 Horizonte de vencimientos (pieza firma): una regla de 0 a 30 días con una marca por vencimiento, la caja de vencidos y los tramos.
   // Solo dibuja: todo lo que muestra (en qué columna cae cada marca, de qué tramo es, el texto de lectores) lo calcula
-  // `lib/dominio/horizonte.ts`; acá no hay reglas de negocio. Se usa así: `<Horizonte horizonte={horizonteCompleto(app.alertas)} />`
-  // (centro de alertas), `horizonteDeUnidad(...)` (ficha, variante mediana) y `horizonteMinimo(...)` (columna "Próximo vencimiento").
+  // `lib/dominio/horizonte.ts`; acá no hay reglas de negocio. Se usa así: `<Horizonte regla={...} />` (Inicio y Vencimientos, la regla interactiva),
+  // `horizonteDeUnidad(...)` (ficha, variante mediana) y `horizonteMinimo(...)` (columna "Próximo vencimiento"). La variante «completa» de solo lectura
+  // (`horizonteCompleto`) ya no la usa ninguna pantalla; se deja porque comparte con la mediana la caja de vencidos y la escala.
   //
   // - Completa y mediana son un `role="img"` con el resumen en `aria-label`; la mínima va con `aria-hidden="true"` (el texto de la celda lo
   //   dice todo). Las marcas no son interactivas: los controles son los filtros y la lista.

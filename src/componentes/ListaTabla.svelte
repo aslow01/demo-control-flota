@@ -16,7 +16,7 @@
   // disposiciones por consulta de contenedor del propio componente (no de la ventana):
   // La usan el centro de alertas (`vencimientos`, `operacion`), la flota (`flota`, 5.10: un solo grupo sin título y franja solo en algunas filas) y los
   // documentos de la ficha (`documentos`, 6.3: Documento · Número y emisor · Vence · Estado · Acciones).
-  //   ≥ 66 rem  tabla completa · 40 a 65,99 rem  compacta (dos líneas por celda) · < 40 rem  tarjetas con la etiqueta de cada dato.
+  //   ≥ 65 rem  tabla completa (a 1440 px la lista de Movilidades mide unos 65,9 rem: con 66 no llegaba) · 40 a 64,99 rem  compacta (dos líneas por celda) · < 40 rem  tarjetas con la etiqueta de cada dato.
   // El componente pone la estructura, la franja del tono y los cortes; quien lo usa pone las celdas (`fila`) con `data-col` (qué dato es)
   // y `data-etiqueta` (cómo se rotula en la tarjeta) y los roles de `lista-roles.ts`. Los encabezados de columna solo se ven en la tabla completa.
   // El título de cada grupo es un `span` con `role="heading"` y `tabindex="-1"`: así "Ver" de la operación diaria puede llevar el foco ahí
@@ -156,7 +156,7 @@
   }
   /* Flota, tabla completa (C9): anchos fijos para que cada fila mida lo mismo (unos 60 px) y las columnas no se muevan según lo que cuenten; «Proyecto y conductor» se queda con
      el resto. Kilometraje, último parte y novedades no se parten. */
-  @container lista (min-width: 66rem) {
+  @container lista (min-width: 65rem) {
     [data-variante="flota"] table {
       table-layout: fixed;
     }
@@ -199,7 +199,7 @@
   }
 
   /* ---------- Compacta y tarjetas: la tabla deja de ser una tabla visual (los roles la mantienen para los lectores) ---------- */
-  @container lista (max-width: 65.99rem) {
+  @container lista (max-width: 64.99rem) {
     table,
     tbody {
       display: block;
@@ -255,7 +255,7 @@
   }
 
   /* Compacta: (estado + documento) · (titular + proyecto) · (vence + acción). */
-  @container lista (min-width: 40rem) and (max-width: 65.99rem) {
+  @container lista (min-width: 40rem) and (max-width: 64.99rem) {
     [data-variante="vencimientos"] .fila {
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 0.9fr);
       grid-template-areas:
@@ -349,7 +349,7 @@
   }
 
   /* Flota, compacta y tarjetas: cada celda ocupa su área (las dos disposiciones solo cambian la grilla). */
-  @container lista (max-width: 65.99rem) {
+  @container lista (max-width: 64.99rem) {
     [data-variante="flota"] .fila :global(td[data-col="unidad"]) {
       grid-area: unidad;
     }
@@ -373,7 +373,7 @@
     }
   }
   /* Compacta: (unidad + estado) · (próximo vencimiento + último parte) · (km + novedades), y el proyecto en una línea al pie. */
-  @container lista (min-width: 40rem) and (max-width: 65.99rem) {
+  @container lista (min-width: 40rem) and (max-width: 64.99rem) {
     [data-variante="flota"] .fila {
       grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.9fr);
       grid-template-areas:
@@ -457,7 +457,7 @@
   }
 
   /* Documentos de la ficha, compacta y tarjetas: cada celda ocupa su área. */
-  @container lista (max-width: 65.99rem) {
+  @container lista (max-width: 64.99rem) {
     [data-variante="documentos"] .fila :global(td[data-col="documento"]) {
       grid-area: documento;
     }
@@ -479,7 +479,7 @@
     }
   }
   /* Compacta: (documento · número · vence) y debajo (estado · acciones). */
-  @container lista (min-width: 40rem) and (max-width: 65.99rem) {
+  @container lista (min-width: 40rem) and (max-width: 64.99rem) {
     [data-variante="documentos"] .fila {
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) auto;
       grid-template-areas:
@@ -577,7 +577,7 @@
     .fila[data-tono] {
       border-left: 4px solid CanvasText;
     }
-    @container lista (min-width: 66rem) {
+    @container lista (min-width: 65rem) {
       .fila[data-tono] {
         border-left: 0;
       }

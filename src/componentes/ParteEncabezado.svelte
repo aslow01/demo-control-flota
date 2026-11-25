@@ -1,12 +1,11 @@
 <script lang="ts">
-  // Encabezado de los dos pasos del parte (6.5, A y B), de arriba abajo y sin panel: 1) el enlace de vuelta y, con poco ancho, el rótulo de la demo en el mismo renglón (C1);
+  // Encabezado de los dos pasos del parte (6.5, A y B), de arriba abajo y sin panel: 1) el enlace de vuelta;
   // 2) el `h1` del paso («Revisión antes de salir» o «Cierre de la jornada»), que también es el título de la pestaña; 3) el renglón de contexto («Parte del miércoles 18/11/2026 · paso 1 de 2»:
   // un texto, no un indicador gráfico); 4) la patente y «Int. 07 · Toyota Hilux 2022» (sin el tipo); 5) los avisos (fuera de plazo, «no puede salir»; solo la revisión los trae);
   // 6) el indicador de guardado (5.15). La región `role="status"` oculta dice SOLO el texto de `anuncio`, que cambia al cambiar de estado (no en cada guardado).
   // Vive dentro del contenedor `parte` de `ParteFormulario` (las reglas `@container parte` miden ese ancho).
   import Aviso from "./Aviso.svelte";
   import type { AvisoDeAptitud } from "../lib/dominio/textos.ts";
-  import EtiquetaDemo from "./EtiquetaDemo.svelte";
   import Icono from "./Icono.svelte";
   import Patente from "./Patente.svelte";
 
@@ -43,10 +42,8 @@
   const modelo = $derived(descripcion.includes(" · ") ? descripcion.slice(0, descripcion.lastIndexOf(" · ")) : descripcion);
 </script>
 
-<!-- Con poco ancho, el enlace de vuelta y el rótulo de la demo comparten renglón: ahorra uno entero antes del primer campo (C1). -->
 <div class="fila-vuelta">
   <a class="vuelta" href={vuelta.href}><Icono nombre="flecha-izq" />{vuelta.texto}</a>
-  <div class="solo-angosto"><EtiquetaDemo /></div>
 </div>
 
 <header class="encabezado">
@@ -100,12 +97,6 @@
   @container parte (max-width: 29.99rem) {
     .encabezado h1 {
       font-size: var(--t-h2);
-    }
-  }
-  /* El rótulo "Demo con datos ficticios" baja acá cuando la barra superior no tiene lugar (menos de 40 rem). */
-  @media (min-width: 40rem) {
-    .solo-angosto {
-      display: none;
     }
   }
   .contexto {

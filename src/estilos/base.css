@@ -68,7 +68,9 @@ h3 {
   color: var(--c-texto);
 }
 h1 {
-  font-size: var(--t-h1);
+  /* Un solo tope para todas las pantallas: a 320 px con el texto al 200 % una palabra larga («Vencimientos», 12 letras) no entra con el tamaño
+     de siempre (56 px) y ensanchaba la página. Con más ancho, 14vw supera al token y manda el token. */
+  font-size: min(var(--t-h1), 14vw);
   line-height: 1.15;
   font-weight: 700;
 }

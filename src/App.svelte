@@ -422,7 +422,7 @@
         {:else if app.ruta.tipo === "inicio"}
           <PantallaInicio alAbrirParte={() => pedirVerComo("conductor")} />
         {:else if app.ruta.tipo === "vencimientos"}
-          <PantallaVencimientos alAbrirParte={() => pedirVerComo("conductor")} />
+          <PantallaVencimientos />
         {:else if app.ruta.tipo === "operacion"}
           <PantallaOperacion alAbrirParte={() => pedirVerComo("conductor")} />
         {:else if app.ruta.tipo === "movilidades"}
@@ -604,11 +604,6 @@
     main {
       padding-bottom: var(--e-7);
     }
-  }
-  /* Las pantallas todavía sin rehacer llevan el rótulo «Demo con datos ficticios» arriba del título cuando no hay lugar en la barra: el marco nuevo
-     ya lo muestra siempre (franja y lateral). Se va con cada pantalla (E2 y E3). */
-  main :global(.solo-angosto) {
-    display: none;
   }
   .acciones-error {
     display: flex;
