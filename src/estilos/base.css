@@ -1,5 +1,8 @@
-/* Reinicio, página, tonos, foco, utilidades y movimiento reducido (docs/diseno-ui.md, secciones 3, 5 y 9).
+/* Reinicio, página, tonos, foco, utilidades y movimiento reducido (docs/diseno-ui.md, secciones 3, 5 y 9; paleta y tipografía «Turno»).
    Lo de cada pieza (patente, etiqueta, panel, botón, campo) vive en su componente, en src/componentes. */
+
+/* Fuentes alojadas (tienen que ir primero: un @import no vale después de otra regla). */
+@import "./fuentes.css";
 
 *,
 *::before,
@@ -35,6 +38,7 @@ body {
   font-size: var(--t-cuerpo);
   line-height: 1.5;
   overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1,
@@ -60,6 +64,7 @@ h1,
 h2,
 h3 {
   font-family: var(--t-familia-titulo);
+  font-stretch: var(--t-ancho-titulo);
   color: var(--c-texto);
 }
 h1 {
@@ -93,7 +98,7 @@ textarea {
 }
 
 a {
-  color: var(--c-acento);
+  color: var(--c-enlace);
   text-underline-offset: 3px;
 }
 @media (hover: hover) {
@@ -102,9 +107,9 @@ a {
   }
 }
 
-/* Foco visible en todo: un solo anillo, el del acento. Nunca `outline: none` sin reemplazo. */
+/* Foco visible en todo: un solo anillo, el azurita (--c-foco). Nunca `outline: none` sin reemplazo. */
 :focus-visible {
-  outline: 2px solid var(--c-foco);
+  outline: 3px solid var(--c-foco);
   outline-offset: 2px;
 }
 /* Lo que recibe el foco por programa (h1, h2 del panel, resumen de errores) no lleva anillo si no se llegó con teclado. */
