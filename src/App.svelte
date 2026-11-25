@@ -18,11 +18,12 @@
   import PantallaAlertas from "./componentes/PantallaAlertas.svelte";
   import PantallaFlota from "./componentes/PantallaFlota.svelte";
   import PantallaMas from "./componentes/PantallaMas.svelte";
+  import { cuentasDeNavegacion } from "./componentes/insignias.ts";
   import { TEXTO_MARCO, TEXTO_MAS, TEXTO_NAVEGACION, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { OpcionConductor } from "./componentes/tipos.ts";
   import { aHash, migasDe, nombreDePantalla, rutaPorDefecto, type Ruta } from "./lib/estado/enrutador.ts";
   import { formatearFechaConDia } from "./lib/dominio/fechas.ts";
-  import { NOMBRES_DE_PANTALLA, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_PANTALLA, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
+  import { NOMBRES_DE_PANTALLA, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_DESCARGA, TEXTO_ERROR_PANTALLA, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
   import { app } from "./lib/estado/instancia.ts";
 
   const TITULO_BASE = `${TEXTO_MARCO.nombreApp} (demo)`;
@@ -123,17 +124,8 @@
   }
 
   // ---------- Navegación: destinos, insignias, «Atrás» y migas ----------
-  // Cuentas de las insignias: lo que ya calcula el dominio (alertas críticas, vencidos o faltantes, pendientes de operación).
-  const cuentas = $derived.by(() => {
-    const resumen = app.alertas?.resumen;
-    const operacion = resumen?.operacion;
-    return {
-      criticas: resumen?.criticas ?? 0,
-      vencidos: resumen?.porGrupo.vencidos ?? 0,
-      checklists: (operacion?.["parte-sin-enviar"] ?? 0) + (operacion?.["sin-parte"] ?? 0),
-      novedades: (operacion?.["novedad-critica"] ?? 0) + (operacion?.["novedad-abierta"] ?? 0),
-    };
-  });
+  // Cuentas de las insignias: las mismas cifras de Inicio y las dos solapas de Operación diaria (`app.centroDeAlertas`), no un cálculo aparte.
+  const cuentas = $derived(cuentasDeNavegacion(app.centroDeAlertas));
 
   /** Qué destino de la navegación contiene la pantalla actual. `parte` es de Operación (encargado) o de Hoy (conductor). */
   function seccionDe(ruta: Ruta, conductor: boolean): string | null {
@@ -172,7 +164,7 @@
     const solapa = app.ruta.tipo === "operacion" ? app.ruta.solapa : null;
     const pendientes = cuentas.checklists + cuentas.novedades;
     return {
-      inicio: { id: "inicio", href: aHash({ tipo: "inicio" }), texto: NOMBRES_DE_PANTALLA.inicio, icono: "inicio", actual: actual("inicio"), insignia: conInsignia(cuentas.criticas, t.insignias.alertasCriticas(cuentas.criticas), true) },
+      inicio: { id: "inicio", href: aHash({ tipo: "inicio" }), texto: NOMBRES_DE_PANTALLA.inicio, icono: "inicio", actual: actual("inicio"), insignia: conInsignia(cuentas.noDisponibles, `${cuentas.rotuloNoDisponibles}: ${cuentas.noDisponibles}`, true) },
       movilidades: { id: "movilidades", href: aHash({ tipo: "movilidades" }), texto: NOMBRES_DE_PANTALLA.movilidades, icono: "unidad", actual: actual("movilidades") },
       vencimientos: { id: "vencimientos", href: aHash({ tipo: "vencimientos" }), texto: NOMBRES_DE_PANTALLA.vencimientos, icono: "calendario", actual: actual("vencimientos"), insignia: conInsignia(cuentas.vencidos, t.insignias.vencidosOFaltantes(cuentas.vencidos), true) },
       operacion: {
@@ -228,7 +220,7 @@
       : opcionActual === undefined
         ? ""
         : opcionActual.unidad === null
-          ? TEXTO_MARCO.conductorElegido(opcionActual.nombre)
+          ? TEXTO_MAS.verComo.conductorDescripcionSinUnidad(opcionActual.nombre)
           : TEXTO_MAS.verComo.conductorDescripcion(opcionActual.nombre, opcionActual.unidad),
   );
   const perfilDelLateral = $derived(esConductor ? TEXTO_NAVEGACION.conductorCorto(app.autor.split(" ")[0] ?? app.autor) : perfilTexto);
@@ -336,13 +328,14 @@
      <progress> indeterminado). Al desmontarse (llegó la pantalla, o se fue a otra) se devuelve el foco al título si había quedado pendiente. -->
 {#snippet cargandoPantalla()}
   <div class="preparando diferida" role="status" {@attach () => alLlegarLaPantalla}>
-    <p id="texto-cargando">{TEXTO_AVISO.preparando}</p>
+    <p id="texto-cargando">{TEXTO_MARCO.cargandoPantalla}</p>
     <progress aria-labelledby="texto-cargando"></progress>
   </div>
 {/snippet}
 
 {#snippet errorDeCarga()}
-  <h1 tabindex="-1" {@attach () => alMostrarseElErrorDeCarga()}>{TEXTO_ERROR_PANTALLA.titulo}</h1>
+  <h1 tabindex="-1" {@attach () => alMostrarseElErrorDeCarga()}>{TEXTO_ERROR_DESCARGA.titulo}</h1>
+  <p class="parrafo">{TEXTO_ERROR_DESCARGA.mensaje}</p>
   <div class="acciones-error">
     <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
   </div>
@@ -355,6 +348,8 @@
     items={itemsDelLateral}
     cargada={lista}
     inicioHref={aHash(rutaPorDefecto(app.perfil))}
+    masHref={aHash({ tipo: "mas" })}
+    masActual={app.ruta.tipo === "mas" ? "page" : undefined}
     perfilTexto={perfilDelLateral}
     alComoFunciona={abrirComoFunciona}
     alReiniciar={pedirReinicio}

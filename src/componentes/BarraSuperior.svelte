@@ -31,8 +31,6 @@
     alVerComo: () => void;
   } = $props();
 
-  // El texto fijo es «Demo con datos ficticios»: la primera palabra va en negrita y mayúsculas, como en el prototipo.
-  const [demo, ...resto] = TEXTO_MARCO.etiquetaDemo.split(" ");
 
   // El título entra cuando el h1 ya salió de la vista: ocupa el lugar de la marca. ~3,5 rem desde arriba.
   const UMBRAL_TITULO_PX = 56;
@@ -62,7 +60,7 @@
       </button>
     {/if}
   </div>
-  <p class="franja"><b>{demo}</b> <span>{resto.join(" ")}{cargada ? ` · ${fecha}` : ""}</span></p>
+  <p class="franja"><b>{TEXTO_MARCO.etiquetaDemoMarca}</b> <span>{TEXTO_MARCO.etiquetaDemoDatos}{cargada ? ` · ${fecha}` : ""}</span></p>
 </header>
 
 <style>
