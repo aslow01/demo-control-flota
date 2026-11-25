@@ -85,10 +85,10 @@ describe("textoVencimiento (V1 a V6)", () => {
 });
 
 describe("protagonista y disponibles (A8)", () => {
-  it("'N unidades no pueden salir hoy', con singular y con cero", () => {
-    expect(textoProtagonista(4)).toBe("4 unidades no pueden salir hoy");
-    expect(textoProtagonista(1)).toBe("1 unidad no puede salir hoy");
-    expect(textoProtagonista(0)).toBe("Todas las unidades activas pueden salir hoy");
+  it("'N unidades no disponibles hoy', con singular y con cero", () => {
+    expect(textoProtagonista(4)).toBe("4 unidades no disponibles hoy");
+    expect(textoProtagonista(1)).toBe("1 unidad no disponible hoy");
+    expect(textoProtagonista(0)).toBe("Todas las unidades activas están disponibles hoy");
   });
 
   it("'Disponibles hoy: 19 de 23 unidades activas.'", () => {
@@ -132,10 +132,10 @@ describe("otros textos de la interfaz", () => {
     expect(textoUltimoRegistro(null, null)).toBe("Sin registros");
   });
 
-  it("insignia de la pestaña de alertas", () => {
-    expect(textoInsigniaAlertas(4)).toBe("Alertas, 4 críticas");
-    expect(textoInsigniaAlertas(1)).toBe("Alertas, 1 crítica");
-    expect(textoInsigniaAlertas(0)).toBe("Alertas");
+  it("insignia de la pestaña Inicio", () => {
+    expect(textoInsigniaAlertas(4)).toBe("Inicio, 4 alertas críticas");
+    expect(textoInsigniaAlertas(1)).toBe("Inicio, 1 alerta crítica");
+    expect(textoInsigniaAlertas(0)).toBe("Inicio");
   });
 
   it("'Quedan N vencimientos' (barra de estado después de renovar)", () => {

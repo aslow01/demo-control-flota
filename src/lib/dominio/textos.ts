@@ -395,6 +395,28 @@ export const RESUMEN_EVENTO = {
 // Textos de estado de las pantallas (docs/diseno-ui.md, secciones 5.6, 6.1 y 7).
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * Cómo se llama cada pantalla (barra, título de la página, migas, «Volver a …»). Lo usa el enrutador desde la etapa E1; hasta entonces `nombreDePantalla` conserva los nombres viejos.
+ * `operacion` es la sección («Operación diaria»); sus dos solapas son «Checklists» y «Novedades». `conductor` es «Hoy» y `conductorPartes`, «Mis partes».
+ */
+export const NOMBRES_DE_PANTALLA = {
+  inicio: "Inicio",
+  movilidades: "Movilidades",
+  vencimientos: "Vencimientos",
+  operacion: "Operación diaria",
+  operacionChecklists: "Checklists",
+  operacionNovedades: "Novedades",
+  conductor: "Hoy",
+  conductorPartes: "Mis partes",
+  mas: "Más",
+  parte: "Parte diario",
+  desconocida: "Página no encontrada",
+  /** «Unidad ZK 214 BD» (la patente ya formateada). */
+  unidad: (patente: string) => `Unidad ${patente}`,
+  /** «Parte del miércoles 18/11/2026» (el día ya formateado). */
+  parteDelDia: (diaConFecha: string) => `Parte del ${diaConFecha}`,
+} as const;
+
 /** D3: la empresa de ejemplo con su CUIT, que siempre se muestra rotulado como ficticio (puede coincidir con uno real). */
 export function textoEmpresa(nombre: string, cuit: string): string {
   const digitos = cuit.replace(/[^0-9]/g, "");
@@ -402,10 +424,10 @@ export function textoEmpresa(nombre: string, cuit: string): string {
   return `${nombre} · CUIT ficticio ${escrito}`;
 }
 
-/** A8: el protagonista del centro de alertas. */
+/** A8: la cifra «No disponibles hoy» de Inicio (bloqueadas por documentos + fuera de servicio), dicha en una frase. */
 export function textoProtagonista(n: number): string {
-  if (n === 0) return "Todas las unidades activas pueden salir hoy";
-  return n === 1 ? "1 unidad no puede salir hoy" : `${n} unidades no pueden salir hoy`;
+  if (n === 0) return "Todas las unidades activas están disponibles hoy";
+  return n === 1 ? "1 unidad no disponible hoy" : `${n} unidades no disponibles hoy`;
 }
 
 /** A8: "Disponibles hoy: 19 de 23 unidades activas." */
@@ -416,7 +438,7 @@ export function textoDisponibles(disponibles: number, activas: number): string {
 /** 5.6: textos fijos del horizonte (los números van en `textoHorizonte`). */
 export const TEXTO_HORIZONTE = {
   /** Caja de vencidos de la variante completa y de la mediana (rótulo compacto). */
-  rotuloCajaCompleta: "Vencidos y faltantes",
+  rotuloCajaCompleta: "Vencidos o faltantes",
   rotuloCajaMediana: "Vencidos",
   /** Centrado sobre la pista sin marcas. */
   vacio: "Nada vence en los próximos 30 días",
@@ -445,10 +467,10 @@ export function textoUltimoRegistro(km: number | null, origen: string | null): s
   return `Último registro: ${formatearKm(km)} km (${origen}).`;
 }
 
-/** Texto accesible de la insignia de la pestaña "Alertas". */
+/** Texto accesible de la insignia de la pestaña "Inicio". */
 export function textoInsigniaAlertas(criticas: number): string {
-  if (criticas === 0) return "Alertas";
-  return `Alertas, ${pluralizar(criticas, "crítica", "críticas")}`;
+  if (criticas === 0) return "Inicio";
+  return `Inicio, ${pluralizar(criticas, "alerta crítica", "alertas críticas")}`;
 }
 
 /** Barra de estado después de renovar: "Quedan 10 vencimientos." */
@@ -540,14 +562,14 @@ export const TEXTO_PARTE = {
 } as const;
 
 // ---------------------------------------------------------------------------------------------
-// Centro de alertas (docs/diseno-ui.md, 6.1 y 7) y diálogos Renovar y Cargar documento (5.17). `redactor-ux` los revisa.
+// Inicio (antes «Centro de alertas»; docs/diseno-ui.md, 6.1 y 7) y diálogos Renovar y Cargar documento (5.17). `redactor-ux` los revisa.
 // ---------------------------------------------------------------------------------------------
 
-/** Rótulos fijos del centro de alertas (los que llevan números se arman con las funciones de abajo). */
+/** Rótulos fijos de Inicio (los que llevan números se arman con las funciones de abajo). */
 export const TEXTO_CENTRO = {
-  titulo: "Centro de alertas",
+  titulo: "Inicio",
   bajada: "Datos ficticios de una empresa inventada. Todo se guarda en este navegador.",
-  protagonista: "No pueden salir hoy",
+  protagonista: "No disponibles hoy",
   operacion: "Operación diaria",
   operacionVacia: "Sin pendientes de operación.",
   /** Barra de estado de «Operación diaria»: el botón-texto cambia la vista a Conductor, y el texto lo dice. */
@@ -562,7 +584,7 @@ export const TEXTO_CENTRO = {
 
 /** Títulos de los grupos de la lista de vencimientos (sin la cantidad) y rótulos cortos de los filtros (sección 7). */
 export const TEXTO_GRUPO_VENCIMIENTOS = {
-  vencidos: { titulo: "Vencidos y faltantes", filtro: "Vencidos y faltantes" },
+  vencidos: { titulo: "Vencidos o faltantes", filtro: "Vencidos o faltantes" },
   "7": { titulo: "Vencen en 7 días o menos", filtro: "7 días o menos" },
   "15": { titulo: "Vencen entre 8 y 15 días", filtro: "8 a 15 días" },
   "30": { titulo: "Vencen entre 16 y 30 días", filtro: "16 a 30 días" },
@@ -642,9 +664,9 @@ export function textoProtagonistaLector(n: number): string {
   return `${textoProtagonista(n)}.`;
 }
 
-/** «Ver las 9 en la flota». */
+/** «Ver las 9 no disponibles en Movilidades». */
 export function textoVerTodasEnLaFlota(n: number): string {
-  return `Ver las ${n} en la flota`;
+  return `Ver las ${n} no disponibles en Movilidades`;
 }
 
 /** Cabecera del panel de operación: «6 pendientes». */
@@ -652,9 +674,9 @@ export function textoPendientes(n: number): string {
   return pluralizar(n, "pendiente", "pendientes");
 }
 
-/** Cabecera del panel de vencimientos: «próximos 30 días · 9» (solo los que vencen en 30 días o menos; los vencidos y faltantes van aparte). */
+/** Cabecera del panel de vencimientos: «9 vencen en 30 días» (solo los que vencen en 30 días o menos; los vencidos o faltantes van aparte, con su propia cifra). */
 export function textoRotuloVencimientos(n: number): string {
-  return `próximos 30 días · ${n}`;
+  return `${n} ${n === 1 ? "vence" : "vencen"} en 30 días`;
 }
 
 /** Región `role="status"` del filtro (5.8): «Mostrando 4 de 11 vencimientos.». */
@@ -662,7 +684,7 @@ export function textoMostrando(mostrados: number, total: number): string {
   return `Mostrando ${mostrados} de ${pluralizar(total, "vencimiento", "vencimientos")}.`;
 }
 
-/** Título de un grupo con su cantidad: «Vencidos y faltantes (2)». */
+/** Título de un grupo con su cantidad: «Vencidos o faltantes (2)». */
 export function textoGrupoConCantidad(titulo: string, n: number): string {
   return `${titulo} (${n})`;
 }
@@ -735,7 +757,7 @@ export const TEXTO_CARGAR = {
 } as const;
 
 // ---------------------------------------------------------------------------------------------
-// Flota (docs/diseno-ui.md, 5.10 y 6.2) y diálogo «Agregar unidad» (5.17). `redactor-ux` los revisa.
+// Movilidades (antes «Flota»; docs/diseno-ui.md, 5.10 y 6.2) y diálogo «Agregar unidad» (5.17). `redactor-ux` los revisa.
 // ---------------------------------------------------------------------------------------------
 
 /** Cómo se llama cada tipo de unidad en la descripción de la fila y en el `select` «Tipo». */
@@ -748,17 +770,20 @@ export const NOMBRES_TIPO_UNIDAD: Record<TipoUnidad, string> = {
 
 /** Rótulos fijos de la flota (los que llevan números se arman con las funciones de abajo). */
 export const TEXTO_FLOTA = {
-  /** Título del panel (el `h1` de la pantalla es «Flota»). */
+  /** Título del panel (el `h1` de la pantalla es «Movilidades»). */
   panel: "Unidades",
   todosLosProyectos: "Todos",
-  /** Filtros por estado (5.8). «No disponibles» solo aparece cuando viene de «Ver las N en la flota». */
+  /**
+   * Filtros por estado (5.8), con el vocabulario único: «No disponibles hoy» = «Bloqueadas por documentos» + «Fuera de servicio».
+   * «No disponibles hoy» solo aparece cuando viene de «Ver las N no disponibles en Movilidades» (E2-P lo vuelve una pastilla más).
+   */
   filtros: {
     activas: "Activas",
-    "pueden-salir": "Pueden salir",
-    "no-pueden-salir": "No pueden salir",
+    "pueden-salir": "Disponibles",
+    "no-pueden-salir": "Bloqueadas por documentos",
     "fuera-de-servicio": "Fuera de servicio",
     "de-baja": "De baja",
-    "no-disponibles": "No disponibles",
+    "no-disponibles": "No disponibles hoy",
   },
   ordenes: {
     prioridad: "Prioridad",
@@ -769,8 +794,8 @@ export const TEXTO_FLOTA = {
   },
   /** Etiqueta de estado de la fila (5.7). */
   estado: {
-    "puede-salir": "Puede salir",
-    "no-puede-salir": "No puede salir",
+    "puede-salir": "Disponible",
+    "no-puede-salir": "Bloqueada",
     "fuera-de-servicio": "Fuera de servicio",
     baja: "De baja",
   },
@@ -781,19 +806,23 @@ export const TEXTO_FLOTA = {
   sinUnidades: "Todavía no hay unidades.",
 } as const;
 
-/** Línea bajo el título: «23 unidades activas · 19 pueden salir · 2 no pueden salir · 2 fuera de servicio · 1 de baja». */
+/**
+ * Línea bajo el título: «23 unidades activas · 19 disponibles · 4 no disponibles hoy (2 bloqueadas por documentos · 2 fuera de servicio) · 1 de baja».
+ * `noPueden` son las bloqueadas por documentos (el nombre del campo es de la lógica y no cambia en esta etapa).
+ */
 export function textoResumenFlota(r: { activas: number; pueden: number; noPueden: number; fuera: number; baja: number }): string {
+  const noDisponibles = r.noPueden + r.fuera;
   return [
     pluralizar(r.activas, "unidad activa", "unidades activas"),
-    `${r.pueden} ${r.pueden === 1 ? "puede" : "pueden"} salir`,
-    textoDesgloseNoDisponibles(r.noPueden, r.fuera),
+    `${r.pueden} ${r.pueden === 1 ? "disponible" : "disponibles"}`,
+    `${noDisponibles} ${noDisponibles === 1 ? "no disponible" : "no disponibles"} hoy (${textoDesgloseNoDisponibles(r.noPueden, r.fuera)})`,
     `${r.baja} de baja`,
   ].join(" · ");
 }
 
-/** «2 no pueden salir · 2 fuera de servicio»: lo comparten el resumen de la flota y el desglose del protagonista, así no pueden decir distinto. */
-export function textoDesgloseNoDisponibles(noPueden: number, fuera: number): string {
-  return `${noPueden} ${noPueden === 1 ? "no puede" : "no pueden"} salir · ${fuera} fuera de servicio`;
+/** «2 bloqueadas por documentos · 2 fuera de servicio»: lo comparten el resumen de Movilidades y el desglose de Inicio, así no pueden decir distinto. */
+export function textoDesgloseNoDisponibles(bloqueadas: number, fuera: number): string {
+  return `${bloqueadas} ${bloqueadas === 1 ? "bloqueada" : "bloqueadas"} por documentos · ${fuera} fuera de servicio`;
 }
 
 /** Segunda línea del estado: «y 1 motivo más», «y 2 motivos más». */
@@ -865,8 +894,8 @@ export const NOMBRES_COMBUSTIBLE = { reserva: "reserva", cuarto: "1/4", medio: "
 
 /** Rótulos fijos de la ficha (los que llevan datos se arman con las funciones de abajo). */
 export const TEXTO_FICHA = {
-  migaFlota: "Flota",
-  noEncontrada: { titulo: "No se encontró la unidad", enlace: "Ir a la flota" },
+  migaFlota: "Movilidades",
+  noEncontrada: { titulo: "No se encontró la unidad", enlace: "Ir a Movilidades" },
   acciones: {
     cargarParte: "Cargar parte",
     /** C16: el primer botón según el parte (con el de hoy en uso, cerrado, o con uno anterior sin cerrar). */
@@ -1376,7 +1405,7 @@ export const TEXTO_PANTALLA_PARTE = {
   descartar: "Descartar borrador",
   conductorEtiqueta: "Conductor",
   conductorSinElegir: "Elija quién conduce",
-  vueltaConductor: "Parte diario",
+  vueltaConductor: "Hoy",
   vueltaFicha: (patente: string) => `Ficha de ${patente}`,
   impideUso: "Impide usar la unidad",
   otraNovedad: "Otra novedad (opcional)",
@@ -1392,7 +1421,7 @@ export const TEXTO_PANTALLA_PARTE = {
   completarCierreAhora: "Completar el cierre ahora",
   completarCierre: "Completar el cierre",
   verLaRevision: "Ver la revisión",
-  encargadoLaVe: "El encargado la ve en el centro de alertas.",
+  encargadoLaVe: "El encargado la ve en Inicio.",
   alTerminarVuelva: "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible.",
   /** C1 de un parte de un día pasado: la jornada ya terminó (C4 de la revisión visual). */
   faltaCerrarJornadaPasada: "Falta cerrar este parte con el kilometraje y el combustible de esa jornada.",

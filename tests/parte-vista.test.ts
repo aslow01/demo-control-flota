@@ -540,7 +540,7 @@ describe("pantalla del parte, edición (6.5)", () => {
       parteId: null,
       borrador: null,
       conductor: { tipo: "fijo", id: "c1", nombre: "Luis Ferreyra" },
-      vuelta: { texto: "Parte diario", href: "#/conductor" },
+      vuelta: { texto: "Hoy", href: "#/conductor" },
       ayudaKmInicio: "Último registro: 84.320 km (parte del 17/11/2026).",
       ayudaKmFin: "Lo que marca el tablero al terminar la jornada.",
       ayudaLitros: "Déjelo vacío si no cargó.",
@@ -843,7 +843,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     const { estado, parte: p } = enUso(flotaDePrueba(), { checklist });
     const c1 = panelDeRevisionEnviada(estado, p, COND, H);
     expect(c1.filas[1]).toEqual({ rotulo: "Novedades", valor: "1 normal: Niveles de aceite y agua" });
-    expect(c1.notaEncargado).toBe("El encargado la ve en el centro de alertas.");
+    expect(c1.notaEncargado).toBe("El encargado la ve en Inicio.");
     const tarde = panelDeRevisionEnviada(estado, { ...p, fecha: "2026-11-17", revisado: "2026-11-18T11:10:00.000Z" }, COND, H);
     expect(tarde.linea).toBe("Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de plazo).");
   });

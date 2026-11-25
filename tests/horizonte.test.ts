@@ -91,7 +91,7 @@ describe("variante completa con el ejemplo del generador (semilla 20261118, 2026
 
   it("la caja de vencidos y faltantes dice 3", () => {
     expect(h.vencidos).toBe(3);
-    expect(h.cajaVencidos).toEqual({ rotulo: "Vencidos y faltantes", cifra: 3, conAlerta: true });
+    expect(h.cajaVencidos).toEqual({ rotulo: "Vencidos o faltantes", cifra: 3, conAlerta: true });
   });
 
   it("los conteos coinciden con el resumen de alertas", () => {
@@ -195,7 +195,7 @@ describe("pista vacía", () => {
     expect(h.vacio).toBe(true);
     expect(h.textoVacio).toBe("Nada vence en los próximos 30 días");
     expect(h.etiquetaAria).toBe("Nada vence en los próximos 30 días.");
-    expect(h.cajaVencidos).toEqual({ rotulo: "Vencidos y faltantes", cifra: 0, conAlerta: false });
+    expect(h.cajaVencidos).toEqual({ rotulo: "Vencidos o faltantes", cifra: 0, conAlerta: false });
   });
 
   it("solo vencidos: la pista está vacía pero la caja y el aria-label lo dicen", () => {

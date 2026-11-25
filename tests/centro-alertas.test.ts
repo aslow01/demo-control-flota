@@ -29,12 +29,12 @@ describe("encabezado (6.1)", () => {
   });
 });
 
-describe("protagonista «No pueden salir hoy» con el ejemplo", () => {
+describe("protagonista «No disponibles hoy» con el ejemplo", () => {
   it("son 4 unidades, en tono crítico, con la frase para lectores en un solo texto", () => {
     expect(c.protagonista.cifra).toBe(4);
     expect(c.protagonista.palabra).toBe("unidades");
     expect(c.protagonista.tono).toBe("critico");
-    expect(c.protagonista.textoLector).toBe("4 unidades no pueden salir hoy: 2 no pueden salir, 2 fuera de servicio.");
+    expect(c.protagonista.textoLector).toBe("4 unidades no disponibles hoy: 2 bloqueadas por documentos, 2 fuera de servicio.");
     expect(c.protagonista.disponibles).toBe("Disponibles hoy: 19 de 23 unidades activas.");
     expect(c.protagonista.masEnLaFlota).toBeNull();
   });
@@ -70,7 +70,7 @@ describe("protagonista «No pueden salir hoy» con el ejemplo", () => {
     }
   });
 
-  it("muestra hasta 6 y ofrece «Ver las N en la flota» con el total", () => {
+  it("muestra hasta 6 y ofrece «Ver las N no disponibles en Movilidades» con el total", () => {
     const enServicio = e.unidades.filter((u) => u.estado.tipo === "en-servicio").slice(0, 8);
     const ids = new Set(enServicio.map((u) => u.id));
     const muchas: Estado = {
@@ -85,7 +85,7 @@ describe("protagonista «No pueden salir hoy» con el ejemplo", () => {
     expect(MAX_PROTAGONISTA).toBe(6);
     expect(p.items).toHaveLength(6);
     expect(p.cifra).toBeGreaterThan(6);
-    expect(p.masEnLaFlota).toEqual({ texto: `Ver las ${p.cifra} en la flota`, href: "#/flota?filtro=no-disponibles" });
+    expect(p.masEnLaFlota).toEqual({ texto: `Ver las ${p.cifra} no disponibles en Movilidades`, href: "#/flota?filtro=no-disponibles" });
   });
 
   it("con 0 es vigente, dice que todas pueden salir y no lista unidades", () => {
@@ -94,7 +94,7 @@ describe("protagonista «No pueden salir hoy» con el ejemplo", () => {
       cifra: 0,
       palabra: "unidades",
       tono: "vigente",
-      textoLector: "Todas las unidades activas pueden salir hoy.",
+      textoLector: "Todas las unidades activas están disponibles hoy.",
       items: [],
       masEnLaFlota: null,
       disponibles: "Disponibles hoy: 2 de 2 unidades activas.",
@@ -111,7 +111,7 @@ describe("protagonista «No pueden salir hoy» con el ejemplo", () => {
     };
     const p = centroDe(una).protagonista;
     expect(p.palabra).toBe("unidad");
-    expect(p.textoLector).toBe("1 unidad no puede salir hoy: 0 no pueden salir, 1 fuera de servicio.");
+    expect(p.textoLector).toBe("1 unidad no disponible hoy: 0 bloqueadas por documentos, 1 fuera de servicio.");
   });
 });
 
@@ -170,22 +170,22 @@ describe("vencimientos con el ejemplo: 12 en los grupos esperados", () => {
 
   it("total 12 («Todos») y rótulo del panel de 9: los 3 vencidos o faltantes no vencen «en los próximos 30 días»", () => {
     expect(v.total).toBe(12);
-    expect(v.rotuloCantidad).toBe("próximos 30 días · 9");
+    expect(v.rotuloCantidad).toBe("9 vencen en 30 días");
   });
 
   it("grupos: 3 vencidos y faltantes, 4 en 7 días o menos, 3 entre 8 y 15, 2 entre 16 y 30", () => {
     expect(v.grupos.map((g) => [g.id, g.cantidad, g.filas.length, g.tituloConCantidad])).toEqual([
-      ["vencidos", 3, 3, "Vencidos y faltantes (3)"],
+      ["vencidos", 3, 3, "Vencidos o faltantes (3)"],
       ["7", 4, 4, "Vencen en 7 días o menos (4)"],
       ["15", 3, 3, "Vencen entre 8 y 15 días (3)"],
       ["30", 2, 2, "Vencen entre 16 y 30 días (2)"],
     ]);
   });
 
-  it("filtros con conteo: Todos 12, Vencidos y faltantes 3, 7 días o menos 4, 8 a 15 días 3, 16 a 30 días 2", () => {
+  it("filtros con conteo: Todos 12, Vencidos o faltantes 3, 7 días o menos 4, 8 a 15 días 3, 16 a 30 días 2", () => {
     expect(v.filtros.map((f) => [f.id, f.etiqueta, f.cantidad])).toEqual([
       ["todos", "Todos", 12],
-      ["vencidos", "Vencidos y faltantes", 3],
+      ["vencidos", "Vencidos o faltantes", 3],
       ["7", "7 días o menos", 4],
       ["15", "8 a 15 días", 3],
       ["30", "16 a 30 días", 2],

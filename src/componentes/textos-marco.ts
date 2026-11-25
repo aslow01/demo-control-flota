@@ -17,9 +17,9 @@ export const TEXTO_MARCO = {
   volverAlPortafolioCorto: "← Portafolio",
   menuMas: "Más",
   navegacionSecciones: "Secciones",
-  pestanaAlertas: "Alertas",
-  pestanaFlota: "Flota",
-  pestanaParteDeHoy: "Parte diario",
+  pestanaAlertas: "Inicio",
+  pestanaFlota: "Movilidades",
+  pestanaParteDeHoy: "Hoy",
   verComo: "Ver como",
   perfilEncargado: "Encargado",
   perfilConductor: "Conductor",
@@ -86,7 +86,7 @@ export const TEXTO_COMO_FUNCIONA = {
     {
       etiqueta: "Vencido o faltante",
       texto:
-        "El documento venció o, si es obligatorio, falta cargarlo. Si es de la unidad, la unidad figura como «No puede salir». Si es la licencia del conductor, no puede enviar la revisión ni salir con ninguna unidad.",
+        "El documento venció o, si es obligatorio, falta cargarlo. Si es de la unidad, la unidad figura como «Bloqueada». Si es la licencia del conductor, no puede enviar la revisión ni salir con ninguna unidad.",
     },
     { etiqueta: "7 días o menos", texto: "Vence hoy o en los próximos 7 días. Hasta el día del vencimiento incluido, la unidad puede salir." },
     { etiqueta: "8 a 15 días", texto: "Hay que planificar la renovación." },
@@ -112,9 +112,9 @@ export const TEXTO_PIE = {
   volverAlPortafolio: "Volver al portafolio",
 } as const;
 
-/** Centro de alertas (6.1): lo que dice la pantalla y no sale del dominio. Los textos de las alertas y de los diálogos vienen de `textos.ts`. */
+/** Inicio, antes «Centro de alertas» (6.1): lo que dice la pantalla y no sale del dominio. Los textos de las alertas y de los diálogos vienen de `textos.ts`. */
 export const TEXTO_ALERTAS = {
-  /** M6: bajo el título, lo que cuenta la insignia de la pestaña «Alertas» (alertas críticas: documentos vencidos o faltantes y novedades críticas abiertas). Con 0 no se muestra. */
+  /** M6: bajo el título, lo que cuenta la insignia de la pestaña «Inicio» (alertas críticas: documentos vencidos o faltantes y novedades críticas abiertas). Con 0 no se muestra. */
   criticas: (n: number) => `${n} ${n === 1 ? "alerta crítica" : "alertas críticas"}: documentos vencidos o faltantes y novedades críticas abiertas.`,
   /** Dato breve del panel del protagonista: «al 18/11/2026». */
   alFecha: (fecha: string) => `al ${fecha}`,
@@ -152,7 +152,7 @@ export const TEXTO_DIALOGO_DOCUMENTO = {
   guardando: "Guardando…",
 } as const;
 
-/** Flota (6.2): rótulos de la pantalla que no salen del dominio. Los filtros, los órdenes, los estados y los textos de cada fila vienen de `textos.ts`. */
+/** Movilidades, antes «Flota» (6.2): rótulos de la pantalla que no salen del dominio. Los filtros, los órdenes, los estados y los textos de cada fila vienen de `textos.ts`. */
 export const TEXTO_FLOTA_VISTA = {
   agregarUnidad: "Agregar unidad",
   /** Rótulo del campo de búsqueda (visible con poco ancho; el marcador, más corto, dice qué se puede buscar y no se corta a 360 px). */
@@ -207,7 +207,7 @@ export const TEXTO_DIALOGO_UNIDAD = {
 /** Ficha de unidad (6.3): rótulos de la pantalla que no salen del dominio. Los títulos de los paneles, las acciones, los estados y los textos de cada fila vienen de `textos.ts`. */
 export const TEXTO_FICHA_VISTA = {
   rutaEtiqueta: "Ruta",
-  motivosDe: "Motivos por los que no puede salir",
+  motivosDe: "Motivos por los que no está disponible",
   datos: { proyecto: "Proyecto", conductor: "Conductor", kilometraje: "Kilometraje", sinConductor: "Sin conductor", sinProyecto: "—" },
   mostrar: "Mostrar",
   /** Se quiso abrir un diálogo de algo que ya cambió (otra pestaña, o la ficha estaba desactualizada). */
@@ -364,5 +364,59 @@ export const TEXTO_PARTE_VISTA = {
     revision: "Revisión de la unidad",
     sinConductor: "Sin conductor",
     critica: "crítica",
+  },
+} as const;
+
+/**
+ * Marco nuevo «tipo app» (etapa E1, `maquetador`): barra inferior, lateral, barra superior móvil, migas. Todavía no lo usa ninguna pantalla.
+ * Los nombres de las pantallas salen de `NOMBRES_DE_PANTALLA` (dominio/textos.ts): acá no se repiten.
+ */
+export const TEXTO_NAVEGACION = {
+  /** Nombre accesible de la barra inferior y del lateral. */
+  secciones: "Secciones",
+  /** Nombre accesible de las migas de pan (escritorio). */
+  migas: "Ruta",
+  /** «Operación diaria» se corta a «Operación» en la barra inferior y en el botón de volver; el resto del nombre lo lee el lector de pantalla. */
+  operacionCorto: "Operación",
+  operacionOculto: " diaria",
+  /** Botón de la barra superior móvil: visible «Movilidades», nombre accesible «Volver a Movilidades». */
+  volverA: (nombre: string) => `Volver a ${nombre}`,
+  atras: "Atrás",
+  /** Insignias: se leen después del nombre de la sección («Inicio, 4 alertas críticas»). */
+  insignias: {
+    alertasCriticas: (n: number) => (n === 1 ? "1 alerta crítica" : `${n} alertas críticas`),
+    pendientes: (n: number) => (n === 1 ? "1 pendiente" : `${n} pendientes`),
+    vencidosOFaltantes: (n: number) => (n === 1 ? "1 vencido o faltante" : `${n} vencidos o faltantes`),
+    abiertas: (n: number) => (n === 1 ? "1 abierta" : `${n} abiertas`),
+  },
+  /** Chip del perfil en la barra superior: «Ver como: Encargado. Cambiar perfil». */
+  chipPerfil: (perfil: string) => `Ver como: ${perfil}. Cambiar perfil`,
+  /** Lateral: «Conductor · Tamara» (solo el nombre de pila). */
+  conductorCorto: (nombreDePila: string) => `Conductor · ${nombreDePila}`,
+} as const;
+
+/** Pantalla «Más» y diálogo «Ver como» del marco nuevo (E1). */
+export const TEXTO_MAS = {
+  verComo: {
+    titulo: "Ver como",
+    /** Ayuda de la pantalla «Más». */
+    ayuda: "Es solo un punto de vista de la demo: no hay usuarios ni contraseñas.",
+    /** Ayuda del diálogo: el cambio se confirma con «Aplicar». */
+    ayudaDialogo: "Es solo un punto de vista de la demo: no hay usuarios ni contraseñas. El cambio se aplica al pulsar «Aplicar».",
+    cambiarPerfil: "Cambiar perfil",
+    aplicar: "Aplicar",
+    cancelar: "Cancelar",
+    leyendaPerfil: "Perfil",
+    encargadoAyuda: "Perfil de entrada",
+    conductorAyuda: "Completa el parte diario",
+    /** Debajo del perfil actual en «Más». */
+    encargadoDescripcion: "Inicio, movilidades, vencimientos y operación diaria.",
+    conductorDescripcion: (nombre: string, patente: string) => `${nombre} (persona ficticia) · unidad ${patente}`,
+  },
+  laDemo: {
+    titulo: "La demo",
+    comoFunciona: { rotulo: "Cómo funciona", ayuda: "Qué vence y cuándo, el parte diario y dónde se guardan los datos" },
+    reiniciar: { rotulo: "Reiniciar demo", ayuda: "Borra los cambios y vuelve a la flota de ejemplo" },
+    portafolio: { rotulo: "Volver al portafolio", ayuda: "matiasormeno.com.ar" },
   },
 } as const;
