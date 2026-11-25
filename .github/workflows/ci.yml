@@ -27,6 +27,8 @@ jobs:
       # La matriz completa de zonas horarias: UTC, Asia/Tokyo y America/Los_Angeles.
       - run: npm run test:tz
       - run: npm run build
+      # Peso del JS con gzip nivel 9: falla si la carga inicial pasa 120.000 B; el total solo avisa (docs/stack.md, sección 5).
+      - run: npm run peso
       # Sin {@html}, sin Math.random en src/lib, sin reloj fuera de estado/reloj.ts, sin correos que no sean de ejemplo (los nombres de terceros solo se buscan en local).
       - run: npm run buscar
       # Sin altas ni críticas (el 18/11/2026 el aviso de `picomatch`, GHSA-fc5q-39xc-vjpf, dejó de alcanzar a la 4.0.7).
