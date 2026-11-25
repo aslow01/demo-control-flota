@@ -372,6 +372,36 @@ describe("Vencimientos como pantalla: filtros por enlace (3.5 y 3.7)", () => {
   });
 });
 
+describe("filas de Inicio: estado de cada unidad y destino de cada fila de operación", () => {
+  it("cada unidad no disponible dice «Bloqueada» o «Fuera de servicio»", () => {
+    expect(c.protagonista.items.map((i) => [i.categoria, i.etiqueta])).toEqual([
+      ["no-puede-salir", "Bloqueada"],
+      ["no-puede-salir", "Bloqueada"],
+      ["fuera-de-servicio", "Fuera de servicio"],
+      ["fuera-de-servicio", "Fuera de servicio"],
+    ]);
+  });
+
+  it("cada fila del panel de operación lleva a la solapa de su tipo", () => {
+    expect(c.operacion.filas.map((f) => [f.tipo, f.solapa, f.href])).toEqual([
+      ["novedad-critica", "novedades", "#/operacion/novedades"],
+      ["parte-sin-enviar", "checklists", "#/operacion/checklists"],
+      ["sin-parte", "checklists", "#/operacion/checklists"],
+      ["novedad-abierta", "novedades", "#/operacion/novedades"],
+    ]);
+  });
+
+  it("las solapas y las filas de Inicio reparten lo mismo: cada alerta de operación está en la solapa a la que lleva su fila", () => {
+    for (const f of c.operacion.filas) {
+      const s = c.operacionDiaria.solapas.find((x) => x.id === f.solapa);
+      expect(s?.href, f.tipo).toBe(f.href);
+    }
+    const porSolapa = (id: "checklists" | "novedades") => c.operacion.filas.filter((f) => f.solapa === id).reduce((n, f) => n + f.cifra, 0);
+    expect(porSolapa("checklists")).toBe(c.operacionDiaria.solapas[0].cantidad);
+    expect(porSolapa("novedades")).toBe(c.operacionDiaria.solapas[1].cantidad);
+  });
+});
+
 describe("coherencia entre Inicio, Movilidades y las listas (3.5)", () => {
   it("«No disponibles hoy» de Inicio cuenta lo mismo que la pastilla homónima de Movilidades, y su enlace lleva a esa pastilla", () => {
     const flota = panelDeFlota(e, r, H);

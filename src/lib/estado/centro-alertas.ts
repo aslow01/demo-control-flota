@@ -19,6 +19,7 @@ import {
   TEXTO_CONDUCTORES_SIN_LICENCIA as TCL,
   TEXTO_GRUPO_OPERACION,
   TEXTO_ESTADO_PARTE_INCOMPLETO,
+  TEXTO_FLOTA,
   TEXTO_GRUPO_VENCIMIENTOS,
   TEXTO_INICIO,
   TEXTO_LEYENDA_HORIZONTE,
@@ -70,6 +71,13 @@ const TIPOS_OPERACION: readonly TipoAlertaOperacion[] = [
   "sin-parte",
   "novedad-abierta",
 ];
+/** En qué solapa de Operación diaria se ve cada tipo: los partes en Checklists y las novedades en Novedades. */
+const SOLAPA_DE_TIPO: Record<TipoAlertaOperacion, SolapaDeOperacion> = {
+  "novedad-critica": "novedades",
+  "novedad-abierta": "novedades",
+  "parte-sin-enviar": "checklists",
+  "sin-parte": "checklists",
+};
 const TONO_GRUPO: Record<Grupo, "critico" | "semana" | "quincena" | "mes"> = { vencidos: "critico", "7": "semana", "15": "quincena", "30": "mes" };
 
 // --- Tipos ---------------------------------------------------------------------------------------
@@ -89,6 +97,8 @@ export interface UnidadDelProtagonista {
   patenteTexto: string;
   interno: string;
   categoria: "no-puede-salir" | "fuera-de-servicio";
+  /** «Bloqueada» · «Fuera de servicio»: la misma etiqueta que lleva la fila en Movilidades. */
+  etiqueta: string;
   /** El primero de `motivos`. */
   motivo: string;
   motivos: string[];
@@ -145,8 +155,11 @@ export interface FilaOperacionDiaria {
   cifra: number;
   texto: string;
   gravedad: Gravedad;
-  /** Id del grupo del detalle (`h3`) al que lleva «Ver». */
+  /** Id del grupo del detalle (`h3`) al que lleva «Ver» en la pantalla vieja. */
   idGrupo: string;
+  /** La solapa de Operación diaria donde está este tipo, y su dirección: adonde lleva la fila en Inicio. */
+  solapa: SolapaDeOperacion;
+  href: string;
 }
 
 export interface PanelOperacion {
@@ -421,6 +434,7 @@ function armarProtagonista(estado: Estado, r: ResultadoAlertas, hoy: FechaCivil)
           patenteTexto: formatearPatente(u.patente),
           interno: textoInterno(u.interno),
           categoria,
+          etiqueta: TEXTO_FLOTA.estado[categoria],
           motivo: motivos[0] ?? "",
           motivos,
           href: href(u.patente),
@@ -494,6 +508,8 @@ function armarOperacion(r: ResultadoAlertas, hoy: FechaCivil): PanelOperacion {
       texto,
       gravedad: delTipo[0]?.gravedad ?? "media",
       idGrupo: idGrupoDeOperacion(tipo),
+      solapa: SOLAPA_DE_TIPO[tipo],
+      href: aHash({ tipo: "operacion", solapa: SOLAPA_DE_TIPO[tipo] }),
     });
   }
   const total = r.resumen.totalOperacion;
