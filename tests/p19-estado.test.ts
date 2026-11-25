@@ -89,7 +89,7 @@ describe("P19 ampliada: una crítica cargada a mano y reparada el mismo día tam
     const r = calcularAlertas(e, H);
     const f = fichaDeUnidad(e, r, H, "ZK214BD", ENC);
     if (!f.encontrada) throw new Error("sin ficha");
-    expect(f.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir", motivos: [MOTIVO] });
+    expect(f.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "Bloqueada", motivos: [MOTIVO] });
     expect(panelDeFlota(e, r, H).filas.find((x) => x.patente === "ZK214BD")?.estado).toMatchObject({ categoria: "no-puede-salir" });
     expect(centroDeAlertas(e, r, H, "Empresa de ejemplo").protagonista.items.find((x) => x.patente === "ZK214BD")).toMatchObject({ categoria: "no-puede-salir", motivo: MOTIVO });
   });
@@ -151,16 +151,16 @@ describe("todas las vistas dicen lo mismo", () => {
   const e = resueltoYDevuelto();
   const r = calcularAlertas(e, H);
 
-  it("la ficha: «No puede salir» con el motivo, y el primer botón sigue siendo «Ver el parte»", () => {
+  it("la ficha: «Bloqueada» con el motivo, y el primer botón sigue siendo «Ver el parte»", () => {
     const f = fichaDeUnidad(e, r, H, "ZK214BD", ENC);
     if (!f.encontrada) throw new Error("sin ficha");
-    expect(f.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir", motivos: [MOTIVO], linea: MOTIVO });
+    expect(f.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "Bloqueada", motivos: [MOTIVO], linea: MOTIVO });
     expect(f.acciones.encabezado[0]).toMatchObject({ id: "cargar-parte", etiqueta: "Ver el parte" });
   });
 
-  it("la flota: la fila no dice «Puede salir»", () => {
+  it("la flota: la fila no dice «Disponible»", () => {
     const fila = panelDeFlota(e, r, H).filas.find((x) => x.patente === "ZK214BD");
-    expect(fila?.estado).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir" });
+    expect(fila?.estado).toMatchObject({ categoria: "no-puede-salir", etiqueta: "Bloqueada" });
     expect(fila?.estado.motivos).toEqual([MOTIVO]);
   });
 
@@ -173,7 +173,7 @@ describe("todas las vistas dicen lo mismo", () => {
     expect(inicioDelConductor(e, r, H, COND)?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: "Aunque el encargado resuelva la novedad hoy, la unidad no vuelve a salir hasta mañana." });
   });
 
-  it("mañana, la ficha y la flota dicen «Puede salir»", () => {
+  it("mañana, la ficha y la flota dicen «Disponible»", () => {
     const rm = calcularAlertas(e, MANANA);
     const f = fichaDeUnidad(e, rm, MANANA, "ZK214BD", ENC);
     if (!f.encontrada) throw new Error("sin ficha");

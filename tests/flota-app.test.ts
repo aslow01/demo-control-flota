@@ -67,7 +67,7 @@ describe("la flota en la aplicación (aceptación del paso 4.3)", () => {
     const p = panelDe(t);
     expect(p.filas).toHaveLength(24);
     expect(p.cantidad).toBe(23);
-    expect(p.resumen).toBe("23 unidades activas · 19 pueden salir · 2 no pueden salir · 2 fuera de servicio · 1 de baja");
+    expect(p.resumen).toBe("23 unidades activas · 19 disponibles · 4 no disponibles hoy (2 bloqueadas por documentos · 2 fuera de servicio) · 1 de baja");
   });
 
   it("la búsqueda «zk214» encuentra ZK 214 BD", async () => {
@@ -93,11 +93,11 @@ describe("la flota en la aplicación (aceptación del paso 4.3)", () => {
     const r = await app.ejecutar({ tipo: "ponerFueraDeServicio", unidadId: u.id, motivo: "En taller: prueba" });
     expect(r.ok).toBe(true);
     expect(panelDe(app).filas.find((f) => f.patente === "ZYN469")?.estado.categoria).toBe("fuera-de-servicio");
-    expect(panelDe(app).resumen).toBe("23 unidades activas · 18 pueden salir · 2 no pueden salir · 3 fuera de servicio · 1 de baja");
+    expect(panelDe(app).resumen).toBe("23 unidades activas · 18 disponibles · 5 no disponibles hoy (2 bloqueadas por documentos · 3 fuera de servicio) · 1 de baja");
   });
 });
 
-describe("el filtro viene de la ruta («Ver las N en la flota»)", () => {
+describe("el filtro viene de la ruta («Ver las N no disponibles en Movilidades»)", () => {
   it("#/flota?filtro=no-disponibles abre la flota con ese filtro y la barra de direcciones queda como está", async () => {
     const { app, ubicacion } = await iniciada(new RepositorioMemoria(), "#/flota?filtro=no-disponibles");
     expect(app.ruta).toEqual({ tipo: "flota", filtro: "no-disponibles" });
@@ -144,7 +144,7 @@ describe("Agregar unidad: se guarda y aparece con sus faltantes (U5)", () => {
     expect(r.ok && r.mensaje).toBe("Unidad agregada. Le faltan 3 documentos: cárguelos desde aquí.");
   });
 
-  it("aparece en la flota: «No puede salir», con el primer faltante y «y 3 motivos más»; y se encuentra buscando", async () => {
+  it("aparece en la flota: «Bloqueada», con el primer faltante y «y 3 motivos más»; y se encuentra buscando", async () => {
     const { app } = await iniciada();
     await app.agregarUnidad(NUEVA);
     const p = panelDe(app);
@@ -166,7 +166,7 @@ describe("Agregar unidad: se guarda y aparece con sus faltantes (U5)", () => {
     expect(patentes(p, { filtro: "no-pueden-salir" })).toContain("ZK999AA");
   });
 
-  it("aparece en el centro de alertas: 5 unidades que no pueden salir y 4 faltantes más (2 + 4 = 6 vencidos y faltantes)", async () => {
+  it("aparece en el centro de alertas: 5 unidades que no pueden salir y 4 faltantes más (2 + 4 = 6 vencidos o faltantes)", async () => {
     const { app } = await iniciada();
     await app.agregarUnidad(NUEVA);
     const c = centroDe(app);

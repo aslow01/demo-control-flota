@@ -22,7 +22,7 @@ describe("unidades que hoy no salen: Inicio y Flota dicen lo mismo", () => {
     expect(noPueden).toBe(resumen.noPuedenSalir.length);
     expect(fuera).toBe(resumen.fueraDeServicio.length);
     expect(centro.protagonista.cifra).toBe(noPueden + fuera);
-    // «Ver las N en la flota» lleva a un filtro que lista exactamente esas N.
+    // «Ver las N no disponibles en Movilidades» lleva a un filtro que lista exactamente esas N.
     expect(vistaDeFlota(flota, { ...CONSULTA_INICIAL, filtro: "no-disponibles" }).total).toBe(centro.protagonista.cifra);
   });
 
@@ -33,7 +33,7 @@ describe("unidades que hoy no salen: Inicio y Flota dicen lo mismo", () => {
   });
 
   it("el lector escucha una sola frase: la cifra y su desglose, sin repetir la línea visual", () => {
-    expect(centro.protagonista.textoLector).toBe("4 unidades no pueden salir hoy: 2 no pueden salir, 2 fuera de servicio.");
+    expect(centro.protagonista.textoLector).toBe("4 unidades no disponibles hoy: 2 bloqueadas por documentos, 2 fuera de servicio.");
   });
 
   it("con una unidad en cada grupo, singular en el desglose y la suma sigue cerrando", () => {
@@ -44,8 +44,8 @@ describe("unidades que hoy no salen: Inicio y Flota dicen lo mismo", () => {
     expect(una).toBeDefined();
     expect(otra).toBeDefined();
     expect(p.cifra).toBe(2);
-    expect(p.desglose).toBe("1 no puede salir · 1 fuera de servicio");
-    expect(p.textoLector).toBe("2 unidades no pueden salir hoy: 1 no puede salir, 1 fuera de servicio.");
+    expect(p.desglose).toBe("1 bloqueada por documentos · 1 fuera de servicio");
+    expect(p.textoLector).toBe("2 unidades no disponibles hoy: 1 bloqueada por documentos, 1 fuera de servicio.");
     const panel = panelDeFlota(dos, calcularAlertas(dos, H), H);
     expect(panel.resumen).toContain(p.desglose);
   });
@@ -66,7 +66,7 @@ describe("vencimientos: «próximos 30 días» no cuenta lo ya vencido", () => {
   });
 
   it("el número del rótulo es solo lo que vence en 30 días o menos", () => {
-    expect(v.rotuloCantidad).toBe(`próximos 30 días · ${g["7"] + g["15"] + g["30"]}`);
+    expect(v.rotuloCantidad).toBe(`${g["7"] + g["15"] + g["30"]} vencen en 30 días`);
   });
 
   it("los subtotales de los filtros suman «Todos» y los grupos no se solapan", () => {

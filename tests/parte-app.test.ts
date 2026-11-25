@@ -1,6 +1,6 @@
 // Paso 4.5 (lógica): el inicio del conductor (6.4) y el parte diario (6.5) conectados con el estado de la aplicación, la persistencia y la ruta.
 // Aceptación del plan: borrador que sobrevive a una recarga; enviar vacío → resumen de errores; K3 con 1 km menos → error; frenos con novedad → la
-// unidad aparece en «No pueden salir» del encargado. Con el ejemplo del generador (H = 2026-11-18): ZYN 469 (Int. 01) es de Andrés Echegaray (c-01),
+// unidad aparece en «No disponibles hoy» del encargado. Con el ejemplo del generador (H = 2026-11-18): ZYN 469 (Int. 01) es de Andrés Echegaray (c-01),
 // con su último parte del 17/11 terminado en 141.711 km; ZK 214 BD (Int. 07) es de Tamara Olivera (c-07) y tiene el seguro vencido (C01).
 import { describe, expect, it } from "vitest";
 import { ENCARGADA, generar } from "../src/lib/datos/generador.ts";
@@ -454,7 +454,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(r.tipo === "errores" && r.errores.lista.map((e) => e.campo)).toEqual(["kmInicio", "cabina"]);
   });
 
-  it("C2, P16: frenos con novedad: la unidad queda fuera de servicio, el parte se cierra sin salida y aparece en «No pueden salir» del encargado", async () => {
+  it("C2, P16: frenos con novedad: la unidad queda fuera de servicio, el parte se cierra sin salida y aparece en «No disponibles hoy» del encargado", async () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
     const uid = idDe(app, "ZYN469");
     const v = completo(edicion(app).valoresIniciales);
@@ -507,8 +507,8 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const motivo = "Sin salida hasta mañana (novedad crítica de hoy)";
     app.irA({ tipo: "unidad", patente: "ZYN469" });
     const ficha = app.fichaDeUnidad;
-    expect(ficha && ficha.encontrada && ficha.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir", motivos: [motivo] });
-    expect(app.panelDeFlota?.filas.find((f) => f.patente === "ZYN469")?.estado).toMatchObject({ categoria: "no-puede-salir", etiqueta: "No puede salir" });
+    expect(ficha && ficha.encontrada && ficha.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "Bloqueada", motivos: [motivo] });
+    expect(app.panelDeFlota?.filas.find((f) => f.patente === "ZYN469")?.estado).toMatchObject({ categoria: "no-puede-salir", etiqueta: "Bloqueada" });
     expect(app.centroDeAlertas?.protagonista.items.find((i) => i.patente === "ZYN469")).toMatchObject({ categoria: "no-puede-salir", motivo });
     await app.cambiarPerfil(C01);
     expect(app.inicioDelConductor()?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: expect.stringContaining("hasta mañana") });
@@ -523,13 +523,13 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(app.alertas?.resumen.fueraDeServicio.map((u) => u.patente)).toContain("ZYN469");
   });
 
-  it("una novedad normal no cambia el estado de la unidad ni suma a «No pueden salir»: el parte queda en uso", async () => {
+  it("una novedad normal no cambia el estado de la unidad ni suma a «No disponibles hoy»: el parte queda en uso", async () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
     const v = completo(edicion(app).valoresIniciales);
     v.checklist.cabina = { respuesta: "con-novedad", descripcion: "Sucia", impideUso: false };
     const r = await app.enviarRevisionDeParte(idDe(app, "ZYN469"), H, v);
     expect(r.tipo === "enviado" && r.paso).toBe("revision-enviada");
-    expect(r.tipo === "enviado" && r.panel.notaEncargado).toBe("El encargado la ve en el centro de alertas.");
+    expect(r.tipo === "enviado" && r.panel.notaEncargado).toBe("El encargado la ve en Inicio.");
     expect(app.alertas?.resumen.protagonista).toBe(4);
     expect(eventos(app).slice(-2)).toEqual(["revision-enviada", "novedad-abierta"]);
   });
@@ -985,7 +985,7 @@ describe("el ejemplo completo: ningún otro caso se rompe", () => {
     if (v?.tipo !== "lectura") return;
     expect(v.titulo).toBe("Parte del martes 17/11/2026");
     expect(v.panel.filas[0]?.rotulo).toBe("Recorrido");
-    expect(v.vuelta).toEqual({ texto: "Parte diario", href: "#/conductor" });
+    expect(v.vuelta).toEqual({ texto: "Hoy", href: "#/conductor" });
   });
 
   it("los datos del generador y valoresDeParte son coherentes: un borrador del ejemplo (C13) se abre con lo que tiene", async () => {

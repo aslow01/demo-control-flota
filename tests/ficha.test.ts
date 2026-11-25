@@ -35,7 +35,7 @@ describe("unidad que no existe", () => {
       titulo: "No se encontró la unidad",
       mensaje: "No hay ninguna unidad con la patente ZZ 999 ZZ.",
       patenteTexto: "ZZ 999 ZZ",
-      enlace: { texto: "Ir a la flota", href: "#/flota" },
+      enlace: { texto: "Ir a Movilidades", href: "#/flota" },
     });
   });
 });
@@ -53,15 +53,15 @@ describe("encabezado de ZK 214 BD (C01: seguro vencido hace 1 día)", () => {
       descripcion: "Toyota Hilux 2022 · Camioneta",
     });
     expect(f.migas).toEqual([
-      { texto: "Flota", href: "#/flota" },
+      { texto: "Movilidades", href: "#/flota" },
       { texto: "ZK 214 BD", href: null },
     ]);
   });
 
-  it("si puede salir y por qué (A1): «No puede salir · Seguro vencido hace 1 día»", () => {
+  it("si puede salir y por qué (A1): «Bloqueada · Seguro vencido hace 1 día»", () => {
     expect(f.aptitud).toEqual({
       categoria: "no-puede-salir",
-      etiqueta: "No puede salir",
+      etiqueta: "Bloqueada",
       motivos: ["Seguro vencido hace 1 día"],
       linea: "Seguro vencido hace 1 día",
       mostrarLista: false,

@@ -26,10 +26,10 @@ function textos(valor: unknown): string[] {
 describe("textos de la flota", () => {
   it("el resumen: singular y plural de cada cifra", () => {
     expect(textoResumenFlota({ activas: 23, pueden: 19, noPueden: 2, fuera: 2, baja: 1 })).toBe(
-      "23 unidades activas · 19 pueden salir · 2 no pueden salir · 2 fuera de servicio · 1 de baja",
+      "23 unidades activas · 19 disponibles · 4 no disponibles hoy (2 bloqueadas por documentos · 2 fuera de servicio) · 1 de baja",
     );
     expect(textoResumenFlota({ activas: 1, pueden: 1, noPueden: 1, fuera: 0, baja: 0 })).toBe(
-      "1 unidad activa · 1 puede salir · 1 no puede salir · 0 fuera de servicio · 0 de baja",
+      "1 unidad activa · 1 disponible · 1 no disponible hoy (1 bloqueada por documentos · 0 fuera de servicio) · 0 de baja",
     );
   });
 

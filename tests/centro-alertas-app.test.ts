@@ -1,6 +1,6 @@
 // Paso 4.2 (lógica): el centro de alertas y los diálogos Renovar y Cargar conectados con el estado de la aplicación y la
 // persistencia. Aceptación del plan: con el ejemplo (fechaBase 2026-11-18) el protagonista dice «4 unidades», hay 11
-// vencimientos en los grupos esperados y 5 pendientes de operación; renovar C01 lo saca de la lista y de «No pueden salir».
+// vencimientos en los grupos esperados y 5 pendientes de operación; renovar C01 lo saca de la lista y de «No disponibles hoy».
 import { describe, expect, it } from "vitest";
 import { generar } from "../src/lib/datos/generador.ts";
 import { sumarDias } from "../src/lib/dominio/fechas.ts";
@@ -62,7 +62,7 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
     await t.iniciar();
     const c = centroDe(t);
     expect(c.protagonista.cifra).toBe(4);
-    expect(c.protagonista.textoLector).toBe("4 unidades no pueden salir hoy: 2 no pueden salir, 2 fuera de servicio.");
+    expect(c.protagonista.textoLector).toBe("4 unidades no disponibles hoy: 2 bloqueadas por documentos, 2 fuera de servicio.");
     expect(c.vencimientos.total).toBe(12);
     expect(c.vencimientos.grupos.map((g) => g.cantidad)).toEqual([3, 4, 3, 2]);
     expect(c.operacion.total).toBe(5);
@@ -70,7 +70,7 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
     expect(estadoDe(t)).toEqual(generar(SEMILLA_POR_DEFECTO, HOY));
   });
 
-  it("renovar C01: sale de «No pueden salir» y de la lista, sin recargar; el mensaje dice cuántos quedan; el foco va al título del panel", async () => {
+  it("renovar C01: sale de «No disponibles hoy» y de la lista, sin recargar; el mensaje dice cuántos quedan; el foco va al título del panel", async () => {
     const { app } = await iniciada();
     const viejo = seguroDeC01(app);
     expect(centroDe(app).protagonista.items.some((i) => i.patente === "ZK214BD")).toBe(true);
@@ -81,7 +81,7 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
     expect(r).toEqual({ ok: true, mensaje: "Seguro de ZK 214 BD renovado. Quedan 11 vencimientos.", foco: "titulo-del-panel" });
     const c = centroDe(app);
     expect(c.protagonista.cifra).toBe(3);
-    expect(c.protagonista.textoLector).toBe("3 unidades no pueden salir hoy: 1 no puede salir, 2 fuera de servicio.");
+    expect(c.protagonista.textoLector).toBe("3 unidades no disponibles hoy: 1 bloqueada por documentos, 2 fuera de servicio.");
     expect(c.protagonista.items.some((i) => i.patente === "ZK214BD")).toBe(false);
     expect(c.protagonista.disponibles).toBe("Disponibles hoy: 20 de 23 unidades activas.");
     expect(c.vencimientos.total).toBe(11);
@@ -122,7 +122,7 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
     expect(r.ok && r.foco).toBe("titulo-del-panel");
   });
 
-  it("cargar la habilitación faltante de C10: la unidad sale de «No pueden salir» y el faltante de la lista", async () => {
+  it("cargar la habilitación faltante de C10: la unidad sale de «No disponibles hoy» y el faltante de la lista", async () => {
     const { app } = await iniciada();
     const falta = centroDe(app).vencimientos.grupos[0]?.filas.find((f) => f.tipo === "documento-faltante");
     if (falta === undefined || falta.titular.tipo !== "unidad") throw new Error("falta el caso C10");

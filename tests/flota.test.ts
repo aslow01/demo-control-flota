@@ -40,18 +40,18 @@ function fila(patente: string, p: PanelFlota = panel): FilaFlota {
 }
 
 describe("encabezado y totales (6.2)", () => {
-  it("el ejemplo: 23 activas, 19 pueden salir, 2 no pueden salir, 2 fuera de servicio y 1 de baja", () => {
+  it("el ejemplo: 23 activas, 19 disponibles, 2 bloqueadas por documentos, 2 fuera de servicio y 1 de baja", () => {
     expect(panel.titulo).toBe("Unidades");
     expect(panel.cantidad).toBe(23);
-    expect(panel.resumen).toBe("23 unidades activas · 19 pueden salir · 2 no pueden salir · 2 fuera de servicio · 1 de baja");
+    expect(panel.resumen).toBe("23 unidades activas · 19 disponibles · 4 no disponibles hoy (2 bloqueadas por documentos · 2 fuera de servicio) · 1 de baja");
     expect(panel.filas).toHaveLength(24);
   });
 
   it("singular y cero", () => {
     const una = panelDe(flotaDePrueba());
-    expect(una.resumen).toBe("2 unidades activas · 2 pueden salir · 0 no pueden salir · 0 fuera de servicio · 0 de baja");
+    expect(una.resumen).toBe("2 unidades activas · 2 disponibles · 0 no disponibles hoy (0 bloqueadas por documentos · 0 fuera de servicio) · 0 de baja");
     const solo = panelDe({ ...flotaDePrueba(), unidades: flotaDePrueba().unidades.slice(0, 1) });
-    expect(solo.resumen).toBe("1 unidad activa · 1 puede salir · 0 no pueden salir · 0 fuera de servicio · 0 de baja");
+    expect(solo.resumen).toBe("1 unidad activa · 1 disponible · 0 no disponibles hoy (0 bloqueadas por documentos · 0 fuera de servicio) · 0 de baja");
   });
 
   it("los proyectos para el select: «Todos» y cada uno, por nombre", () => {
@@ -90,7 +90,7 @@ describe("filas (5.10)", () => {
     });
     expect(f.estado).toEqual({
       categoria: "no-puede-salir",
-      etiqueta: "No puede salir",
+      etiqueta: "Bloqueada",
       motivo: "Seguro vencido hace 1 día",
       motivosMas: null,
       motivos: ["Seguro vencido hace 1 día"],
@@ -101,7 +101,7 @@ describe("filas (5.10)", () => {
   it("una unidad que puede salir no lleva franja ni motivo", () => {
     const f = fila("ZYN469");
     expect(f.franja).toBeNull();
-    expect(f.estado).toEqual({ categoria: "puede-salir", etiqueta: "Puede salir", motivo: null, motivosMas: null, motivos: [] });
+    expect(f.estado).toEqual({ categoria: "puede-salir", etiqueta: "Disponible", motivo: null, motivosMas: null, motivos: [] });
   });
 
   it("fuera de servicio: franja de semana y el motivo del dominio; de baja: franja neutra y etiqueta «De baja»", () => {
@@ -325,8 +325,8 @@ describe("filtros por estado con conteo (5.8, 6.2)", () => {
   it("los cinco de la especificación, con sus cantidades en la flota entera", () => {
     expect(ver().filtros).toEqual([
       { id: "activas", etiqueta: "Activas", cantidad: 23 },
-      { id: "pueden-salir", etiqueta: "Pueden salir", cantidad: 19 },
-      { id: "no-pueden-salir", etiqueta: "No pueden salir", cantidad: 2 },
+      { id: "pueden-salir", etiqueta: "Disponibles", cantidad: 19 },
+      { id: "no-pueden-salir", etiqueta: "Bloqueadas por documentos", cantidad: 2 },
       { id: "fuera-de-servicio", etiqueta: "Fuera de servicio", cantidad: 2 },
       { id: "de-baja", etiqueta: "De baja", cantidad: 1 },
     ]);
@@ -356,17 +356,17 @@ describe("filtros por estado con conteo (5.8, 6.2)", () => {
     expect(patentes(ver({ filtro: "de-baja" }).filas)).toEqual(["ZUE512"]);
   });
 
-  it("«No disponibles» (el de «Ver las N en la flota») son las mismas unidades que el protagonista del centro de alertas", () => {
+  it("«No disponibles» (el de «Ver las N no disponibles en Movilidades») son las mismas unidades que el protagonista del centro de alertas", () => {
     const centro = centroDeAlertas(e, calcularAlertas(e, H), H, "Logística Andina Demo S.A.");
     const v = ver({ filtro: "no-disponibles" });
     expect(v.filas).toHaveLength(centro.protagonista.cifra);
     expect(patentes(v.filas).sort()).toEqual(centro.protagonista.items.map((i) => i.patente).sort());
   });
 
-  it("«No disponibles» aparece como sexta opción solo cuando está elegido (viene de la ruta), con su cantidad", () => {
+  it("«No disponibles hoy» aparece como sexta opción solo cuando está elegido (viene de la ruta), con su cantidad", () => {
     const v = ver({ filtro: "no-disponibles" });
     expect(v.filtros.map((f) => f.id)).toEqual(["activas", "pueden-salir", "no-pueden-salir", "fuera-de-servicio", "de-baja", "no-disponibles"]);
-    expect(v.filtros.at(-1)).toEqual({ id: "no-disponibles", etiqueta: "No disponibles", cantidad: 4 });
+    expect(v.filtros.at(-1)).toEqual({ id: "no-disponibles", etiqueta: "No disponibles hoy", cantidad: 4 });
     expect(ver({ filtro: "activas" }).filtros).toHaveLength(5);
   });
 });
@@ -485,7 +485,7 @@ describe("vacío por filtro (8)", () => {
   });
 });
 
-describe("consulta desde la ruta («Ver las N en la flota»)", () => {
+describe("consulta desde la ruta («Ver las N no disponibles en Movilidades»)", () => {
   it("la ruta con filtro empieza con ese filtro; sin filtro, la consulta inicial", () => {
     expect(consultaDeRuta({ tipo: "flota", filtro: "no-disponibles" })).toEqual({ ...CONSULTA_INICIAL, filtro: "no-disponibles" });
     expect(consultaDeRuta({ tipo: "flota" })).toEqual(CONSULTA_INICIAL);
@@ -498,7 +498,7 @@ describe("consulta desde la ruta («Ver las N en la flota»)", () => {
 });
 
 describe("la flota con un estado armado a mano", () => {
-  it("una unidad nueva, sin documentos, sale «No puede salir» con sus faltantes (U5)", () => {
+  it("una unidad nueva, sin documentos, sale «Bloqueada» con sus faltantes (U5)", () => {
     const base = flotaDePrueba();
     const nueva = unidad({ id: "u3", patente: "ZAA001", interno: 30, proyectoId: "p-piedra", conductorId: null });
     const p = panelDe({ ...base, unidades: [...base.unidades, nueva] });

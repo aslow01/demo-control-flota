@@ -17,9 +17,9 @@ export const TEXTO_MARCO = {
   volverAlPortafolioCorto: "← Portafolio",
   menuMas: "Más",
   navegacionSecciones: "Secciones",
-  pestanaAlertas: "Alertas",
-  pestanaFlota: "Flota",
-  pestanaParteDeHoy: "Parte diario",
+  pestanaAlertas: "Inicio",
+  pestanaFlota: "Movilidades",
+  pestanaParteDeHoy: "Hoy",
   verComo: "Ver como",
   perfilEncargado: "Encargado",
   perfilConductor: "Conductor",
@@ -86,7 +86,7 @@ export const TEXTO_COMO_FUNCIONA = {
     {
       etiqueta: "Vencido o faltante",
       texto:
-        "El documento venció o, si es obligatorio, falta cargarlo. Si es de la unidad, la unidad figura como «No puede salir». Si es la licencia del conductor, no puede enviar la revisión ni salir con ninguna unidad.",
+        "El documento venció o, si es obligatorio, falta cargarlo. Si es de la unidad, la unidad figura como «Bloqueada». Si es la licencia del conductor, no puede enviar la revisión ni salir con ninguna unidad.",
     },
     { etiqueta: "7 días o menos", texto: "Vence hoy o en los próximos 7 días. Hasta el día del vencimiento incluido, la unidad puede salir." },
     { etiqueta: "8 a 15 días", texto: "Hay que planificar la renovación." },
@@ -112,9 +112,9 @@ export const TEXTO_PIE = {
   volverAlPortafolio: "Volver al portafolio",
 } as const;
 
-/** Centro de alertas (6.1): lo que dice la pantalla y no sale del dominio. Los textos de las alertas y de los diálogos vienen de `textos.ts`. */
+/** Inicio, antes «Centro de alertas» (6.1): lo que dice la pantalla y no sale del dominio. Los textos de las alertas y de los diálogos vienen de `textos.ts`. */
 export const TEXTO_ALERTAS = {
-  /** M6: bajo el título, lo que cuenta la insignia de la pestaña «Alertas» (alertas críticas: documentos vencidos o faltantes y novedades críticas abiertas). Con 0 no se muestra. */
+  /** M6: bajo el título, lo que cuenta la insignia de la pestaña «Inicio» (alertas críticas: documentos vencidos o faltantes y novedades críticas abiertas). Con 0 no se muestra. */
   criticas: (n: number) => `${n} ${n === 1 ? "alerta crítica" : "alertas críticas"}: documentos vencidos o faltantes y novedades críticas abiertas.`,
   /** Dato breve del panel del protagonista: «al 18/11/2026». */
   alFecha: (fecha: string) => `al ${fecha}`,
@@ -152,7 +152,7 @@ export const TEXTO_DIALOGO_DOCUMENTO = {
   guardando: "Guardando…",
 } as const;
 
-/** Flota (6.2): rótulos de la pantalla que no salen del dominio. Los filtros, los órdenes, los estados y los textos de cada fila vienen de `textos.ts`. */
+/** Movilidades, antes «Flota» (6.2): rótulos de la pantalla que no salen del dominio. Los filtros, los órdenes, los estados y los textos de cada fila vienen de `textos.ts`. */
 export const TEXTO_FLOTA_VISTA = {
   agregarUnidad: "Agregar unidad",
   /** Rótulo del campo de búsqueda (visible con poco ancho; el marcador, más corto, dice qué se puede buscar y no se corta a 360 px). */
@@ -207,7 +207,7 @@ export const TEXTO_DIALOGO_UNIDAD = {
 /** Ficha de unidad (6.3): rótulos de la pantalla que no salen del dominio. Los títulos de los paneles, las acciones, los estados y los textos de cada fila vienen de `textos.ts`. */
 export const TEXTO_FICHA_VISTA = {
   rutaEtiqueta: "Ruta",
-  motivosDe: "Motivos por los que no puede salir",
+  motivosDe: "Motivos por los que no está disponible",
   datos: { proyecto: "Proyecto", conductor: "Conductor", kilometraje: "Kilometraje", sinConductor: "Sin conductor", sinProyecto: "—" },
   mostrar: "Mostrar",
   /** Se quiso abrir un diálogo de algo que ya cambió (otra pestaña, o la ficha estaba desactualizada). */
