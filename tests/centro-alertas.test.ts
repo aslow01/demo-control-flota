@@ -168,9 +168,9 @@ describe("operación diaria con el ejemplo: 5 pendientes", () => {
 describe("vencimientos con el ejemplo: 12 en los grupos esperados", () => {
   const v = c.vencimientos;
 
-  it("total 12 y rótulo del panel", () => {
+  it("total 12 («Todos») y rótulo del panel de 9: los 3 vencidos o faltantes no vencen «en los próximos 30 días»", () => {
     expect(v.total).toBe(12);
-    expect(v.rotuloCantidad).toBe("próximos 30 días · 12");
+    expect(v.rotuloCantidad).toBe("próximos 30 días · 9");
   });
 
   it("grupos: 3 vencidos y faltantes, 4 en 7 días o menos, 3 entre 8 y 15, 2 entre 16 y 30", () => {

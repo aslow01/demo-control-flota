@@ -22,6 +22,7 @@ import {
   palabraUnidades,
   pluralizar,
   textoAccionDocumento,
+  textoDesgloseNoDisponibles,
   textoDisponibles,
   textoFilaOperacion,
   textoFilaPartesIncompletos,
@@ -86,6 +87,8 @@ export interface Protagonista {
   tono: "critico" | "vigente";
   /** Un solo `p` para lectores: «4 unidades no pueden salir hoy.» / «Todas las unidades activas pueden salir hoy.» */
   textoLector: string;
+  /** «2 no pueden salir · 2 fuera de servicio»: la cifra desglosada, con las palabras de la flota; `null` si la cifra es 0. */
+  desglose: string | null;
   /** Hasta `MAX_PROTAGONISTA`: primero las que no pueden salir y después las fuera de servicio, cada grupo por patente. */
   items: UnidadDelProtagonista[];
   /** Si hay más unidades que las que se listan: «Ver las 9 en la flota». */
@@ -203,7 +206,7 @@ export interface FiltroVencimientos {
 
 export interface PanelVencimientos {
   titulo: string;
-  /** Vencidos, faltantes y los de los próximos 30 días: el número de «próximos 30 días · 11» y de «Todos». */
+  /** Vencidos, faltantes y los de los próximos 30 días: el número de «Todos». El rótulo «próximos 30 días · 9» no cuenta los vencidos. */
   total: number;
   rotuloCantidad: string;
   horizonte: Horizonte;
@@ -299,6 +302,7 @@ function armarProtagonista(estado: Estado, r: ResultadoAlertas, hoy: FechaCivil)
     palabra: palabraUnidades(cifra),
     tono: cifra > 0 ? "critico" : "vigente",
     textoLector: textoProtagonistaLector(cifra),
+    desglose: cifra > 0 ? textoDesgloseNoDisponibles(noPuedenSalir.length, fueraDeServicio.length) : null,
     items: todas.slice(0, MAX_PROTAGONISTA),
     masEnLaFlota: todas.length > MAX_PROTAGONISTA ? { texto: textoVerTodasEnLaFlota(todas.length), href: aHash({ tipo: "flota", filtro: "no-disponibles" }) } : null,
     disponibles: textoDisponibles(disponibles, activas),
@@ -454,7 +458,8 @@ function armarVencimientos(estado: Estado, r: ResultadoAlertas): PanelVencimient
   return {
     titulo: TEXTO_CENTRO.vencimientos,
     total,
-    rotuloCantidad: textoRotuloVencimientos(total),
+    // «próximos 30 días» no cuenta lo ya vencido o faltante (tiene su propio grupo y filtro); «Todos» sí.
+    rotuloCantidad: textoRotuloVencimientos(total - r.resumen.porGrupo.vencidos),
     horizonte: horizonteCompleto(r),
     filtros: [
       { id: "todos", etiqueta: "Todos", cantidad: total },

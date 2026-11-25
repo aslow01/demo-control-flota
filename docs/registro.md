@@ -1317,3 +1317,17 @@ Medidas puntuales: C6 (768 px) rótulos en 229 y 229, valor en 297,4 y 297,4; C2
 | `.gitignore` | `scripts/prohibidos.local.json` y `.env*`. |
 
 **Verificación.** `npm test` y `npm run test:tz`: 1613 pruebas; `npm run check`: 0 errores y 0 avisos; `npm run build`: JS sin cambios (119,62 kB con gzip); `npm run buscar` con el archivo (9 reglas) y sin él (8 reglas y aviso); un término plantado en `src/` se detecta con el archivo y se ignora, con aviso, sin él.
+
+## 25/11/2026 (rama `correccion-cifras`) — Cifras que no cerraban entre Inicio y Flota (programador)
+
+**Qué se encontró.** Una crítica señaló dos contradicciones; las dos existían en el código real, con el ejemplo del generador:
+
+| Dónde | Qué decía | Por qué |
+| --- | --- | --- |
+| Inicio, protagonista «No pueden salir hoy» | **4** | `resumenDeAptitud().protagonista` = no pueden salir (2) + fuera de servicio (2). |
+| Flota, resumen y filtro «No pueden salir» | **2** no pueden salir · 2 fuera de servicio | `panelDeFlota` cuenta las dos categorías por separado. |
+| Inicio, panel de vencimientos | «próximos 30 días · **12**» | `contarVencimientos` suma vencidos y faltantes (3) a los que vencen en 7, 15 y 30 días (4 + 3 + 2 = 9). |
+
+**Qué se hizo.** Los números ya salían de la misma función; lo que faltaba era decirlo igual. `protagonista.desglose` («2 no pueden salir · 2 fuera de servicio») se arma con `textoDesgloseNoDisponibles`, la misma función que arma esa parte del resumen de Flota. El rótulo «próximos 30 días · N» cuenta solo los grupos de 7, 15 y 30 días; «Todos» sigue contando los 12. Pruebas nuevas en `tests/cifras-coherentes.test.ts`. JS: 119,62 → 119,69 kB con gzip (margen contra el tope: 0,31 kB).
+
+**Pendiente de decidir (rótulos).** La línea de desglose bajo la cifra de Inicio es texto nuevo. El título «No pueden salir hoy» sigue contando 4 aunque Flota use «No pueden salir» para 2; el término «No disponibles» (que Flota ya usa en un filtro) queda como propuesta, no se adoptó.

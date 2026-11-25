@@ -652,7 +652,7 @@ export function textoPendientes(n: number): string {
   return pluralizar(n, "pendiente", "pendientes");
 }
 
-/** Cabecera del panel de vencimientos: «próximos 30 días · 11». */
+/** Cabecera del panel de vencimientos: «próximos 30 días · 9» (solo los que vencen en 30 días o menos; los vencidos y faltantes van aparte). */
 export function textoRotuloVencimientos(n: number): string {
   return `próximos 30 días · ${n}`;
 }
@@ -786,10 +786,14 @@ export function textoResumenFlota(r: { activas: number; pueden: number; noPueden
   return [
     pluralizar(r.activas, "unidad activa", "unidades activas"),
     `${r.pueden} ${r.pueden === 1 ? "puede" : "pueden"} salir`,
-    `${r.noPueden} ${r.noPueden === 1 ? "no puede" : "no pueden"} salir`,
-    `${r.fuera} fuera de servicio`,
+    textoDesgloseNoDisponibles(r.noPueden, r.fuera),
     `${r.baja} de baja`,
   ].join(" · ");
+}
+
+/** «2 no pueden salir · 2 fuera de servicio»: lo comparten el resumen de la flota y el desglose del protagonista, así no pueden decir distinto. */
+export function textoDesgloseNoDisponibles(noPueden: number, fuera: number): string {
+  return `${noPueden} ${noPueden === 1 ? "no puede" : "no pueden"} salir · ${fuera} fuera de servicio`;
 }
 
 /** Segunda línea del estado: «y 1 motivo más», «y 2 motivos más». */
