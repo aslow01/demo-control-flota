@@ -62,7 +62,7 @@ npm run servir       # sirve dist/ con las mismas cabeceras de seguridad que se 
 - **Todo en el navegador:** datos en IndexedDB; si no se puede guardar, la demo sigue en memoria y avisa.
 - **Reglas en TypeScript puro** (`src/lib/dominio`), probadas en tres zonas horarias.
 - **Seguridad:** política de contenido estricta (`public/_headers`) con `connect-src 'none'`: la página no puede conectarse a ningún servidor.
-- **Tamaño:** 119,62 KB de JavaScript comprimido con gzip (`npm run build`, 25/11/2026; tope fijado: 120 KB).
+- **Tamaño:** 118,6 KB de JavaScript de carga inicial comprimido con gzip (`npm run peso`, 25/11/2026; tope fijado: 120 KB).
 - **Accesibilidad:** teclado, foco visible, controles de 44 px, modo claro y oscuro, desde 320 px.
 
 ## Cómo se usó la IA
