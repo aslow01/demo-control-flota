@@ -62,7 +62,7 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
     await t.iniciar();
     const c = centroDe(t);
     expect(c.protagonista.cifra).toBe(4);
-    expect(c.protagonista.textoLector).toBe("4 unidades no pueden salir hoy.");
+    expect(c.protagonista.textoLector).toBe("4 unidades no pueden salir hoy: 2 no pueden salir, 2 fuera de servicio.");
     expect(c.vencimientos.total).toBe(12);
     expect(c.vencimientos.grupos.map((g) => g.cantidad)).toEqual([3, 4, 3, 2]);
     expect(c.operacion.total).toBe(5);
@@ -81,7 +81,7 @@ describe("el centro de alertas en la aplicación (aceptación del paso 4.2)", ()
     expect(r).toEqual({ ok: true, mensaje: "Seguro de ZK 214 BD renovado. Quedan 11 vencimientos.", foco: "titulo-del-panel" });
     const c = centroDe(app);
     expect(c.protagonista.cifra).toBe(3);
-    expect(c.protagonista.textoLector).toBe("3 unidades no pueden salir hoy.");
+    expect(c.protagonista.textoLector).toBe("3 unidades no pueden salir hoy: 1 no puede salir, 2 fuera de servicio.");
     expect(c.protagonista.items.some((i) => i.patente === "ZK214BD")).toBe(false);
     expect(c.protagonista.disponibles).toBe("Disponibles hoy: 20 de 23 unidades activas.");
     expect(c.vencimientos.total).toBe(11);

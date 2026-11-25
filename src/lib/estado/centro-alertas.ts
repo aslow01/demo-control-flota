@@ -33,6 +33,7 @@ import {
   textoInterno,
   textoMostrando,
   textoPendientes,
+  textoProtagonista,
   textoProtagonistaLector,
   textoRotuloVencimientos,
   textoVencimiento,
@@ -85,7 +86,7 @@ export interface Protagonista {
   palabra: "unidad" | "unidades";
   /** Franja y cifra en tono crítico si hay alguna; vigente si no. */
   tono: "critico" | "vigente";
-  /** Un solo `p` para lectores: «4 unidades no pueden salir hoy.» / «Todas las unidades activas pueden salir hoy.» */
+  /** Un solo `p` para lectores: «4 unidades no pueden salir hoy: 2 no pueden salir, 2 fuera de servicio.» / «Todas las unidades activas pueden salir hoy.» */
   textoLector: string;
   /** «2 no pueden salir · 2 fuera de servicio»: la cifra desglosada, con las palabras de la flota; `null` si la cifra es 0. */
   desglose: string | null;
@@ -295,14 +296,16 @@ function armarProtagonista(estado: Estado, r: ResultadoAlertas, hoy: FechaCivil)
           href: href(u.patente),
         };
       });
+  const desglose = cifra > 0 ? textoDesgloseNoDisponibles(noPuedenSalir.length, fueraDeServicio.length) : null;
   const todas = [...deCategoria(noPuedenSalir, "no-puede-salir"), ...deCategoria(fueraDeServicio, "fuera-de-servicio")];
   return {
     titulo: TEXTO_CENTRO.protagonista,
     cifra,
     palabra: palabraUnidades(cifra),
     tono: cifra > 0 ? "critico" : "vigente",
-    textoLector: textoProtagonistaLector(cifra),
-    desglose: cifra > 0 ? textoDesgloseNoDisponibles(noPuedenSalir.length, fueraDeServicio.length) : null,
+    // Una sola frase para lectores: la cifra y su desglose (la línea visual del desglose va con `aria-hidden`).
+    textoLector: desglose === null ? textoProtagonistaLector(cifra) : `${textoProtagonista(cifra)}: ${desglose.replace(" · ", ", ")}.`,
+    desglose,
     items: todas.slice(0, MAX_PROTAGONISTA),
     masEnLaFlota: todas.length > MAX_PROTAGONISTA ? { texto: textoVerTodasEnLaFlota(todas.length), href: aHash({ tipo: "flota", filtro: "no-disponibles" }) } : null,
     disponibles: textoDisponibles(disponibles, activas),

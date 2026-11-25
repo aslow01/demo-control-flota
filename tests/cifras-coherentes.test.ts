@@ -32,6 +32,24 @@ describe("unidades que hoy no salen: Inicio y Flota dicen lo mismo", () => {
     expect(flota.resumen).toContain(desglose);
   });
 
+  it("el lector escucha una sola frase: la cifra y su desglose, sin repetir la línea visual", () => {
+    expect(centro.protagonista.textoLector).toBe("4 unidades no pueden salir hoy: 2 no pueden salir, 2 fuera de servicio.");
+  });
+
+  it("con una unidad en cada grupo, singular en el desglose y la suma sigue cerrando", () => {
+    const [una, otra] = [resumen.noPuedenSalir[0], resumen.fueraDeServicio[0]];
+    const quitar = new Set([...resumen.noPuedenSalir.slice(1), ...resumen.fueraDeServicio.slice(1)].map((u) => u.id));
+    const dos: Estado = { ...e, unidades: e.unidades.filter((u) => !quitar.has(u.id)) };
+    const p = centroDeAlertas(dos, calcularAlertas(dos, H), H, "X").protagonista;
+    expect(una).toBeDefined();
+    expect(otra).toBeDefined();
+    expect(p.cifra).toBe(2);
+    expect(p.desglose).toBe("1 no puede salir · 1 fuera de servicio");
+    expect(p.textoLector).toBe("2 unidades no pueden salir hoy: 1 no puede salir, 1 fuera de servicio.");
+    const panel = panelDeFlota(dos, calcularAlertas(dos, H), H);
+    expect(panel.resumen).toContain(p.desglose);
+  });
+
   it("sin unidades que no salen no hay desglose", () => {
     const sanas: Estado = { ...e, unidades: e.unidades.filter((u) => resumen.noPuedenSalir.every((n) => n.id !== u.id) && resumen.fueraDeServicio.every((n) => n.id !== u.id)) };
     expect(centroDeAlertas(sanas, calcularAlertas(sanas, H), H, "X").protagonista.desglose).toBeNull();

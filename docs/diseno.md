@@ -823,7 +823,7 @@ autor en los 17 primeros commits: decide Matías si reescribir el historial ante
   (1) *Orden del protagonista* («por prioridad», 6.1): primero las unidades en servicio que no pueden salir y después las fuera de servicio; cada grupo por patente.
   Tope de 6; «Ver las N en la flota» dice el total (N = todas las del protagonista, no las que faltan) y enlazaba a `#/flota` sin filtro porque la flota todavía no tenía el filtro «No pueden salir» + «Fuera de servicio»;
   con el paso 4.3 enlaza a `#/flota?filtro=no-disponibles` (ver la viñeta siguiente).
-  (2) *«Vencimientos · 11»* cuenta también los vencidos y faltantes (2 + 4 + 3 + 2 del ejemplo), igual que «Todos» y que «Quedan 10 vencimientos».
+  (2) *«próximos 30 días · 9»* cuenta solo los que vencen en 30 días o menos (4 + 3 + 2 del ejemplo); los vencidos y faltantes (3) tienen su grupo y su filtro. «Todos» (12) y «Quedan 11 vencimientos» (tras renovar uno) sí los incluyen (corregido el 25/11/2026: antes el rótulo también los contaba).
   (3) *Fila de «novedad abierta» en Operación diaria:* dice la antigüedad de la más antigua («1 novedad abierta hace 9 días»; con varias: «3 novedades abiertas, la más
   antigua hace 9 días»). El resto de las filas solo lleva la cantidad.
   (4) *Titular de un conductor* en la lista: su nombre, «Conductor» en la segunda línea (la especificación dice «Licencia», que no vale para la habilitación de manejo) y,

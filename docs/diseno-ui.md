@@ -879,7 +879,7 @@ pueden salir hoy».
 │ │ Disponibles hoy: 19 de 23 unidades activas.     │ │ Así lo carga el conductor:             │ │
 │ └──────────────── columnas 1–7 ───────────────────┘ │ Abrir el parte diario →  (cols 8–12)   │ │
 │                                                      └────────────────────────────────────────┘ │
-│ ┌ ◷ Vencimientos │ próximos 30 días · 11 ───────────────────────────────────────────────────┐ │
+│ ┌ ◷ Vencimientos │ próximos 30 días · 9 ────────────────────────────────────────────────────┐ │
 │ │ ┌VENCIDOS Y┐  Hoy         7               15                              30 días        │ │
 │ │ │FALTANTES │  ┃● ●   ●  ● ┊  ●            ┊ ●            ●        ●      ┊              │ │
 │ │ │    2     │  ▔▔▔▔▔▔▔▔▔▔▔▔╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄                 │ │
@@ -907,8 +907,9 @@ pueden salir hoy».
 ```
 
 - **Protagonista** (panel, columnas 1–7): franja izquierda 4 px del tono (crítico si N > 0; vigente si 0). Cifra
-  `--t-cifra` + "unidades" (`--t-h2`) en la misma línea base; para lectores, un solo `p`: "4 unidades no pueden salir
-  hoy." Lista de hasta 6 unidades (patente-enlace, interno, primer motivo; `›` es solo visual), ordenada por prioridad;
+  `--t-cifra` + "unidades" (`--t-h2`) en la misma línea base; debajo, el desglose «2 no pueden salir · 2 fuera de
+  servicio» (visual, `aria-hidden`); para lectores, un solo `p`: "4 unidades no pueden salir hoy: 2 no pueden salir, 2
+  fuera de servicio." Lista de hasta 6 unidades (patente-enlace, interno, primer motivo; `›` es solo visual), ordenada por prioridad;
   si hay más: "Ver las 9 en la flota" (enlace a `#/flota` con el filtro "No pueden salir" + "Fuera de servicio").
   Barra de estado fija: "Disponibles hoy: 19 de 23 unidades activas."
   **Con 0:** franja vigente, `i-check` 24 px, "Todas las unidades activas pueden salir hoy." y "Disponibles hoy: 23 de 23."

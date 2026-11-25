@@ -34,7 +34,7 @@ describe("protagonista «No pueden salir hoy» con el ejemplo", () => {
     expect(c.protagonista.cifra).toBe(4);
     expect(c.protagonista.palabra).toBe("unidades");
     expect(c.protagonista.tono).toBe("critico");
-    expect(c.protagonista.textoLector).toBe("4 unidades no pueden salir hoy.");
+    expect(c.protagonista.textoLector).toBe("4 unidades no pueden salir hoy: 2 no pueden salir, 2 fuera de servicio.");
     expect(c.protagonista.disponibles).toBe("Disponibles hoy: 19 de 23 unidades activas.");
     expect(c.protagonista.masEnLaFlota).toBeNull();
   });
@@ -111,7 +111,7 @@ describe("protagonista «No pueden salir hoy» con el ejemplo", () => {
     };
     const p = centroDe(una).protagonista;
     expect(p.palabra).toBe("unidad");
-    expect(p.textoLector).toBe("1 unidad no puede salir hoy.");
+    expect(p.textoLector).toBe("1 unidad no puede salir hoy: 0 no pueden salir, 1 fuera de servicio.");
   });
 });
 

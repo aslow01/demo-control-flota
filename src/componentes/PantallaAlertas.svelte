@@ -252,7 +252,7 @@
               <span class="cifra num">{c.protagonista.cifra}</span>
               <span class="palabra">{c.protagonista.palabra}</span>
             </p>
-            <p class="desglose">{c.protagonista.desglose}</p>
+            <p class="desglose" aria-hidden="true">{c.protagonista.desglose}</p>
             <ul class="unidades">
               {#each c.protagonista.items as u (u.unidadId)}
                 <li>
