@@ -2,8 +2,11 @@
   // Flota (6.2, `#/flota`): 1) encontrar la unidad (búsqueda, proyecto, orden y filtros por estado), 2) ver su estado de hoy (tabla de 5.10 con el
   // Horizonte mínimo en «Próximo vencimiento»), 3) agregar una unidad (diálogo). No tiene reglas de negocio: todo lo que muestra lo arma
   // `app.panelDeFlota` y `vistaDeFlota(panel, consulta)` (lib/estado/flota.ts); el diálogo usa `contextoDeAgregarUnidad` y `app.agregarUnidad`.
-  //  - La consulta es estado de esta pantalla (no escribe el hash): arranca en `consultaDeRuta(app.ruta)` y se vuelve a leer cuando sube
-  //    `app.versionDePantalla` o `app.versionDeConsulta` (por ejemplo, «Ver las 4 en la flota» estando ya en la flota).
+  //  - El filtro y la búsqueda viajan en la dirección (`#/movilidades?filtro=no-disponibles&q=hilux`). Las pastillas son enlaces (`FiltrosEnlace`): elegir una es navegar, y Atrás la deshace.
+  //    Cada letra del buscador reescribe la dirección SIN agregar una entrada al historial (`app.ajustarConsulta`). Ninguna de las dos cosas mueve el foco ni el desplazamiento: la pantalla
+  //    es la misma (`versionDePantalla` no sube) y solo cambia `versionDeConsulta`. El proyecto y el orden son de esta pantalla y no viajan.
+  //  - La consulta local arranca en `consultaDeRuta(app.ruta)` y el filtro y la búsqueda se vuelven a leer de la dirección cuando sube `app.versionDeConsulta`
+  //    (una pastilla, Atrás, o «Ver las 4 en la flota» estando ya en la flota); lo que ya coincide con lo escrito no se anuncia de nuevo.
   //  - La barra de estado del panel dice «Mostrando 23 de 23 unidades.» y es la región viva: al escribir se actualiza con 500 ms de pausa; al elegir
   //    un filtro, un proyecto o un orden, al instante.
   //  - Al agregar bien la aplicación navega sola a la ficha de la unidad nueva (`app.agregarUnidad`) y el cambio de pantalla lleva el foco al título de la ficha,
@@ -14,19 +17,19 @@
   import {
     consultaDeRuta,
     quitarFiltros,
+    rutaDeConsulta,
     vistaDeFlota,
     type ConsultaFlota,
     type FilaFlota,
-    type IdFiltroFlota,
   } from "../lib/estado/flota.ts";
+  import { LARGO_MAXIMO_BUSQUEDA } from "../lib/estado/enrutador.ts";
   import { app } from "../lib/estado/instancia.ts";
   import { aspectoDeAptitud } from "./alertas-aspecto.ts";
   import Boton from "./Boton.svelte";
   import DialogoUnidad from "./DialogoUnidad.svelte";
   import Etiqueta from "./Etiqueta.svelte";
-  import EtiquetaDemo from "./EtiquetaDemo.svelte";
   import EtiquetaParte from "./EtiquetaParte.svelte";
-  import FiltrosConteo from "./FiltrosConteo.svelte";
+  import FiltrosEnlace from "./FiltrosEnlace.svelte";
   import Horizonte from "./Horizonte.svelte";
   import Icono from "./Icono.svelte";
   import ListaTabla, { type GrupoDeLista } from "./ListaTabla.svelte";
@@ -34,7 +37,7 @@
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
   import { TEXTO_FLOTA_VISTA as T } from "./textos-marco.ts";
-  import type { EtiquetaDeParte, Tono } from "./tipos.ts";
+  import type { EtiquetaDeParte } from "./tipos.ts";
 
   // «Último parte» (5.10): la etiqueta que arma `panelDeFlota` («En uso», «Sin enviar», «Sin cerrar», «Sin parte») y la de tabla 5.7 que le toca. «Sin parte» no es una etiqueta de parte
   // (es la falta de uno): tono semana con `i-guion`.
@@ -80,35 +83,36 @@
     });
   });
 
-  // Llegar a la flota por otro enlace sin salir de la pantalla: volver a leer la ruta (el filtro y la búsqueda ya no suben `versionDePantalla`).
-  let versionLeida = app.versionDePantalla + app.versionDeConsulta;
+  // El filtro y la búsqueda son de la dirección (una pastilla, Atrás, «Ver las 4 en la flota» estando ya acá): cuando cambian, la consulta de la pantalla los toma. El proyecto y el orden
+  // se conservan. Lo que ya coincide con lo escrito (la dirección que acaba de reescribir el propio buscador) no se anuncia: el conteo de lo que se tipea espera su pausa.
+  let versionLeida = app.versionDeConsulta;
   $effect(() => {
-    const version = app.versionDePantalla + app.versionDeConsulta;
+    const version = app.versionDeConsulta;
     if (version === versionLeida) return;
     versionLeida = version;
-    consulta = consultaDeRuta(app.ruta);
-    anunciar();
+    untrack(() => {
+      if (app.ruta.tipo !== "movilidades") return;
+      const deLaRuta = consultaDeRuta(app.ruta);
+      if (deLaRuta.filtro === consulta.filtro && deLaRuta.busqueda === consulta.busqueda) return;
+      consulta.filtro = deLaRuta.filtro;
+      consulta.busqueda = deLaRuta.busqueda;
+      anunciar();
+    });
   });
 
-  // ---------- Filtros ----------
-  const TONO_FILTRO: Record<IdFiltroFlota, Tono | undefined> = {
-    activas: undefined,
-    "pueden-salir": "vigente",
-    "no-pueden-salir": "critico",
-    "fuera-de-servicio": "semana",
-    "de-baja": "neutro",
-    "no-disponibles": "critico",
-  };
-  const filtros = $derived((v?.filtros ?? []).map((f) => ({ ...f, tono: TONO_FILTRO[f.id] })));
+  // ---------- Filtros y búsqueda en la dirección ----------
+  // Las pastillas (`v.filtros`) ya traen su `href`, el tono y la forma: no hay nada que armar acá.
+  let campoBusqueda = $state<HTMLInputElement | null>(null);
 
-  function elegirFiltro(id: IdFiltroFlota): void {
-    consulta.filtro = id;
-    anunciar();
+  function alEscribirBusqueda(): void {
+    consulta.busqueda = campoBusqueda?.value ?? "";
+    app.ajustarConsulta(rutaDeConsulta(consulta)); // reemplaza la dirección: sin entrada nueva en el historial, sin tocar el foco ni el desplazamiento
+    alEscribir();
   }
 
-  let campoBusqueda = $state<HTMLInputElement | null>(null);
   function quitar(): void {
     consulta = quitarFiltros(consulta);
+    app.irA(rutaDeConsulta(consulta)); // «Quitar filtros» es una acción: Atrás vuelve a lo que había
     anunciar();
     campoBusqueda?.focus(); // el botón «Quitar filtros» desaparece: el foco vuelve a la búsqueda
   }
@@ -141,7 +145,6 @@
 
 {#if panel !== null && v !== null}
   <div class="pantalla">
-    <div class="solo-angosto"><EtiquetaDemo /></div>
     <div class="encabezado">
       <h1 tabindex="-1">{app.nombrePantalla}</h1>
       <div class="agregar"><Boton onclick={abrirAgregar}>{T.agregarUnidad}</Boton></div>
@@ -160,9 +163,10 @@
               autocomplete="off"
               spellcheck="false"
               placeholder={T.buscarMarcador}
+              maxlength={LARGO_MAXIMO_BUSQUEDA}
               bind:this={campoBusqueda}
-              bind:value={consulta.busqueda}
-              oninput={alEscribir}
+              value={consulta.busqueda}
+              oninput={alEscribirBusqueda}
             />
           </div>
         </div>
@@ -183,7 +187,7 @@
           </select>
         </label>
         <div class="filtros">
-          <FiltrosConteo leyenda={T.mostrar} opciones={filtros} valor={consulta.filtro} alElegir={elegirFiltro} />
+          <FiltrosEnlace leyenda={T.mostrar} opciones={v.filtros} valor={consulta.filtro} />
         </div>
       {/snippet}
 
@@ -290,13 +294,6 @@
     width: 100%;
     min-width: 0;
   }
-  /* El rótulo "Demo con datos ficticios" baja acá cuando la barra superior no tiene lugar (menos de 40 rem). */
-  @media (min-width: 40rem) {
-    .solo-angosto {
-      display: none;
-    }
-  }
-
   /* Teléfono: título, «Agregar unidad» a todo el ancho y el resumen. Desde 40 rem: título y botón en una fila, el resumen debajo. */
   .encabezado {
     display: grid;

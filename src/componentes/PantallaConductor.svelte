@@ -10,6 +10,7 @@
   //  - «Descartar borrador» no deja otro botón en su lugar: el foco va al título del panel y la barra de estado dice «Borrador descartado.».
   //  - Los paneles «Pendientes» y «Su licencia» existen solo si hay algo que decir.
   import { tick } from "svelte";
+  import { TEXTO_INICIO_CONDUCTOR, textoAvisoDeDocumento, textoFraseDelAviso } from "../lib/dominio/textos.ts";
   import { app } from "../lib/estado/instancia.ts";
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import Boton from "./Boton.svelte";
@@ -92,6 +93,16 @@
 
           {#if inicio.avisoAptitud !== null}
             <Aviso tono="critico" icono="vencido" accion={inicio.avisoAptitud.accion}>{inicio.avisoAptitud.titular}</Aviso>
+          {/if}
+
+          {#if inicio.avisoDeUnidad !== null}
+            <!-- «Su unidad vence hoy» (o en 7 días o menos): la unidad puede salir, pero el conductor tiene que saberlo. Es un aviso de tarea (tono semana), no de bloqueo; la frase de abajo dice hasta cuándo sale. -->
+            {@const au = inicio.avisoDeUnidad}
+            {@const frase = textoFraseDelAviso(au.dias)}
+            {@const titular = textoAvisoDeDocumento(au.tipoDocumento, au.dias)}
+            {#if titular !== null}
+              <Aviso tono="semana" icono="reloj" accion={frase ?? ""}>{titular} ({au.vence})</Aviso>
+            {/if}
           {/if}
 
           {#if inicio.hoyEstado.tipo === "sin-parte"}
@@ -189,6 +200,14 @@
         {/if}
 
         <Panel titulo={inicio.ultimosPartes.titulo} icono="km">
+          {#snippet controles()}
+            {#if inicio.ultimosPartes.verTodos !== null}
+              <!-- «Mis partes» es una pantalla propia (`#/conductor/partes`): el nombre accesible dice a dónde lleva (hay otro «Ver todos» en la página). -->
+              <a class="ver-todos" href={inicio.ultimosPartes.verTodos.href} aria-label={TEXTO_INICIO_CONDUCTOR.verTodosPartes.nombre}>
+                {TEXTO_INICIO_CONDUCTOR.verTodosPartes.visible}<Icono nombre="flecha" />
+              </a>
+            {/if}
+          {/snippet}
           {#if inicio.ultimosPartes.vacio !== null}
             <p class="vacio"><Icono nombre="guion" />{inicio.ultimosPartes.vacio}</p>
           {:else}
@@ -427,6 +446,25 @@
   }
   @media (hover: hover) {
     .fila-parte:hover .fecha {
+      text-decoration-thickness: 2px;
+    }
+  }
+  /* «Ver todos →» en la barra del panel: enlace de texto con la flecha del prototipo; mide 44 px de alto (blanco táctil) y la flecha no cambia de renglón. */
+  .ver-todos {
+    --icono-tam: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e-1);
+    min-height: var(--alto-tactil);
+    padding-inline: var(--e-2);
+    color: var(--c-acento);
+    font-weight: 650;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  @media (hover: hover) {
+    .ver-todos:hover {
       text-decoration-thickness: 2px;
     }
   }
