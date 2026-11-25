@@ -60,7 +60,7 @@
     background: var(--tono-f);
     border: 1px solid transparent;
     border-left: 4px solid var(--tono-r);
-    border-radius: var(--r-2);
+    border-radius: 0 var(--r-1) var(--r-1) 0;
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
@@ -79,7 +79,10 @@
       gap: var(--e-1) var(--e-2);
     }
     .novedad {
-      padding-inline: var(--e-2);
+      padding-inline: var(--e-1) 0;
+    }
+    .novedad > :last-child {
+      font-size: var(--t-chico);
     }
     .en-orden > :last-child,
     .novedad > :last-child {

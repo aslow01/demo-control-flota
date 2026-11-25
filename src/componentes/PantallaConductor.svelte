@@ -17,12 +17,12 @@
   import Aviso from "./Aviso.svelte";
   import EnlaceAccion from "./EnlaceAccion.svelte";
   import EtiquetaParte from "./EtiquetaParte.svelte";
-  import EtiquetaDemo from "./EtiquetaDemo.svelte";
+  import Etiqueta from "./Etiqueta.svelte";
+  import Forma from "./Forma.svelte";
   import Icono from "./Icono.svelte";
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
   import { TEXTO_CONDUCTOR_VISTA as T } from "./textos-marco.ts";
-  import type { NombreIcono, Tono } from "./tipos.ts";
 
   const uid = $props.id();
   const idHoy = `${uid}-hoy`;
@@ -43,15 +43,6 @@
 
   // La barra de estado del panel «Hoy» (hoy: «Borrador descartado.»); `n` hace que dos mensajes iguales seguidos se vuelvan a anunciar.
   let mensaje = $state({ texto: "", n: 0 });
-
-  const ICONO_LICENCIA: Record<Tono, NombreIcono> = {
-    critico: "vencido",
-    semana: "alerta",
-    quincena: "calendario",
-    mes: "anillo",
-    vigente: "check",
-    neutro: "anillo",
-  };
 
   async function mostrarSelect(): Promise<void> {
     // La unidad de hoy parte como elegida solo si está entre las opciones (las que están en servicio); una fuera de servicio no: el `select` quedaría en blanco.
@@ -81,135 +72,141 @@
 {#if inicio !== null}
   <div class="pantalla">
     <div class="encabezado">
-      <div class="solo-angosto"><EtiquetaDemo /></div>
       <h1 tabindex="-1" aria-describedby={inicio.hoyEstado.tipo === "cierre-pendiente" ? ID_AVISO_CERRAR_ANTES : undefined}>{inicio.titulo}</h1>
     </div>
 
-    <Panel id={idHoy} titulo={inicio.hoy.titulo} icono="parte" estado={mensaje.texto} repetir={mensaje.n}>
-      {#if inicio.unidad !== null}
-        <div class="unidad">
-          <p class="identidad">
-            <Patente patente={inicio.unidad.patente} tamano="grande" />
-            <span class="interno">{inicio.unidad.interno}</span>
-          </p>
-          <p class="descripcion">{inicio.unidad.descripcion}</p>
-          <p class="nota num">{inicio.unidad.ultimoRegistro}</p>
-        </div>
-      {/if}
+    <!-- Una columna en el celular (primero «Hoy», lo que hay que hacer); desde 64 rem, «Hoy» a la izquierda y lo demás a la derecha. -->
+    <div class="cuerpo">
+      <div class="col-hoy">
+        <Panel id={idHoy} titulo={inicio.hoy.titulo} icono="parte" estado={mensaje.texto} repetir={mensaje.n}>
+          {#if inicio.unidad !== null}
+            <div class="unidad">
+              <p class="identidad">
+                <Patente patente={inicio.unidad.patente} tamano="grande" />
+                <span class="interno">{inicio.unidad.interno}</span>
+              </p>
+              <p class="descripcion">{inicio.unidad.descripcion}</p>
+              <p class="nota num">{inicio.unidad.ultimoRegistro}</p>
+            </div>
+          {/if}
 
-      {#if inicio.avisoAptitud !== null}
-        <Aviso tono="critico" icono="vencido" accion={inicio.avisoAptitud.accion}>{inicio.avisoAptitud.titular}</Aviso>
-      {/if}
+          {#if inicio.avisoAptitud !== null}
+            <Aviso tono="critico" icono="vencido" accion={inicio.avisoAptitud.accion}>{inicio.avisoAptitud.titular}</Aviso>
+          {/if}
 
-      {#if inicio.hoyEstado.tipo === "sin-parte"}
-        <!-- Estado 7 (C3): la frase de lo que hay que hacer va arriba del primario. -->
-        <p class="nota-estado">{inicio.hoyEstado.texto}</p>
-        <div class="accion-principal"><EnlaceAccion href={inicio.hoyEstado.primario.href} variante="primario" tamano="grande">{inicio.hoyEstado.primario.texto}</EnlaceAccion></div>
-      {:else if inicio.hoyEstado.tipo === "borrador"}
-        {@const b = inicio.hoyEstado}
-        <p class="estado-dia">{b.texto}</p>
-        <div class="accion-principal"><EnlaceAccion href={b.primario.href} variante="primario" tamano="grande">{b.primario.texto}</EnlaceAccion></div>
-        <div class="secundaria">
-          <BotonConfirmar variante="texto" texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
-        </div>
-      {:else if inicio.hoyEstado.tipo === "en-uso"}
-        {@const u = inicio.hoyEstado}
-        <p class="enviado"><EtiquetaParte tipo="en-uso" texto={u.etiqueta} /></p>
-        <p class="nota-estado">{u.texto}</p>
-        <div class="accion-principal"><EnlaceAccion href={u.primario.href} variante="primario" tamano="grande">{u.primario.texto}</EnlaceAccion></div>
-      {:else if inicio.hoyEstado.tipo === "enviado"}
-        {@const e = inicio.hoyEstado}
-        {#if e.sinSalida !== null}
-          <Aviso tono="critico" icono="octogono"><span class="largo">{e.sinSalida}</span></Aviso>
-        {:else}
-          <p class="enviado"><EtiquetaParte tipo="cerrado" texto={e.etiqueta} /></p>
-        {/if}
-        {#if e.hastaManana !== null}<p class="nota-estado">{e.hastaManana}</p>{/if}
-        <div class="secundaria"><EnlaceAccion href={e.enlace.href}>{e.enlace.texto}</EnlaceAccion></div>
-      {:else if inicio.hoyEstado.tipo === "fuera-de-servicio"}
-        <Aviso tono="semana" icono="llave"><span class="largo">{inicio.hoyEstado.aviso}</span></Aviso>
-      {:else if inicio.hoyEstado.tipo === "licencia-no-vigente" || inicio.hoyEstado.tipo === "no-puede-salir"}
-        <!-- Estados 5 (L1) y 5 ter (P21, la documentación de la unidad): el bloqueo se dice sin rol de alerta (el foco ya fue al h1 y esto es lo primero que se lee en el panel) y sin primario: no se deshabilita nada, se explica. -->
-        {@const l = inicio.hoyEstado}
-        <Aviso tono="critico" icono="vencido" accion={l.renglon2}>{l.renglon1}</Aviso>
-        {#if l.borrador !== null}
-          {@const b = l.borrador}
-          <p class="estado-dia">{b.texto}</p>
-          <div class="secundaria">
-            <BotonConfirmar variante="texto" texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
-          </div>
-        {/if}
-      {:else if inicio.hoyEstado.tipo === "cierre-pendiente"}
-        <!-- Estado 5 bis, «Cerrar antes» (P18, P20): una tarea pendiente (tono semana, `i-lapiz`), no una prohibición; por eso hay primario. Tampoco es `role="alert"`. -->
-        {@const c = inicio.hoyEstado}
-        <Aviso tono="semana" icono="lapiz" accion={c.renglon2} idTexto={ID_AVISO_CERRAR_ANTES}>{c.renglon1}</Aviso>
-        <div class="accion-principal"><EnlaceAccion href={c.primario.href} variante="primario" tamano="grande">{c.primario.texto}</EnlaceAccion></div>
-        {#if c.borrador !== null}
-          {@const b = c.borrador}
-          <p class="nota-estado">{b.texto}</p>
-          <div class="secundaria">
-            <BotonConfirmar variante="texto" texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
-          </div>
-        {/if}
-      {:else}
-        <p class="estado-dia">{T.sinUnidad}</p>
-      {/if}
+          {#if inicio.hoyEstado.tipo === "sin-parte"}
+            <!-- Estado 7 (C3): la frase de lo que hay que hacer va arriba del primario. -->
+            <p class="nota-estado">{inicio.hoyEstado.texto}</p>
+            <div class="accion-principal"><EnlaceAccion href={inicio.hoyEstado.primario.href} variante="primario" tamano="grande">{inicio.hoyEstado.primario.texto}</EnlaceAccion></div>
+          {:else if inicio.hoyEstado.tipo === "borrador"}
+            {@const b = inicio.hoyEstado}
+            <p class="estado-dia">{b.texto}</p>
+            <div class="accion-principal"><EnlaceAccion href={b.primario.href} variante="primario" tamano="grande">{b.primario.texto}</EnlaceAccion></div>
+            <div class="secundaria">
+              <BotonConfirmar variante="texto" texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
+            </div>
+          {:else if inicio.hoyEstado.tipo === "en-uso"}
+            {@const u = inicio.hoyEstado}
+            <p class="enviado"><EtiquetaParte tipo="en-uso" texto={u.etiqueta} /></p>
+            <p class="nota-estado">{u.texto}</p>
+            <div class="accion-principal"><EnlaceAccion href={u.primario.href} variante="primario" tamano="grande">{u.primario.texto}</EnlaceAccion></div>
+          {:else if inicio.hoyEstado.tipo === "enviado"}
+            {@const e = inicio.hoyEstado}
+            {#if e.sinSalida !== null}
+              <Aviso tono="critico" icono="octogono"><span class="largo">{e.sinSalida}</span></Aviso>
+            {:else}
+              <p class="enviado"><EtiquetaParte tipo="cerrado" texto={e.etiqueta} /></p>
+            {/if}
+            {#if e.hastaManana !== null}<p class="nota-estado">{e.hastaManana}</p>{/if}
+            <div class="secundaria"><EnlaceAccion href={e.enlace.href}>{e.enlace.texto}</EnlaceAccion></div>
+          {:else if inicio.hoyEstado.tipo === "fuera-de-servicio"}
+            <Aviso tono="semana" icono="llave"><span class="largo">{inicio.hoyEstado.aviso}</span></Aviso>
+          {:else if inicio.hoyEstado.tipo === "licencia-no-vigente" || inicio.hoyEstado.tipo === "no-puede-salir"}
+            <!-- Estados 5 (L1) y 5 ter (P21, la documentación de la unidad): el bloqueo se dice sin rol de alerta (el foco ya fue al h1 y esto es lo primero que se lee en el panel) y sin primario: no se deshabilita nada, se explica. -->
+            {@const l = inicio.hoyEstado}
+            <Aviso tono="critico" icono="vencido" accion={l.renglon2}>{l.renglon1}</Aviso>
+            {#if l.borrador !== null}
+              {@const b = l.borrador}
+              <p class="estado-dia">{b.texto}</p>
+              <div class="secundaria">
+                <BotonConfirmar variante="texto" texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
+              </div>
+            {/if}
+          {:else if inicio.hoyEstado.tipo === "cierre-pendiente"}
+            <!-- Estado 5 bis, «Cerrar antes» (P18, P20): una tarea pendiente (tono semana, `i-lapiz`), no una prohibición; por eso hay primario. Tampoco es `role="alert"`. -->
+            {@const c = inicio.hoyEstado}
+            <Aviso tono="semana" icono="lapiz" accion={c.renglon2} idTexto={ID_AVISO_CERRAR_ANTES}>{c.renglon1}</Aviso>
+            <div class="accion-principal"><EnlaceAccion href={c.primario.href} variante="primario" tamano="grande">{c.primario.texto}</EnlaceAccion></div>
+            {#if c.borrador !== null}
+              {@const b = c.borrador}
+              <p class="nota-estado">{b.texto}</p>
+              <div class="secundaria">
+                <BotonConfirmar variante="texto" texto={b.descartar.texto} textoConfirmar={T.confirmarDescartar} alConfirmar={() => descartar(b.descartar.parteId)} />
+              </div>
+            {/if}
+          {:else}
+            <p class="estado-dia">{T.sinUnidad}</p>
+          {/if}
 
-      {#if inicio.hoyEstado.tipo !== "licencia-no-vigente" && inicio.elegirUnidad.opciones.length > 0}
-        {#if inicio.elegirUnidad.modo === "elegir" || mostrandoSelect || seleccion !== ""}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div onchange={alElegirUnidad}>
-            <Campo etiqueta={inicio.elegirUnidad.etiqueta} tipo="select" id={idSelect} grande bind:valor={seleccion}>
-              <option value="">{inicio.unidad === null ? T.elegirUna : T.elegirOtra}</option>
-              {#each inicio.elegirUnidad.opciones as o (o.valor)}
-                <option value={o.valor}>{o.etiqueta}</option>
+          {#if inicio.hoyEstado.tipo !== "licencia-no-vigente" && inicio.elegirUnidad.opciones.length > 0}
+            {#if inicio.elegirUnidad.modo === "elegir" || mostrandoSelect || seleccion !== ""}
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div onchange={alElegirUnidad}>
+                <Campo etiqueta={inicio.elegirUnidad.etiqueta} tipo="select" id={idSelect} grande bind:valor={seleccion}>
+                  <option value="">{inicio.unidad === null ? T.elegirUna : T.elegirOtra}</option>
+                  {#each inicio.elegirUnidad.opciones as o (o.valor)}
+                    <option value={o.valor}>{o.etiqueta}</option>
+                  {/each}
+                </Campo>
+              </div>
+            {:else}
+              <div class="secundaria"><Boton variante="secundario" onclick={mostrarSelect}>{inicio.elegirUnidad.etiqueta}</Boton></div>
+            {/if}
+          {/if}
+        </Panel>
+      </div>
+
+      <div class="col-datos">
+        {#if pendientes.length > 0}
+          <Panel titulo={T.pendientes} icono="alerta" sinRelleno>
+            <ul class="pendientes">
+              {#each pendientes as p (p.clave)}
+                <li class="pendiente">
+                  <span class="forma-pendiente"><Forma forma="triangulo" tono="semana" /></span>
+                  <p class="texto-pendiente">{p.texto}</p>
+                  <EnlaceAccion href={p.accion.href} etiqueta={T.accionPendiente(p.accion.texto, p.texto)}>{p.accion.texto}</EnlaceAccion>
+                </li>
               {/each}
-            </Campo>
-          </div>
-        {:else}
-          <div class="secundaria"><Boton variante="texto" onclick={mostrarSelect}>{inicio.elegirUnidad.etiqueta}</Boton></div>
+            </ul>
+          </Panel>
         {/if}
-      {/if}
-    </Panel>
 
-    {#if pendientes.length > 0}
-      <Panel titulo={T.pendientes} icono="alerta">
-        <ul class="pendientes">
-          {#each pendientes as p (p.clave)}
-            <li class="pendiente">
-              <span class="icono-pendiente"><Icono nombre={p.tipo === "sin-parte" ? "guion" : "lapiz"} /></span>
-              <p class="texto-pendiente">{p.texto}</p>
-              <EnlaceAccion href={p.accion.href} etiqueta={T.accionPendiente(p.accion.texto, p.texto)}>{p.accion.texto}</EnlaceAccion>
-            </li>
-          {/each}
-        </ul>
-      </Panel>
-    {/if}
+        {#if inicio.licencia !== null}
+          {@const l = inicio.licencia}
+          <Panel titulo={l.titulo} icono="persona" sinRelleno>
+            <div class="licencia" data-tono={l.tono}><Etiqueta tono={l.tono}>{l.texto}</Etiqueta></div>
+          </Panel>
+        {/if}
 
-    {#if inicio.licencia !== null}
-      {@const l = inicio.licencia}
-      <Panel titulo={l.titulo} icono="persona">
-        <p class="licencia" data-tono={l.tono}><span class="icono-licencia"><Icono nombre={ICONO_LICENCIA[l.tono]} /></span><span>{l.texto}</span></p>
-      </Panel>
-    {/if}
-
-    <Panel titulo={inicio.ultimosPartes.titulo} icono="km">
-      {#if inicio.ultimosPartes.vacio !== null}
-        <p class="vacio"><Icono nombre="guion" />{inicio.ultimosPartes.vacio}</p>
-      {:else}
-        <ul class="ultimos">
-          {#each inicio.ultimosPartes.filas as f (f.parteId)}
-            <li>
-              <a class="fila-parte" href={f.href}>
-                <span class="fecha num"><span class="solo-lectores">{T.parteDel}</span>{f.fecha}</span>
-                <span class="patente-fila"><Patente patente={f.patenteTexto.replaceAll(" ", "")} /></span>
-                <span class="recorrido num">{f.recorrido}</span>
-              </a>
-            </li>
-          {/each}
-        </ul>
-      {/if}
-    </Panel>
+        <Panel titulo={inicio.ultimosPartes.titulo} icono="km">
+          {#if inicio.ultimosPartes.vacio !== null}
+            <p class="vacio"><Icono nombre="guion" />{inicio.ultimosPartes.vacio}</p>
+          {:else}
+            <ul class="ultimos">
+              {#each inicio.ultimosPartes.filas as f (f.parteId)}
+                <li>
+                  <a class="fila-parte" href={f.href}>
+                    <span class="fecha num"><span class="solo-lectores">{T.parteDel}</span>{f.fecha}</span>
+                    <span class="patente-fila"><Patente patente={f.patenteTexto.replaceAll(" ", "")} /></span>
+                    <span class="recorrido num">{f.recorrido}</span>
+                  </a>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </Panel>
+      </div>
+    </div>
   </div>
 {/if}
 
@@ -228,10 +225,30 @@
     align-items: flex-start;
     gap: var(--e-2);
   }
-  /* El rótulo "Demo con datos ficticios" baja acá cuando la barra superior no tiene lugar (menos de 40 rem). */
-  @media (min-width: 40rem) {
-    .solo-angosto {
-      display: none;
+
+  /* Dos columnas desde 64 rem: «Hoy» (620 px como máximo) y lo demás (440 px), arriba alineados y sin estirarse (prototipo aprobado). */
+  .cuerpo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--e-5);
+    align-items: start;
+  }
+  .col-hoy,
+  .col-datos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-5);
+    min-width: 0;
+  }
+  @media (min-width: 64rem) {
+    .pantalla {
+      width: min(100%, 67.75rem);
+    }
+    .cuerpo {
+      grid-template-columns: minmax(0, 38.75rem) minmax(0, 27.5rem);
+    }
+    .accion-principal :global(.enlace-accion) {
+      flex: 0 1 26.25rem;
     }
   }
 
@@ -248,19 +265,7 @@
     gap: var(--e-2) var(--e-3);
   }
   .interno {
-    font-weight: 600;
-  }
-  /* C9 y m1 de la etapa 7: con el texto agrandado (el interior mide 17 rem o menos) la patente grande, que no se parte, sale de su caja; pasa a su tamaño chico (5.5). */
-  @container interior (max-width: 17rem) {
-    .identidad :global(.patente[data-tamano="grande"]) {
-      --alto: 1.5rem;
-      --relleno: 0.375rem;
-      --tam: var(--t-patente-chica);
-    }
-    .pendiente :global(.enlace-accion) {
-      grid-column: 1 / -1;
-      padding-inline: var(--e-1);
-    }
+    font-weight: 650;
   }
   .descripcion {
     overflow-wrap: anywhere;
@@ -295,53 +300,68 @@
     gap: var(--e-3);
   }
 
-  /* Pendientes: ícono, la frase y la acción; con poco ancho la acción baja a su renglón. */
+  /* Pendientes: filas con riel de azufre (hay que atender), la forma, la frase y la acción; con poco ancho la acción baja a su renglón. */
   .pendientes {
     display: flex;
     flex-direction: column;
-    gap: var(--e-3);
   }
   .pendiente {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
     gap: var(--e-2) var(--e-3);
+    padding: var(--e-3) var(--e-4) var(--e-3) calc(var(--e-4) + 2px);
+    box-shadow: inset 4px 0 0 var(--c-semana-r);
+  }
+  .pendiente + .pendiente {
+    border-top: 1px solid var(--c-borde);
   }
   .pendiente :global(.enlace-accion) {
     grid-column: 2;
     justify-self: start;
   }
-  .icono-pendiente {
-    --icono-tam: 1.125rem;
+  .forma-pendiente {
     display: inline-flex;
-    margin-top: 0.125rem;
-    color: var(--c-semana-t);
+    align-items: center;
+    height: 1.5em;
   }
   .texto-pendiente {
     overflow-wrap: anywhere;
+  }
+  @media (forced-colors: active) {
+    .pendiente {
+      border-left: 4px solid CanvasText;
+      box-shadow: none;
+    }
   }
   @media (min-width: 30rem) {
     .pendiente {
       grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
     }
+    .forma-pendiente {
+      height: auto;
+    }
     .pendiente :global(.enlace-accion) {
       grid-column: 3;
     }
   }
 
+  /* Su licencia: la etiqueta del tono; con riel del tono si pide atención (lo vigente va sin franja, como en el prototipo). */
   .licencia {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--e-2);
-    font-weight: 600;
+    --riel: var(--tono-r);
+    padding: var(--e-3) var(--e-4) var(--e-3) calc(var(--e-4) + 2px);
+    box-shadow: inset 4px 0 0 var(--riel);
   }
-  .icono-licencia {
-    --icono-tam: 1.125rem;
-    display: inline-flex;
-    flex: none;
-    margin-top: 0.1875rem;
-    color: var(--tono-t);
+  .licencia[data-tono="vigente"],
+  .licencia[data-tono="neutro"] {
+    --riel: transparent;
+  }
+  @media (forced-colors: active) {
+    .licencia {
+      border-left: 4px solid CanvasText;
+      box-shadow: none;
+    }
   }
 
   .ultimos {
@@ -367,7 +387,7 @@
   }
   .fila-parte .fecha {
     grid-area: fecha;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--c-acento);
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -420,5 +440,25 @@
   .vacio :global(.icono) {
     flex: none;
     color: var(--c-texto-3);
+  }
+
+  /* Texto agrandado (va al final: a igual especificidad gana la última regla). C9 y m1 de la etapa 7: con el texto agrandado (el interior mide 17 rem o menos) la patente grande, que no se parte, sale de su caja; pasa a su tamaño chico (5.5). */
+  @container interior (max-width: 17rem) {
+    .identidad :global(.patente[data-tamano="grande"]) {
+      --alto: 1.5rem;
+      --relleno: 0.375rem;
+      --tam: var(--t-patente-chica);
+    }
+    .pendiente :global(.enlace-accion) {
+      grid-column: 1 / -1;
+      padding-inline: var(--e-1);
+    }
+    .pendiente {
+      column-gap: var(--e-2);
+      padding-inline: calc(var(--e-1) + 4px) var(--e-1);
+    }
+    .licencia {
+      padding-inline: calc(var(--e-1) + 4px) var(--e-1);
+    }
   }
 </style>

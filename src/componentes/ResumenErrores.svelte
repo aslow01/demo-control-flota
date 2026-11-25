@@ -1,8 +1,8 @@
 <script lang="ts">
-  // 5.15 Resumen de errores (patrón GOV.UK): panel arriba del formulario con borde izquierdo crítico, un título y una lista de enlaces a cada
-  // campo con su mensaje, en el orden del formulario. No es `role="alert"`: es un `div` con `tabindex="-1"` al que quien lo usa le da el foco
+  // 5.15 Resumen de errores (patrón GOV.UK): panel arriba del formulario con borde cobre de 2 px y fondo cobre suave, un título con la forma del tono y una lista de enlaces
+  // a cada campo con su mensaje, en el orden del formulario. No es `role="alert"`: es un `div` con `tabindex="-1"` al que quien lo usa le da el foco
   // cuando aparece (`enfocar()`). Los enlaces mueven el foco al campo sin tocar la dirección de la página (el enrutador lee el hash).
-  import Icono from "./Icono.svelte";
+  import Forma from "./Forma.svelte";
 
   let {
     titulo,
@@ -34,7 +34,7 @@
 </script>
 
 <div class="resumen" tabindex="-1" bind:this={caja} role="group" aria-labelledby={idTitulo}>
-  <svelte:element this={nivel} class="titulo" id={idTitulo}><Icono nombre="vencido" />{titulo}</svelte:element>
+  <svelte:element this={nivel} class="titulo" id={idTitulo}><Forma forma="rombo" tono="critico" /><span>{titulo}</span></svelte:element>
   {#if general !== ""}<p class="general">{general}</p>{/if}
   <ul>
     {#each items as item (item.campoId)}
@@ -48,19 +48,26 @@
     display: flex;
     flex-direction: column;
     gap: var(--e-2);
+    min-width: 0;
     padding: var(--e-3) var(--e-4);
-    background: var(--c-superficie);
-    border: 1px solid var(--c-borde);
-    border-left: 4px solid var(--c-critico-r);
-    border-radius: var(--r-2);
+    background: var(--c-critico-f);
+    border: 2px solid var(--c-critico-r);
+    border-radius: var(--r-1);
+    color: var(--c-critico-t);
   }
   .titulo {
-    --icono-tam: 1.125rem;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--e-2);
-    font-size: 1rem;
+    font-family: var(--t-familia);
+    font-stretch: 100%;
+    font-size: var(--t-h3);
+    font-weight: 750;
+    line-height: 1.3;
     color: var(--c-critico-t);
+  }
+  .titulo :global(.forma) {
+    margin-top: 0.4375rem;
   }
   .general {
     font-size: var(--t-chico);
@@ -73,7 +80,7 @@
     gap: var(--e-1);
   }
   li {
-    font-size: var(--t-chico);
+    font-size: 0.9375rem;
     line-height: 1.4;
   }
   a {
@@ -82,5 +89,14 @@
     min-height: var(--alto-tactil);
     color: var(--c-critico-t);
     font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    overflow-wrap: anywhere;
+  }
+  /* Texto agrandado: menos relleno a los lados para que el mensaje conserve el ancho. */
+  @container parte (max-width: 17rem) {
+    .resumen {
+      padding-inline: var(--e-2);
+    }
   }
 </style>

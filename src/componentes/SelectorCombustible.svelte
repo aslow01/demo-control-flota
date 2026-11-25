@@ -1,9 +1,10 @@
 <script lang="ts">
   // 5.13 Selector de combustible: un `fieldset` con cinco radios como segmentos contiguos (Reserva, 1/4, 1/2, 3/4, Lleno; 48 px). Los segmentos hasta el elegido llevan
-  // una barra inferior de 6 px (se lee como un medidor); el elegido, además, fondo, texto firme e ícono. El valor se lee por el radio, no por la barra. Con poco ancho
-  // (menos de 22 rem) el texto baja a --t-chico y el ícono se va: el fondo, la barra y el peso siguen diciendo cuál es.
+  // una barra inferior de 6 px de tinta (se lee como un medidor); el elegido, además, va relleno de tinta con el tilde. El valor se lee por el radio, no por la barra. Con poco ancho
+  // (menos de 22 rem) el texto baja a --t-chico y el tilde se va: el fondo, la barra y el peso siguen diciendo cuál es.
   // El primer radio lleva `id` (el resumen de errores enlaza ahí).
   import type { NivelCombustible } from "../lib/dominio/tipos.ts";
+  import Forma from "./Forma.svelte";
   import Icono from "./Icono.svelte";
 
   let {
@@ -32,7 +33,7 @@
 <fieldset class="combustible" class:con-error={error !== ""} role="radiogroup" aria-required="true" aria-invalid={error !== "" ? "true" : undefined} aria-describedby={error !== "" ? idError : undefined}>
   <legend>{leyenda}{#if requerido}<span aria-hidden="true"> *</span>{/if}</legend>
   {#if error !== ""}
-    <p class="error" id={idError}><Icono nombre="vencido" /><span>{error}</span></p>
+    <p class="error" id={idError}><Forma forma="rombo" tono="critico" /><span>{error}</span></p>
   {/if}
   <div class="segmentos">
     {#each opciones as o, i (o.valor)}
@@ -60,21 +61,21 @@
     padding: 0;
     margin-bottom: var(--e-2);
     font-size: var(--t-chico);
-    font-weight: 600;
+    font-weight: 650;
     line-height: 1.4;
+    color: var(--c-texto-2);
   }
   .error {
-    --icono-tam: 1rem;
     display: flex;
     align-items: flex-start;
     gap: var(--e-2);
     font-size: var(--t-chico);
-    font-weight: 600;
+    font-weight: 650;
     line-height: 1.4;
     color: var(--c-critico-t);
   }
-  .error :global(.icono) {
-    margin-top: 0.1rem;
+  .error :global(.forma) {
+    margin-block: 0.3125rem 0;
   }
 
   .segmentos {
@@ -90,20 +91,23 @@
     min-height: var(--alto-segmento);
     padding: 0 var(--e-1);
     background: var(--c-superficie);
-    border: 1px solid var(--c-borde-fuerte);
+    border: var(--b-control) solid var(--c-borde-fuerte);
     color: var(--c-texto);
+    font-size: 0.9375rem;
+    font-weight: 650;
     line-height: 1.2;
     text-align: center;
     cursor: pointer;
+    transition: background-color var(--m-rapido) linear;
   }
   .segmento + .segmento {
-    margin-left: -1px;
+    margin-left: calc(-1 * var(--b-control));
   }
   .segmento:first-child {
-    border-radius: var(--r-2) 0 0 var(--r-2);
+    border-radius: var(--r-1) 0 0 var(--r-1);
   }
   .segmento:last-child {
-    border-radius: 0 var(--r-2) var(--r-2) 0;
+    border-radius: 0 var(--r-1) var(--r-1) 0;
   }
   .segmento input {
     position: absolute;
@@ -121,28 +125,29 @@
   }
   .icono-elegido {
     display: none;
-    color: var(--c-acento);
+    color: var(--c-sobre-tinta);
   }
-  /* El medidor: una barra de 6 px abajo en todos los segmentos hasta el elegido. */
+  /* El medidor: una barra de 6 px de tinta abajo en todos los segmentos hasta el elegido. */
   .segmento[data-lleno] {
-    box-shadow: inset 0 -6px 0 var(--c-acento);
+    box-shadow: inset 0 -6px 0 var(--c-tinta);
   }
   @media (hover: hover) {
-    .segmento:hover {
+    .segmento:not(:has(input:checked)):hover {
       background: var(--c-superficie-2);
     }
   }
   .segmento:has(input:checked) {
     z-index: 1;
-    background: var(--c-acento-suave);
-    font-weight: 600;
+    background: var(--c-tinta);
+    border-color: var(--c-tinta);
+    color: var(--c-sobre-tinta);
   }
   .segmento:has(input:checked) .icono-elegido {
     display: inline-flex;
   }
   .segmento:has(input:focus-visible) {
     z-index: 2;
-    outline: 2px solid var(--c-foco);
+    outline: 3px solid var(--c-foco);
     outline-offset: 2px;
   }
 
@@ -163,16 +168,19 @@
     }
     .segmento + .segmento {
       margin-left: 0;
-      margin-top: -1px;
+      margin-top: calc(-1 * var(--b-control));
     }
     .segmento:first-child {
-      border-radius: var(--r-2) var(--r-2) 0 0;
+      border-radius: var(--r-1) var(--r-1) 0 0;
     }
     .segmento:last-child {
-      border-radius: 0 0 var(--r-2) var(--r-2);
+      border-radius: 0 0 var(--r-1) var(--r-1);
     }
     .segmento[data-lleno] {
-      box-shadow: inset 6px 0 0 var(--c-acento);
+      box-shadow: inset 6px 0 0 var(--c-tinta);
+    }
+    .segmento[data-lleno]:has(input:checked) {
+      box-shadow: none;
     }
   }
 
