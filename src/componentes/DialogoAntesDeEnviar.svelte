@@ -65,7 +65,7 @@
     background: var(--tono-f);
     border: 1px solid transparent;
     border-left: 4px solid var(--tono-r);
-    border-radius: var(--r-2);
+    border-radius: 0 var(--r-1) var(--r-1) 0;
     line-height: 1.5;
   }
   @container dialogo (max-width: 17rem) {

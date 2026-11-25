@@ -92,16 +92,24 @@
     flex-direction: column;
     gap: var(--e-4);
     min-width: 0;
-    padding: var(--e-4);
+    padding: var(--e-4) var(--e-4) var(--e-4) calc(var(--e-4) + 4px);
     background: var(--c-superficie);
-    border: 1px solid var(--c-ventana-borde);
-    border-left: 4px solid var(--tono-r);
-    border-radius: var(--r-3);
-    box-shadow: var(--s-ventana);
+    border: 1px solid var(--c-borde);
+    border-radius: var(--r-2);
+    /* El riel del tono del resultado (4 px) va como en las filas del prototipo: sombra interior, que sigue la curva del borde. */
+    box-shadow:
+      inset 4px 0 0 var(--tono-r),
+      var(--s-panel);
   }
   @media (min-width: 40rem) {
     .resultado {
-      padding: var(--e-5);
+      padding: var(--e-5) var(--e-5) var(--e-5) calc(var(--e-5) + 4px);
+    }
+  }
+  @media (forced-colors: active) {
+    .resultado {
+      border-left: 4px solid CanvasText;
+      box-shadow: none;
     }
   }
   .cabeza {
@@ -179,7 +187,7 @@
   /* Texto agrandado (la pantalla mide 17 rem o menos): menos relleno a los lados y botones con menos aire, así las palabras largas no se parten (S5 de la etapa 7). */
   @container pagina-parte (max-width: 17rem) {
     .resultado {
-      padding: var(--e-3) var(--e-2);
+      padding: var(--e-3) var(--e-2) var(--e-3) calc(var(--e-2) + 4px);
     }
     .acciones :global(.enlace-accion:not([data-variante="texto"])) {
       padding-inline: var(--e-2);
@@ -188,7 +196,7 @@
   /* 320 px con el texto agrandado (la pantalla mide 8 rem): el relleno baja otro escalón, para que «Documentación» (7 rem) entre entera. */
   @container pagina-parte (max-width: 8.5rem) {
     .resultado {
-      padding-inline: var(--e-1);
+      padding-inline: calc(var(--e-1) + 4px) var(--e-1);
     }
   }
 </style>

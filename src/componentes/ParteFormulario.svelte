@@ -272,22 +272,30 @@
     {#if vista.tipo === "edicion"}
       <section class="seccion" aria-labelledby={id("km-titulo")}>
         <h2 id={id("km-titulo")}>{T.secciones.revision.km}</h2>
-        {#if vista.conductor.tipo === "elegir"}
-          <Campo etiqueta={vista.conductor.etiqueta} tipo="select" grande requerido id={idCampo("conductor")} bind:valor={valores.conductorId} error={errorDe("conductor")}>
-            {#each vista.conductor.opciones as o (o.valor)}
-              <option value={o.valor}>{o.textoDeOpcion}</option>
-            {/each}
-          </Campo>
-        {/if}
-        <Campo etiqueta={T.kmInicio} tipo="km" grande requerido id={idCampo("kmInicio")} bind:valor={valores.kmInicio} ayuda={vista.ayudaKmInicio} error={errorDe("kmInicio")} teclaEnter="next" />
+        <div class="tarjeta campos">
+          {#if vista.conductor.tipo === "elegir"}
+            <Campo etiqueta={vista.conductor.etiqueta} tipo="select" grande requerido id={idCampo("conductor")} bind:valor={valores.conductorId} error={errorDe("conductor")}>
+              {#each vista.conductor.opciones as o (o.valor)}
+                <option value={o.valor}>{o.textoDeOpcion}</option>
+              {/each}
+            </Campo>
+          {/if}
+          <Campo etiqueta={T.kmInicio} tipo="km" grande requerido id={idCampo("kmInicio")} bind:valor={valores.kmInicio} ayuda={vista.ayudaKmInicio} error={errorDe("kmInicio")} teclaEnter="next" />
+        </div>
       </section>
 
       <section class="seccion" aria-labelledby={id("revision-titulo")}>
-        <div class="titulo-seccion">
-          <h2 id={id("revision-titulo")}>{T.secciones.revision.puntos}</h2>
+        <h2 id={id("revision-titulo")}>{T.secciones.revision.puntos}</h2>
+        <div class="progreso">
           <p class="respondidos num">{T.respondidos(respondidos(valores), vista.puntos.length)}</p>
+          <!-- El parte en miniatura: un segmento por punto (gris sin responder, malaquita en orden, cobre con novedad). Decorativo: el conteo de al lado lo dice con texto. -->
+          <span class="barra-prog" aria-hidden="true">
+            {#each vista.puntos as p (p.id)}
+              <i data-resp={valores.checklist[p.id].respuesta === "en-orden" ? "orden" : valores.checklist[p.id].respuesta === "con-novedad" ? "novedad" : undefined} data-critico={p.critico ? "" : undefined}></i>
+            {/each}
+          </span>
         </div>
-        <div class="puntos">
+        <div class="tarjeta puntos">
           {#each vista.puntos as p (p.id)}
             <ItemRevision
               texto={p.texto}
@@ -304,27 +312,33 @@
 
       <section class="seccion" aria-labelledby={id("otra-titulo")}>
         <h2 id={id("otra-titulo")}>{T.secciones.revision.otra}</h2>
-        <Campo etiqueta={vista.etiquetaOtraNovedad} tipo="area" id={idCampo("otraNovedad")} bind:valor={valores.otraNovedad.descripcion} error={errorDe("otraNovedad")} />
-        <Casilla etiqueta={vista.etiquetaImpideUso} bind:marcada={valores.otraNovedad.impideUso} ayuda={TEXTO_DIALOGOS_FICHA.cargarNovedad.impideNota} />
+        <div class="tarjeta campos">
+          <Campo etiqueta={vista.etiquetaOtraNovedad} tipo="area" id={idCampo("otraNovedad")} bind:valor={valores.otraNovedad.descripcion} error={errorDe("otraNovedad")} />
+          <Casilla etiqueta={vista.etiquetaImpideUso} bind:marcada={valores.otraNovedad.impideUso} ayuda={TEXTO_DIALOGOS_FICHA.cargarNovedad.impideNota} />
+        </div>
       </section>
     {:else}
       <section class="seccion" aria-labelledby={id("km-titulo")}>
         <h2 id={id("km-titulo")}>{T.secciones.cierre.km}</h2>
-        <div class="km">
-          <!-- «Al iniciar» como texto, junto al campo, desde 30 rem de contenedor: con menos ancho ya está en el resumen de la revisión. -->
-          <dl class="inicio-texto">
-            <dt>{T.kmInicio}</dt>
-            <dd class="num">{vista.kmInicioTexto}</dd>
-          </dl>
-          <Campo etiqueta={T.kmFin} tipo="km" grande requerido id={idCampo("kmFin")} bind:valor={valores.kmFin} ayuda={vista.ayudaKmFin} error={errorDe("kmFin")} teclaEnter="next" />
+        <div class="tarjeta campos">
+          <div class="km">
+            <!-- «Al iniciar» como texto, junto al campo, desde 30 rem de contenedor: con menos ancho ya está en el resumen de la revisión. -->
+            <dl class="inicio-texto">
+              <dt>{T.kmInicio}</dt>
+              <dd class="num">{vista.kmInicioTexto}</dd>
+            </dl>
+            <Campo etiqueta={T.kmFin} tipo="km" grande requerido id={idCampo("kmFin")} bind:valor={valores.kmFin} ayuda={vista.ayudaKmFin} error={errorDe("kmFin")} teclaEnter="next" />
+          </div>
+          <p class="recorrido"><span class="rotulo-recorrido">{T.recorrido}:</span> <output for={idCampo("kmFin")} class="num">{recorrido}</output></p>
         </div>
-        <p class="recorrido"><span class="rotulo-recorrido">{T.recorrido}:</span> <output for={idCampo("kmFin")} class="num">{recorrido}</output></p>
       </section>
 
       <section class="seccion" aria-labelledby={id("combustible-titulo")}>
         <h2 id={id("combustible-titulo")}>{T.secciones.cierre.combustible}</h2>
-        <SelectorCombustible leyenda={T.nivelCombustible} requerido opciones={vista.combustible} bind:valor={valores.combustible} id={idCampo("combustible")} error={errorDe("combustible")} />
-        <Campo etiqueta={T.litros} tipo="litros" grande id={idCampo("litrosCargados")} bind:valor={valores.litros} ayuda={vista.ayudaLitros} error={errorDe("litrosCargados")} teclaEnter="done" />
+        <div class="tarjeta campos">
+          <SelectorCombustible leyenda={T.nivelCombustible} requerido opciones={vista.combustible} bind:valor={valores.combustible} id={idCampo("combustible")} error={errorDe("combustible")} />
+          <Campo etiqueta={T.litros} tipo="litros" grande id={idCampo("litrosCargados")} bind:valor={valores.litros} ayuda={vista.ayudaLitros} error={errorDe("litrosCargados")} teclaEnter="done" />
+        </div>
       </section>
     {/if}
   </form>
@@ -361,6 +375,12 @@
       gap: var(--e-3);
     }
   }
+  /* Desde 64 rem el parte gana ancho (760 px como en el prototipo aprobado). */
+  @media (min-width: 64rem) {
+    .parte {
+      width: min(100%, 47.5rem);
+    }
+  }
 
   /* Resumen de la revisión (paso 2): una caja del color de la página, sin sombra ni título de panel (no es un campo ni una ventana: es lo que ya se envió). */
   .resumen-revision {
@@ -379,41 +399,43 @@
     overflow-wrap: anywhere;
   }
 
-  /* La hoja del formulario: las secciones sobre una superficie, separadas por una línea. */
+  /* El formulario: cada sección es un título sobre el fondo de la página y, debajo, su tarjeta (borde fino, sin sombra). */
   .hoja {
     display: flex;
     flex-direction: column;
+    gap: var(--e-5);
     min-width: 0;
-    background: var(--c-superficie);
-    border: 1px solid var(--c-ventana-borde);
-    border-radius: var(--r-3);
-    box-shadow: var(--s-ventana);
   }
   .seccion {
     display: flex;
     flex-direction: column;
-    gap: var(--e-4);
+    gap: var(--e-2);
     min-width: 0;
+  }
+  /* Títulos de sección en la fuente de texto (la de títulos queda para el h1 y las cifras), como el título de un panel. */
+  .seccion h2 {
+    font-family: var(--t-familia);
+    font-stretch: 100%;
+    font-size: var(--t-h3);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .tarjeta {
+    min-width: 0;
+    background: var(--c-superficie);
+    border: 1px solid var(--c-borde);
+    border-radius: var(--r-2);
+    box-shadow: var(--s-panel);
+  }
+  .campos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-4);
     padding: var(--e-4);
-  }
-  /* Con poco ancho las secciones se aprietan un poco: la meta de 6.5 pide «Al iniciar» y «Al terminar» por encima de los 600 px a 360 × 780. */
-  @media (max-width: 31.99rem) {
-    .seccion {
-      gap: var(--e-3);
-      padding: var(--e-3) var(--e-4);
-    }
-  }
-  .seccion + .seccion {
-    border-top: 1px solid var(--c-borde);
-  }
-  @container parte (min-width: 30rem) {
-    .seccion {
-      padding: var(--e-5);
-    }
   }
   /* Texto agrandado (el parte mide 17 rem o menos): menos relleno a los lados, para que una palabra como «Documentación» entre entera en su renglón (S5 de la etapa 7). */
   @container parte (max-width: 17rem) {
-    .seccion {
+    .campos {
       padding-inline: var(--e-2);
     }
     .resumen-revision {
@@ -422,33 +444,68 @@
   }
   /* 320 px con el texto agrandado (el parte mide 8 rem): otro escalón menos de relleno, para que una palabra de 7 rem entre entera. */
   @container parte (max-width: 8.5rem) {
-    .seccion {
+    .campos {
       padding-inline: var(--e-1);
     }
   }
-  .seccion h2 {
-    font-size: var(--t-h3);
-    line-height: 1.3;
-  }
-  .titulo-seccion {
+
+  /* «Respondidos: 3 de 14» y, al lado, el parte en miniatura: un segmento por punto (gris sin responder, malaquita en orden, cobre con novedad; los críticos con una raya abajo). */
+  .progreso {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--e-1) var(--e-3);
+    align-items: center;
+    gap: var(--e-2) var(--e-3);
+    margin-bottom: var(--e-1);
   }
   .respondidos {
-    font-size: var(--t-chico);
-    color: var(--c-texto-2);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--c-texto);
   }
+  .barra-prog {
+    display: grid;
+    flex: 1 1 8rem;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 2px;
+    height: 0.5rem;
+  }
+  .barra-prog i {
+    display: block;
+    border-radius: 1px;
+    background: var(--c-superficie-2);
+    transition:
+      background-color var(--m-medio) linear,
+      transform var(--m-medio) var(--m-curva);
+  }
+  .barra-prog i[data-critico] {
+    box-shadow: inset 0 -2px 0 var(--c-borde-fuerte);
+  }
+  .barra-prog i[data-resp="orden"] {
+    background: var(--c-vigente-r);
+    box-shadow: none;
+  }
+  .barra-prog i[data-resp="novedad"] {
+    background: var(--c-critico-r);
+    box-shadow: none;
+    transform: scaleY(1.5);
+  }
+  @media (forced-colors: active) {
+    .barra-prog i {
+      border: 1px solid CanvasText;
+    }
+    .barra-prog i[data-resp] {
+      background: CanvasText;
+    }
+  }
+  /* Las filas del checklist van pegadas, con un divisor de 1 px; el riel de cada una llega hasta el borde de la tarjeta. */
   .puntos {
     display: flex;
     flex-direction: column;
-    margin-top: calc(-1 * var(--e-2));
+    overflow: clip;
   }
-  .puntos > :global(.item:last-child) {
-    padding-bottom: 0;
-    border-bottom: 0;
+  .puntos > :global(.item + .item) {
+    border-top: 1px solid var(--c-borde);
   }
 
   /* Paso 2: «Al iniciar» (texto) y «Al terminar» (campo) en dos columnas desde 30 rem de contenedor; con menos, solo el campo. */

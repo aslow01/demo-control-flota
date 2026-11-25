@@ -1,9 +1,11 @@
 <script lang="ts">
-  // 5.12 Ítem de checklist del parte: un `fieldset` con el punto como `legend` (y la etiqueta «Punto crítico» si lo es), dos radios con aspecto de segmentos
-  // («En orden» / «Con novedad», 48 px, mitad y mitad) y, con «Con novedad», la descripción («¿Qué encontró?») y: en un punto crítico, la nota de que la unidad
-  // queda fuera de servicio; en uno que no lo es, la casilla «Impide usar la unidad». El texto escrito se conserva aunque se vuelva a «En orden».
-  //  - Sin responder después de intentar enviar: borde izquierdo de 4 px crítico y el mensaje arriba de los segmentos (si ya eligió «Con novedad», el
-  //    mensaje va sobre la descripción). El error no desaparece solo: se vuelve a calcular al enviar.
+  // 5.12 Ítem de checklist del parte: un `fieldset` con el punto como `legend` (y la marca «Punto crítico» si lo es), dos radios con aspecto de segmentos
+  // («En orden» / «Con novedad», 48 px, mitad y mitad; elegidos: tinta y cobre sólido) y, con «Con novedad», la descripción («¿Qué encontró?») y: en un punto crítico, la nota
+  // de que la unidad queda fuera de servicio; en uno que no lo es, la casilla «Impide usar la unidad». El texto escrito se conserva aunque se vuelva a «En orden».
+  //  - El riel izquierdo de 4 px habla de la respuesta (no de si el punto es crítico: eso lo dice la forma junto al nombre): gris sin responder, malaquita «En orden»,
+  //    cobre «Con novedad» (con un fondo cobre suave) y cobre también sin responder después de intentar enviar. Va con `box-shadow` interior: no mueve nada.
+  //  - Sin responder después de intentar enviar: el mensaje va arriba de los segmentos (si ya eligió «Con novedad», sobre la descripción). El error no desaparece solo:
+  //    se vuelve a calcular al enviar.
   //  - El `fieldset` es un `radiogroup` obligatorio (`aria-required`: el punto no lleva asterisco y el lector lo dice) y, sin responder tras intentar enviar, `aria-invalid`.
   //  - El primer radio lleva el id del ítem (`idBase`): el resumen de errores enlaza ahí; la descripción, `idBase-descripcion`.
   //  - El campo de la descripción aparece con el radio, sin animación de alto, y no roba el foco (se llega con Tab).
@@ -12,7 +14,7 @@
   import Campo from "./Campo.svelte";
   import Casilla from "./Casilla.svelte";
   import Etiqueta from "./Etiqueta.svelte";
-  import Icono from "./Icono.svelte";
+  import Forma from "./Forma.svelte";
   import { TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
 
   let {
@@ -46,25 +48,32 @@
   const describedby = $derived([errorDeSegmentos !== "" ? idError : "", conNovedad && critico ? idNota : ""].filter((s) => s !== "").join(" ") || undefined);
 </script>
 
-<fieldset class="item" class:con-error={error !== ""} class:critico role="radiogroup" aria-required="true" aria-invalid={sinResponder ? "true" : undefined} aria-describedby={describedby}>
+<fieldset
+  class="item"
+  class:con-error={error !== ""}
+  class:critico
+  data-resp={conNovedad ? "novedad" : valor.respuesta === "en-orden" ? "orden" : undefined}
+  role="radiogroup"
+  aria-required="true"
+  aria-invalid={sinResponder ? "true" : undefined}
+  aria-describedby={describedby}
+>
   <legend>
     <span class="nombre">{texto}</span>
-    {#if critico}<Etiqueta tono="neutro" icono="octogono">{T.puntoCritico}</Etiqueta>{/if}
+    {#if critico}<Etiqueta tono="critico" variante="texto">{T.puntoCritico}</Etiqueta>{/if}
   </legend>
 
   {#if errorDeSegmentos !== ""}
-    <p class="error" id={idError}><Icono nombre="vencido" /><span>{errorDeSegmentos}</span></p>
+    <p class="error" id={idError}><Forma forma="rombo" tono="critico" /><span>{errorDeSegmentos}</span></p>
   {/if}
 
   <div class="segmentos">
     <label class="segmento" data-respuesta="en-orden">
       <input type="radio" id={idBase} name={nombre} value="en-orden" bind:group={valor.respuesta} />
-      <Icono nombre="check" />
       <span>{T.enOrden}</span>
     </label>
-    <label class="segmento" data-respuesta="con-novedad" data-critico={critico ? "" : undefined}>
+    <label class="segmento" data-respuesta="con-novedad">
       <input type="radio" name={nombre} value="con-novedad" bind:group={valor.respuesta} />
-      <Icono nombre="alerta" />
       <span>{T.conNovedad}</span>
     </label>
   </div>
@@ -73,7 +82,7 @@
     <div class="novedad">
       <Campo etiqueta={T.queEncontro} tipo="area" id={`${idBase}-descripcion`} bind:valor={valor.descripcion} requerido error={errorDeDescripcion} />
       {#if critico && notaCritica !== null}
-        <p class="nota-critica" id={idNota}><Icono nombre="octogono" /><span>{notaCritica}</span></p>
+        <p class="nota-critica" id={idNota}><Forma forma="rombo" tono="critico" /><span>{notaCritica}</span></p>
       {:else if !critico}
         <Casilla etiqueta={etiquetaImpideUso} bind:marcada={valor.impideUso} ayuda={TEXTO_DIALOGOS_FICHA.cargarNovedad.impideNota} />
       {/if}
@@ -82,77 +91,90 @@
 </fieldset>
 
 <style>
+  /* Una fila del checklist dentro de la tarjeta de la revisión (que pone el divisor entre filas). El riel va con `box-shadow` interior: no ocupa lugar. */
   .item {
+    --riel: var(--c-superficie-2);
     display: flex;
     flex-direction: column;
     gap: var(--e-3);
     min-width: 0;
-    padding-block: 0 var(--e-4);
-    /* Separados por un divisor de 1 px (quien los junta le quita el del último). Va abajo: el de arriba lo cortaría la leyenda. */
-    border-bottom: 1px solid var(--c-borde);
+    padding: var(--e-3) var(--e-4) var(--e-4) calc(var(--e-4) + 2px);
+    box-shadow: inset 4px 0 0 var(--riel);
+    transition:
+      box-shadow var(--m-medio) linear,
+      background-color var(--m-medio) linear;
   }
-  /* Sin responder tras intentar enviar: borde izquierdo de 4 px crítico (el mensaje lo dice con texto: el color no va solo). */
+  .item[data-resp="orden"] {
+    --riel: var(--c-vigente-r);
+  }
+  .item[data-resp="novedad"] {
+    --riel: var(--c-critico-r);
+    background: color-mix(in srgb, var(--c-critico-f) 40%, var(--c-superficie));
+  }
   .item.con-error {
-    padding-left: var(--e-3);
-    border-left: 4px solid var(--c-critico-r);
+    --riel: var(--c-critico-r);
   }
+  /* Texto agrandado: menos relleno a los lados y los dos segmentos uno debajo del otro, así ninguna palabra se parte (S5 de la etapa 7). */
   @container parte (max-width: 17rem) {
-    .item.con-error {
-      padding-left: var(--e-2);
+    .item {
+      padding-inline: var(--e-3) var(--e-2);
+    }
+    .segmentos {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
   @container parte (max-width: 8.5rem) {
-    .item.con-error {
-      padding-left: 0;
+    .item {
+      padding-inline: var(--e-2) var(--e-1);
     }
   }
-  /* Texto agrandado: el mensaje de error baja debajo de su ícono si no entra a su lado sin partir una palabra (S5 de la etapa 7). */
-  @container parte (max-width: 17rem) {
-    .error {
-      flex-wrap: wrap;
-    }
-    .error > span:last-child {
-      flex: 1 1 7rem;
-      min-width: 0;
-    }
-  }
-  /* La etiqueta «Punto crítico» siempre en el mismo lugar (C12): debajo del nombre con poco ancho y a su derecha desde 40 rem. Antes bajaba o no según el largo del nombre. */
+  /* El nombre y la marca de «Punto crítico» en un renglón; si no entran, la marca baja. Flotado, el `legend` deja de ser «el rótulo sobre el borde» y es un hijo más:
+     el relleno del `fieldset` queda arriba, como en el resto de la fila. */
   legend {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    float: left;
     width: 100%;
-    padding: var(--e-4) 0 0;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--e-1);
+    padding: 0;
+    gap: var(--e-1) var(--e-2);
   }
-  @media (min-width: 40rem) {
-    legend {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--e-3);
-    }
+  legend ~ :global(*) {
+    clear: both;
   }
   .nombre {
-    font-weight: 600;
-    line-height: 1.4;
+    font-size: var(--t-h3);
+    font-weight: 650;
+    line-height: 1.3;
     /* m1 de la etapa 7: si el nombre del punto no entra ni en su propio renglón (320 px con el texto al 200 %), se parte en vez de ensanchar la página. */
     overflow-wrap: anywhere;
   }
 
   .error {
-    --icono-tam: 1rem;
     display: flex;
     align-items: flex-start;
     gap: var(--e-2);
     font-size: var(--t-chico);
-    font-weight: 600;
+    font-weight: 650;
     line-height: 1.4;
     color: var(--c-critico-t);
     overflow-wrap: anywhere;
   }
-  .error :global(.icono) {
-    margin-top: 0.1rem;
+  .error :global(.forma),
+  .nota-critica :global(.forma) {
+    margin-block: 0.3125rem 0;
+  }
+  /* Texto agrandado: el mensaje baja debajo de su forma si no entra a su lado sin partir una palabra (S5 de la etapa 7). */
+  @container parte (max-width: 17rem) {
+    .error,
+    .nota-critica {
+      flex-wrap: wrap;
+    }
+    .error > span:last-child,
+    .nota-critica > span:last-child {
+      flex: 1 1 7rem;
+      min-width: 0;
+    }
   }
 
   /* Dos segmentos, 50 % y 50 %, 48 px. El radio ocupa toda la caja y no se ve: el segmento dice si está elegido. */
@@ -162,36 +184,22 @@
     gap: var(--e-2);
   }
   .segmento {
-    --icono-tam: 1.125rem;
-    --fondo: var(--c-superficie);
-    --marca: var(--c-borde-fuerte);
-    --icono-color: var(--c-texto-2);
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--e-2);
     min-height: var(--alto-segmento);
-    padding: 0 var(--e-3);
-    background: var(--fondo);
-    border: 1px solid var(--c-borde-fuerte);
-    border-radius: var(--r-2);
+    padding: 0 var(--e-2);
+    background: var(--c-superficie);
+    border: var(--b-control) solid var(--c-borde-fuerte);
+    border-radius: var(--r-1);
     color: var(--c-texto);
+    font-size: 0.9375rem;
+    font-weight: 650;
     line-height: 1.2;
     text-align: center;
     cursor: pointer;
-  }
-  .segmento :global(.icono) {
-    flex: none;
-    color: var(--icono-color);
-  }
-  /* Con poco ancho (C11) cada segmento mide unos 143 px y «Con novedad» con su ícono no entraba: menos relleno y menos aire; si igual no entra, el ícono pasa arriba del texto. */
-  @container parte (max-width: 21.99rem) {
-    .segmento {
-      flex-wrap: wrap;
-      gap: 0 var(--e-1);
-      padding: 0 var(--e-2);
-    }
+    transition: background-color var(--m-rapido) linear;
   }
   .segmento input {
     position: absolute;
@@ -203,33 +211,27 @@
     cursor: pointer;
   }
   @media (hover: hover) {
-    .segmento:hover {
-      --fondo: var(--c-superficie-2);
+    .segmento:not(:has(input:checked)):hover {
+      background: var(--c-superficie-2);
     }
   }
-  /* Elegido: fondo y borde de 2 px (el borde de 1 px más un anillo interior, para que la caja no se mueva), texto firme e ícono del tono. */
-  .segmento:has(input:checked) {
-    border-color: var(--marca);
-    box-shadow: inset 0 0 0 1px var(--marca);
-    font-weight: 600;
-  }
+  /* Elegido: «En orden» en tinta (la acción), «Con novedad» en cobre sólido; con un filete interior que da el contraste del borde también en oscuro. */
   .segmento[data-respuesta="en-orden"]:has(input:checked) {
-    --fondo: var(--c-vigente-f);
-    --marca: var(--c-vigente-r);
-    --icono-color: var(--c-vigente-t);
+    background: var(--c-tinta);
+    border-color: var(--c-tinta);
+    color: var(--c-sobre-tinta);
   }
   .segmento[data-respuesta="con-novedad"]:has(input:checked) {
-    --fondo: var(--c-semana-f);
-    --marca: var(--c-semana-r);
-    --icono-color: var(--c-semana-t);
+    background: var(--c-critico-solido);
+    border-color: var(--c-critico-r);
+    box-shadow: inset 0 0 0 1px var(--c-critico-r);
+    color: var(--c-sobre-solido);
   }
-  .segmento[data-respuesta="con-novedad"][data-critico]:has(input:checked) {
-    --fondo: var(--c-critico-f);
-    --marca: var(--c-critico-r);
-    --icono-color: var(--c-critico-t);
+  .item.con-error .segmento:not(:has(input:checked)) {
+    border-color: var(--c-critico-r);
   }
   .segmento:has(input:focus-visible) {
-    outline: 2px solid var(--c-foco);
+    outline: 3px solid var(--c-foco);
     outline-offset: 2px;
   }
 
@@ -239,34 +241,27 @@
     gap: var(--e-3);
     min-width: 0;
   }
+  /* La nota del punto crítico es texto llano (como la ayuda de un campo), con la forma del tono al lado. */
   .nota-critica {
-    --icono-tam: 1rem;
     display: flex;
     align-items: flex-start;
     gap: var(--e-2);
-    padding: var(--e-3);
-    background: var(--c-critico-f);
-    border-left: 4px solid var(--c-critico-r);
-    border-radius: var(--r-2);
     font-size: var(--t-chico);
     line-height: 1.4;
-    color: var(--c-texto);
-  }
-  .nota-critica :global(.icono) {
-    flex: none;
-    margin-top: 0.1rem;
-    color: var(--c-critico-t);
+    color: var(--c-texto-2);
+    overflow-wrap: anywhere;
   }
 
   @media (forced-colors: active) {
+    .item {
+      border-left: 4px solid CanvasText;
+      box-shadow: none;
+    }
     .segmento:has(input:checked) {
       background: Highlight;
       color: HighlightText;
       box-shadow: none;
       forced-color-adjust: none;
-    }
-    .segmento:has(input:checked) :global(.icono) {
-      color: HighlightText;
     }
   }
 </style>

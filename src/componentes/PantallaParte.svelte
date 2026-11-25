@@ -14,7 +14,6 @@
   import Aviso from "./Aviso.svelte";
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import EnlaceAccion from "./EnlaceAccion.svelte";
-  import EtiquetaDemo from "./EtiquetaDemo.svelte";
   import Icono from "./Icono.svelte";
   import ParteEnviado from "./ParteEnviado.svelte";
   import ParteFormulario from "./ParteFormulario.svelte";
@@ -71,7 +70,6 @@
 {#if recienEnviado !== null}
   {@const panel = recienEnviado}
   <div class="pantalla">
-    <div class="solo-angosto"><EtiquetaDemo /></div>
     <ParteEnviado {panel} nivel="h1">
       {#snippet acciones()}
         {#if panel.completarCierre !== null && panel.completarCierre.primario}
@@ -95,7 +93,6 @@
   {:else if vista.tipo === "lectura"}
     <div class="pantalla">
       <a class="vuelta" href={vista.vuelta.href}><Icono nombre="flecha-izq" />{vista.vuelta.texto}</a>
-      <div class="solo-angosto"><EtiquetaDemo /></div>
       <ParteEnviado panel={vista.panel} nivel="h1" titulo={vista.titulo} etiqueta={vista.etiqueta} momentos={vista.momentos} sinLinea>
         {#snippet encabezado()}
           <div class="unidad">
@@ -119,7 +116,6 @@
     <!-- E: «No se puede cargar este parte» y «No se encontró la unidad»: h1, el motivo y el camino de vuelta (8: Error). -->
     <div class="pantalla">
       <div class="encabezado">
-        <div class="solo-angosto"><EtiquetaDemo /></div>
         <h1 tabindex="-1" aria-describedby={vista.tipo === "no-disponible" && vista.cerrarAntes !== null ? ID_AVISO_CERRAR_ANTES : undefined}>{vista.titulo}</h1>
         {#if vista.tipo === "no-disponible" && vista.cerrarAntes !== null}
           <Aviso tono="semana" icono="lapiz" accion={vista.cerrarAntes.renglon2} idTexto={ID_AVISO_CERRAR_ANTES}>{vista.cerrarAntes.renglon1}</Aviso>
@@ -154,18 +150,18 @@
     min-width: 0;
     margin-inline: auto;
   }
+  /* Desde 64 rem el parte gana ancho (760 px como en el prototipo aprobado). */
+  @media (min-width: 64rem) {
+    .pantalla {
+      width: min(100%, 47.5rem);
+    }
+  }
   .encabezado {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: var(--e-2);
     min-width: 0;
-  }
-  /* El rótulo "Demo con datos ficticios" baja acá cuando la barra superior no tiene lugar (menos de 40 rem). */
-  @media (min-width: 40rem) {
-    .solo-angosto {
-      display: none;
-    }
   }
   .vuelta {
     --icono-tam: 1.125rem;
