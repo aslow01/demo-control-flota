@@ -1,50 +1,53 @@
-/* Tokens de diseño (docs/diseno-ui.md, sección 3). Claro por defecto; el oscuro sigue al dispositivo (sin selector de tema).
+/* Tokens de diseño: dirección «Turno» (prototipo aprobado el 25/11/2026). El color solo habla de estado; la tinta (negro cálido), de acción.
+   Claro por defecto; el oscuro sigue al dispositivo (sin selector de tema).
    Prefijos: --c- color · --t- tipografía · --e- espaciado · --r- radio · --s- sombra · --m- movimiento.
-   Los valores de color se miden con `npm run contraste` (scripts/contraste.mjs): si se cambia uno, se vuelve a correr. */
+   Los valores de color se miden con `npm run contraste` (scripts/contraste.mjs): si se cambia uno, se vuelve a correr.
+   Los nombres de los tokens son los de la versión anterior (las pantallas viejas siguen andando con la cara nueva); los grupos «Nuevos» los trae el prototipo.
+   Atención con la estructura: `scripts/contraste.mjs` busca el primer `:root {` y, dentro del bloque @media del modo oscuro, el `:root {` con sangría. (No escribir esa condición de medios en ningún comentario: el script busca su primera aparición.) */
 
 :root {
   color-scheme: light dark;
 
-  /* ---------- Color: base (heredado de la Demo 1) ---------- */
-  --c-escritorio: #e9eae3;
-  --c-fondo: #f5f5f1;
-  --c-superficie: #ffffff;
-  --c-superficie-2: #eeeee8;
-  --c-ventana-barra: #f6f6f2;
-  --c-ventana-borde: #cbccc3;
-  --c-ventana-control-hover: #e7e8e1;
-  --c-texto: #1c1f23;
-  --c-texto-2: #4d545b;
-  --c-texto-3: #62686f;
-  --c-borde: #dcddd5;
-  --c-borde-fuerte: #7d8288;
-  --c-acento: #0b6b70;
-  --c-acento-hover: #085459;
-  --c-acento-texto: #ffffff;
-  --c-acento-suave: #e2f0ef;
-  --c-foco: #0b6b70;
-  --c-edicion: #e8f3f3;
+  /* ---------- Color: base ---------- */
+  --c-escritorio: #ecece7;
+  --c-fondo: #ecece7;
+  --c-superficie: #fafaf7;
+  --c-superficie-2: #e2e3dd;
+  --c-ventana-barra: #f1f1ec;
+  --c-ventana-borde: #c9cac2;
+  --c-ventana-control-hover: #e2e3dd;
+  --c-texto: #1c1a17;
+  --c-texto-2: #4f4943;
+  --c-texto-3: #625c55;
+  --c-borde: #d3d4cd;
+  --c-borde-fuerte: #7a7b74;
+  /* Acción = tinta. El acento ya no es un color: es el negro cálido (botón primario, filtro elegido, pestaña activa). */
+  --c-acento: #1c1a17;
+  --c-acento-hover: #3a3631;
+  --c-acento-texto: #f4eee4;
+  --c-acento-suave: #e0e6f1;
+  --c-foco: #2e4a80;
+  --c-edicion: #e0e6f1;
   --c-peligro-texto: #ffffff;
 
-  /* ---------- Color: tonos de estado (t = texto, f = fondo, r = franja o marca) ---------- */
-  --c-ok-t: #1d6a39;
-  --c-ok-f: #e3f1e7;
-  --c-ok-r: #2f8a50;
-  --c-pendiente-t: #0a5f64;
-  --c-pendiente-f: #e2f0ef;
-  --c-pendiente-r: #0b6b70;
-  --c-revisar-t: #774700;
-  --c-revisar-f: #fbeed3;
-  --c-revisar-r: #b57a06;
-  --c-diferencia-t: #9e2620;
-  --c-diferencia-f: #fae5e2;
-  --c-diferencia-r: #c4372e;
-  --c-neutro-t: #4d545b;
-  --c-neutro-f: #ecede7;
-  /* B8 de la etapa 7: el de la Demo 1 (#8e949a) da 2,62 sobre acento-suave y 2,63 sobre superficie-2 (marca del filtro «De baja» y franja de las filas de baja). */
-  --c-neutro-r: #737980;
+  /* ---------- Color: tonos de estado (t = texto, f = fondo, r = franja o marca). Mineral: cobre, azufre, azurita, grafito, malaquita ---------- */
+  --c-ok-t: #1c5b47; /* malaquita */
+  --c-ok-f: #daeae2;
+  --c-ok-r: #1c5b47;
+  --c-pendiente-t: #2e4a80; /* azurita */
+  --c-pendiente-f: #e0e6f1;
+  --c-pendiente-r: #2e4a80;
+  --c-revisar-t: #6a5410; /* azufre */
+  --c-revisar-f: #f3e9c4;
+  --c-revisar-r: #9a7b17;
+  --c-diferencia-t: #8c3823; /* cobre */
+  --c-diferencia-f: #f5e1d9;
+  --c-diferencia-r: #8c3823;
+  --c-neutro-t: #4f4943; /* grafito */
+  --c-neutro-f: #e4e3de;
+  --c-neutro-r: #7a7670;
 
-  /* ---------- Color: tonos con nombre de esta demo (3.2). Son alias: siguen solos al modo oscuro. ---------- */
+  /* ---------- Color: tonos con nombre de esta demo. Son alias: siguen solos al modo oscuro. ---------- */
   --c-critico-t: var(--c-diferencia-t);
   --c-critico-f: var(--c-diferencia-f);
   --c-critico-r: var(--c-diferencia-r);
@@ -56,25 +59,46 @@
   --c-quincena-r: var(--c-pendiente-r);
   --c-mes-t: var(--c-neutro-t);
   --c-mes-f: var(--c-neutro-f);
-  --c-mes-r: #737980; /* nuevo: el neutro-r (#8e949a) da 2,63:1 sobre la pista del horizonte */
+  --c-mes-r: var(--c-neutro-r);
   --c-vigente-t: var(--c-ok-t);
   --c-vigente-f: var(--c-ok-f);
   --c-vigente-r: var(--c-ok-r);
 
-  /* ---------- Color: nuevos de esta demo (3.2) ---------- */
-  --c-patente-fondo: #ffffff;
-  --c-patente-banda: #4d545b;
-  --c-hoy: #1c1f23;
-  --c-velo: rgb(12 14 16 / 0.45);
+  /* ---------- Color: nuevos del prototipo «Turno» ---------- */
+  --c-tinta: var(--c-acento);
+  --c-tinta-hover: var(--c-acento-hover);
+  --c-sobre-tinta: var(--c-acento-texto);
+  --c-enlace: #2e4a80; /* azurita: enlaces y foco */
+  /* Cobre sólido: fondo de la cifra «No disponibles hoy», de las insignias y de la opción «con novedad». En claro es el mismo cobre; en oscuro, uno más hundido. */
+  --c-critico-solido: #8c3823;
+  --c-sobre-solido: #f4eee4;
+  --c-sobre-solido-2: #f3dfd6; /* texto chico sobre el cobre sólido (la leyenda de la cifra) */
+  --c-foco-oscuro: #f4eee4; /* anillo de foco sobre lo oscuro: el lateral y el cobre sólido (el azurita no llega a 3:1 ahí) */
+  --c-patente-fondo: var(--c-superficie);
+  --c-patente-banda: #4f4943;
+  --c-hoy: #1c1a17;
+  --c-velo: rgb(20 18 16 / 0.64);
   /* Peligro con el cursor encima: 8 % más oscuro que el rojo base (en claro y en oscuro). */
   --c-peligro-hover: color-mix(in srgb, var(--c-critico-r) 92%, black);
 
-  /* ---------- Tipografía (de sistema: la CSP no permite fuentes externas) ---------- */
-  --t-familia: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
-  --t-familia-titulo: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
-  --t-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  /* Barra lateral (escritorio). Oscura en claro y en oscuro: es el «turno» de la marca. */
+  --c-lat: #23211e;
+  --c-lat-tx: #f4eee4;
+  --c-lat-tx-2: #c9c2b8;
+  --c-lat-hover: rgb(244 238 228 / 0.08);
+  --c-lat-activo: #f4eee4;
+  --c-lat-activo-tx: #1c1a17;
+  --c-lat-borde: rgb(244 238 228 / 0.16);
+
+  /* ---------- Tipografía (alojada en src/estilos/fuentes: la CSP solo permite 'self') ---------- */
+  --t-familia: "Schibsted Grotesk", "Schibsted Grotesk Ajustada", "Helvetica Neue", Arial, sans-serif;
+  --t-familia-titulo: "Bricolage Grotesque", "Bricolage Grotesque Ajustada", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --t-mono: "Red Hat Mono", "Red Hat Mono Ajustada", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  /* Los títulos y las cifras usan la fuente de títulos condensada. */
+  --t-ancho-titulo: 85%;
 
   --t-cifra: clamp(2.5rem, 1.9rem + 2.6vw, 3.5rem);
+  --t-cifra-grande: 3.5rem; /* «No disponibles hoy» en Inicio (E3) */
   --t-h1: clamp(1.75rem, 1.35rem + 1.8vw, 2.5rem);
   --t-h2: 1.375rem;
   --t-h3: 1.125rem;
@@ -100,24 +124,30 @@
   --ancho-max: 76rem;
   --ancho-parte: 40rem;
 
-  /* ---------- Radios (sin píldoras) ---------- */
+  /* ---------- Radios (la píldora solo para el chip de perfil del marco nuevo) ---------- */
   --r-1: 4px;
-  --r-2: 6px;
-  --r-3: 10px;
-  --r-4: 14px;
+  --r-2: 8px;
+  --r-3: 14px;
+  --r-4: 14px; /* alias de --r-3 hasta que las piezas viejas lo dejen de usar */
+  --r-pildora: 999px;
 
   /* ---------- Sombras ---------- */
-  --s-ventana: 0 1px 2px rgb(16 24 32 / 0.06), 0 6px 16px -4px rgb(16 24 32 / 0.1);
-  --s-flotante: 0 8px 24px rgb(16 24 32 / 0.16), 0 2px 6px rgb(16 24 32 / 0.08);
+  --s-ventana: 0 1px 0 rgb(28 26 23 / 0.04), 0 6px 16px -4px rgb(28 26 23 / 0.1);
+  --s-flotante: 0 10px 30px rgb(28 26 23 / 0.18), 0 2px 6px rgb(28 26 23 / 0.08);
 
-  /* ---------- Alturas fijas ---------- */
+  /* ---------- Alturas y anchos fijos ---------- */
   --alto-barra-envio: 4.5rem;
   --alto-tactil: 2.75rem; /* 44 px: mínimo de todo lo que se pulsa */
   --alto-segmento: 3rem; /* 48 px: botones del checklist y del combustible */
+  /* Marco nuevo (E1): barra superior del celular, franja «Demo», barra inferior y lateral de escritorio. */
+  --alto-barra: 3.25rem;
+  --alto-franja: 1.625rem;
+  --alto-pestanas: 4rem;
+  --ancho-lateral: 16rem;
 
   /* ---------- Movimiento ---------- */
   --m-rapido: 120ms;
-  --m-medio: 200ms;
+  --m-medio: 220ms;
   --m-lento: 320ms;
   --m-curva: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
@@ -136,50 +166,57 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --c-escritorio: #0c0e10;
-    --c-fondo: #111417;
-    --c-superficie: #181c20;
-    --c-superficie-2: #20252a;
-    --c-ventana-barra: #1d2226;
-    --c-ventana-borde: #343b42;
-    --c-ventana-control-hover: #2a3036;
-    --c-texto: #e8ebed;
-    --c-texto-2: #aeb6bd;
-    --c-texto-3: #8f98a0;
-    --c-borde: #2d3339;
-    --c-borde-fuerte: #6e777f;
-    --c-acento: #5bc6c0;
-    --c-acento-hover: #7dd5d0;
-    --c-acento-texto: #062221;
-    --c-acento-suave: #123231;
-    --c-foco: #5bc6c0;
-    --c-edicion: #14292a;
+    --c-escritorio: #121110;
+    --c-fondo: #121110;
+    --c-superficie: #1b1a18;
+    --c-superficie-2: #26241f;
+    --c-ventana-barra: #201f1c;
+    --c-ventana-borde: #3d3a35;
+    --c-ventana-control-hover: #2d2b26;
+    --c-texto: #f1ede6;
+    --c-texto-2: #c9c2b8;
+    --c-texto-3: #a69f95;
+    --c-borde: #34322d;
+    --c-borde-fuerte: #827c72;
+    --c-acento: #f1ede6;
+    --c-acento-hover: #d8d2c8;
+    --c-acento-texto: #121110;
+    --c-acento-suave: #1b2541;
+    --c-foco: #aec1f0;
+    --c-edicion: #1b2541;
     --c-peligro-texto: #1a0b0a;
 
-    --c-ok-t: #86d6a1;
-    --c-ok-f: #16301f;
-    --c-ok-r: #45b26e;
-    --c-pendiente-t: #7dd5d0;
-    --c-pendiente-f: #123231;
-    --c-pendiente-r: #5bc6c0;
-    --c-revisar-t: #f1c46e;
-    --c-revisar-f: #33280f;
-    --c-revisar-r: #d9a030;
-    --c-diferencia-t: #f59b91;
-    --c-diferencia-f: #3a1b18;
-    --c-diferencia-r: #e2665b;
-    --c-neutro-t: #aeb6bd;
-    --c-neutro-f: #23282d;
-    --c-neutro-r: #7a838b;
+    --c-ok-t: #8ad2b2;
+    --c-ok-f: #12302a;
+    --c-ok-r: #4fae8a;
+    --c-pendiente-t: #aec1f0;
+    --c-pendiente-f: #1b2541;
+    --c-pendiente-r: #8aa4e0;
+    --c-revisar-t: #e8cc6a;
+    --c-revisar-f: #33290f;
+    --c-revisar-r: #d6b445;
+    --c-diferencia-t: #f29c82;
+    --c-diferencia-f: #3a1d15;
+    --c-diferencia-r: #e07a5c;
+    --c-neutro-t: #bdb6ac;
+    --c-neutro-f: #28261f;
+    --c-neutro-r: #8c857a;
 
-    --c-mes-r: #7a838b;
+    --c-enlace: #aec1f0;
+    --c-critico-solido: #983c27;
+    --c-sobre-solido: #f4eee4;
+    --c-foco-oscuro: #f1ede6;
+    --c-patente-banda: #c9c2b8;
+    --c-hoy: #f1ede6;
+    --c-velo: rgb(0 0 0 / 0.65);
 
-    --c-patente-fondo: #22282d;
-    --c-patente-banda: #aeb6bd;
-    --c-hoy: #e8ebed;
-    --c-velo: rgb(0 0 0 / 0.6);
+    --c-lat: #22201d; /* más claro que el contenido: la pestaña activa (color del contenido) se lee como recorte */
+    --c-lat-tx: #f1ede6;
+    --c-lat-tx-2: #b3aca2;
+    --c-lat-activo: #f1ede6;
+    --c-lat-activo-tx: #121110;
 
     --s-ventana: inset 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 20px -6px rgb(0 0 0 / 0.6);
-    --s-flotante: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px #2d3339;
+    --s-flotante: 0 12px 34px rgb(0 0 0 / 0.55), 0 0 0 1px #34322d;
   }
 }
