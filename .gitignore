@@ -4,5 +4,8 @@ coverage/
 *.log
 .DS_Store
 
-# Términos extra de la búsqueda de prohibidos, solo para quien trabaja en local (ver scripts/buscar-prohibidos.mjs)
-.prohibidos.local
+# Términos que la búsqueda de prohibidos no puede traer escritos (ver scripts/prohibidos.mjs): solo en local, nunca versionado
+scripts/prohibidos.local.json
+
+# Variables de entorno y secretos
+.env*

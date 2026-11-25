@@ -1,19 +1,19 @@
-// Búsqueda de términos prohibidos por huellas (`scripts/prohibidos.mjs`). Los términos de estos tests son inventados:
-// el repositorio público no puede traer los reales ni siquiera en las pruebas.
+// Búsqueda de términos prohibidos (`scripts/prohibidos.mjs`). Los términos de estos tests son inventados:
+// el repositorio público no puede traer los reales ni siquiera en las pruebas. Los reales viven en un archivo local
+// no versionado (`scripts/prohibidos.local.json`).
 import { describe, expect, it } from "vitest";
 import {
+  ARCHIVO_LOCAL,
   correosNoPermitidos,
-  crearHuella,
   contieneProhibido,
-  huellasDeLiterales,
   marcaPendienteDeConfirmar,
   normalizar,
+  terminosDeJson,
   tokenizar,
 } from "../scripts/prohibidos.mjs";
 import { correrBuscarCon } from "../scripts/ensayo-buscar.mjs";
-import { HUELLAS } from "../scripts/huellas-prohibidas.mjs";
 
-const huellas = [crearHuella("Zorbalux"), crearHuella("Quéntaro Brisa Norte")];
+const terminos = terminosDeJson(JSON.stringify({ palabras: ["Zorbalux", "Quéntaro Brisa Norte"] }));
 
 describe("normalizar", () => {
   it("pasa a minúsculas y quita acentos y diéresis", () => {
@@ -39,47 +39,48 @@ describe("tokenizar", () => {
   });
 });
 
-describe("crearHuella", () => {
-  it("es SHA-256 en hexadecimal del término normalizado, con su longitud", () => {
-    const h = crearHuella("Zorbalux");
-    expect(h.huella).toMatch(/^[0-9a-f]{64}$/);
-    expect(h.longitud).toBe(8);
+describe("terminosDeJson (archivo local)", () => {
+  it("lee el campo «palabras» y deja cada término normalizado y partido en palabras", () => {
+    expect(terminos).toEqual([["zorbalux"], ["quentaro", "brisa", "norte"]]);
   });
-  it("da lo mismo con otra mayúscula, otro acento o otros separadores", () => {
-    expect(crearHuella("QUÉNTARO  brisa-norte")).toEqual(crearHuella("quentaro brisa norte"));
+  it("ignora lo que no es texto o no tiene letras ni números, en lugar de romper", () => {
+    expect(terminosDeJson(JSON.stringify({ palabras: ["---", 7, null, "", "Zorbalux"] }))).toEqual([["zorbalux"]]);
   });
-  it("rechaza un término vacío", () => {
-    expect(() => crearHuella("  --  ")).toThrow();
+  it("sin palabras da una lista vacía", () => {
+    expect(terminosDeJson(JSON.stringify({ palabras: [] }))).toEqual([]);
+    expect(terminosDeJson(JSON.stringify({}))).toEqual([]);
   });
-  it("rechaza una frase de más de tres palabras (la búsqueda mira n-gramas de uno a tres)", () => {
-    expect(() => crearHuella("uno dos tres cuatro")).toThrow();
+  it("rechaza un JSON roto o que no es un objeto con una lista (un archivo mal escrito no puede apagar la regla en silencio)", () => {
+    expect(() => terminosDeJson("{ no es json")).toThrow(ARCHIVO_LOCAL);
+    expect(() => terminosDeJson("[]")).toThrow(ARCHIVO_LOCAL);
+    expect(() => terminosDeJson(JSON.stringify({ palabras: "Zorbalux" }))).toThrow(ARCHIVO_LOCAL);
   });
 });
 
 describe("contieneProhibido", () => {
   it("detecta un término en otra mayúscula", () => {
-    expect(contieneProhibido("Usé ZORBALUX ayer", huellas)).toBe(true);
-    expect(contieneProhibido("usé zorbalux ayer", huellas)).toBe(true);
+    expect(contieneProhibido("Usé ZORBALUX ayer", terminos)).toBe(true);
+    expect(contieneProhibido("usé zorbalux ayer", terminos)).toBe(true);
   });
   it("detecta un término con acento o diéresis agregados", () => {
-    expect(contieneProhibido("Zórbalux", huellas)).toBe(true);
+    expect(contieneProhibido("Zórbalux", terminos)).toBe(true);
   });
   it("detecta el término pegado a otras palabras o en un identificador", () => {
-    expect(contieneProhibido("class ZorbaluxCentral {}", huellas)).toBe(true);
-    expect(contieneProhibido("const zorbalux_id = 1", huellas)).toBe(true);
-    expect(contieneProhibido("https://zorbalux.example.com/x", huellas)).toBe(true);
+    expect(contieneProhibido("class ZorbaluxCentral {}", terminos)).toBe(true);
+    expect(contieneProhibido("const zorbalux_id = 1", terminos)).toBe(true);
+    expect(contieneProhibido("https://zorbalux.example.com/x", terminos)).toBe(true);
   });
-  it("detecta una frase partida en un n-grama, con otros separadores y en otra mayúscula", () => {
-    expect(contieneProhibido("empresa Quentaro Brisa Norte S.A.", huellas)).toBe(true);
-    expect(contieneProhibido("QUÉNTARO-BRISA_NORTE", huellas)).toBe(true);
-    expect(contieneProhibido("quentaro   brisa\tnorte", huellas)).toBe(true);
+  it("detecta una frase partida en palabras consecutivas, con otros separadores y en otra mayúscula", () => {
+    expect(contieneProhibido("empresa Quentaro Brisa Norte S.A.", terminos)).toBe(true);
+    expect(contieneProhibido("QUÉNTARO-BRISA_NORTE", terminos)).toBe(true);
+    expect(contieneProhibido("quentaro   brisa\tnorte", terminos)).toBe(true);
   });
   it("una frase incompleta o desordenada no cuenta", () => {
-    expect(contieneProhibido("Quéntaro Brisa", huellas)).toBe(false);
-    expect(contieneProhibido("Norte Brisa Quéntaro", huellas)).toBe(false);
+    expect(contieneProhibido("Quéntaro Brisa", terminos)).toBe(false);
+    expect(contieneProhibido("Norte Brisa Quéntaro", terminos)).toBe(false);
   });
   it("una frase con otra palabra en el medio no cuenta", () => {
-    expect(contieneProhibido("Quéntaro del Brisa Norte", huellas)).toBe(false);
+    expect(contieneProhibido("Quéntaro del Brisa Norte", terminos)).toBe(false);
   });
   it("no da falsos positivos con texto común del proyecto", () => {
     const texto = [
@@ -88,34 +89,18 @@ describe("contieneProhibido", () => {
       "Zona horaria de Argentina, Brisa de ejemplo, Norte y Sur.",
       "zorba lux, zorb alux, zorbalu",
     ].join("\n");
-    expect(contieneProhibido(texto, huellas)).toBe(false);
+    expect(contieneProhibido(texto, terminos)).toBe(false);
   });
-  it("sin huellas no encuentra nada", () => {
+  it("sin términos no encuentra nada", () => {
     expect(contieneProhibido("Zorbalux", [])).toBe(false);
   });
   it("texto vacío no encuentra nada", () => {
-    expect(contieneProhibido("", huellas)).toBe(false);
+    expect(contieneProhibido("", terminos)).toBe(false);
   });
-  it("detecta una frase de dos palabras aunque haya huellas de otras longitudes", () => {
-    const dos = [crearHuella("Ab"), crearHuella("Mar Plata")];
+  it("detecta una frase de dos palabras aunque haya términos de otros largos", () => {
+    const dos = terminosDeJson(JSON.stringify({ palabras: ["Ab", "Mar Plata"] }));
     expect(contieneProhibido("viaje a mar-plata", dos)).toBe(true);
     expect(contieneProhibido("viaje a mar del plata", dos)).toBe(false);
-  });
-});
-
-describe("huellasDeLiterales (archivo local)", () => {
-  it("ignora líneas en blanco y comentarios, y crea una huella por término", () => {
-    const hs = huellasDeLiterales("# términos extra\n\nZorbalux\n  Quéntaro Brisa Norte  \n#otro\n");
-    expect(hs).toEqual(huellas);
-  });
-  it("acepta saltos de línea de Windows", () => {
-    expect(huellasDeLiterales("Zorbalux\r\nQuéntaro Brisa Norte\r\n")).toEqual(huellas);
-  });
-  it("una línea que no tiene letras ni números se ignora en lugar de romper", () => {
-    expect(huellasDeLiterales("---\nZorbalux\n")).toEqual([crearHuella("Zorbalux")]);
-  });
-  it("sin contenido da una lista vacía", () => {
-    expect(huellasDeLiterales("")).toEqual([]);
   });
 });
 
@@ -144,16 +129,44 @@ describe("correosNoPermitidos", () => {
   });
 });
 
-describe("HUELLAS del repositorio", () => {
-  it("tiene entradas bien formadas", () => {
-    expect(HUELLAS.length).toBeGreaterThan(0);
-    for (const h of HUELLAS) {
-      expect(h.huella).toMatch(/^[0-9a-f]{64}$/);
-      expect(Number.isInteger(h.longitud) && h.longitud > 0).toBe(true);
-    }
+describe("buscar: nombres de terceros con el archivo local", () => {
+  const local = JSON.stringify({ palabras: ["Zorbalux", "Quéntaro Brisa Norte"] });
+
+  it("con el archivo presente, falla con un término plantado y nombra el archivo y la línea (sin repetir el término)", () => {
+    const r = correrBuscarCon("export const x = 1;\n// ver ZorbaluxCentral\n", local);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("src/plantado.ts:2");
+    expect(r.stderr).toContain("nombres de terceros");
   });
-  it("no repite huellas", () => {
-    expect(new Set(HUELLAS.map((h) => h.huella)).size).toBe(HUELLAS.length);
+  it("con el archivo presente, falla también con una frase plantada", () => {
+    const r = correrBuscarCon("// Quéntaro Brisa Norte S.A.\n", local);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("src/plantado.ts:1");
+  });
+  it("con el archivo presente, pasa si no hay nada plantado", () => {
+    const r = correrBuscarCon("export const x = 1;\n", local);
+    expect(r.status).toBe(0);
+  });
+  it("el propio archivo local no se revisa (contiene los términos)", () => {
+    const r = correrBuscarCon("export const x = 1;\n", local);
+    expect(r.status).toBe(0);
+    expect(r.stderr).not.toContain(ARCHIVO_LOCAL);
+  });
+  it("sin el archivo, omite la regla de nombres, lo avisa y no falla por eso", () => {
+    const r = correrBuscarCon("export const x = 1;\n// ver ZorbaluxCentral\n");
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain(ARCHIVO_LOCAL);
+    expect(r.stderr).toContain("omit");
+  });
+  it("sin el archivo, las demás reglas siguen corriendo", () => {
+    const r = correrBuscarCon("// M9 (a confirmar)\n");
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("a confirmar");
+  });
+  it("con un archivo roto, falla y lo dice (no apaga la regla en silencio)", () => {
+    const r = correrBuscarCon("export const x = 1;\n", "{ no es json");
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain(ARCHIVO_LOCAL);
   });
 });
 

@@ -1,1 +1,1 @@
-export function correrBuscarCon(texto: string): { status: number | null; stderr: string };
+export function correrBuscarCon(texto: string, archivoLocal?: string): { status: number | null; stderr: string };

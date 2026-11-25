@@ -5,11 +5,16 @@ import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ARCHIVO_LOCAL } from "./prohibidos.mjs";
 
 const aqui = dirname(fileURLToPath(import.meta.url));
 
-/** Corre la búsqueda sobre una raíz con un solo archivo `src/plantado.ts` con ese texto. Devuelve el código de salida y lo que escribió en stderr. */
-export function correrBuscarCon(texto) {
+/**
+ * Corre la búsqueda sobre una raíz con un solo archivo `src/plantado.ts` con ese texto. Si se pasa `archivoLocal`, lo escribe
+ * como `scripts/prohibidos.local.json` de esa raíz (sin él, la regla de nombres de terceros se omite). Devuelve el código de
+ * salida y lo que escribió en stderr.
+ */
+export function correrBuscarCon(texto, archivoLocal) {
   const raiz = mkdtempSync(join(tmpdir(), "buscar-"));
   try {
     mkdirSync(join(raiz, "scripts"));
@@ -18,6 +23,7 @@ export function correrBuscarCon(texto) {
       if (nombre.endsWith(".mjs")) copyFileSync(join(aqui, nombre), join(raiz, "scripts", nombre));
     }
     writeFileSync(join(raiz, "src", "plantado.ts"), texto);
+    if (archivoLocal !== undefined) writeFileSync(join(raiz, ARCHIVO_LOCAL), archivoLocal);
     const r = spawnSync(process.execPath, [join(raiz, "scripts", "buscar-prohibidos.mjs")], { encoding: "utf8" });
     return { status: r.status, stderr: r.stderr };
   } finally {

@@ -1,15 +1,10 @@
 // Tipos de `prohibidos.mjs` (para que los tests en TypeScript lo importen con `strict`).
-export interface Huella {
-  /** SHA-256 hexadecimal del término normalizado. */
-  huella: string;
-  /** Largo del término normalizado (palabras unidas por un espacio). */
-  longitud: number;
-}
-export const MAX_PALABRAS: number;
+/** Un término ya normalizado y partido en palabras (`["quentaro", "brisa", "norte"]`). */
+export type Termino = readonly string[];
+export const ARCHIVO_LOCAL: string;
 export function normalizar(texto: string): string;
 export function tokenizar(texto: string): string[];
-export function crearHuella(termino: string): Huella;
-export function huellasDeLiterales(contenido: string): Huella[];
-export function contieneProhibido(texto: string, huellas: readonly Huella[]): boolean;
+export function terminosDeJson(contenido: string): Termino[];
+export function contieneProhibido(texto: string, terminos: readonly Termino[]): boolean;
 export function correosNoPermitidos(texto: string): string[];
 export function marcaPendienteDeConfirmar(linea: string): boolean;

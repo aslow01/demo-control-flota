@@ -1,5 +1,5 @@
-# Integración continua (paso 0.4). Nota: hoy GitHub Actions no corre en la cuenta (facturación) y el repositorio
-# tiene un remoto privado, pero el archivo nunca se ejecutó: queda escrito y SIN PROBAR hasta que Actions pueda correr.
+# Integración continua (paso 0.4): check, pruebas (también en tres zonas horarias), build, búsqueda de prohibidos y audit.
+# Acá no existe `scripts/prohibidos.local.json` (no se versiona): la regla de nombres de terceros se omite con un aviso.
 name: CI
 
 on:
@@ -27,7 +27,7 @@ jobs:
       # La matriz completa de zonas horarias: UTC, Asia/Tokyo y America/Los_Angeles.
       - run: npm run test:tz
       - run: npm run build
-      # Sin {@html}, sin Math.random en src/lib, sin reloj fuera de estado/reloj.ts, sin nombres de terceros.
+      # Sin {@html}, sin Math.random en src/lib, sin reloj fuera de estado/reloj.ts, sin correos que no sean de ejemplo (los nombres de terceros solo se buscan en local).
       - run: npm run buscar
       # Sin altas ni críticas (el 18/11/2026 el aviso de `picomatch`, GHSA-fc5q-39xc-vjpf, dejó de alcanzar a la 4.0.7).
       # Si una herramienta de desarrollo vuelve a traer un aviso sin parche, documentarlo con fecha y bajar a `critical`.

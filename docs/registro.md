@@ -309,7 +309,7 @@ vacío" para D11; `resolverNovedad` con `volverAServicio` reutilizando A4; guard
 - `verificador` (independiente): 695/695 tests (también en UTC, Tokio y Los Ángeles), check 0, buscar sin hallazgos, contraste 158/0, `npm audit` 0, build sin `muestras.html`. Confirmados con Playwright los altos y medios corregidos (toque, Esc, bloqueo durante el reinicio, anuncio repetido, orden de foco, plazo de 8 s, listas dañadas → D7). Sin regresiones.
 - `d85e3a3`: la concordancia de género del parte en "Cómo funciona" quedó corregida ("Está pensado").
 - Docs: fila 3.4 de `plan.md` sin "pantalla de error" (se quitó en `8f38ed9`), 158 mediciones, README al día, ruta local quitada del informe de QA.
-- **Antes de publicar el repo:** `scripts/buscar-prohibidos.mjs` contiene literalmente los patrones prohibidos (nombra a terceros): moverlos a un archivo no versionado o a una variable de entorno de CI. Historial nuevo (B11) por el correo de autor.
+- **Antes de publicar el repo:** `scripts/buscar-prohibidos.mjs` contiene literalmente los patrones prohibidos (nombra a terceros): moverlos a un archivo no versionado o a una variable de entorno de CI. *(Hecho el 25/11/2026: ver la última entrada.)* Historial nuevo (B11) por el correo de autor.
 - Pendiente: humo de interfaz con Playwright en CI (no hay tests de componentes; la vista se verificó a mano); probar Firefox, Safari real y un lector de pantalla; Esc no cierra si el foco quedó en `body` dentro del diálogo (caso forzado, sin impacto práctico); fechas inválidas en datos guardados pasan sin aviso D7 (las pantallas 4.x deben tolerarlas).
 
 ## 18/11/2026 (noche, 8) — Paso 4.1 (lógica): Horizonte, tres variantes
@@ -1019,6 +1019,8 @@ Pendiente: las pantallas (maquetador): inicio del conductor (6.4), parte (6.5) c
 
 ## 19/11/2026 (rama `interfaz-etapa-0`) — La búsqueda de prohibidos ya no nombra a nadie (programador)
 
+*Reemplazado el 25/11/2026: las huellas se quitaron del repositorio; los términos viven en un archivo local no versionado (última entrada de este registro). Lo que sigue es el registro de entonces.*
+
 **Qué se hizo.** `scripts/buscar-prohibidos.mjs` traía escritos en claro los nombres de terceros y el patrón de correos personales que busca: un repositorio público no puede contenerlos. Se rediseñó para comparar **huellas** (SHA-256 del término normalizado) y se borraron los literales.
 
 | Pieza | Qué es |
@@ -1300,3 +1302,18 @@ Medidas puntuales: C6 (768 px) rótulos en 229 y 229, valor en 297,4 y 297,4; C2
 | JS | 408,28 kB → 411,01 kB (gzip 118,78 → 119,62 kB): el margen contra el tope de 120 es de 0,38 kB. Casi todo es `conductoresParaProbar` y su texto, que hasta ahora no entraban al paquete porque nadie los usaba. No queda lugar para más texto o más lógica sin sacar algo. |
 
 **Pendiente que quedó anotado.** `diseno-ui.md` sigue diciendo «10 puntos» de revisión en varios lugares (710, 1213, 1317, 1511, 1583, 1672, 1759); el checklist tiene 14. No era parte de este pedido; lo ve `redactor-ux` junto con el README. El README sigue describiendo «6 pendientes», «Faltan 10 datos» y el aviso por seguro vencido de las capturas viejas.
+
+## 25/11/2026 (rama `interfaz-etapa-0`) — La lista de nombres de terceros sale del repositorio (programador)
+
+**Qué se hizo.** `scripts/huellas-prohibidas.mjs` versionaba el SHA-256 sin sal de dos términos y su longitud; en un repositorio público eso se revierte probando candidatos. Se borró el archivo y el mecanismo de huellas.
+
+| Pieza | Qué es |
+| --- | --- |
+| `scripts/prohibidos.local.json` | Archivo local **no versionado** (`.gitignore`): `{ "palabras": ["término", ...] }`. Cada entrada es un término o una frase. La búsqueda no lo revisa a sí mismo. |
+| `scripts/prohibidos.mjs` (+ `.d.mts`) | `terminosDeJson` reemplaza a `crearHuella` y `huellasDeLiterales`; `contieneProhibido` compara palabras normalizadas, sin hashes. Un JSON roto lanza error. |
+| `scripts/buscar-prohibidos.mjs` | Si el archivo existe, corre la regla de nombres de terceros (9 reglas); si no existe, la omite con un aviso y corren las otras 8. Con el archivo roto, falla. |
+| `scripts/ensayo-buscar.mjs` | `correrBuscarCon(texto, archivoLocal?)` escribe el archivo local en la raíz temporal del ensayo. |
+| `tests/prohibidos.test.ts` | Sin los tests de huellas; con 7 ensayos de `buscar` (con el archivo: detecta un término y una frase plantados, pasa limpio, no se revisa a sí mismo; sin el archivo: avisa y no falla, las otras reglas siguen; archivo roto: falla). 1613 tests. |
+| `.gitignore` | `scripts/prohibidos.local.json` y `.env*`. |
+
+**Verificación.** `npm test` y `npm run test:tz`: 1613 pruebas; `npm run check`: 0 errores y 0 avisos; `npm run build`: JS sin cambios (119,62 kB con gzip); `npm run buscar` con el archivo (9 reglas) y sin él (8 reglas y aviso); un término plantado en `src/` se detecta con el archivo y se ignora, con aviso, sin él.

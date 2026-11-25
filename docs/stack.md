@@ -23,7 +23,7 @@ la recomendación.
 | Estado compartido entre pantallas | A mano: cada cambio repinta el DOM a mano. En la Demo 1 eso trajo bugs de foco y de filas reconstruidas. | Reactivo (*runes*: `$state`, `$derived`), sin DOM virtual. | Igual que B. | Cada isla aislada; compartir estado entre islas es incómodo. | Reactivo (*hooks* o señales). |
 | CSP estricta | Sin fricción. | Sin fricción si se cumplen dos reglas (sección 4). | Fricción: el arranque usa un script en línea; hay que generar *hashes* por compilación y llevarlos a `_headers`. | Fricción: las islas se hidratan con scripts en línea; hay soporte de CSP con *hashes*, pero es otra pieza a mantener. | Sin fricción. |
 | Encaje con el problema | Bueno para una pantalla (Demo 1); costoso para cuatro con formularios. | Muy bueno: aplicación de cliente con formularios y estado. | Pensado para sitios con rutas de servidor y prerenderizado: acá sobra casi todo. | Pensado para sitios de contenido con poca interactividad: acá **todo** es interactivo. | Bueno; JSX y *hooks* tienen más trampas (dependencias de efectos) para alguien que está aprendiendo. |
-| Para Matías (nivel inicial, quiere aprender) | Conocido (Demo 1). | Nuevo, pero los componentes son HTML + CSS + TS en un archivo; se lee casi como la Demo 1. | Nuevo y más conceptos (cargas, servidor, prerender). | Conocido por la web (Astro), pero las islas agregan otro framework adentro. | Nuevo; modelo mental de React. |
+| Curva de aprendizaje | Conocido (Demo 1). | Nuevo, pero los componentes son HTML + CSS + TS en un archivo; se lee casi como la Demo 1. | Nuevo y más conceptos (cargas, servidor, prerender). | Conocido por la web (Astro), pero las islas agregan otro framework adentro. | Nuevo; modelo mental de React. |
 | Señal para un líder técnico | "Sabe sin framework." (ya lo muestra la Demo 1) | "Elige la herramienta según el problema", y el portafolio muestra dos enfoques. | Puede leerse como sobredimensionado para una SPA local. | Puede leerse como herramienta equivocada para una app. | Neutro. |
 
 ## 3. Recomendación: B — Vite + TypeScript + Svelte 5, sin SvelteKit
@@ -125,9 +125,10 @@ demo-control-flota/
 - `npm audit --audit-level=high` sin altas ni críticas (si aparece la misma excepción de herramientas de desarrollo que
   en la Demo 1, se documenta con fecha de revisión).
 - Búsqueda: sin `{@html}`, sin `Math.random` en `src/lib`, sin `new Date(` fuera de `estado/reloj.ts`, sin nombres de
-  empresas reales ni datos personales. Los nombres de terceros se buscan **por huella** (SHA-256 del término normalizado;
-  `scripts/huellas-prohibidas.mjs`), porque un repositorio público no puede nombrarlos ni en la herramienta que los
-  busca; los correos, con una regla genérica (cualquier correo que no sea de un dominio de ejemplo o `noreply`).
+  empresas reales ni datos personales. Los nombres de terceros se buscan con una lista que **no se versiona**
+  (`scripts/prohibidos.local.json`, ignorado por git), porque un repositorio público no puede nombrarlos ni en la
+  herramienta que los busca (tampoco por su SHA-256: sin sal, se recupera probando un diccionario). Sin ese archivo, la
+  regla se omite con un aviso y las demás corren igual; los correos, con una regla genérica (cualquier correo que no sea de un dominio de ejemplo o `noreply`).
 - Tamaño: tope de 120 kB de JS comprimido con gzip (subido de 100 el 19/11/2026; no se vuelve a subir). Medido el 22/11/2026 con `npm run build`: **408 kB de JS (118,8 kB con gzip)**, 95 kB de CSS (15,5 kB con gzip). El mapa de fuentes (`vite build --sourcemap`, atribuido byte a byte sin dependencias) reparte el JS así: vistas `.svelte` 23 %; lógica de dominio 16 % más sus textos 9 % (`textos.ts`) y 2 % (`textos-marco.ts`); estado de la aplicación 15 %; runtime de Svelte 12 % más un 16 % que el mapa no atribuye y es en su mayoría de Svelte; generador de datos 3,5 %; persistencia 3 %. No hay otras dependencias. Los textos pesan lo que dicen: no hay una reducción segura sin tocar el contenido.
 
 ## 8. Publicación
