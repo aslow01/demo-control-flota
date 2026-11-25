@@ -11,35 +11,54 @@
   // - Colores forzados: las marcas pasan a `CanvasText` (llenas o con aro) y los tres tramos se distinguen por el estilo del borde
   //   (sólido, discontinuo, punteado).
   // - La mínima sin marcas (nada vence en 30 días, o ya venció) no se dibuja: la celda sigue sin horizonte (5.9, "Próximo vencimiento").
+  //
+  // VARIANTE INTERACTIVA (E3-M, Inicio y Vencimientos): con la `prop` opcional `regla` (`app.centroDeAlertas.vencimientos.regla`) dibuja la regla de «Turno» (un botón por
+  // documento, un solo punto de tabulación, detalle debajo, leyenda): `<Horizonte regla={c.vencimientos.regla} alRenovar={(accion) => ...} />`. Sin `regla` es la de siempre
+  // y `horizonte` sigue siendo la `prop` de las demás variantes (mediana y mínima no cambian). Todo lo de la variante nueva vive en `HorizonteRegla.svelte`.
   import { TRAMOS_PISTA, ULTIMO_DIA, type Horizonte } from "../lib/dominio/horizonte.ts";
+  import type { AccionDeDocumento, ReglaDeVencimientos } from "../lib/estado/centro-alertas.ts";
+  import HorizonteRegla from "./HorizonteRegla.svelte";
 
-  let { horizonte }: { horizonte: Horizonte } = $props();
+  let {
+    horizonte,
+    regla,
+    alRenovar,
+  }: {
+    horizonte?: Horizonte;
+    /** Activa la variante completa interactiva (y hace que `horizonte` se ignore). */
+    regla?: ReglaDeVencimientos;
+    /** Solo con `regla`: el botón «Renovar» del detalle de un punto. Quien lo pasa abre el diálogo; sin esto el detalle no lleva ese botón. */
+    alRenovar?: (accion: AccionDeDocumento) => void;
+  } = $props();
 
-  const minima = $derived(horizonte.variante === "minima");
-  const dibujar = $derived(!(minima && horizonte.vacio));
-  const lineas = $derived(horizonte.escala.filter((m) => m.linea));
+  const minima = $derived(horizonte?.variante === "minima");
+  const dibujar = $derived(horizonte !== undefined && !(minima && horizonte.vacio));
+  const lineas = $derived(horizonte?.escala.filter((m) => m.linea) ?? []);
 </script>
 
-{#if dibujar}
+{#if regla !== undefined}
+  <HorizonteRegla {regla} {alRenovar} />
+{:else if horizonte !== undefined && dibujar}
+  {@const h = horizonte}
   <div
     class="horizonte"
-    data-variante={horizonte.variante}
-    role={horizonte.etiquetaAria === null ? undefined : "img"}
-    aria-label={horizonte.etiquetaAria ?? undefined}
-    aria-hidden={horizonte.ocultoAAyudas ? "true" : undefined}
+    data-variante={h.variante}
+    role={h.etiquetaAria === null ? undefined : "img"}
+    aria-label={h.etiquetaAria ?? undefined}
+    aria-hidden={h.ocultoAAyudas ? "true" : undefined}
   >
     <div class="marco">
-      {#if horizonte.cajaVencidos !== null}
-        <div class="caja" class:cero={!horizonte.cajaVencidos.conAlerta} data-tono={horizonte.cajaVencidos.conAlerta ? "critico" : undefined}>
-          <span class="caja-rotulo">{horizonte.cajaVencidos.rotulo}</span>
-          <span class="caja-cifra num">{horizonte.cajaVencidos.cifra}</span>
+      {#if h.cajaVencidos !== null}
+        <div class="caja" class:cero={!h.cajaVencidos.conAlerta} data-tono={h.cajaVencidos.conAlerta ? "critico" : undefined}>
+          <span class="caja-rotulo">{h.cajaVencidos.rotulo}</span>
+          <span class="caja-cifra num">{h.cajaVencidos.cifra}</span>
         </div>
       {/if}
 
       <div class="cuerpo">
-        {#if horizonte.escala.length > 0}
+        {#if h.escala.length > 0}
           <div class="escala">
-            {#each horizonte.escala as marca (marca.dia)}
+            {#each h.escala as marca (marca.dia)}
               <span class="rotulo-escala" class:ultimo={marca.dia === ULTIMO_DIA} style:grid-column-start={marca.columna}>
                 <span class="largo">{marca.etiqueta}</span><span class="corto">{marca.etiquetaCorta}</span>
               </span>
@@ -52,7 +71,7 @@
           {#each lineas as marca (marca.dia)}
             <span class="linea" style:grid-column-start={marca.columna}></span>
           {/each}
-          {#each horizonte.columnas as columna (columna.dia)}
+          {#each h.columnas as columna (columna.dia)}
             <div class="columna" style:grid-column-start={columna.columna}>
               {#each columna.marcas as marca (marca.alertaId)}
                 <span class="marca" class:hueca={marca.hueca} data-tramo={marca.tramo}></span>
@@ -62,8 +81,8 @@
           {#each TRAMOS_PISTA as tramo (tramo.tramo)}
             <span class="tramo" data-tramo={tramo.tramo} style:grid-column-start={tramo.columnaInicio} style:grid-column-end={tramo.columnaFin}></span>
           {/each}
-          {#if horizonte.textoVacio !== null}
-            <span class="vacio">{horizonte.textoVacio}</span>
+          {#if h.textoVacio !== null}
+            <span class="vacio">{h.textoVacio}</span>
           {/if}
         </div>
       </div>
