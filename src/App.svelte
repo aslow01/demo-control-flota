@@ -2,7 +2,7 @@
   // El marco de la aplicación «tipo app» (docs/diseno-ui.md, secciones 2, 4, 5.17 a 5.19; el prototipo «Turno» manda donde difieren): enlace «Ir al contenido»,
   // lateral oscuro (escritorio), barra superior con «Atrás» y chip de perfil (celular y tableta), migas y fecha (escritorio), avisos globales,
   // `main` (estado de arranque, error o la pantalla) y barra inferior (celular y tableta). Lee todo del estado (`app`); no tiene reglas de negocio.
-  // Hasta que lleguen las pantallas nuevas (E3), Inicio, Vencimientos y Operación diaria se muestran con la pantalla de alertas de siempre.
+  // Rutas de E3 ya registradas (armazón): Inicio, Vencimientos y Operación diaria son esqueletos que por ahora muestran la pantalla de alertas de siempre.
   // Una dirección que no corresponde a ninguna pantalla muestra «Página no encontrada».
   import { tick } from "svelte";
   import Aviso from "./componentes/Aviso.svelte";
@@ -15,9 +15,11 @@
   import EnlaceAccion from "./componentes/EnlaceAccion.svelte";
   import Lateral from "./componentes/Lateral.svelte";
   import Migas from "./componentes/Migas.svelte";
-  import PantallaAlertas from "./componentes/PantallaAlertas.svelte";
   import PantallaFlota from "./componentes/PantallaFlota.svelte";
+  import PantallaInicio from "./componentes/PantallaInicio.svelte";
   import PantallaMas from "./componentes/PantallaMas.svelte";
+  import PantallaOperacion from "./componentes/PantallaOperacion.svelte";
+  import PantallaVencimientos from "./componentes/PantallaVencimientos.svelte";
   import { cuentasDeNavegacion } from "./componentes/insignias.ts";
   import { TEXTO_MARCO, TEXTO_MAS, TEXTO_NAVEGACION, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { OpcionConductor } from "./componentes/tipos.ts";
@@ -417,9 +419,12 @@
           <div class="acciones-error">
             <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
           </div>
-        {:else if app.ruta.tipo === "inicio" || app.ruta.tipo === "vencimientos" || app.ruta.tipo === "operacion"}
-          <!-- Hasta E3 las tres se muestran con la pantalla de alertas de siempre. -->
-          <PantallaAlertas alAbrirParte={() => pedirVerComo("conductor")} />
+        {:else if app.ruta.tipo === "inicio"}
+          <PantallaInicio alAbrirParte={() => pedirVerComo("conductor")} />
+        {:else if app.ruta.tipo === "vencimientos"}
+          <PantallaVencimientos alAbrirParte={() => pedirVerComo("conductor")} />
+        {:else if app.ruta.tipo === "operacion"}
+          <PantallaOperacion alAbrirParte={() => pedirVerComo("conductor")} />
         {:else if app.ruta.tipo === "movilidades"}
           <PantallaFlota />
         {:else if app.ruta.tipo === "mas"}
@@ -435,11 +440,19 @@
               {@render errorDeCarga()}
             {/await}
           {/key}
-        {:else if app.ruta.tipo === "conductor" || app.ruta.tipo === "mis-partes"}
+        {:else if app.ruta.tipo === "conductor"}
           {#await import("./componentes/PantallaConductor.svelte")}
             {@render cargandoPantalla()}
           {:then { default: PantallaConductor }}
             <PantallaConductor />
+          {:catch}
+            {@render errorDeCarga()}
+          {/await}
+        {:else if app.ruta.tipo === "mis-partes"}
+          {#await import("./componentes/PantallaMisPartes.svelte")}
+            {@render cargandoPantalla()}
+          {:then { default: PantallaMisPartes }}
+            <PantallaMisPartes />
           {:catch}
             {@render errorDeCarga()}
           {/await}
