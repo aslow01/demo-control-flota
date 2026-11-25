@@ -145,8 +145,8 @@
     flex-wrap: wrap;
     gap: var(--e-2);
   }
-  /* Tarjeta: los botones se reparten el ancho. */
-  @container lista (max-width: 39.99rem) {
+  /* Tarjeta angosta (menos de 24 rem): los botones se reparten el ancho; con más lugar, miden lo que dice su texto, como en el prototipo. */
+  @container lista (max-width: 23.99rem) {
     .acciones-fila > :global(*) {
       flex: 1;
     }
