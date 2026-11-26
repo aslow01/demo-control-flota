@@ -14,6 +14,7 @@
   import DialogosDeDocumento from "./DialogosDeDocumento.svelte";
   import { dialogos } from "./dialogos-instancia.ts";
   import Boton from "./Boton.svelte";
+  import CifraQueCuenta from "./CifraQueCuenta.svelte";
   import Etiqueta from "./Etiqueta.svelte";
   import Forma from "./Forma.svelte";
   import Horizonte from "./Horizonte.svelte";
@@ -73,7 +74,9 @@
     <!-- 1: las cifras. La cobre (principal) lleva al filtro «No disponibles hoy» de Movilidades; cada una de las otras, a su lista. -->
     <div class="cifras">
       <a class="foco" class:ok={n.valor === 0} href={n.href}>
-        <span class="valor num">{n.valor}</span>
+        <!-- La cifra cuenta de 0 a N al abrir la demo; el lector de pantalla lee solo el valor final, aparte. -->
+        <span class="valor num" aria-hidden="true"><CifraQueCuenta valor={n.valor} /></span>
+        <span class="solo-lectores">{n.valor}</span>
         <span class="rotulo-foco">
           <span class="titulo-foco">{n.rotulo}</span>
           <span class="bajada">{n.bajada}</span>

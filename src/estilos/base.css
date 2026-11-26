@@ -250,6 +250,47 @@ html.dialogo-abierto {
   }
 }
 
+/* ---------- Movimiento entre pantallas (componentes/movimiento.ts) ----------
+   El contenido sale rápido (110 ms) y el nuevo entra subiendo 10 px (230 ms); la patente viaja de la lista a la ficha y vuelve.
+   El nombre de transición de `main` solo existe mientras dura la transición (clase en `html`): así `main` no cambia de contexto el resto del tiempo. */
+.con-transicion main {
+  view-transition-name: principal;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(principal) {
+  animation: vt-sale 110ms ease-in both;
+}
+::view-transition-new(principal) {
+  animation: vt-entra 230ms var(--m-curva) both;
+}
+/* El marco de `main` salta a su lugar nuevo: si se animara, con la página desplazada el contenido nuevo bajaría desde arriba. */
+::view-transition-group(principal) {
+  animation-duration: 1ms;
+}
+::view-transition-group(patente-viaja) {
+  animation-duration: 340ms;
+  animation-timing-function: var(--m-curva);
+}
+/* Sin View Transitions: la misma subida corta, solo en la entrada. */
+main.entra {
+  animation: vt-entra 230ms var(--m-curva) both;
+}
+@keyframes vt-sale {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
 /* ---------- Movimiento reducido ---------- */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -259,6 +300,12 @@ html.dialogo-abierto {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  /* El selector universal no alcanza a los pseudoelementos de las transiciones entre pantallas (movimiento.ts tampoco las inicia con este ajuste). */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 

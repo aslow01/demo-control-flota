@@ -21,6 +21,7 @@
   import PantallaOperacion from "./componentes/PantallaOperacion.svelte";
   import PantallaVencimientos from "./componentes/PantallaVencimientos.svelte";
   import { cuentasDeNavegacion } from "./componentes/insignias.ts";
+  import { pedirCuenta } from "./componentes/movimiento.ts";
   import { TEXTO_MARCO, TEXTO_MAS, TEXTO_NAVEGACION, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { OpcionConductor } from "./componentes/tipos.ts";
   import { aHash, migasDe, nombreDePantalla, rutaPorDefecto, type Ruta } from "./lib/estado/enrutador.ts";
@@ -83,6 +84,7 @@
     if (r.ok) {
       irAlTitulo = app.versionDePantalla !== pantallaAntes; // si cambió la pantalla, el foco va a su título
       dialogoReiniciarAbierto = false;
+      pedirCuenta(); // la cifra cobre de Inicio vuelve a contar desde 0
       anunciar(TEXTO_REINICIO.hecho);
     } else {
       errorAlReiniciar = r.error.mensaje;
