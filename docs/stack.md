@@ -6,8 +6,7 @@ la recomendación.
 ## 1. Qué tiene que soportar
 
 - **Aplicación 100 % en el navegador**, sin servidor ni login, con datos en IndexedDB y un botón "Reiniciar demo".
-- **Cuatro pantallas con estado compartido**: renovar un documento en la ficha cambia el centro de alertas, la flota y
-  la insignia de la pestaña al mismo tiempo. Formularios largos con borrador automático (parte diario).
+- **Varias pantallas con estado compartido** (Inicio, Movilidades, Vencimientos, Operación diaria, ficha, y Hoy y parte del conductor): renovar un documento en la ficha cambia Inicio, Movilidades y las insignias de la navegación al mismo tiempo. Formularios largos con borrador automático (parte diario).
 - **CSP estricta** como la Demo 1: `default-src 'none'`, todo en `'self'`, sin `'unsafe-inline'` ni `'unsafe-eval'`.
 - **TypeScript** de punta a punta y **lógica pura testeable** (las reglas son el corazón de la demo).
 - **Pocas dependencias**, con versión exacta y más de 14 días publicadas.
@@ -101,15 +100,14 @@ demo-control-flota/
 ├── public/_headers            CSP y cabeceras de Cloudflare Pages
 ├── src/
 │   ├── main.ts                monta la aplicación
-│   ├── App.svelte             marco: barras, avisos, rutas, pie
+│   ├── App.svelte             marco: lateral, barras superior e inferior, migas, avisos y rutas
 │   ├── lib/
 │   │   ├── dominio/           reglas puras (fechas, vencimientos, aptitud, parte, km, alertas, comandos, textos)
 │   │   ├── datos/             azar con semilla, generador, cuit
 │   │   ├── persistencia/      Repositorio, memoria, IndexedDB, arranque, aviso entre pestañas
 │   │   └── estado/            estado reactivo (*.svelte.ts), reloj, perfil, enrutador
-│   ├── rutas/                 contenedores por pantalla (programador)
-│   ├── componentes/           piezas de presentación (maquetador)
-│   └── estilos/               tokens.css, base.css, impresion.css
+│   ├── componentes/           pantallas y piezas de presentación (maquetador); movimiento.ts: transición entre pantallas y cuenta de la cifra
+│   └── estilos/               tokens.css, base.css, fuentes.css y fuentes/ (woff2 con su licencia OFL)
 ├── tests/                     *.test.ts (dominio, generador, persistencia, enrutador)
 ├── scripts/contraste.mjs      medición de contraste de la paleta
 └── .github/workflows/ci.yml
@@ -129,7 +127,7 @@ demo-control-flota/
   (`scripts/prohibidos.local.json`, ignorado por git), porque un repositorio público no puede nombrarlos ni en la
   herramienta que los busca (tampoco por su SHA-256: sin sal, se recupera probando un diccionario). Sin ese archivo, la
   regla se omite con un aviso y las demás corren igual; los correos, con una regla genérica (cualquier correo que no sea de un dominio de ejemplo o `noreply`).
-- Tamaño: tope de 120 kB de JS comprimido con gzip (subido de 100 el 19/11/2026; el tope no se vuelve a subir, pero desde el 25/11/2026 cambia a qué se aplica: vale para la **carga inicial**, no para el total, porque el porte a interfaz tipo app parte la carga con `import()` dinámico —ficha, parte y conductor se bajan al entrar— y sin eso no cabía; el total tiene un aviso a 136 kB). Lo controla `npm run peso` (`scripts/peso-js.mjs`, también en la integración continua): gzip de `node:zlib` nivel 9, siempre; no coincide con lo que imprime `vite build` (hasta ~1,2 kB menos). Falla si la inicial pasa 120.000 B e imprime inicial y total. Medido el 25/11/2026 con `npm run build` y `npm run peso` (ya con las fuentes propias): **JS inicial 118.597 B con gzip (margen de 1.403 B contra el tope de 120.000 B) y JS total 118.597 B** (todavía no hay trozos que se bajen aparte); `vite build` imprime 411,39 kB de JS (119,76 kB con gzip, su propio método) y 98,10 kB de CSS (16,23 kB con gzip), más unos 200 kB de fuentes `.woff2` que no cuentan como JS. El reparto que sigue es del 22/11/2026 (408 kB de JS), antes del porte. El mapa de fuentes (`vite build --sourcemap`, atribuido byte a byte sin dependencias) reparte el JS así: vistas `.svelte` 23 %; lógica de dominio 16 % más sus textos 9 % (`textos.ts`) y 2 % (`textos-marco.ts`); estado de la aplicación 15 %; runtime de Svelte 12 % más un 16 % que el mapa no atribuye y es en su mayoría de Svelte; generador de datos 3,5 %; persistencia 3 %. No hay otras dependencias. Los textos pesan lo que dicen: no hay una reducción segura sin tocar el contenido.
+- Tamaño: tope de 120 kB de JS comprimido con gzip (subido de 100 el 19/11/2026; el tope no se vuelve a subir, pero desde el 25/11/2026 cambia a qué se aplica: vale para la **carga inicial**, no para el total, porque el porte a interfaz tipo app parte la carga con `import()` dinámico —ficha, parte y conductor se bajan al entrar— y sin eso no cabía; el total tiene un aviso a 136 kB). Lo controla `npm run peso` (`scripts/peso-js.mjs`, también en la integración continua): gzip de `node:zlib` nivel 9, siempre; no coincide con lo que imprime `vite build` (hasta ~1,2 kB menos). Falla si la inicial pasa 120.000 B e imprime inicial y total. Medido el 25/11/2026, al cerrar el movimiento (E4 del porte), con `npm run build` y `npm run peso`: **JS inicial 115.571 B con gzip (margen de 4.429 B contra el tope de 120.000 B) y JS total 141.847 B** (la ficha, el parte, «Hoy» y «Mis partes», con lo que comparten, se bajan al entrar; el total pasa el aviso de 136.000 B y se informa, no frena). El movimiento (transición entre pantallas, patente que viaja y cuenta de la cifra: `componentes/movimiento.ts` y `CifraQueCuenta.svelte`) costó 1.072 B de la carga inicial (114.499 B antes). `vite build` imprime 470,47 kB de JS sin comprimir (todos los trozos) y 140,07 kB de CSS, más 200,7 kB de fuentes `.woff2` (tres familias, subconjunto latino) que no cuentan como JS. El reparto que sigue es del 22/11/2026 (408 kB de JS), antes del porte a la interfaz tipo app. El mapa de fuentes (`vite build --sourcemap`, atribuido byte a byte sin dependencias) reparte el JS así: vistas `.svelte` 23 %; lógica de dominio 16 % más sus textos 9 % (`textos.ts`) y 2 % (`textos-marco.ts`); estado de la aplicación 15 %; runtime de Svelte 12 % más un 16 % que el mapa no atribuye y es en su mayoría de Svelte; generador de datos 3,5 %; persistencia 3 %. No hay otras dependencias. Los textos pesan lo que dicen: no hay una reducción segura sin tocar el contenido.
 
 ## 8. Publicación
 

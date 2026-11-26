@@ -1,5 +1,7 @@
 # Plan de implementación — Control de flota (18/11/2026)
 
+> Plan del 18/11/2026 (etapas 0 a 5 del producto original, hechas). El porte a la interfaz «tipo app» del 25/11/2026 (etapas E0 a E5, rama `interfaz-app`) está en las últimas entradas de `docs/registro.md`.
+
 Pasos chicos, cada uno con su verificación. **TDD en toda la lógica**: primero el test que falla (con el identificador
 de la regla en el nombre), después el código mínimo, después limpiar. Los identificadores (T, V, A, P, K, N, U, H, D)
 son los de `docs/diseno.md`. Antes del paso 0: Matías decide S1 (stack) y S2 (`fake-indexeddb`); si no contesta, vale

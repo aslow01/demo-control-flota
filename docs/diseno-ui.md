@@ -22,6 +22,21 @@ ficticia)» (D2), «fuera de plazo» en lugar de «fuera de término», «Enviar
 regla nueva **«Cerrar antes»** (estado 5 bis del inicio y pantalla E). Aplicado en 4.1, 4.2, 5.1, 5.4, 5.9, 5.10, 5.11,
 5.14 a 5.18, 6.1 a 6.5, 7, 8, 9, 10, 12 y 13; las tareas del maquetador, en orden, en la **sección 14.3**.
 
+**Actualización del 25/11/2026 — interfaz «tipo app» (dirección «Turno»).** Matías aprobó el prototipo «Turno» y el porte lo dejó en el código (rama `interfaz-app`, etapas E0 a E4). Cambia la cara, no las reglas. Quedaron **reescritas** las secciones 2 (rutas), 3 (tokens), 4 (marco) y 10 (lo que no hay que hacer); las demás conservan los nombres anteriores y, donde dicen otra cosa, **manda el código y esta nota**:
+
+| En las secciones 1 y 5 a 14 dice | Hoy es |
+| --- | --- |
+| Centro de alertas (`#/alertas`) | **Inicio** (`#/inicio`); sus vencimientos tienen pantalla propia, **Vencimientos**, y la operación diaria también, **Operación diaria** (Checklists y Novedades) |
+| Flota (`#/flota`) | **Movilidades** (`#/movilidades`) |
+| Inicio del conductor | **Hoy**; los partes anteriores, en **Mis partes** |
+| «No pueden salir», «Puede salir», «No puede salir» | «No disponibles hoy», «Disponible», «Bloqueada» (por documentos) y «Fuera de servicio» |
+| Barra superior, barra de la aplicación con pestañas, selector de perfil en la barra y pie | Lateral oscuro (escritorio), barra superior con «Atrás» y chip de perfil y barra inferior (celular), migas, pantalla «Más» y diálogo «Ver como» |
+| Horizonte grande (5.6, variante completa de solo lectura) | Regla interactiva de 0 a 30 días (`HorizonteRegla.svelte`): un solo punto de tabulación, flechas, Inicio y Fin, detalle anunciado; las variantes mediana y mínima no cambiaron |
+| Filtros por radios con conteo (5.8) | Pastillas que son enlaces (`FiltrosEnlace.svelte`), con la forma del tono |
+| Diálogo centrado | Hoja inferior en el celular (5.17) |
+
+Los **textos** de interfaz salen de `src/lib/dominio/textos.ts` y `src/componentes/textos-marco.ts`; la sección 7 es histórica. Lo que sigue vigente tal cual: componentes de formulario, parte diario (5.12 a 5.16, 6.5), reglas de foco, accesibilidad (9) y verificación (12), salvo las rutas.
+
 ---
 
 ## 0. Encuadre
@@ -36,7 +51,9 @@ regla nueva **«Cerrar antes»** (estado 5 bis del inicio y pantalla E). Aplicad
 
 ---
 
-## 1. Dirección visual: "Horizonte"
+## 1. Dirección visual: "Horizonte" (hoy, con la cara de "Turno")
+
+> Desde el 25/11/2026 la dirección vigente es **«Turno»** (ver la nota de arriba y las secciones 3 y 4): paleta mineral sobre papel cálido, tinta como acción, tres tipografías propias y marco con lateral oscuro. El horizonte sigue siendo la pieza firma, ahora como regla interactiva. Lo que sigue es el razonamiento original.
 
 Una herramienta de operación sobria, de la misma familia que la Demo 1 (escritorio gris apenas cálido, paneles blancos
 con barra de título, un solo acento azul petróleo, color reservado al estado), con **un rasgo propio que sale del
@@ -92,227 +109,147 @@ tres cifras gigantes. Tampoco camiones ilustrados ni íconos de vehículos en co
 
 ## 2. Rutas y estructura de la aplicación
 
-Aplicación de una sola página con rutas por *hash* (no necesita configurar el servidor).
+Aplicación de una sola página con rutas por *hash* (no necesita configurar el servidor). **Reescrita el 25/11/2026** con el porte a la interfaz «tipo app» (dirección «Turno»); el código es `src/lib/estado/enrutador.ts`.
 
 | Ruta | Pantalla | Perfil |
 | --- | --- | --- |
-| `#/alertas` (por defecto del encargado) | Centro de alertas | Encargado |
-| `#/flota` | Flota | Encargado |
-| `#/unidad/ZK214BD` | Ficha de unidad (patente normalizada) | Encargado |
-| `#/conductor` (por defecto del conductor) | Inicio del conductor | Conductor |
-| `#/parte/ZK214BD/2026-11-18` | Parte diario (revisión antes de salir, cierre o lectura, según el estado del parte; 6.5) | Ambos |
+| `#/inicio` (por defecto del encargado; alias `#/alertas`) | Inicio | Encargado |
+| `#/movilidades?filtro=…&q=…` (alias `#/flota`) | Movilidades | Encargado |
+| `#/vencimientos?filtro=…` | Vencimientos | Encargado |
+| `#/operacion/checklists` y `#/operacion/novedades` (`#/operacion` lleva a Checklists) | Operación diaria | Encargado |
+| `#/unidad/ZK214BD` (patente normalizada) | Ficha de unidad | Encargado |
+| `#/conductor` (por defecto del conductor) | Hoy | Conductor |
+| `#/conductor/partes` | Mis partes | Conductor |
+| `#/parte/ZK214BD/2026-11-18` (sin fecha: la de hoy) | Parte diario (revisión antes de salir, cierre o lectura, según el estado del parte; 6.5) | Ambos |
+| `#/mas` | Más: «Ver como», «Cómo funciona», «Reiniciar demo», volver al portafolio | Ambos |
 
-- Al cambiar de ruta: `document.title` = "{Pantalla} · Control de flota (demo)", el foco va al `h1` (`tabindex="-1"`) y
-  la página sube al principio (sin desplazamiento suave). El `h1` enfocado así **no dibuja anillo** (D3 (b), ver
-  "Foco visible" al comienzo de la sección 5).
-- Ruta desconocida o patente que no existe: estado de error de la pantalla (sección 8), nunca una pantalla en blanco.
-- Cambiar de perfil lleva a la ruta por defecto del perfil elegido.
+- Filtros en la dirección. Movilidades: `disponibles`, `no-disponibles`, `bloqueadas`, `fuera`, `baja` (los viejos `pueden-salir`, `no-pueden-salir`, `fuera-de-servicio` y `de-baja` se siguen entendiendo); la búsqueda, `q` (hasta 60 caracteres). Vencimientos: `vencidos`, `proximos`, `7`, `15`, `30`. Un `?` en cualquier otra pantalla es una ruta desconocida.
+- **Pantalla no es consulta.** Cambiar de pantalla mueve el foco al `h1` (`tabindex="-1"`, sin anillo: D3 (b), ver «Foco visible» al comienzo de la sección 5), sube la página (sin desplazamiento suave) y actualiza `document.title` = «{Pantalla} · Control de flota (demo)». Cambiar de filtro o escribir en el buscador **no** mueve foco ni desplazamiento; un filtro agrega una entrada al historial y cada letra del buscador, no.
+- Ruta desconocida o patente que no existe: estado de error de la pantalla (sección 8), nunca una pantalla en blanco. Un perfil que abre una ruta del otro perfil va a su propio inicio.
+- Cambiar de perfil (con «Ver como») lleva a la ruta por defecto del perfil elegido, sin agregar historial.
+- «Atrás» (en la barra superior del celular y en las migas de escritorio) es un enlace al **padre** de la pantalla: la ficha vuelve a Movilidades con el filtro y la búsqueda que tenía; el parte, a Operación diaria (encargado) o a Hoy (conductor); Checklists y Novedades, a Operación diaria. En las pantallas de la navegación no hay.
+- Un diálogo abierto no sobrevive a un cambio de pantalla: «Atrás» del navegador lo cierra.
+- La ficha, el parte, Hoy y Mis partes se bajan al entrar (`import()` dinámico) para que la carga inicial siga bajo el tope de JavaScript (`docs/stack.md`, sección 7); mientras llegan se muestra «Cargando…» (a partir de 300 ms) y, si no llegan, un error con «Recargar».
 
-Orden del DOM (= orden de tabulación): enlace "Ir al contenido" → `header` (barra superior, barra de la aplicación,
-avisos globales) → `main#principal` → `footer`. Los diálogos van al final del `body`.
+Orden del DOM (= orden de tabulación): enlace «Ir al contenido» → lateral (escritorio) → barra superior (celular y tableta) → migas y fecha (escritorio) → avisos globales → `main#principal` → barra inferior (celular y tableta). Los diálogos van al final del `body`. «Ir al contenido» no cambia el hash.
 
 ---
 
 ## 3. Tokens
 
-Propiedades personalizadas en `:root`, bloque oscuro en `@media (prefers-color-scheme: dark)`. Sin selector de tema
-(como la Demo 1: sigue al dispositivo). Prefijos: `--c-` color, `--t-` tipografía, `--e-` espaciado, `--r-` radio,
-`--s-` sombra, `--m-` movimiento.
+Propiedades personalizadas en `:root` (`src/estilos/tokens.css`, que es la fuente de los valores; esta sección explica el criterio), bloque oscuro en `@media (prefers-color-scheme: dark)`. Sin selector de tema (sigue al dispositivo). Prefijos: `--c-` color, `--t-` tipografía, `--e-` espaciado, `--r-` radio, `--s-` sombra, `--m-` movimiento. **Reescrita el 25/11/2026** (dirección «Turno»): los nombres de los tokens se mantuvieron respecto de la versión anterior; cambiaron los valores y se sumaron los del marco nuevo.
 
-### 3.1 Color heredado (valores de la Demo 1)
+### 3.1 Color base
 
-| Token | Claro | Oscuro | Uso |
-| --- | --- | --- | --- |
-| `--c-escritorio` | `#E9EAE3` | `#0C0E10` | Fondo de `body`. |
-| `--c-fondo` | `#F5F5F1` | `#111417` | Zonas internas apenas hundidas. |
-| `--c-superficie` | `#FFFFFF` | `#181C20` | Paneles, tablas, diálogos. |
-| `--c-superficie-2` | `#EEEEE8` | `#20252A` | Cabecera de tabla, pista del horizonte, hover de fila. |
-| `--c-ventana-barra` | `#F6F6F2` | `#1D2226` | Barras de título y de estado de paneles y diálogos. |
-| `--c-ventana-borde` | `#CBCCC3` | `#343B42` | Marco de panel. |
-| `--c-ventana-control-hover` | `#E7E8E1` | `#2A3036` | Hover de botones de ícono en barras. |
-| `--c-texto` | `#1C1F23` | `#E8EBED` | Texto principal, cifras. |
-| `--c-texto-2` | `#4D545B` | `#AEB6BD` | Secundario. |
-| `--c-texto-3` | `#62686F` | `#8F98A0` | Ayudas, rótulos (nunca menos de 13 px). |
-| `--c-borde` | `#DCDDD5` | `#2D3339` | Separadores. |
-| `--c-borde-fuerte` | `#7D8288` | `#6E777F` | Borde de controles (campos, botones secundarios, segmentos). |
-| `--c-acento` | `#0B6B70` | `#5BC6C0` | Primario, enlaces, foco, tramo de 8 a 15 días. |
-| `--c-acento-hover` | `#085459` | `#7DD5D0` | Hover y activo del primario. |
-| `--c-acento-texto` | `#FFFFFF` | `#062221` | Texto sobre acento. |
-| `--c-acento-suave` | `#E2F0EF` | `#123231` | Fondo de selección suave, hover de patente-enlace. |
-| `--c-foco` | `#0B6B70` | `#5BC6C0` | Anillo de foco. |
-| `--c-edicion` | `#E8F3F3` | `#14292A` | Fondo de campo con borrador recién guardado (destello). |
-
-Tonos de estado (texto `-t`, fondo `-f`, franja o marca `-r`), mismos valores que la Demo 1, salvo el `neutro-r` claro (B8):
-
-| Tono base | Claro t / f / r | Oscuro t / f / r |
-| --- | --- | --- |
-| `ok` | `#1D6A39` / `#E3F1E7` / `#2F8A50` | `#86D6A1` / `#16301F` / `#45B26E` |
-| `pendiente` | `#0A5F64` / `#E2F0EF` / `#0B6B70` | `#7DD5D0` / `#123231` / `#5BC6C0` |
-| `revisar` | `#774700` / `#FBEED3` / `#B57A06` | `#F1C46E` / `#33280F` / `#D9A030` |
-| `diferencia` | `#9E2620` / `#FAE5E2` / `#C4372E` | `#F59B91` / `#3A1B18` / `#E2665B` |
-| `neutro` | `#4D545B` / `#ECEDE7` / `#737980` | `#AEB6BD` / `#23282D` / `#7A838B` |
-
-B8 (22/11/2026): el valor de la Demo 1 (`#8E949A`) da 2,62:1 sobre `--c-acento-suave` y 2,63:1 sobre `--c-superficie-2`, y aquí
-marca la selección del filtro "De baja" y la franja de las filas de baja. `#737980`: 4,40 superficie · 3,78
-superficie-2 · 3,76 acento-suave · 4,02 fondo. Oscuro sin cambios (`#7A838B`).
-
-### 3.2 Tonos con nombre de esta demo (alias, sin valores nuevos salvo `--c-mes-r` y el `neutro-r` claro)
-
-| Tono de la demo | Alias de | Significa | Dónde |
-| --- | --- | --- | --- |
-| `critico` | `diferencia` | Vencido, faltante, no puede salir, novedad crítica. | Etiquetas, franjas, caja de vencidos, insignia de la pestaña Alertas. |
-| `semana` | `revisar` | Vence hoy o en 1 a 7 días; fuera de servicio; parte sin enviar; sin parte de ayer; novedad normal. | Ídem; tramo 0–7 del horizonte. |
-| `quincena` | `pendiente` (acento) | Vence en 8 a 15 días: hay que planificar. | Tramo 8–15. |
-| `mes` | `neutro` (t y f) + **`--c-mes-r` nuevo** | Vence en 16 a 30 días: está en el horizonte. | Tramo 16–30. |
-| `vigente` | `ok` | Vigente, puede salir, parte enviado. | Solo en ficha, flota y parte (no hay alertas "verdes"). |
-
-**Token nuevo `--c-mes-r`:** claro `#737980`, oscuro `#7A838B`. El `neutro-r` claro (`#8E949A`) da 2,63:1 sobre la
-pista del horizonte (no llega a 3:1 para una marca que lleva información).
-
-Otros tokens nuevos:
+Negro cálido sobre papel cálido. **La tinta es la acción** (botón primario, filtro elegido, destino activo): el acento ya no es un color. El color queda reservado al estado.
 
 | Token | Claro | Oscuro | Uso |
 | --- | --- | --- | --- |
-| `--c-mes-r` | `#737980` | `#7A838B` | Marcas y tramo de 16–30 días. |
-| `--c-patente-fondo` | `#FFFFFF` | `#22282D` | Fondo del rótulo de patente. |
-| `--c-patente-banda` | `#4D545B` | `#AEB6BD` | Banda superior de 3 px de la patente (decorativa). |
-| `--c-hoy` | `#1C1F23` | `#E8EBED` | Línea de "Hoy" en el horizonte (= `--c-texto`). |
-| `--c-velo` | `rgb(12 14 16 / .45)` | `rgb(0 0 0 / .6)` | Fondo detrás de los diálogos modales (`::backdrop`). |
+| `--c-escritorio` · `--c-fondo` | `#ECECE7` | `#121110` | Fondo de la página. |
+| `--c-superficie` | `#FAFAF7` | `#1B1A18` | Paneles, tablas, diálogos. |
+| `--c-superficie-2` | `#E2E3DD` | `#26241F` | Cabecera de tabla, pista del horizonte, hover de fila. |
+| `--c-ventana-barra` · `--c-ventana-borde` | `#F1F1EC` · `#C9CAC2` | `#201F1C` · `#3D3A35` | Barras de título y de estado de paneles y diálogos; marco del panel. |
+| `--c-texto` · `-2` · `-3` | `#1C1A17` · `#4F4943` · `#625C55` | `#F1EDE6` · `#C9C2B8` · `#A69F95` | Principal, secundario, ayudas y rótulos (nunca menos de 13 px). |
+| `--c-borde` · `--c-borde-fuerte` | `#D3D4CD` · `#7A7B74` | `#34322D` · `#827C72` | Separadores; borde de controles. |
+| `--c-acento` (= `--c-tinta`) | `#1C1A17` | `#F1EDE6` | Primario, filtro elegido, destino activo. Texto sobre él: `--c-acento-texto`. |
+| `--c-enlace` · `--c-foco` | `#2E4A80` | `#AEC1F0` | Enlaces y anillo de foco (azurita). |
+| `--c-foco-oscuro` | `#F4EEE4` | `#F1EDE6` | Anillo de foco sobre lo oscuro (lateral, cobre sólido): el azurita no llega a 3:1 ahí. |
+| `--c-velo` | `rgb(20 18 16 / .64)` | `rgb(0 0 0 / .65)` | Detrás de los diálogos (`::backdrop`). |
+
+### 3.2 Tonos de estado: minerales
+
+Cada tono tiene texto (`-t`), fondo (`-f`) y franja o marca (`-r`). Nombres de los minerales: malaquita, azurita, azufre, cobre, grafito. **El color nunca va solo**: cada tono lleva además una forma (rombo, triángulo, círculo, aro) y texto.
+
+| Tono de la demo | Mineral (alias de) | Significa | Forma |
+| --- | --- | --- | --- |
+| `critico` | cobre (`diferencia`) | Vencido, faltante, bloqueada, novedad crítica. | rombo |
+| `semana` | azufre (`revisar`) | Vence en 7 días o menos; fuera de servicio; parte sin enviar; novedad abierta. | triángulo |
+| `quincena` | azurita (`pendiente`) | Vence en 8 a 15 días: hay que planificar. | círculo |
+| `mes` | grafito (`neutro`) | Vence en 16 a 30 días: está en el horizonte. | aro |
+| `vigente` | malaquita (`ok`) | Vigente, disponible, parte enviado. | (sin forma) |
+
+Valores claros: cobre `#8C3823` (texto y franja) sobre `#F5E1D9`; azufre `#6A5410` (texto), `#9A7B17` (franja) sobre `#F3E9C4`; azurita `#2E4A80` sobre `#E0E6F1`; grafito `#4F4943` (texto), `#7A7670` (franja) sobre `#E4E3DE`; malaquita `#1C5B47` sobre `#DAEAE2`. Los oscuros están en `tokens.css`.
+
+Tokens propios del marco y las piezas nuevas: `--c-critico-solido` (cobre sólido: fondo de la cifra «No disponibles hoy», de las insignias y de «Con novedad»; claro `#8C3823`, oscuro `#983C27`), `--c-sobre-solido` y `--c-sobre-solido-2` (texto sobre él), `--c-patente-fondo`, `--c-patente-banda`, `--c-hoy` (línea de «Hoy» en la regla) y el grupo del lateral `--c-lat*` (oscuro en claro y en oscuro: es el «turno» de la marca).
 
 ### 3.3 Contrastes medidos
 
-Fórmula de luminancia relativa de WCAG 2.x, script reproducible (`scripts/contraste.mjs`, que se corre con `npm run contraste`; nació en la sesión del
-18/11). Los heredados son los medidos en la Demo 1.
+Con `npm run contraste` (`scripts/contraste.mjs`, fórmula de luminancia relativa de WCAG 2.x): **240 mediciones, 0 fallan** (25/11/2026), en claro y oscuro: texto contra cada superficie, tonos de estado (texto sobre su fondo, marca sobre la pista), foco contra cada fondo, el lateral y el cobre sólido. Si se cambia un color, se vuelve a correr; el script lee la estructura de `tokens.css` (primer `:root {` y el bloque oscuro con sangría), así que no hay que reordenarla.
 
-| Par | Claro | Oscuro | Mínimo |
-| --- | --- | --- | --- |
-| texto · texto-2 · texto-3 / superficie | 16,54 · 7,68 · 5,63 | 14,31 · 8,34 · 5,85 | 4,5 |
-| texto · texto-2 · texto-3 / escritorio | 13,66 · 6,34 · 4,65 | 16,15 · 9,42 · 6,60 | 4,5 |
-| texto · texto-2 · texto-3 / superficie-2 | 14,20 · 6,59 · 4,84 | 12,90 · 7,52 · 5,27 | 4,5 |
-| texto-3 / ventana-barra | 5,20 | 5,47 | 4,5 |
-| acento (enlace) / superficie · superficie-2 · escritorio | 6,27 · 5,38 · 5,18 | 8,39 · 7,56 · 9,47 | 4,5 |
-| acento-texto / acento (botón primario) | 6,27 | 8,17 | 4,5 |
-| borde-fuerte / superficie · superficie-2 (controles) | 3,87 · 3,33 | 3,76 · 3,39 | 3 |
-| etiqueta t / f: ok · pendiente · revisar · diferencia · neutro | 5,67 · 6,33 · 6,80 · 6,31 · 6,52 | 8,23 · 8,06 · 8,86 · 7,39 · 7,24 | 4,5 |
-| tono t / ventana-barra (conteos en barras de título): ok · pend · rev · dif · neu | 6,11 · 6,84 · 7,22 · 7,04 · 7,09 | 9,28 · 9,40 · 9,82 · 7,62 · 7,81 | 4,5 |
-| **marca del horizonte / pista (superficie-2):** vigente · quincena · semana · crítico · mes | 3,70 · 5,38 · 3,14 · 4,58 · **3,78** | 5,77 · 7,56 · 6,64 · 4,62 · **4,01** | 3 (no texto) |
-| franja -r / superficie: ok · pend · rev · dif | 4,31 · 6,27 · 3,65 · 5,34 | 6,40 · 8,39 · 7,36 · 5,13 | 3 |
-| **patente:** texto / patente-fondo · borde-fuerte / patente-fondo | 16,54 · 3,87 | 12,44 · 3,27 | 4,5 · 3 |
-| foco (acento) / fondos de tono -f (anillo sobre etiqueta o segmento elegido) | 5,18 a 5,45 | 6,74 a 7,62 | 3 |
-| texto / fondos de tono -f (texto de segmento elegido) | 13,68 a 14,39 | 11,49 a 12,99 | 4,5 |
+### 3.4 Tipografía
 
-Regla: **el color nunca va solo**. Cada estado lleva texto y un ícono de forma distinta (5.7); cada tramo del horizonte
-tiene su rótulo y su conteo en texto.
-
-### 3.4 Tipografía (heredada + dos usos nuevos)
-
-Sin fuentes externas (CSP `font-src 'self'`).
+Sin fuentes externas (CSP `font-src 'self'`): tres familias variables, solo el subconjunto latino, alojadas en `src/estilos/fuentes/` con su licencia (SIL OFL 1.1) y declaradas en `fuentes.css` con `font-display: swap` y una fuente de reemplazo ajustada para que no salte el diseño.
 
 ```
---t-familia: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
---t-familia-titulo: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
---t-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+--t-familia: "Schibsted Grotesk", "Schibsted Grotesk Ajustada", "Helvetica Neue", Arial, sans-serif;          /* texto */
+--t-familia-titulo: "Bricolage Grotesque", "Bricolage Grotesque Ajustada", "Arial Narrow", "Helvetica Neue", Arial, sans-serif; /* títulos y cifras, a 85 % de ancho */
+--t-mono: "Red Hat Mono", "Red Hat Mono Ajustada", ui-monospace, "Cascadia Mono", Consolas, monospace;           /* patentes, números de documento, fechas */
 ```
 
-| Token | Tamaño | Alto de línea | Peso | Uso |
-| --- | --- | --- | --- | --- |
-| `--t-cifra` | `clamp(2.5rem, 1.9rem + 2.6vw, 3.5rem)` | 1 | 700 | Cifra protagonista. `letter-spacing: -0.02em`. |
-| `--t-h1` | `clamp(1.75rem, 1.35rem + 1.8vw, 2.5rem)` | 1.15 | 700 | Título de pantalla. |
-| `--t-h2` | `1.375rem` | 1.25 | 650 (600 sin fuente variable) | Títulos de sección fuera de panel. |
-| `--t-h3` | `1.125rem` | 1.3 | 600 | Grupos dentro de un panel ("Vencidos y faltantes (2)"). |
-| `--t-cuerpo` | `1rem` | 1.5 | 400 | Texto general. **En el parte, también los campos (16 px evita el zoom automático de iOS).** |
-| `--t-tabla` | `0.875rem` | 1.4 | 400 | Celdas. |
-| `--t-chico` | `0.8125rem` | 1.4 | 400/600 | Etiquetas, ayudas, segunda línea. |
-| `--t-rotulo` | `0.75rem` | 1.3 | 600 | Cabeceras de tabla y rótulos en mayúsculas, `letter-spacing: 0.06em`. Solo ahí. |
-| **`--t-patente`** | `0.8125rem` (chica) · `1.25rem` (grande) | 1 | 600 | `--t-mono`, `letter-spacing: 0.06em`, mayúsculas ya normalizadas, `white-space: nowrap`. |
-| **`--t-km`** | hereda el tamaño del contexto | — | 600 en cifras protagonistas, 400 en tablas | `font-variant-numeric: tabular-nums lining-nums`; separador de miles con punto (`84.320 km`). |
+| Token | Tamaño | Uso |
+| --- | --- | --- |
+| `--t-cifra-grande` | `3.5rem` | La cifra cobre de Inicio. |
+| `--t-cifra` | `clamp(2.5rem, 1.9rem + 2.6vw, 3.5rem)` | Cifras secundarias. |
+| `--t-h1` | `clamp(1.75rem, 1.35rem + 1.8vw, 2.5rem)` | Título de pantalla. |
+| `--t-h2` · `--t-h3` | `1.375rem` (650) · `1.125rem` | Secciones y grupos. |
+| `--t-cuerpo` | `1rem` | Texto general; en el parte, también los campos (16 px evita el zoom automático de iOS). |
+| `--t-tabla` · `--t-chico` · `--t-rotulo` | `0.875rem` · `0.8125rem` · `0.75rem` | Celdas; etiquetas y ayudas; cabeceras y rótulos en mayúsculas (`letter-spacing: .06em`, solo ahí). |
+| `--t-patente-chica` · `--t-patente-grande` | `0.875rem` · `1.625rem` | La patente (la grande, en la ficha y el parte). |
 
-Cifras (kilómetros, litros, días, conteos, fechas en tablas): siempre `tabular-nums`. Códigos (patente, número de
-póliza, legajo): `--t-mono`. Medida de lectura: párrafos con `max-width: 62ch`.
+Cifras (kilómetros, litros, días, conteos, fechas en tablas): siempre `tabular-nums`; separador de miles con punto (`84.320 km`). Medida de lectura: párrafos con `max-width: 62ch`. **Todo en `rem`** (el texto al 200 % no parte palabras ni ensancha la página; sección 12).
 
-### 3.5 Espaciado, radios, sombras (heredados)
+### 3.5 Espaciado, radios, sombras
 
-- Espaciado base 4 px: `--e-1: .25rem; --e-2: .5rem; --e-3: .75rem; --e-4: 1rem; --e-5: 1.5rem; --e-6: 2rem; --e-7: 3rem; --e-8: 4rem;`
-- Medianil lateral: 16 px (< 640), 24 px (640–1099), 32 px (≥ 1100). Ancho máximo del contenido: `76rem`. Parte diario:
-  columna de `40rem` como máximo, centrada.
-- Entre paneles: `--e-5` (≥ 640) / `--e-4` (< 640). Relleno interior de panel: `--e-5` / `--e-4` / `--e-3` según ancho.
-- Radios: `--r-1: 4px` (etiquetas, patente) · `--r-2: 6px` (botones, campos, segmentos) · `--r-3: 10px` (paneles) ·
-  `--r-4: 14px` (diálogos). **Sin píldoras.**
-- Sombras: `--s-ventana` (claro `0 1px 2px rgb(16 24 32 / .06), 0 6px 16px -4px rgb(16 24 32 / .10)`; oscuro
-  `inset 0 1px 0 rgb(255 255 255 / .03), 0 8px 20px -6px rgb(0 0 0 / .6)`) en paneles; `--s-flotante` (claro
-  `0 8px 24px rgb(16 24 32 / .16), 0 2px 6px rgb(16 24 32 / .08)`; oscuro `0 8px 24px rgb(0 0 0 / .5), 0 0 0 1px #2D3339`)
-  en diálogos, menú "Más" y barra de envío.
-- Alturas fijas nuevas: `--alto-barra-envio: 4.5rem` (barra inferior del parte); `--alto-tactil: 2.75rem` (44 px,
-  mínimo de todo lo que se pulsa); `--alto-segmento: 3rem` (48 px, botones del checklist y del combustible).
+- Espaciado base 4 px: `--e-1` a `--e-8` (`.25rem` a `4rem`). Medianil lateral `--gutter`: 16 px (< 640), 24 px (640–1099), 32 px (≥ 1100). Ancho máximo del contenido: `82.5rem` (`App.svelte`); parte diario: columna de `40rem`.
+- Radios: `--r-1: 4px` (etiquetas, patente) · `--r-2: 8px` (botones, campos, paneles) · `--r-3: 14px` (diálogos). **Píldora (`--r-pildora`) solo** en el chip de perfil, las pastillas de filtro, las insignias con números y el destino activo de la barra inferior.
+- Borde de los controles: `--b-control: 1.5px`.
+- Sombras: planas. `--s-panel` (una línea), `--s-ventana` y `--s-flotante` (diálogos y menús).
+- Alturas fijas: `--alto-tactil: 2.75rem` (44 px, mínimo de todo lo que se pulsa), `--alto-segmento: 3rem` (checklist y combustible), `--alto-barra-envio: 4.5rem`, `--alto-barra: 3.25rem` y `--alto-franja: 1.625rem` (barra superior del celular), `--alto-pestanas: 4rem` (barra inferior), `--ancho-lateral: 16rem`.
 
-### 3.6 Movimiento (heredado)
+### 3.6 Movimiento
 
-`--m-rapido: 120ms; --m-medio: 200ms; --m-lento: 320ms; --m-curva: cubic-bezier(.2, .7, .2, 1);`
+`--m-rapido: 120ms; --m-medio: 220ms; --m-lento: 320ms; --m-curva: cubic-bezier(.2, .7, .2, 1);`
 
-- Hover y foco: `--m-rapido`. Diálogo: aparece con opacidad en `--m-medio` (escritorio); hoja inferior a < 640 px sube
-  en `--m-lento`.
-- Campo de km o fila recién actualizados: destello de fondo `--c-edicion` → transparente en 1200 ms, una vez.
-- Indicador de guardado: sin animación (cambia el texto).
-- `@media (prefers-reduced-motion: reduce)`: transiciones y animaciones a `0.01ms`, sin destello, sin subida de la hoja.
-- Prohibido: animar cifras (contadores), animaciones al desplazar, parpadeos, rebotes, marcas del horizonte que "caen".
+- Hover y foco: `--m-rapido`. Diálogo: opacidad en `--m-medio` (escritorio); hoja inferior a menos de 40 rem, que sube.
+- **Transición entre pantallas** (25/11/2026; `src/componentes/movimiento.ts` y `src/estilos/base.css`): el contenido sale en 110 ms (opacidad) y el nuevo entra en 230 ms con `--m-curva`, subiendo 10 px. Usa `document.startViewTransition`, y solo cuando cambia la **pantalla** (no un filtro ni una letra del buscador). La **patente viaja** de la fila de la lista al título de la ficha, y vuelve (340 ms): el `view-transition-name` se pone por CSSOM (nunca por atributo `style`: la CSP no lo permite) y se saca al terminar. El nombre de `main` solo existe mientras dura la transición. Si hay un diálogo abierto no hay transición. Sin View Transitions (navegadores que no la tienen) `main` entra con la misma subida por CSS (`main.entra`).
+- **Cuenta de la cifra cobre** de Inicio (`CifraQueCuenta.svelte`): de 0 a su valor en 650 ms, curva cúbica que frena al final, **al abrir la demo y al reiniciarla**; ninguna otra cifra se anima. Es solo lo que se ve: el valor final está siempre en un texto aparte para lectores de pantalla y lo visible es `aria-hidden`, así que no se anuncia ningún número intermedio. Un valor que cambia por una acción (renovar un documento) se muestra de una vez.
+- El detalle de un punto de la regla de vencimientos entra con la misma curva (220 ms).
+- Campo de km o fila recién actualizados: destello de fondo `--c-edicion` → transparente en 1200 ms, una vez. Indicador de guardado: sin animación (cambia el texto).
+- **`prefers-reduced-motion: reduce`:** en `base.css` todas las transiciones y animaciones pasan a `0.01ms` y las de la transición entre pantallas, a ninguna; `movimiento.ts` no inicia la transición ni la cuenta (la cifra aparece con su valor).
+- El movimiento va por CSS y por View Transitions: las directivas `transition:`, `in:`, `out:` y `animate:` de Svelte las rechaza `npm run buscar`.
+- Prohibido: animaciones al desplazar, parpadeos, rebotes, esqueletos con brillo, marcas del horizonte que «caen» o aparecen con movimiento.
 
 ---
 
 ## 4. La página (marco común)
 
-### 4.1 Barra superior (`header`, fondo `--c-escritorio`, 56 px, no fija)
+**Reescrita el 25/11/2026** (marco «Turno»: `App.svelte`, `Lateral`, `BarraSuperior`, `BarraInferior`, `Migas`, `PantallaMas`). Reemplaza a la barra superior, la barra de la aplicación y el pie de la versión anterior.
 
-| Ancho | Contenido |
-| --- | --- |
-| ≥ 56rem | Izquierda: ícono `i-marca` (20 px, trazo `--c-acento`) + "Control de flota" (`--t-cuerpo` 600) + etiqueta "Demo con datos ficticios" (`--t-rotulo`, `--c-texto-2`, borde 1 px `--c-borde-fuerte`, `--r-1`). Derecha: botones-texto "Cómo funciona" y "Reiniciar demo", y el enlace "← Volver al portafolio". |
-| 40–56rem | Igual, pero "Cómo funciona" y "Reiniciar demo" pasan al menú "Más" (botón de ícono `i-mas`, 44 × 44); el enlace se acorta a "← Portafolio". |
-| < 40rem | Marca + "← Portafolio" + "Más". La etiqueta "Demo con datos ficticios" baja al encabezado de cada pantalla (arriba del `h1`). |
+### 4.1 Escritorio (desde 64 rem): lateral oscuro y barra de migas
 
-La marca no es un enlace (es la misma aplicación). Favicon: `i-marca` como SVG en `data:` (la CSP permite `img-src data:`).
+- **Lateral** fijo a la izquierda, de `16rem`, oscuro en claro y en oscuro. Arriba: la marca (ícono y «Control de flota») y la etiqueta «Demo con datos ficticios». En el medio, los destinos: encargado, Inicio, Movilidades, Vencimientos y Operación diaria (desplegada en Checklists y Novedades); conductor, Hoy y Mis partes. Con insignias (4.3). Abajo: «Cómo funciona», «Reiniciar demo», «Ver como» (el perfil de ahora, con un control para cambiarlo), «Volver al portafolio», la autoría («Diseño, reglas y verificación: Matías Ariel Ormeño. El código lo escribió una IA bajo su dirección») y «Más».
+- El destino de la pantalla actual sale del contenido como una pestaña de fichero (corte en diagonal) y lleva además una marca de 3 px y negrita: en oscuro el recorte solo no alcanza contraste. `aria-current="page"`.
+- **Barra de migas** fija arriba del contenido: las migas a la izquierda (el último tramo es la pantalla de ahora, sin enlace; los anteriores, enlaces) y la fecha a la derecha. Las pantallas del lateral llevan un solo tramo.
 
-**Texto agrandado (1.4.4, m1 de la auditoría del 22/11/2026):** la barra no tiene alto fijo sino `min-height: 56px`, y
-su fila es `display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--e-3); row-gap: var(--e-1);`. La etiqueta
-"Demo con datos ficticios" (arriba y la copia de `.solo-angosto` bajo el encabezado de cada pantalla a < 40rem) lleva
-`white-space: normal` y `max-width: 100%`: con el texto al 200 % baja de renglón en lugar de empujar la página. "Control
-de flota" y su ícono nunca se superponen: el ícono es `flex: none` y el nombre puede partirse. Meta: a 360 px con
-`html { font-size: 200% }`, `document.documentElement.scrollWidth` ≤ 360 en todas las pantallas (hoy: 465, y 499 en
-alertas). El botón de la barra de envío a 320 px también entra en esa meta (5.14).
+### 4.2 Celular y tableta (menos de 64 rem): barra superior y barra inferior
 
-### 4.2 Barra de la aplicación (fondo `--c-superficie`, borde inferior `--c-borde`, 52 px)
+- **Barra superior** fija, en dos pisos. Fila: a la izquierda la marca (en las pantallas de la barra inferior) o «‹ Atrás» (en la ficha y el parte); a la derecha, el **chip del perfil**, que abre «Ver como». Al bajar la página, el título de la pantalla ocupa el lugar de la marca. Debajo, la franja «Demo con datos ficticios · día de la semana y fecha», siempre visible.
+- **Barra inferior** (`nav aria-label="Secciones"`), de `4rem`, con el área segura del teléfono: encargado, Inicio, Movilidades, Operación, Vencimientos y Más; conductor, Hoy, Mis partes y Más. El destino actual lleva una píldora de tinta y `aria-current` (no solo color). En el parte no hay barra inferior: manda la barra de envío.
 
-- **Navegación** (`nav aria-label="Secciones"`), pestañas-enlace con `aria-current="page"` en la activa:
-  - Encargado: "Alertas" + insignia con la cantidad de alertas críticas (rectángulo `--r-1`, `--c-critico-f` / `-t`,
-    `--t-chico` 600; **M6 (22/11/2026): el texto visible es «4 críticas» («1 crítica»), no solo el número**, y coincide con el
-    texto accesible del enlace "Alertas, 4 críticas" (2.5.3); `white-space: nowrap` en la insignia y `flex-wrap: wrap` en
-    la pestaña: con el texto al 200 % la insignia baja debajo de "Alertas" en lugar de ensanchar la página; sin insignia si
-    es 0) · "Flota".
-  - Conductor: "Parte diario" (el mismo nombre que el `h1` de su inicio y que el enlace de vuelta desde el parte; S7) ·
-    nada más: los partes anteriores están en su inicio.
-  - Pestaña activa: texto `--c-texto` 600 + línea inferior de 3 px `--c-acento`. Inactiva: `--c-texto-2`; hover
-    `--c-texto` y fondo `--c-superficie-2`. Alto 52 px (área táctil completa).
-- **Selector de perfil** a la derecha (5.2). A < 40rem pasa a una fila propia **debajo** de la navegación, a todo el
-  ancho, y también va después de la navegación en el DOM (S1).
-- **Perfil Conductor:** el nombre elegido ("{Nombre} (persona ficticia)", D2 del 22/11/2026, `--t-chico`, `--c-texto-2`; para lectores, antepuesto
-  "Conductor: ") y el botón-texto "Cambiar" (nombre accesible "Cambiar conductor") van **a la derecha del selector, en la
-  misma fila**, desde 48rem; la barra conserva 52 px. A < 48rem, en un renglón propio debajo de "Ver como", separados con
-  `gap` (nunca con "·" en el texto, que queda colgado al partirse). Va a la derecha y no a la izquierda para que el orden
-  visual coincida con el de foco (C2, implementado así).
+### 4.3 Insignias
 
-### 4.3 Avisos globales (debajo de la barra de la aplicación, dentro del ancho máximo)
+Las del lateral y la barra inferior salen de las mismas cifras de Inicio y de Operación diaria (`app.centroDeAlertas`), no de un cálculo aparte: Inicio, no disponibles hoy; Vencimientos, vencidos o faltantes; Operación diaria, pendientes (con su desglose en Checklists y Novedades). Las dos primeras son cobre (críticas); las de Operación, grafito. Sin insignia si es 0. El nombre accesible de la insignia dice la cuenta con palabras («4 no disponibles hoy»); `white-space: nowrap` en la insignia y, con el texto al 200 %, la insignia baja de renglón en lugar de ensanchar la página.
 
-Uno debajo del otro, solo los que aplican (5.18): datos viejos (D5), demo actualizada (D7), modo en memoria (D8),
-cambios en otra pestaña (D9) y, si se hace la decisión D4, fecha de consulta simulada.
+### 4.4 Avisos globales
 
-### 4.4 Pie
+Debajo de las migas (escritorio) o de la barra superior (celular), dentro del ancho máximo, uno debajo del otro y solo los que aplican (5.18): datos viejos (D5), demo actualizada (D7), modo en memoria (D8) y cambios en otra pestaña (D9). La región `role="status"` existe siempre, vacía, para que lo que llega con la página abierta se anuncie.
 
-Fondo `--c-escritorio`, borde superior `--c-borde`, `--t-chico`, `--c-texto-2`. Dos renglones:
-1. "Demo escrita desde cero con datos ficticios de una empresa inventada (Logística Andina Demo S.A.). Los datos se
-   guardan solo en este navegador." (el texto final lo pule `redactor-ux`).
-2. "Diseño, reglas y verificación: Matías Ariel Ormeño. El código lo escribió una IA bajo su dirección." · enlaces
-   "Código fuente" (oculto mientras el repositorio sea privado) · "Volver al portafolio".
+### 4.5 «Más» y pie
 
-**Prohibido** en el pie y en cualquier texto: presentar la demo como copia de un sistema existente, nombrar empleadores
-o clientes.
+No hay pie propio. La pantalla **Más** (`#/mas`, la ven los dos perfiles) reúne lo que antes colgaba de la barra superior: «Ver como» (el perfil de ahora y cómo cambiarlo), «La demo» («Cómo funciona», «Reiniciar demo», volver al portafolio) y el texto de autoría. En escritorio ese texto está al pie del lateral.
+
+**Prohibido** en cualquier texto: presentar la demo como copia de un sistema existente, nombrar empleadores o clientes.
+
 
 ---
 
@@ -1578,17 +1515,17 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 
 ## 10. Lo que NO hay que hacer
 
-- Grilla de tarjetas por unidad tipo semáforo, "bento", fila de tres cifras gigantes, medidores circulares, mapas,
+- Grilla de tarjetas por unidad tipo semáforo, "bento", más de una cifra protagonista por pantalla (Inicio tiene una, la cobre, y cuatro secundarias que llevan a su lista), medidores circulares, mapas,
   camiones ilustrados, íconos de vehículos en color, emojis.
 - Imitar la patente oficial (banda azul, escudo, leyendas) o cualquier marca de organismo o empresa real.
-- Gradientes, vidrio esmerilado, violeta, brillos, sombras grandes, píldoras, mayúsculas fuera de rótulos y cabeceras.
+- Gradientes, vidrio esmerilado, violeta, brillos, sombras grandes, mayúsculas fuera de rótulos y cabeceras. Píldoras solo donde dice 3.5 (chip de perfil, pastillas de filtro, insignias, destino activo de la barra inferior).
 - Fondos de color por fila (la franja alcanza); franja verde en las filas que están bien.
 - **Botón "Marcar todo en orden" en el checklist**: fomenta completar sin mirar, que es justo el problema del papel.
-- Deshabilitar "Enviar parte" mientras falten datos; mensajes de error que desaparecen solos; avisos tipo *toast*.
+- Deshabilitar "Enviar parte" mientras falten datos; mensajes de error que desaparecen solos; avisos tipo *toast* (lo que pasó se dice en la barra de estado del panel o en la región `role="status"`).
 - Anunciar cada autoguardado al lector de pantalla.
-- Animar cifras, animaciones al desplazar, esqueletos con brillo, marcas del horizonte que aparecen con movimiento.
+- Animar cifras **salvo la cobre de Inicio al abrir y al reiniciar** (3.6), animaciones al desplazar, esqueletos con brillo, marcas del horizonte que aparecen con movimiento, transiciones de Svelte (`transition:`, `in:`, `out:`, `animate:`), movimiento sin `prefers-reduced-motion`, y anunciar a un lector de pantalla los números intermedios de una cuenta.
 - `min-width` en tablas o desplazamiento horizontal de la página a cualquier ancho.
-- Información solo en `title` o solo al pasar el mouse (el horizonte no tiene *tooltips*).
+- Información solo en `title` o solo al pasar el mouse (la regla de vencimientos muestra la patente o el nombre junto al punto solo donde entra, pero lo mismo está en el nombre accesible del punto, en el detalle al elegirlo y en la leyenda; no hay *tooltips*).
 - Atributo `style` en el marcado, `{@html}`, fuentes, íconos o scripts de un CDN.
 - Calcular "hoy" con la hora del equipo o con un desfase fijo.
 - Presentar la demo como copia de un sistema existente, nombrar empleadores o clientes, usar nombres de proyectos
@@ -1598,9 +1535,9 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
   para nada); ofrecer "Enviar de todos modos" o cualquier advertencia aceptable por la licencia (L1 bloquea); deshabilitar el
   botón en lugar de explicar el bloqueo; pedir kilometraje final o combustible en la revisión, o checklist en el cierre;
   ofrecer "Descartar" en un parte en uso; dibujar un indicador de pasos gráfico (alcanza con "paso 1 de 2"); contar a
-  los conductores en la cifra del protagonista (cuenta unidades); poner franja o etiqueta "No puede salir" en una unidad
+  los conductores en la cifra del protagonista (cuenta unidades); poner franja o etiqueta "Bloqueada" en una unidad
   porque su conductor no tiene licencia (puede salir con otro).
-- Etiqueta con fondo para "Puede salir" (D1: variante texto) y motivos del protagonista en rojo (D4: `--c-texto`).
+- Etiqueta con fondo para "Disponible" (D1: variante texto) y motivos del protagonista en rojo (D4: `--c-texto`).
 - **Etapa 6 (22/11/2026):** título del panel de resultado en el color del tono (va en `--c-texto`, 5.4); "puede salir"
   en C1 cuando se aceptó documentación vencida (eliminado por P21); una fecha en "Último parte" que no es la del parte que nombra la
   etiqueta; cabeceras de tabla partidas dentro de una palabra; diez enlaces de puntos sin responder en el resumen

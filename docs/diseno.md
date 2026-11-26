@@ -4,6 +4,8 @@ Escrito antes del código, **desde cero**, a partir de un único enunciado: la f
 "Reglas comunes" del documento de demos del portafolio de Matías Ariel Ormeño. No se consultó ningún sistema, repositorio,
 documento ni dato de terceros. Todos los datos son ficticios.
 
+**Nota del 25/11/2026.** En la interfaz «tipo app» el «centro de alertas» de este documento se reparte en **Inicio**, **Vencimientos** y **Operación diaria**, «Flota» es **Movilidades**, «puede salir» / «no puede salir» se dicen «Disponible» / «Bloqueada» y «No pueden salir» es «No disponibles hoy». Las reglas y sus identificadores (T, V, A, P, K, N, U, H, D) no cambiaron; el mapa completo de nombres está al comienzo de `docs/diseno-ui.md`.
+
 Documentos hermanos: `docs/diseno-ui.md` (pantallas y sistema visual), `docs/stack.md` (tecnología), `docs/plan.md`
 (pasos de implementación). Si algo de acá no alcanza para programar sin adivinar, es un defecto de este documento:
 se pregunta antes de inventar.

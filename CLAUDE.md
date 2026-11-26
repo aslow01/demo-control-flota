@@ -6,7 +6,7 @@ Diseño: `docs/diseno.md` y `docs/diseno-ui.md`. Tecnología: `docs/stack.md`. P
 ## Objetivo
 
 Aplicación web, en el navegador, para controlar una flota ficticia: documentos con vencimiento, parte diario con
-checklist desde el celular, centro de alertas (7, 15 y 30 días) e historial por unidad. IndexedDB con "Reiniciar demo".
+checklist desde el celular, Inicio con alertas, Vencimientos (7, 15 y 30 días), Operación diaria, Movilidades e historial por unidad. IndexedDB con "Reiniciar demo".
 En vivo, cuando esté, en `flota.matiasormeno.com.ar`.
 
 ## Qué NO hace
@@ -34,8 +34,7 @@ público, con la aprobación de Matías (es irreversible).
 
 ## Cómo se verifica
 
-`npm run check`, `npm test` (con matriz de zonas horarias en CI), `npm run build` con la CSP real, `npm audit`, y la
-verificación de `docs/diseno-ui.md` (sección 12). Búsquedas: sin `{@html}`, sin `Math.random` en `src/lib`, sin
+`npm run check`, `npm test` (con matriz de zonas horarias en CI), `npm run build` con la CSP real, `npm run peso` (tope de la carga inicial), `npm run contraste`, `npm run buscar`, `npm audit`, y la verificación de `docs/diseno-ui.md` (sección 12). Búsquedas: sin `{@html}`, sin `Math.random` en `src/lib`, sin
 nombres reales.
 
 ## Cómo se retoma
