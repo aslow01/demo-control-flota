@@ -33,7 +33,7 @@
   import Horizonte from "./Horizonte.svelte";
   import Icono from "./Icono.svelte";
   import ListaTabla, { type GrupoDeLista } from "./ListaTabla.svelte";
-  import { CELDA } from "./lista-roles.ts";
+  import { CELDA, ENCABEZADO_DE_FILA } from "./lista-roles.ts";
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
   import { TEXTO_FLOTA_VISTA as T } from "./textos-marco.ts";
@@ -212,7 +212,7 @@
           {#snippet fila(f: FilaFlota)}
             {@const aspecto = aspectoDeAptitud(f.estado.categoria)}
             {@const pv = f.proximoVencimiento}
-            <td {...CELDA} data-col="unidad">
+            <td {...ENCABEZADO_DE_FILA} data-col="unidad">
               <!-- Tabla: la patente y el interno en un renglón, el modelo debajo. Tarjeta (C8): el interno y el modelo van juntos en un solo grupo sin cortes (`grupo-int`) que baja entero si no entra. -->
               <span class="unidad-celda">
                 <span class="patente-unidad"><Patente patente={f.patente} href={f.href} /></span>
@@ -513,11 +513,12 @@
       content: " ·";
       content: " ·" / "";
     }
-    /* Un modelo escrito por la persona puede ser larguísimo: nunca ensancha la página (la ficha lo muestra completo). */
+    /* Un modelo escrito por la persona puede ser larguísimo: nunca ensancha la página y baja de renglón en vez de cortarse con puntos suspensivos (con el texto al 200 % el dato
+       tiene que poder leerse entero: 1.4.4). */
     .modelo {
       min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
   }
   .interno {

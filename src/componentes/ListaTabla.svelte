@@ -383,6 +383,18 @@
         "proyecto proyecto proyecto";
       align-items: start;
     }
+    /* Sin encabezados a la vista (la tabla se ve desde 65 rem): el último parte y las novedades llevan su rótulo, si no una fecha suelta se lee como el vencimiento. Sin novedades, nada. */
+    [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte)::before {
+      content: "último parte ";
+      content: "último parte " / "";
+    }
+    [data-variante="flota"] .fila :global(td[data-col="novedades"])::before {
+      content: attr(data-etiqueta) ": ";
+      content: attr(data-etiqueta) ": " / "";
+    }
+    [data-variante="flota"] .fila :global(td[data-col="novedades"][data-sin-valor]) {
+      display: none;
+    }
   }
   /* Tarjeta de la flota (C7): unidad, estado, próximo vencimiento, un renglón de datos («160.678 km · último parte 18/11/2026»), las novedades solo si hay y el proyecto.
      Sin rótulos en columnas: el de «último parte» y el de «novedades» se leen del `data-etiqueta` (el resto se entiende solo). */
@@ -414,11 +426,10 @@
     [data-variante="flota"] .fila :global(td[data-col="parte"]) {
       align-self: start;
     }
-    /* `nowrap` solo mientras la tarjeta es ancha en `rem` (texto normal): con el texto agrandado la tarjeta mide pocos rem y el renglón puede partirse en lugar de ensanchar la página. */
-    @container lista (min-width: 17rem) {
-      [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte) {
-        white-space: nowrap;
-      }
+    /* La fecha de «último parte» no se parte en dos mientras entra (la fecha misma no tiene espacios), pero si no entra (texto agrandado, o el espaciado de texto de 1.4.12) el renglón
+       se parte en el espacio de antes de la fecha en lugar de ensanchar la página. */
+    [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte) {
+      overflow-wrap: break-word;
     }
     [data-variante="flota"] .fila :global(td[data-col="parte"] .fecha-parte)::before {
       content: "· último parte ";
@@ -475,9 +486,6 @@
       grid-area: accion;
       white-space: normal;
     }
-    [data-variante="documentos"] .fila :global(td[data-col="anteriores"]) {
-      grid-area: anteriores;
-    }
   }
   /* Compacta: (documento · número · vence) y debajo (estado · acciones). */
   @container lista (min-width: 40rem) and (max-width: 64.99rem) {
@@ -487,13 +495,6 @@
         "documento numero vence"
         "estado estado accion";
       align-items: start;
-    }
-    /* «Anteriores (N)», si la fila lo tiene, va en un renglón propio debajo de todo (sin él no queda un renglón vacío con su separación). */
-    [data-variante="documentos"] .fila:has(:global(td[data-col="anteriores"])) {
-      grid-template-areas:
-        "documento numero vence"
-        "estado estado accion"
-        "anteriores anteriores anteriores";
     }
   }
   /* Tarjeta: documento, estado, (número · vence) y las acciones. */
@@ -506,14 +507,6 @@
         "numero vence"
         "accion accion";
       column-gap: var(--e-3);
-    }
-    [data-variante="documentos"] .fila:has(:global(td[data-col="anteriores"])) {
-      grid-template-areas:
-        "documento documento"
-        "estado estado"
-        "numero vence"
-        "accion accion"
-        "anteriores anteriores";
     }
   }
 
@@ -533,15 +526,6 @@
         "numero"
         "vence"
         "accion";
-    }
-    [data-variante="documentos"] .fila:has(:global(td[data-col="anteriores"])) {
-      grid-template-areas:
-        "documento"
-        "estado"
-        "numero"
-        "vence"
-        "accion"
-        "anteriores";
     }
   }
 

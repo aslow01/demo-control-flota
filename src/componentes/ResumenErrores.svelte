@@ -55,6 +55,11 @@
     border-radius: var(--r-1);
     color: var(--c-critico-t);
   }
+  /* El foco llega por programa al enviar con errores (con ratón no cuenta como «foco visible»): quien ve tiene que saber dónde quedó. Anillo siempre, que se suma al borde. */
+  .resumen[tabindex="-1"]:focus {
+    outline: 3px solid var(--c-foco);
+    outline-offset: 2px;
+  }
   .titulo {
     display: flex;
     align-items: flex-start;

@@ -2,7 +2,7 @@
   // Panel «Documentos» de la ficha (6.3): el Horizonte mediano con solo los documentos de la unidad, la tabla (Documento · Número y emisor · Vence ·
   // Estado · Acciones; una fila por documento obligatorio y por cada cargado, los que faltan con «Falta cargar» y «Cargar») y «Cargar otro documento».
   // No tiene reglas: todo lo arma `ficha.documentos`. Las acciones avisan con `alAccion` (que abre el diálogo) y `alCargarOtro`.
-  //  - «Anteriores (N)» es un `details` de solo lectura en una celda propia, la última de la fila, a todo el ancho (la tabla completa nunca se ve acá: ver más abajo).
+  //  - «Anteriores (N)» es un `details` de solo lectura dentro de la celda de estado (la tabla completa nunca se ve acá: ver más abajo).
   //  - Emisor: la especificación lo pone en una columna que se oculta por debajo de 66 rem; el panel nunca llega a ese ancho (ocupa 8 de 12 columnas),
   //    así que va siempre debajo del número.
   import type { AccionDeDocumentoEnFicha, FilaDocumento, PanelDocumentos } from "../lib/estado/ficha.ts";
@@ -12,7 +12,7 @@
   import Horizonte from "./Horizonte.svelte";
   import Icono from "./Icono.svelte";
   import ListaTabla, { type GrupoDeLista } from "./ListaTabla.svelte";
-  import { CELDA } from "./lista-roles.ts";
+  import { CELDA, ENCABEZADO_DE_FILA } from "./lista-roles.ts";
   import Panel from "./Panel.svelte";
   import { TEXTO_FICHA_VISTA as T } from "./textos-marco.ts";
   import type { NombreIcono, Tono } from "./tipos.ts";
@@ -78,7 +78,7 @@
     >
       {#snippet fila(f: FilaDocumento)}
         {@const aspecto = aspectoDe(f)}
-        <td {...CELDA} data-col="documento">
+        <td {...ENCABEZADO_DE_FILA} data-col="documento">
           <span class="doc">{f.nombre}</span>
         </td>
         <td {...CELDA} data-col="numero" data-etiqueta={T.documentos.numeroDe}>
@@ -90,7 +90,21 @@
           {/if}
         </td>
         <td {...CELDA} data-col="vence" data-etiqueta={T.documentos.venceEl}>{f.vence}</td>
-        <td {...CELDA} data-col="estado"><Etiqueta tono={aspecto.tono} icono={aspecto.icono}>{f.estado.texto}</Etiqueta></td>
+        <!-- «Anteriores (N)» va dentro de la celda de estado (no en una sexta celda: las demás filas tienen cinco y la tabla quedaría con una columna sin encabezado). -->
+        <td {...CELDA} data-col="estado">
+          <span class="apilado">
+            <span><Etiqueta tono={aspecto.tono} icono={aspecto.icono}>{f.estado.texto}</Etiqueta></span>
+            {#if f.rotuloAnteriores !== null}
+              <Detalles resumen={f.rotuloAnteriores}>
+                <ul class="anteriores">
+                  {#each f.anteriores as a (a.documentoId)}
+                    <li>{T.documentos.anterior(a)}</li>
+                  {/each}
+                </ul>
+              </Detalles>
+            {/if}
+          </span>
+        </td>
         <td {...CELDA} data-col="accion">
           {#if f.acciones.length > 0}
             <div class="acciones-fila">
@@ -102,18 +116,6 @@
             </div>
           {/if}
         </td>
-        <!-- «Anteriores (N)» es la última celda de la fila y ocupa todo su ancho (C6): así el nombre y el estado quedan siempre juntos y a la misma altura en todas las filas. -->
-        {#if f.rotuloAnteriores !== null}
-          <td {...CELDA} data-col="anteriores">
-            <Detalles resumen={f.rotuloAnteriores}>
-              <ul class="anteriores">
-                {#each f.anteriores as a (a.documentoId)}
-                  <li>{T.documentos.anterior(a)}</li>
-                {/each}
-              </ul>
-            </Detalles>
-          </td>
-        {/if}
       {/snippet}
     </ListaTabla>
   {/if}
@@ -133,6 +135,12 @@
   }
   .nota {
     display: block;
+  }
+  .apilado {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--e-2);
   }
   .anteriores {
     display: flex;

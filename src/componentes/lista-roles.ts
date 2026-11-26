@@ -7,3 +7,5 @@ export const FILA = { role: "row" } as const;
 export const ENCABEZADO_DE_COLUMNA = { role: "columnheader" } as const;
 export const ENCABEZADO_DE_GRUPO = { role: "rowheader" } as const;
 export const CELDA = { role: "cell" } as const;
+/** La primera celda de una fila (documento, unidad): sigue siendo un `td` (los estilos de la tabla lo cuentan así) pero se lee como encabezado de su fila. */
+export const ENCABEZADO_DE_FILA = { role: "rowheader" } as const;
