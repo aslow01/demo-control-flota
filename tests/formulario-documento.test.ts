@@ -136,7 +136,7 @@ describe("validación de todos los campos a la vez (5.15)", () => {
   it("vacío: número y vencimiento juntos, en el orden del formulario, con los mismos mensajes del dominio", () => {
     const err = validarValores({ numero: "", emisor: "", vence: "", emitido: "" }, H);
     expect(err?.lista.map((x) => x.campo)).toEqual(["numero", "vence"]);
-    expect(err?.porCampo).toEqual({ numero: "Escriba el número del documento.", vence: "Escriba una fecha válida." });
+    expect(err?.porCampo).toEqual({ numero: "Escriba el número del documento.", vence: "Escriba la fecha de vencimiento." });
     expect(err?.general).toBeNull();
   });
 

@@ -1329,7 +1329,9 @@ y da el título de la pestaña):
 - **C2 · "La unidad no puede salir"** (franja crítica, `i-octogono`). Línea: "Revisión enviada a las 06:52 con una
   novedad crítica: Frenos." (con dos: "con 2 novedades críticas: Frenos, Dirección."). Aviso semana (5.18, sin acción):
   "ZK 214 BD quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio. El parte
-  quedó cerrado sin uso." Párrafo: "Si tiene que salir, elija otra unidad desde el inicio." Primario: "Volver al inicio".
+  quedó cerrado sin uso." Párrafo: "Si tiene que salir, elija otra unidad en Hoy." Primario: "Volver a Hoy". (Desde el
+  26/11/2026, con el perfil Conductor en todos los paneles C1 a C3 el botón dice "Volver a Hoy", el nombre de su pantalla
+  de entrada; con el perfil Encargado siguen "Volver al inicio" y, en C2, "…elija otra unidad desde el inicio.")
 - **C3 · "Parte cerrado"** (franja vigente, `i-check`). Línea: "ZK 214 BD, 18/11/2026: revisión a las 06:52, cierre a las
   18:42." `dl`: Recorrido "132 km (84.320 → 84.452)" · Combustible "3/4" · Combustible cargado "Cargó 45,5 litros" / "No
   cargó" · Novedades · Avisos aceptados (de la revisión y del cierre). Primario: "Volver al inicio". "Imprimir o guardar
@@ -1438,7 +1440,7 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
 | Faltante de "Al iniciar" / "Al terminar" | "Escriba el kilometraje al iniciar." / "Escriba el kilometraje al terminar." (sin cambios) |
 | Resumen de la revisión (paso 2) | "Revisión enviada a las 06:52 · Al iniciar: 84.320 km · Sin novedades" · "· 1 novedad: Niveles de aceite y agua" · "· Conductor: {Nombre}" (perfil Encargado) · "Ver la revisión" |
 | C1 | `h1` "Revisión enviada" · "{P} puede salir. Revisión enviada a las 06:52." · fuera de plazo: "Revisión del {F} enviada el 18/11/2026 a las 08:10 (fuera de plazo)." · "El encargado la ve en el centro de alertas." · "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible." (parte de un día pasado: "Falta cerrar este parte con el kilometraje y el combustible de esa jornada.") · "Volver al inicio" · "Completar el cierre ahora" · "Completar el cierre" |
-| C2 | `h1` "La unidad no puede salir" · "Revisión enviada a las 06:52 con una novedad crítica: Frenos." · "… con 2 novedades críticas: Frenos, Dirección." · "{P} quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio. El parte quedó cerrado sin uso." · "Si tiene que salir, elija otra unidad desde el inicio." |
+| C2 | `h1` "La unidad no puede salir" · "Revisión enviada a las 06:52 con una novedad crítica: Frenos." · "… con 2 novedades críticas: Frenos, Dirección." · "{P} quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio. El parte quedó cerrado sin uso." · "Si tiene que salir, elija otra unidad en Hoy." (Encargado: "…desde el inicio.") |
 | C3 | `h1` "Parte cerrado" · "{P}, {F}: revisión a las 06:52, cierre a las 18:42." |
 | Lectura, sin salida | "Sin uso: la unidad no salió" (recorrido) · "No se registró: la unidad no salió" (combustible) |
 | Diálogo "Antes de enviar" | Frase de entrada: "Antes de enviar la revisión, lea esto." (revisión) · "Antes de cerrar el parte, lea esto." (cierre). Primario "Enviar de todos modos" (revisión) · "Cerrar de todos modos" (cierre) · "Volver al parte" |

@@ -86,9 +86,19 @@ describe("cargarDocumento", () => {
       expect(err.codigo, vence).toBe("fecha-invalida");
       expect(err.mensaje, vence).toBe("Escriba una fecha entre los años 2000 y 2100.");
     }
-    for (const vence of ["2027-02-29", "18/11/2027", "", "mañana", "2027-13-01"]) {
+    for (const vence of ["2027-02-29", "18/11/2027", "mañana", "2027-13-01"]) {
       expect(ejecutarError(e, { ...carga, vence }).mensaje, vence).toBe("Escriba una fecha válida.");
     }
+  });
+
+  it("«Vence» vacío (o solo espacios) pide la fecha de vencimiento; sigue siendo `fecha-invalida` y del campo «vence»", () => {
+    const e = conSeguroVencido();
+    for (const vence of ["", "   "]) {
+      const err = ejecutarError(e, { ...carga, vence });
+      expect(err, JSON.stringify(vence)).toMatchObject({ codigo: "fecha-invalida", campo: "vence", mensaje: "Escriba la fecha de vencimiento." });
+    }
+    // «Emitido» es opcional: mal escrito conserva su mensaje
+    expect(ejecutarError(e, { ...carga, emitido: "ayer" }).mensaje).toBe("Escriba una fecha válida.");
   });
 
   it("T4: fechas inválidas o con otro formato", () => {

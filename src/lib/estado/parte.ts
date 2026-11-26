@@ -590,11 +590,11 @@ export interface PanelParteEnviado {
   fueraDePlazo: string | null;
   /** C1: «El encargado la ve en el centro de alertas.» si la revisión abrió novedades normales. */
   notaEncargado: string | null;
-  /** El párrafo final: C1 «Al terminar la jornada, vuelva a este parte…», C2 «Si tiene que salir, elija otra unidad desde el inicio.»; `null` en C3. */
+  /** El párrafo final: C1 «Al terminar la jornada, vuelva a este parte…», C2 «Si tiene que salir, elija otra unidad en Hoy.» (Encargado: «…desde el inicio.»); `null` en C3. */
   parrafo: string | null;
   /** Solo C1: «Completar el cierre ahora» (parte de hoy: botón-texto) o «Completar el cierre» (parte de un día pasado: primario). `href` es el de la misma ruta. */
   completarCierre: { texto: string; href: string; primario: boolean } | null;
-  /** «Volver al inicio»: el inicio del perfil. */
+  /** «Volver a Hoy» (perfil Conductor) o «Volver al inicio» (Encargado): la pantalla de entrada del perfil. */
   volverAlInicio: EnlaceDeParte;
 }
 
@@ -780,7 +780,7 @@ function revisionEnLectura(parte: Parte): RevisionEnLectura {
 
 function panelBase(estado: Estado, parte: Parte, perfil: Perfil): { patente: string; unidad: Unidad | undefined; volverAlInicio: EnlaceDeParte } {
   const unidad = estado.unidades.find((u) => u.id === parte.unidadId);
-  return { patente: unidad === undefined ? "" : formatearPatente(unidad.patente), unidad, volverAlInicio: { texto: TP.volverAlInicio, href: aHash(rutaPorDefecto(perfil)) } };
+  return { patente: unidad === undefined ? "" : formatearPatente(unidad.patente), unidad, volverAlInicio: { texto: perfil.tipo === "conductor" ? TP.volverAHoy : TP.volverAlInicio, href: aHash(rutaPorDefecto(perfil)) } };
 }
 
 /** El panel «Parte cerrado» (C3) de un parte cerrado, y con los mismos datos la lectura (D). Un parte con la forma rota se lee con `parteLegible`: lo que no se puede leer se muestra como «—», sin inventar nada. */
@@ -862,7 +862,7 @@ export function panelDeSinSalida(estado: Estado, entrada: Parte, perfil: Perfil)
     advertencias: renglonesDeAvisosAceptados(parte),
     fueraDePlazo: null,
     notaEncargado: null,
-    parrafo: TP.siTieneQueSalir,
+    parrafo: perfil.tipo === "conductor" ? TP.siTieneQueSalir : TP.siTieneQueSalirEncargado,
     completarCierre: null,
     volverAlInicio,
   };

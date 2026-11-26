@@ -731,7 +731,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     expect(vistaDeParte(estado, H, ENC, "ZK214BD", H).tipo).toBe("lectura");
   });
 
-  it("el panel: recorrido, combustible, litros, novedades y «Volver al inicio»", () => {
+  it("el panel: recorrido, combustible, litros, novedades y «Volver a Hoy» (conductor) o «Volver al inicio» (encargado)", () => {
     const { estado, parte: p } = enviado(flotaDePrueba(), { litrosCargados: 45.5 });
     expect(panelDeParteEnviado(estado, p, COND)).toEqual({
       variante: "cerrado",
@@ -749,9 +749,9 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       notaEncargado: null,
       parrafo: null,
       completarCierre: null,
-      volverAlInicio: { texto: "Volver al inicio", href: "#/conductor" },
+      volverAlInicio: { texto: "Volver a Hoy", href: "#/conductor" },
     });
-    expect(panelDeParteEnviado(estado, p, ENC).volverAlInicio.href).toBe("#/inicio");
+    expect(panelDeParteEnviado(estado, p, ENC).volverAlInicio).toEqual({ texto: "Volver al inicio", href: "#/inicio" });
   });
 
   it("sin carga de combustible y sin recorrido: «No cargó» y «Sin uso»", () => {
@@ -830,7 +830,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       notaEncargado: null,
       parrafo: "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible.",
       completarCierre: { texto: "Completar el cierre ahora", href: "#/parte/ZK214BD/2026-11-18", primario: false },
-      volverAlInicio: { texto: "Volver al inicio", href: "#/conductor" },
+      volverAlInicio: { texto: "Volver a Hoy", href: "#/conductor" },
     });
     const deAyer = panelDeRevisionEnviada(estado, p, COND, "2026-11-19");
     expect(deAyer.completarCierre).toEqual({ texto: "Completar el cierre", href: "#/parte/ZK214BD/2026-11-18", primario: true });
@@ -848,7 +848,7 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
     expect(tarde.linea).toBe("Revisión del 17/11/2026 enviada el 18/11/2026 a las 08:10 (fuera de plazo).");
   });
 
-  it("C2: «La unidad no puede salir»: la novedad crítica, el aviso, el párrafo y solo «Volver al inicio»", () => {
+  it("C2: «La unidad no puede salir»: la novedad crítica, el aviso, el párrafo y solo «Volver a Hoy»", () => {
     const checklist = { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "Pedal blando", impideUso: false }, direccion: { estado: "con-novedad" as const, descripcion: "Juego", impideUso: false } };
     const { estado, parte: p } = enviado(flotaDePrueba(), { checklist });
     const c2 = panelDeSinSalida(estado, p, COND);
@@ -857,12 +857,14 @@ describe("parte cerrado: lectura y panel «Parte cerrado» (6.5)", () => {
       titulo: "La unidad no puede salir",
       linea: "Revisión enviada a las 12:00 con 2 novedades críticas: Frenos, Dirección.",
       avisoCritica: "ZK 214 BD quedó fuera de servicio hasta que el encargado resuelva la novedad y la vuelva a poner en servicio. El parte quedó cerrado sin uso.",
-      parrafo: "Si tiene que salir, elija otra unidad desde el inicio.",
+      parrafo: "Si tiene que salir, elija otra unidad en Hoy.",
       completarCierre: null,
       filas: [],
     });
     const una = enviado(flotaDePrueba(), { checklist: { ...checklistEnOrden(), frenos: { estado: "con-novedad" as const, descripcion: "Pedal blando", impideUso: false } } });
     expect(panelDeSinSalida(una.estado, una.parte, COND).linea).toBe("Revisión enviada a las 12:00 con una novedad crítica: Frenos.");
+    // «Hoy» es la pantalla del conductor: el encargado no la tiene, así que conserva la frase de antes y su inicio.
+    expect(panelDeSinSalida(una.estado, una.parte, ENC)).toMatchObject({ parrafo: "Si tiene que salir, elija otra unidad desde el inicio.", volverAlInicio: { texto: "Volver al inicio", href: "#/inicio" } });
   });
 
   it("D: la lectura de un parte cerrado trae Revisión y Cierre; sin salida, solo la revisión y la etiqueta «Cerrado»", () => {

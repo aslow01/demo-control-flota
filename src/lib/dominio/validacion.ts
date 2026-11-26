@@ -111,6 +111,8 @@ export function validarFechaNoFutura(texto: string, hoy: FechaCivil, campo: stri
 
 /** V11: vencimiento desde 2000-01-01 hasta hoy + 10 años. */
 export function validarVencimiento(texto: string, hoy: FechaCivil, campo = "vence"): Resultado<FechaCivil> {
+  // Vacío: se pide la fecha por su nombre; sigue siendo `fecha-invalida` (el campo y el código no cambian).
+  if (texto.trim() === "") return fallo("fecha-invalida", ERRORES.venceVacio, { campo });
   const fecha = validarFecha(texto, campo);
   if (!fecha.ok) return fecha;
   const maxima = sumarAnios(hoy, 10);

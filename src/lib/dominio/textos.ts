@@ -72,6 +72,8 @@ export const ERRORES = {
   otraNovedadInvalida: "Revise el texto de «Otra novedad».",
   parteOtraUnidad: "No se puede cambiar la unidad de un parte.",
   fechaInvalida: "Escriba una fecha válida.",
+  /** «Vence» sin escribir (solo el vacío: una fecha mal formada dice `fechaInvalida`). */
+  venceVacio: "Escriba la fecha de vencimiento.",
   /** Una fecha bien escrita pero de un año que la demo no acepta (T4: 2000 a 2100). */
   fechaFueraDeAnios: "Escriba una fecha entre los años 2000 y 2100.",
   parteFechaAntigua: "Solo se pueden cargar partes de los últimos 7 días.",
@@ -1561,6 +1563,8 @@ export const TEXTO_PANTALLA_PARTE = {
   tituloRevisionEnviada: "Revisión enviada",
   tituloSinSalida: "La unidad no puede salir",
   volverAlInicio: "Volver al inicio",
+  /** Lo mismo con el perfil Conductor: su pantalla de entrada se llama «Hoy». */
+  volverAHoy: "Volver a Hoy",
   completarCierreAhora: "Completar el cierre ahora",
   completarCierre: "Completar el cierre",
   verLaRevision: "Ver la revisión",
@@ -1568,7 +1572,10 @@ export const TEXTO_PANTALLA_PARTE = {
   alTerminarVuelva: "Al terminar la jornada, vuelva a este parte para cerrarlo con el kilometraje y el combustible.",
   /** C1 de un parte de un día pasado: la jornada ya terminó (C4 de la revisión visual). */
   faltaCerrarJornadaPasada: "Falta cerrar este parte con el kilometraje y el combustible de esa jornada.",
-  siTieneQueSalir: "Si tiene que salir, elija otra unidad desde el inicio.",
+  /** C2 con el perfil Conductor: «Usar otra unidad» está en «Hoy». */
+  siTieneQueSalir: "Si tiene que salir, elija otra unidad en Hoy.",
+  /** C2 con el perfil Encargado: «Hoy» no es su pantalla, así que conserva la frase de antes. */
+  siTieneQueSalirEncargado: "Si tiene que salir, elija otra unidad desde el inicio.",
   sinLicenciaVigente: "sin licencia vigente",
   sinUsoSinSalida: "Sin uso: la unidad no salió",
   noSeRegistroSinSalida: "No se registró: la unidad no salió",
