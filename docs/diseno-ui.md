@@ -262,7 +262,7 @@ Debajo de las migas (escritorio) o de la barra superior (celular), dentro del an
 
 ### 4.5 «Más» y pie
 
-No hay pie propio. La pantalla **Más** (`#/mas`, la ven los dos perfiles) reúne lo que antes colgaba de la barra superior: «Ver como» (el perfil de ahora y cómo cambiarlo), «La demo» («Cómo funciona», «Reiniciar demo», volver al portafolio) y el texto de autoría. En escritorio ese texto está al pie del lateral.
+No hay pie propio. La pantalla **Más** (`#/mas`, la ven los dos perfiles) reúne lo que antes colgaba de la barra superior: «Ver como» (el perfil de ahora y cómo cambiarlo), «La demo» («Cómo funciona», «Reiniciar demo», volver al portafolio) y el texto de autoría. En escritorio ese texto está al pie del lateral; en el celular y la tableta, además, va una vez al final de Inicio (discreta, sin duplicarse con el lateral, que desde 64 rem lo reemplaza).
 
 **Prohibido** en cualquier texto: presentar la demo como copia de un sistema existente, nombrar empleadores o clientes.
 

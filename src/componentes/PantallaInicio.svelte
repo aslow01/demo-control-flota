@@ -21,7 +21,7 @@
   import Icono from "./Icono.svelte";
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
-  import { TEXTO_ALERTAS as T } from "./textos-marco.ts";
+  import { TEXTO_ALERTAS as T, TEXTO_PIE } from "./textos-marco.ts";
 
   let {
     alAbrirParte,
@@ -239,6 +239,9 @@
       </div>
     </div>
 
+    <!-- Autoría: en el celular y la tableta el lateral no está y el texto vive en «Más»; acá va una vez, al final y discreta. Desde 64 rem lo dice el lateral. -->
+    <p class="autoria">{TEXTO_PIE.autoria}</p>
+
     <DialogosDeDocumento {focoDestino} />
   </div>
 {/if}
@@ -292,6 +295,19 @@
     }
     .entrada-recorrido :global(.boton) {
       flex: 1 1 100%;
+    }
+  }
+
+  .autoria {
+    max-width: 46ch;
+    padding-block: var(--e-2);
+    font-size: var(--t-chico);
+    line-height: 1.4;
+    color: var(--c-texto-2);
+  }
+  @media (min-width: 64rem) {
+    .autoria {
+      display: none;
     }
   }
 

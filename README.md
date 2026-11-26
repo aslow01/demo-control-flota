@@ -91,7 +91,7 @@ Las dependencias van en un solo sentido: `componentes` → `lib/estado` → `lib
 - **Todo en el navegador:** datos en IndexedDB; si no se puede guardar, la demo sigue en memoria y avisa.
 - **Reglas en TypeScript puro** (`src/lib/dominio`), probadas en tres zonas horarias.
 - **Seguridad:** política de contenido estricta (`public/_headers`) con `connect-src 'none'`: la página no puede conectarse a ningún servidor ni cargar fuentes de otro sitio.
-- **Tamaño:** 116,7 KB de JavaScript de carga inicial comprimido con gzip (tope fijado: 120 KB) y 143,2 KB en total, porque la ficha, el parte, la pantalla del conductor y «Mis partes» se descargan al abrir esa pantalla (carga diferida con `import()`; `npm run peso`, 26/11/2026). Las fuentes, aparte: unos 200 KB, que no cuentan como JavaScript.
+- **Tamaño:** 116,5 KB de JavaScript de carga inicial comprimido con gzip (tope fijado: 120 KB) y 143,0 KB en total, porque la ficha, el parte, la pantalla del conductor y «Mis partes» se descargan al abrir esa pantalla (carga diferida con `import()`; `npm run peso`, 26/11/2026). Las fuentes, aparte: unos 200 KB, que no cuentan como JavaScript.
 - **Tipografías:** Bricolage Grotesque (títulos y cifras), Schibsted Grotesk (texto) y Red Hat Mono (patentes y números), alojadas en el repositorio, solo el subconjunto latino. Las tres son de código abierto con licencia SIL Open Font License 1.1; las licencias están en `src/estilos/fuentes/`.
 - **Movimiento:** una transición corta entre pantallas (View Transitions), la patente que viaja de la lista a su ficha y una cifra que cuenta al abrir. Con «reducir movimiento» activado en el sistema no hay ninguna de las tres; en los navegadores sin View Transitions, y en Safari y los navegadores de iPhone, entra una animación CSS equivalente. Por qué no se usa View Transitions en WebKit: [`docs/limites.md`](docs/limites.md), sección 3.
 - **Accesibilidad:** teclado, foco visible, modo claro y oscuro, desde 320 px; el color nunca va solo (cada estado lleva forma y texto). Los controles miden al menos 24 px, el mínimo de WCAG 2.2 (criterio 2.5.8): casi todos los botones y enlaces del celular, 44 px; en escritorio los botones chicos y las filas de las listas, 40 px, y los puntos de la regla de vencimientos, 26 px.
@@ -114,7 +114,7 @@ Cifras medidas el 26/11/2026 en una computadora local:
 | Tipos | `npm run check` | 0 errores y 0 avisos en 376 archivos |
 | Contraste de la paleta | `npm run contraste` | 244 mediciones, 0 fallan |
 | Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 249 archivos con el archivo local de términos; 8 reglas sin él) |
-| Tamaño del JavaScript | `npm run peso` | 116.489 B de carga inicial (tope 120.000 B) y 143.001 B en total, con gzip |
+| Tamaño del JavaScript | `npm run peso` | 116.520 B de carga inicial (tope 120.000 B) y 143.033 B en total, con gzip |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
 **Qué son esas 1.944 pruebas.** Unas 90 (89, en los 6 archivos `tests/textos*.test.ts`) fijan textos de la interfaz: mensajes de error, nombres de pantallas y frases con cifras; existen para que un cambio de redacción o de umbral no deje a la pantalla diciendo otra cosa que las reglas. Las otras 1.855 prueban reglas de dominio, comandos, estado, persistencia, el generador de datos y las vistas derivadas; algunas de ellas también comprueban una frase que se muestra, y esas no se separaron de las demás.
