@@ -296,7 +296,7 @@
           <!-- El parte en miniatura: un segmento por punto (gris sin responder, malaquita en orden, cobre con novedad). Decorativo: el conteo de al lado lo dice con texto. -->
           <span class="barra-prog" aria-hidden="true">
             {#each vista.puntos as p (p.id)}
-              <i data-resp={valores.checklist[p.id].respuesta === "en-orden" ? "orden" : valores.checklist[p.id].respuesta === "con-novedad" ? "novedad" : undefined} data-critico={p.critico ? "" : undefined}></i>
+              <i data-resp={valores.checklist[p.id].respuesta === "en-orden" ? "orden" : valores.checklist[p.id].respuesta === "con-novedad" ? "novedad" : undefined}></i>
             {/each}
           </span>
         </div>
@@ -454,7 +454,7 @@
     }
   }
 
-  /* «Respondidos: 3 de 14» y, al lado, el parte en miniatura: un segmento por punto (gris sin responder, malaquita en orden, cobre con novedad; los críticos con una raya abajo). */
+  /* «Respondidos: 3 de 14» y, al lado, el parte en miniatura: un segmento por punto (gris sin responder, malaquita en orden, cobre con novedad). Sin marca para los críticos: una raya en los primeros siete segmentos vacíos parecía un 50 % hecho con 0 de 14 respondidos. */
   .progreso {
     display: flex;
     flex-wrap: wrap;
@@ -478,21 +478,16 @@
   .barra-prog i {
     display: block;
     border-radius: 1px;
-    background: var(--c-superficie-2);
+    background: var(--c-borde);
     transition:
       background-color var(--m-medio) linear,
       transform var(--m-medio) var(--m-curva);
   }
-  .barra-prog i[data-critico] {
-    box-shadow: inset 0 -2px 0 var(--c-borde-fuerte);
-  }
   .barra-prog i[data-resp="orden"] {
     background: var(--c-vigente-r);
-    box-shadow: none;
   }
   .barra-prog i[data-resp="novedad"] {
     background: var(--c-critico-r);
-    box-shadow: none;
     transform: scaleY(1.5);
   }
   @media (forced-colors: active) {
