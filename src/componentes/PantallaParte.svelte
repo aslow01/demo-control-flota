@@ -10,6 +10,7 @@
   //  - E «Cerrar antes» (P18, P20): en lugar del párrafo de la regla, el aviso compacto en tono semana (una tarea pendiente, no una prohibición) y el primario «Cerrar el parte anterior»;
   //    «Descartar borrador» (si hay) y el enlace de vuelta quedan como botones-texto. Es la única E con primario: la regla tiene un remedio inmediato y es de la misma persona.
   import { tick } from "svelte";
+  import { aHash } from "../lib/estado/enrutador.ts";
   import { app } from "../lib/estado/instancia.ts";
   import Aviso from "./Aviso.svelte";
   import BotonConfirmar from "./BotonConfirmar.svelte";
@@ -92,7 +93,7 @@
     {/key}
   {:else if vista.tipo === "lectura"}
     <div class="pantalla">
-      <a class="vuelta" href={vista.vuelta.href}><Icono nombre="flecha-izq" />{vista.vuelta.texto}</a>
+      <a class="vuelta" class:repite-barra={app.padre !== null && aHash(app.padre) === vista.vuelta.href} href={vista.vuelta.href}><Icono nombre="flecha-izq" />{vista.vuelta.texto}</a>
       <ParteEnviado panel={vista.panel} nivel="h1" titulo={vista.titulo} etiqueta={vista.etiqueta} momentos={vista.momentos} sinLinea>
         {#snippet encabezado()}
           <div class="unidad">
@@ -162,6 +163,12 @@
     align-items: flex-start;
     gap: var(--e-2);
     min-width: 0;
+  }
+  /* En el celular y la tableta la barra de arriba ya trae el mismo «‹ Atrás»: no se repite. */
+  @media (max-width: 63.99rem) {
+    .vuelta.repite-barra {
+      display: none;
+    }
   }
   .vuelta {
     --icono-tam: 1.125rem;

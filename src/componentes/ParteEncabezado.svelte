@@ -6,6 +6,8 @@
   // Vive dentro del contenedor `parte` de `ParteFormulario` (las reglas `@container parte` miden ese ancho).
   import Aviso from "./Aviso.svelte";
   import type { AvisoDeAptitud } from "../lib/dominio/textos.ts";
+  import { aHash } from "../lib/estado/enrutador.ts";
+  import { app } from "../lib/estado/instancia.ts";
   import Icono from "./Icono.svelte";
   import Patente from "./Patente.svelte";
 
@@ -40,9 +42,11 @@
   // La línea del conductor no se repite acá: con perfil Conductor ya está en la barra («Tamara Olivera (persona ficticia)»), y con perfil Encargado es el `select`.
   // «Toyota Hilux 2022 · Camioneta»: el tipo sobra junto a la patente (se mira la unidad, no se la clasifica).
   const modelo = $derived(descripcion.includes(" · ") ? descripcion.slice(0, descripcion.lastIndexOf(" · ")) : descripcion);
+  // En el celular y la tableta la barra de arriba ya trae «‹ Hoy»: si el enlace de la página va al mismo lugar, se oculta (no se repite). En escritorio no hay esa barra y queda.
+  const repiteLaBarra = $derived(app.padre !== null && aHash(app.padre) === vuelta.href);
 </script>
 
-<div class="fila-vuelta">
+<div class="fila-vuelta" class:repite-barra={repiteLaBarra}>
   <a class="vuelta" href={vuelta.href}><Icono nombre="flecha-izq" />{vuelta.texto}</a>
 </div>
 
@@ -73,6 +77,11 @@
     align-items: center;
     justify-content: space-between;
     gap: 0 var(--e-3);
+  }
+  @media (max-width: 63.99rem) {
+    .fila-vuelta.repite-barra {
+      display: none;
+    }
   }
   .vuelta {
     --icono-tam: 1.125rem;
