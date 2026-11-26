@@ -134,17 +134,17 @@ export const TEXTO_ALERTAS = {
   /** Ídem para una novedad que se resolvió mientras tanto (otra pestaña, o ya resuelta desde la ficha). */
   novedadYaResuelta: "Esa novedad ya no está abierta. La lista está al día.",
   /** Operación diaria, solapa Novedades: pie de la hoja (prototipo «Turno»). */
-  pieNovedades: "Las novedades abiertas no críticas de menos de 7 días se ven en la ficha de cada unidad.",
+  pieNovedades: "Cada novedad abierta también figura en la ficha de su unidad, donde se resuelve.",
   /** Texto oculto delante de la patente que lleva a la ficha de la unidad: «Ficha de ZK 214 BD». */
   fichaDe: "Ficha de ",
-  /** Vencimientos, fila de un conductor: «Licencia de conducir de » y a continuación el enlace con la patente de su unidad. */
+  /** Vencimientos, fila de un conductor: «Conductor de » (el detalle del titular es «Conductor») y a continuación el enlace con la patente de su unidad. */
   detalleDe: (detalle: string) => `${detalle} de `,
   /** La regla de vencimientos (detalle del punto elegido): «Ver ficha» y, para lectores de pantalla, de qué unidad («Ver ficha de ZK 214 BD»). */
   verFicha: "Ver ficha",
   verFichaDe: (patente: string) => ` de ${patente}`,
   /** Enlace «y 3 más» de un día con más vencimientos de los que caben, y lo que se agrega para lectores de pantalla. */
   yMas: (n: number) => `y ${n} más`,
-  yMasLector: ": vencimientos de ese día",
+  yMasLector: ": otros vencimientos de ese día",
 } as const;
 
 /** Diálogos «Renovar» y «Cargar documento» (5.11, 5.15 y 5.17). Los títulos y los botones primarios salen de `textos.ts`. */
