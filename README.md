@@ -1,5 +1,14 @@
 # Control de flota (demo)
 
+## In English
+
+A fleet-control demo: the home screen shows which vehicles are unavailable today and which documents expire soon, and drivers fill in a two-step daily report from their phone. It runs entirely in the browser (no server, no account, no external connections) and all data is fictional.
+Stack: Vite 8, TypeScript 6 and Svelte 5 (no SvelteKit); the only production dependency is `svelte`. Rules live in plain TypeScript.
+Live demo: <https://flota.matiasormeno.com.ar>
+Run it locally (Node 24, npm 11): `npm install`, `npm run dev`, `npm test`.
+Conceived, designed and directed by Matías Ariel Ormeño; built with AI.
+The rest of this README and the code identifiers are in Spanish.
+
 Demo web que responde, en la pantalla de inicio, a dos preguntas: **¿qué unidades no están disponibles hoy? y ¿qué documentos vencen pronto?** Además, el conductor completa su parte diario desde el celular, en dos pasos.
 
 Funciona entera en el navegador: sin servidor, sin cuenta y sin conexiones externas. Los datos son ficticios. Parte del portafolio de Matías Ariel Ormeño.
