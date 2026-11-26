@@ -16,6 +16,7 @@
   import type { FocoTrasGuardar, ResultadoGuardado } from "../lib/estado/app.svelte.ts";
   import type { AccionDeDocumentoEnFicha, FichaDeUnidad, IdAccionDeFicha, NumeroDeSolapa, SolapaDeFicha } from "../lib/estado/ficha.ts";
   import { app } from "../lib/estado/instancia.ts";
+  import { indiceTrasTecla } from "../lib/estado/teclado-lista.ts";
   import { TEXTO_FICHA } from "../lib/dominio/textos.ts";
   import DialogoAsignacion from "./DialogoAsignacion.svelte";
   import DialogoBaja from "./DialogoBaja.svelte";
@@ -72,10 +73,8 @@
     flushSync();
   }
   function alTeclearSolapa(evento: KeyboardEvent, ficha: FichaDeUnidad, indice: number): void {
-    const n = ficha.solapas.length;
-    const teclas: Record<string, number> = { ArrowRight: (indice + 1) % n, ArrowLeft: (indice - 1 + n) % n, Home: 0, End: n - 1 };
-    const destino = teclas[evento.key];
-    const siguiente = destino === undefined ? undefined : ficha.solapas[destino];
+    const destino = indiceTrasTecla(evento.key, indice, ficha.solapas.length);
+    const siguiente = destino === null ? undefined : ficha.solapas[destino];
     if (siguiente === undefined) return;
     evento.preventDefault();
     mostrarSolapa(siguiente.id);

@@ -13,6 +13,7 @@
   import { TEXTO_HORIZONTE, TEXTO_LEYENDA_HORIZONTE as L, textoPuntoDeLaRegla } from "../lib/dominio/textos.ts";
   import type { FormaDeMarca } from "../lib/dominio/horizonte.ts";
   import type { AccionDeDocumento, PuntoDeRegla, ReglaDeVencimientos } from "../lib/estado/centro-alertas.ts";
+  import { indiceTrasTecla } from "../lib/estado/teclado-lista.ts";
   import Boton from "./Boton.svelte";
   import EnlaceAccion from "./EnlaceAccion.svelte";
   import Forma from "./Forma.svelte";
@@ -54,13 +55,11 @@
   function alTeclear(evento: KeyboardEvent): void {
     if (pista === undefined || regla.elementos.length === 0) return;
     const botones = [...pista.querySelectorAll<HTMLElement>("[data-punto]")];
-    const k = botones.indexOf(document.activeElement as HTMLElement);
-    if (k < 0) return;
-    const ultimo = botones.length - 1;
-    const destino = { ArrowRight: k + 1, ArrowDown: k + 1, ArrowLeft: k - 1, ArrowUp: k - 1, Home: 0, End: ultimo }[evento.key];
-    if (destino === undefined || evento.altKey || evento.ctrlKey || evento.metaKey) return;
+    const k = botones.findIndex((boton) => boton === document.activeElement);
+    if (k < 0 || evento.altKey || evento.ctrlKey || evento.metaKey) return;
+    const siguiente = indiceTrasTecla(evento.key, k, botones.length, "ambos");
+    if (siguiente === null) return;
     evento.preventDefault();
-    const siguiente = (destino + botones.length) % botones.length;
     const elemento = regla.elementos[siguiente];
     if (elemento !== undefined) elegir(elemento);
     botones[siguiente]?.focus();
@@ -80,7 +79,7 @@
   const AIRE_ENTRE_ROTULOS = 6;
 
   function medir(): void {
-    if (pista === undefined) return;
+    if (!pista) return; // tras desmontar, `bind:this` la deja en null
     const ancho = pista.clientWidth;
     const fin = [-Infinity, -Infinity];
     const siguiente: Record<string, Rotulo> = {};
@@ -105,13 +104,20 @@
 
   $effect(() => {
     void regla.elementos;
-    if (pista === undefined) return;
+    if (!pista) return;
+    let cancelado = false;
+    const medirSiSigue = (): void => {
+      if (!cancelado) medir();
+    };
     medir();
-    const observador = new ResizeObserver(medir);
+    const observador = new ResizeObserver(medirSiSigue);
     observador.observe(pista);
-    // Las fuentes alojadas llegan después del primer pintado y cambian el ancho de las patentes.
-    void document.fonts?.ready.then(medir);
-    return () => observador.disconnect();
+    // Las fuentes alojadas llegan después del primer pintado y cambian el ancho de las patentes (y pueden llegar ya desmontada la regla).
+    void document.fonts?.ready.then(medirSiSigue);
+    return () => {
+      cancelado = true;
+      observador.disconnect();
+    };
   });
 
   // ---------- Textos derivados ----------
@@ -138,7 +144,7 @@
   <div class="marco">
     {#if regla.vencidos.cantidad > 0}
       <a class="vencidos" data-tono="critico" href={regla.vencidos.href}>
-        <span class="v-texto">{TEXTO_HORIZONTE.rotuloCajaCompleta}{#if quienes !== ""}<small class="codigo">{quienes}</small>{/if}</span>
+        <span class="v-texto">{TEXTO_HORIZONTE.rotuloCajaCompleta}{#if quienes !== ""}{" "}<small class="codigo">{quienes}</small>{/if}</span>
         <span class="v-cifra num">{regla.vencidos.cantidad}</span>
       </a>
     {:else}
