@@ -1453,3 +1453,34 @@ Salen de dos informes internos (crítica de reclutador y revisión de código, n
 **No se hizo.** Estilo de la franja (`.entrada-recorrido`, del maquetador); README, `index.html` y colores (puntos 1, 2, 4 y 6 de la crítica, y los de documentos); las capturas `docs/img/parte-revision-360.png` y su texto alternativo todavía muestran el kilometraje precargado.
 
 **Verificación.** `npm run check`: 0 errores y 0 avisos (376 archivos); `npm test`: 1.940 pruebas en 77 archivos (eran 1.935); `npm run test:tz` (UTC, Asia/Tokio, América/Los Ángeles): 1.940 en cada zona; `npm run buscar`: sin hallazgos (9 reglas, 248 archivos); `npm run build` sin errores; `npm run peso`: JS inicial 116.508 B (tope 120.000, margen 3.492) y total 142.940 B (sobre el aviso de 136.000, que no falla). En Chromium con Playwright contra `npm run servir`: la franja aparece, «Probar como conductor» abre «Ver como» con Tamara Olivera elegida, «Aplicar» lleva a `#/conductor` y la consola queda sin errores.
+
+
+## 26/11/2026 (rama `interfaz-app`) — Correcciones de presentación tras la crítica de reclutador (maquetador)
+
+Nueve commits, uno por punto de la crítica (importantes 1 a 5 y menores 6 a 9); no se tocó la lógica de `src/lib/`.
+
+| Punto | Qué cambió | Dónde |
+| --- | --- | --- |
+| 1. Patentes partidas | El `@container regla (min-width: 44rem)` iba **antes** de las reglas base de `.vencidos` y `.v-texto small` y estas lo pisaban (la caja nunca pasaba a columna). Ahora va después, sin `overflow-wrap: anywhere`, y cada patente o nombre es un `<span class="quien">` con `white-space: nowrap`: uno por renglón en la columna de 10 rem y, en una línea, con « · » entre las piezas. | `HorizonteRegla.svelte` |
+| 2. Puntuación espaciada | Con `tnum` esta fuente ensancha el punto, los dos puntos y la barra (medido: «59.413» pasa de 46,3 a 60,9 px). `.num` fuera de las oraciones (último registro, respondidos, rango de kilómetros del historial, litros, combustible, texto de kilometraje y novedades críticas de la tabla), del dato del panel y de la fecha de la barra. Queda en cifras sueltas y columnas. | `PantallaConductor`, `ParteFormulario`, `FichaHistorial`, `FichaKilometraje`, `PantallaFlota`, `Panel`, `App` |
+| 3. Gravedad invertida | «Fuera de servicio» por novedad crítica: tono crítico (rombo). Por taller o a mano: neutro (cuadrado). Inicio, Movilidades (etiqueta, franja y pastilla) y ficha. Se agregaron al script de contraste el par `neutro-r / neutro-f` y `neutro-r / superficie`. | `alertas-aspecto.ts`, `PantallaInicio`, `PantallaFlota`, `FichaEncabezado`, `scripts/contraste.mjs` |
+| 4. Franja de entrada | Estilo de `.entrada-recorrido`: una línea sobre superficie, riel de tinta, botón **primario** con flecha; en el celular el botón ocupa todo el ancho. | `PantallaInicio.svelte` |
+| 5. Metadatos | `description`, `og:*` y `twitter:card`; imagen `public/og-inicio.png` (1200 × 630, 107 KB). `servir-dist.mjs` conoce `.png`. | `index.html`, `public/`, `scripts/servir-dist.mjs` |
+| 6. Doble «Hoy» | El enlace de la página se oculta por debajo de 64 rem si va al mismo lugar que el «‹ Hoy» de la barra. | `ParteEncabezado`, `PantallaParte` |
+| 7. Barra de progreso | Sin la raya de los puntos críticos; el segmento vacío pasa a `--c-borde`. | `ParteFormulario.svelte` |
+| 8. «Agregar unidad» | Secundario y junto al título (flex con salto de renglón), en todos los tamaños. | `PantallaFlota.svelte` |
+| 9. Insignia de Inicio | Se oculta estando en Inicio; en las otras pantallas sigue avisando cuántas unidades no pueden salir. | `App.svelte` |
+
+**Decisiones propias** (no estaban en la especificación; las más simples):
+
+- El origen del fuera de servicio se lee de `app.estado` desde `alertas-aspecto.ts` (`origenDeFueraDeServicio`), porque las filas de Inicio y de Movilidades no lo traen y la lógica no se tocaba. Si el programador prefiere, puede sumar `origen` a esas filas y ese helper se borra.
+- «Fuera de servicio» por taller usa el tono `neutro` que ya existe (el mismo grafito de «De baja»); las dos se distinguen por el texto. No se inventó una paleta.
+- La pastilla «Fuera de servicio» de Movilidades reúne las dos clases: va en neutro con cuadrado, no en ámbar.
+- El 6 y el 9 son decisiones de alcance: el enlace repetido solo se oculta cuando coincide con la barra (con perfil Encargado el enlace es «Ficha de ZYN 469» y se queda); la insignia sigue cumpliendo una función desde las otras pantallas.
+- «Agregar unidad» pasó a secundario también en escritorio, para no mantener dos variantes por ancho de pantalla.
+
+**Capturas.** Rehechas con el `dist/` servido con la CSP real: `docs/img/inicio.png` (1280 × 900), `parte-revision-360.png` (ya sin el kilometraje precargado) y `parte-bloqueado-360.png`. El texto alternativo del README no se tocó.
+
+**No se hizo.** Renombrar «Checklists» ni la navegación triplicada (después del lanzamiento); el texto del README; Safari, Firefox, lector de pantalla ni pantalla táctil reales.
+
+**Verificación.** `npm run check`: 0 errores y 0 avisos (376 archivos); `npm test`: 1.940 pruebas en 77 archivos; `npm run buscar`: sin hallazgos (9 reglas, 249 archivos); `npm run contraste`: 244 mediciones, 0 fallan, 1 justa (`peligro-hover`, la de antes); `npm run build` sin errores; `npm run peso`: JS inicial 116.508 → **116.725 B** (tope 120.000, margen 3.275) y total 143.241 B (sobre el aviso, como antes). Chromium con Playwright contra `npm run servir` (CSP real): 84 pantallas (9 del Encargado y 5 del Conductor × 360, 390 y 1.440 px × claro y oscuro) sin desborde horizontal y con la consola sin errores ni violaciones de CSP; se miraron además las capturas de Inicio, Movilidades, Vencimientos, ficha, Hoy y parte a 360, 390 y 1.440 px en claro y oscuro.

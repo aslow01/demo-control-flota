@@ -39,6 +39,20 @@ regla nueva **«Cerrar antes»** (estado 5 bis del inicio y pantalla E). Aplicad
 
 Los **textos** de interfaz salen de `src/lib/dominio/textos.ts` y `src/componentes/textos-marco.ts`; la sección 7 es histórica. Lo que sigue vigente tal cual: componentes de formulario, parte diario (5.12 a 5.16, 6.5), reglas de foco, accesibilidad (9) y verificación (12), salvo las rutas.
 
+**Actualización del 26/11/2026 — correcciones de presentación tras la crítica de reclutador.** Cambian estas reglas visuales (donde otra sección diga lo contrario, manda esta lista):
+
+| Pieza | Regla nueva |
+| --- | --- |
+| «Fuera de servicio» (Inicio, Movilidades, ficha) | Por **novedad crítica**: tono `critico` (rombo), el mismo nivel que un seguro vencido. Por **taller o a mano**: tono `neutro` (grafito, cuadrado). Ya no usa el ámbar de «vence en 7 días o menos». El origen sale de `estado.origen` de la unidad (`origenDeFueraDeServicio`). La pastilla «Fuera de servicio» de Movilidades reúne las dos clases y va en neutro. El color nunca va solo: forma y texto no cambian. |
+| Cifras tabulares | Solo en cifras sueltas y columnas; no en oraciones (ver 3.4). |
+| Caja «Vencidos o faltantes» de la regla | Desde 44 rem de ancho de la pieza: columna de 10 rem con el rótulo, **una patente o nombre por renglón** (`white-space: nowrap`, nunca partido) y la cifra abajo. Con menos ancho: una línea con « · » entre las piezas, que bajan de renglón sin partirse. |
+| Franja de entrada al recorrido (Inicio, bajo el subtítulo) | Franja de una línea sobre `--c-superficie`, borde de 1 px y riel de 4 px en tinta (el color habla de estado, la tinta de acción), texto en 600 y **el único botón primario de la pantalla** («Probar como conductor» con flecha). En el celular el botón ocupa todo el ancho. Se ve entera en la primera pantalla a 1440 × 900 y a 390 × 844. |
+| «Agregar unidad» (Movilidades) | Botón secundario junto al `h1`; no domina el encabezado en el celular (6.2). |
+| Barra de progreso del parte | Un segmento por punto, gris (`--c-borde`) sin responder, malaquita en orden y cobre con novedad. Sin marca para los puntos críticos (una raya en la mitad de los segmentos parecía un 50 % con 0 de 14). |
+| Enlace «Hoy» del parte en el celular y la tableta | No se repite: si el enlace de la página va al mismo destino que el «‹ Hoy» de la barra superior, se oculta por debajo de 64 rem. En escritorio queda (no hay barra). |
+| Insignia de Inicio (4.3) | Avisa desde las otras pantallas cuántas unidades no pueden salir; estando en Inicio no se muestra (repetía la cifra grande de al lado). |
+| Vista previa al compartir | `index.html` lleva `description`, Open Graph y `twitter:card`; la imagen es `public/og-inicio.png` (1200 × 630, captura de Inicio). Son etiquetas meta: no cargan nada y la CSP no cambia. |
+
 ---
 
 ## 0. Encuadre
@@ -164,8 +178,8 @@ Cada tono tiene texto (`-t`), fondo (`-f`) y franja o marca (`-r`). Nombres de l
 
 | Tono de la demo | Mineral (alias de) | Significa | Forma |
 | --- | --- | --- | --- |
-| `critico` | cobre (`diferencia`) | Vencido, faltante, bloqueada, novedad crítica. | rombo |
-| `semana` | azufre (`revisar`) | Vence en 7 días o menos; fuera de servicio; parte sin enviar; novedad abierta. | triángulo |
+| `critico` | cobre (`diferencia`) | Vencido, faltante, bloqueada, novedad crítica (también la unidad fuera de servicio **por una novedad crítica**). | rombo |
+| `semana` | azufre (`revisar`) | Vence en 7 días o menos; parte sin enviar; novedad abierta. | triángulo |
 | `quincena` | azurita (`pendiente`) | Vence en 8 a 15 días: hay que planificar. | círculo |
 | `mes` | grafito (`neutro`) | Vence en 16 a 30 días: está en el horizonte. | aro |
 | `vigente` | malaquita (`ok`) | Vigente, disponible, parte enviado. | (sin forma) |
@@ -198,7 +212,7 @@ Sin fuentes externas (CSP `font-src 'self'`): tres familias variables, solo el s
 | `--t-tabla` · `--t-chico` · `--t-rotulo` | `0.875rem` · `0.8125rem` · `0.75rem` | Celdas; etiquetas y ayudas; cabeceras y rótulos en mayúsculas (`letter-spacing: .06em`, solo ahí). |
 | `--t-patente-chica` · `--t-patente-grande` | `0.875rem` · `1.625rem` | La patente (la grande, en la ficha y el parte). |
 
-Cifras (kilómetros, litros, días, conteos, fechas en tablas): siempre `tabular-nums`; separador de miles con punto (`84.320 km`). Medida de lectura: párrafos con `max-width: 62ch`. **Todo en `rem`** (el texto al 200 % no parte palabras ni ensancha la página; sección 12).
+Cifras (kilómetros, litros, días, conteos, fechas en tablas): `tabular-nums` **solo en la cifra suelta o en una columna, nunca en una oración** (26/11/2026: con `tnum` esta fuente ensancha el punto, los dos puntos y la barra, y «Último registro: 59.413 km» se leía «Último registro : 59 . 413 km»); separador de miles con punto (`84.320 km`). Medida de lectura: párrafos con `max-width: 62ch`. **Todo en `rem`** (el texto al 200 % no parte palabras ni ensancha la página; sección 12).
 
 ### 3.5 Espaciado, radios, sombras
 
@@ -325,7 +339,7 @@ al botón; clic afuera cierra. Ítems de 44 px de alto.
 ```
 
 - `<section class="panel" aria-labelledby="{id del h2}">`. Título = `h2`, `1rem/1.3`, 600, `--t-familia-titulo`.
-- Dato (`.panel-meta`): `--t-chico`, `--c-texto-2`, cifras tabulares, separado del título por un divisor vertical de
+- Dato (`.panel-meta`): `--t-chico`, `--c-texto-2`, sin cifras tabulares (es una oración), separado del título por un divisor vertical de
   1 px × 1 rem. A < 24rem de contenedor baja a un renglón propio.
 - Barra de estado: siempre en el DOM (las regiones `role="status"` tienen que existir antes del texto). Vacía:
   `min-height: 0; padding-block: 0; border-top-color: transparent;` (como Demo 1, 13.2.5). Los mensajes **no
@@ -434,7 +448,8 @@ Heredada: rectángulo `--r-1`, alto 1.5rem, relleno `0 .5rem`, `--t-chico` 600, 
 | Puede salir | "Puede salir" — **variante texto, sin fondo** (D1 (b)) | vigente | `i-check` |
 | No puede salir | "No puede salir" (+ motivo al lado, en texto) | critico | `i-vencido` |
 | Conductor sin licencia vigente (L1) | "Sin licencia vigente" | critico | `i-vencido` |
-| Fuera de servicio | "Fuera de servicio" (+ motivo) | semana | `i-llave` |
+| Fuera de servicio por una novedad crítica (frenos, por ejemplo) | "Fuera de servicio" (+ motivo) | critico (26/11/2026: igual de grave que un seguro vencido) | rombo (`i-octogono`) |
+| Fuera de servicio por taller o decidido a mano | "Fuera de servicio" (+ motivo) | neutro (grafito; 26/11/2026: ya no se confunde con «vence en 7 días o menos») | cuadrado (`i-llave`) |
 | De baja | "De baja" | neutro | `i-caja` |
 | Novedad crítica | "Crítica" | critico | `i-octogono` |
 | Novedad normal | "Abierta" | semana | `i-llave` |
@@ -550,7 +565,7 @@ parte · Novedades · Proyecto y conductor.
     medidas ZYN 469 y ZK 214 BD, 172 y 174). Cada dato que suma un renglón (interno y modelo que bajan, próximo
     vencimiento en dos renglones, etiqueta del último parte, novedades) suma unos 20 a 28 px: **≤ 230 px** toda tarjeta
     cuyo texto arma la lógica (medidas ZW 827 VD y ZW 749 JE, 220). Un motivo escrito por una persona no tiene tope.
-- Franja izquierda **solo** en filas que no pueden salir (crítico), fuera de servicio (semana) o de baja (neutro). Las
+- Franja izquierda **solo** en filas que no pueden salir (crítico), fuera de servicio (crítico si es por una novedad crítica, neutro si es de taller) o de baja (neutro). Las
   que pueden salir no llevan franja: un muro verde no informa nada.
 - **Orden:** un `select` "Ordenar por" (Prioridad, Patente, Interno, Próximo vencimiento, Último parte) en la barra de
   herramientas, válido para las tres disposiciones (en vez de cabeceras con flechas, que en tarjetas no existen).
@@ -854,8 +869,8 @@ pueden salir hoy».
   **Con 0:** franja vigente, `i-check` 24 px, "Todas las unidades activas pueden salir hoy." y "Disponibles hoy: 23 de 23."
 - **Color de los motivos (D4 (b), 19/11/2026):** el motivo de cada unidad va en **`--c-texto`** (16,54 claro · 14,31
   oscuro sobre superficie), no en `--c-critico-t`; el `›` en `--c-texto-3`. El rojo queda en la franja y en la cifra.
-  Así "Fuera de servicio" (tono semana en el resto de la demo) deja de verse igual de grave que "Seguro vencido", y
-  cuatro renglones se leen mejor.
+  Así "Fuera de servicio" por taller (tono neutro desde el 26/11/2026; antes, semana) deja de verse igual de grave que
+  "Seguro vencido", y cuatro renglones se leen mejor.
 - **Conductores que no pueden manejar hoy (L6, 19/11/2026):** solo si hay al menos uno, dentro del mismo panel, debajo
   de la lista de unidades: divisor de 1 px `--c-borde`, `h3` "Conductores que no pueden manejar hoy (1)" (`--t-h3`) y
   una fila por conductor: `i-vencido` 18 px `--c-critico-t` · nombre "{Nombre} (persona ficticia)" (`--t-tabla` 600
@@ -948,7 +963,7 @@ Jerarquía: 1) encontrar la unidad; 2) ver su estado de hoy; 3) agregar.
 **Escritorio, 1280 px**
 
 ```
-│ Flota (h1)                                                         [ Agregar unidad ] (primario) │
+│ Flota (h1)                                                       [ Agregar unidad ] (secundario) │
 │ 23 unidades activas · 19 pueden salir · 2 no pueden salir · 2 fuera de servicio · 1 de baja      │
 │ ┌ ▦ Unidades │ 23 ──────────────────────────────────────────────────────────────────────────────┐ │
 │ │ [🔍 Buscar por patente, interno, modelo o conductor   ]  Proyecto [Todos ▾]  Ordenar por [Prioridad ▾] │
@@ -969,7 +984,7 @@ Jerarquía: 1) encontrar la unidad; 2) ver su estado de hoy; 3) agregar.
 - **Vacío por filtro:** "Ninguna unidad coincide con «zz9» en Proyecto Piedra Lunar." + botón-texto "Quitar filtros".
 - **Tableta:** búsqueda a todo el ancho; Proyecto y Ordenar por en una fila; filtros en una fila que se acomoda en dos;
   tabla compacta (Unidad + Estado · Próximo vencimiento + Último parte · Km + Novedades).
-- **Teléfono:** "Agregar unidad" pasa debajo del `h1`, a todo el ancho; búsqueda, `select`s y filtros apilados;
+- **Teléfono:** "Agregar unidad" (botón **secundario** en todos los tamaños desde el 26/11/2026) va junto al `h1` y baja debajo solo si no entra; búsqueda, `select`s y filtros apilados;
   tarjetas como en 5.10 (S10): patente-enlace + "Int. 07 · Toyota Hilux 2022" sin cortar, etiqueta de estado y motivo,
   próximo vencimiento (solo si no es crítico), "84.320 km · último parte 17/11/2026 [etiqueta]".
 
