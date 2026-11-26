@@ -6,23 +6,25 @@ Funciona entera en el navegador: sin servidor, sin cuenta y sin conexiones exter
 
 **Demo en vivo:** <https://flota.matiasormeno.com.ar>
 
-![Inicio, perfil Encargado, a 1280 px. A la izquierda, el lateral oscuro con Inicio, Movilidades, Vencimientos y Operación diaria. En el centro, la cifra «4 No disponibles hoy» en cobre, con otras cuatro cifras: 3 vencidos o faltantes, 9 que vencen en 30 días, 3 partes pendientes y 1 novedad crítica. Debajo, las unidades no disponibles (ZK 214 BD, ZZD 563, ZR 536 MZ y ZU 899 QE) y la regla de vencimientos de 0 a 30 días.](docs/img/inicio.png)
+[![CI](https://github.com/aslow01/demo-control-flota/actions/workflows/ci.yml/badge.svg)](https://github.com/aslow01/demo-control-flota/actions/workflows/ci.yml)
+
+![Inicio, perfil Encargado, a 1280 px. A la izquierda, el lateral oscuro con Inicio, Movilidades, Vencimientos y Operación diaria. En el centro, la franja «Probar como conductor» y la cifra «4 No disponibles hoy» en cobre, con otras cuatro cifras: 3 vencidos o faltantes, 9 que vencen en 30 días, 3 partes pendientes y 1 novedad crítica. Debajo, las unidades no disponibles (ZK 214 BD, ZZD 563, ZR 536 MZ y ZU 899 QE) y la regla de vencimientos de 0 a 30 días.](docs/img/inicio.png)
 
 *Inicio (perfil Encargado, 1280 px): las 4 unidades que no están disponibles hoy con su motivo, las cifras que llevan a cada lista, la regla de vencimientos de 0 a 30 días y la operación diaria.*
 
-<img src="docs/img/parte-revision-360.png" width="360" alt="Paso 1 de la revisión de ZYN 469 (Chevrolet S10 2015) en un celular (360 px): kilometraje al iniciar (141.711 km), «Respondidos: 0 de 14» con una barra de progreso, el primer punto crítico (Frenos) con «En orden» y «Con novedad», y la barra «Faltan 14 datos» con «Enviar revisión».">
+<img src="docs/img/parte-revision-360.png" width="360" alt="Paso 1 de la revisión de ZYN 469 (Chevrolet S10 2015) en un celular (360 px): el campo «Al iniciar» está vacío y debajo dice «Último registro: 141.711 km» como ayuda; «Respondidos: 0 de 14» con una barra de progreso, el primer punto crítico (Frenos) con «En orden» y «Con novedad», y la barra «Faltan 15 datos» con «Enviar revisión».">
 
-*Revisión antes de salir (perfil Conductor, 360 px): 14 puntos, con los críticos marcados; la barra dice cuántos datos faltan.*
+*Revisión antes de salir (perfil Conductor, 360 px): el kilometraje se escribe (el campo arranca vacío y muestra el último registro como ayuda) y hay 14 puntos, con los críticos marcados; la barra dice cuántos datos faltan.*
 
-<img src="docs/img/parte-bloqueado-360.png" width="360" alt="Celular (360 px), perfil Conductor: «No se puede cargar este parte. El seguro de ZK 214 BD venció el 24/11/2026. La unidad no puede salir. Avise al encargado.» y el botón «Ir a Hoy».">
+<img src="docs/img/parte-bloqueado-360.png" width="360" alt="Celular (360 px), perfil Conductor: título «No se puede cargar este parte»; debajo, que el seguro de ZK 214 BD venció (con su fecha), que la unidad no puede salir y que avise al encargado; y el botón «Ir a Hoy».">
 
-*Seguro vencido (perfil Conductor, 360 px): el parte no se puede cargar y la pantalla dice por qué.*
+*Seguro vencido (perfil Conductor, 360 px): el parte no se puede cargar y la pantalla dice por qué. Las capturas son del 26/11/2026; las fechas de la demo son relativas al día en que se abre.*
 
 ## Cómo usarla
 
 «Ver como» (el selector de perfil, en el lateral o arriba a la derecha en el celular) cambia entre **Encargado** (perfil de entrada) y **Conductor**. Es una perspectiva, no un control de acceso. **Reiniciar demo** vuelve al estado inicial.
 
-1. **Encargado.** Abra la demo: Inicio muestra 4 unidades no disponibles hoy.
+1. **Encargado.** Abra la demo: Inicio muestra 4 unidades no disponibles hoy. Para ir directo al caso más claro, use la franja «Probar como conductor», bajo el subtítulo de Inicio: abre «Ver como» con un conductor cuyo parte está bloqueado ya elegido (paso 2). La franja se muestra solo mientras haya uno.
 2. **Un seguro vencido bloquea el parte.** En «Ver como», elija **Conductor** y Tamara Olivera («Para probar: la unidad tiene la documentación vencida»): «Hoy» dice que el seguro de ZK 214 BD venció y que la unidad no puede salir, indica avisar al encargado y no ofrece «Empezar la revisión». Si se abre el parte de esa unidad, la pantalla dice «No se puede cargar este parte».
 3. **Renovarlo.** Vuelva a Encargado y, en Vencimientos, pulse «Renovar» en el seguro de ZK 214 BD (también se llega desde un punto de la regla de Inicio): se abre un formulario con el número y el vencimiento del documento, ambos obligatorios. Al pulsar «Guardar renovación», el vencimiento desaparece de la lista y la unidad deja de figurar en «No disponibles hoy».
 4. **Una conductora sin licencia.** En «Conductores que no pueden manejar hoy», dentro de «No disponibles hoy», figura Ivana Aguirre. Como Conductor, elíjala: en lugar de «Empezar la revisión», «Hoy» dice que no puede manejar hoy. Como Encargado, pulse «Renovar» en su fila y ya puede empezar.
@@ -43,6 +45,8 @@ Pantallas: [`docs/pantallas.md`](docs/pantallas.md).
 
 Bordes de cada una: [`docs/limites.md`](docs/limites.md), sección 1. Casos de prueba: [`docs/diseno.md`](docs/diseno.md), sección 6.
 
+**Códigos de regla.** Los comentarios del código citan reglas con una letra y un número (A1, P13, P19, T2…). La letra es el tema, según los apartados 6.1 a 6.10 de [`docs/diseno.md`](docs/diseno.md): T tiempo, V vencimientos, A aptitud, P parte, K kilometraje, N novedades, U unidades y conductores, H historial, D datos y persistencia, L licencia. Otros códigos (S3, E5, B2…) remiten a decisiones de diseño visual, etapas del plan o hallazgos de revisiones internas; están en `docs/diseno-ui.md`, `docs/plan.md` y `docs/registro.md`.
+
 ## Cómo correrla localmente
 
 Requiere Node 24 y npm 11.
@@ -57,15 +61,25 @@ npm run peso         # mide el JavaScript con gzip y falla si la carga inicial p
 
 `npm run buscar` revisa que el repositorio no contenga lo prohibido (por ejemplo `{@html}`, el reloj del sistema fuera de `src/lib/estado/reloj.ts` o correos que no sean de ejemplo). La regla de nombres de terceros lee su lista de `scripts/prohibidos.local.json` (`{ "palabras": [...] }`), un archivo que no se versiona; si no existe, esa regla se omite con un aviso y las demás corren igual.
 
+## Arquitectura
+
+Las dependencias van en un solo sentido: `componentes` → `lib/estado` → `lib/dominio`. Una excepción: `lib/estado/instancia.ts` toma de `componentes/movimiento.ts` la transición entre pantallas.
+
+- **`src/lib/dominio`:** TypeScript puro, sin Svelte, sin navegador y sin importar nada de las demás carpetas. Tiene las reglas (vencimientos, aptitud, parte, kilometraje, licencia, alertas), los textos y los comandos. Un comando es una función pura: recibe el estado, el comando y un contexto (reloj e identificadores inyectados) y devuelve los cambios y los eventos, o un error.
+- **`src/lib/estado`:** une el dominio con la interfaz. Guarda el estado de la aplicación (`app.svelte.ts`), ejecuta los comandos de a uno y arma las vistas derivadas (Inicio, flota, ficha, parte), ya listas para dibujar y sin reglas nuevas.
+- **`src/componentes`:** pantallas y piezas Svelte. Dibujan lo que arma `estado`; las reglas no se repiten acá.
+- **`src/lib/persistencia`:** guarda el estado en IndexedDB (`indexeddb.ts`). Si no se puede abrir, usa un repositorio en memoria (`memoria.ts`) y avisa. El estado la usa a través de la interfaz `Repositorio`.
+- **`src/lib/datos`:** el generador de la flota ficticia, con semilla fija.
+
 ## Cómo está hecha
 
 - **Tecnología:** Vite 8, TypeScript 6 y Svelte 5, sin SvelteKit; la única dependencia de producción es `svelte`. Alternativas: [`docs/stack.md`](docs/stack.md).
 - **Todo en el navegador:** datos en IndexedDB; si no se puede guardar, la demo sigue en memoria y avisa.
 - **Reglas en TypeScript puro** (`src/lib/dominio`), probadas en tres zonas horarias.
 - **Seguridad:** política de contenido estricta (`public/_headers`) con `connect-src 'none'`: la página no puede conectarse a ningún servidor ni cargar fuentes de otro sitio.
-- **Tamaño:** 116,2 KB de JavaScript de carga inicial comprimido con gzip (tope fijado: 120 KB) y 142,6 KB en total, porque la ficha, el parte y la pantalla del conductor se bajan al entrar (`npm run peso`, 25/11/2026). Las fuentes, aparte: unos 200 KB, que no cuentan como JavaScript.
+- **Tamaño:** 116,7 KB de JavaScript de carga inicial comprimido con gzip (tope fijado: 120 KB) y 143,2 KB en total, porque la ficha, el parte, la pantalla del conductor y «Mis partes» se descargan al abrir esa pantalla (carga diferida con `import()`; `npm run peso`, 26/11/2026). Las fuentes, aparte: unos 200 KB, que no cuentan como JavaScript.
 - **Tipografías:** Bricolage Grotesque (títulos y cifras), Schibsted Grotesk (texto) y Red Hat Mono (patentes y números), alojadas en el repositorio, solo el subconjunto latino. Las tres son de código abierto con licencia SIL Open Font License 1.1; las licencias están en `src/estilos/fuentes/`.
-- **Movimiento:** una transición corta entre pantallas (View Transitions), la patente que viaja de la lista a su ficha y una cifra que cuenta al abrir. Con «reducir movimiento» activado en el sistema no hay ninguna de las tres; en los navegadores sin View Transitions, y en Safari y los navegadores de iPhone (donde no se la usa: en el WebKit de Playwright tiraba abajo la página y no se pudo mirar en un Safari real), entra una animación CSS equivalente.
+- **Movimiento:** una transición corta entre pantallas (View Transitions), la patente que viaja de la lista a su ficha y una cifra que cuenta al abrir. Con «reducir movimiento» activado en el sistema no hay ninguna de las tres; en los navegadores sin View Transitions, y en Safari y los navegadores de iPhone, entra una animación CSS equivalente. Por qué no se usa View Transitions en WebKit: [`docs/limites.md`](docs/limites.md), sección 3.
 - **Accesibilidad:** teclado, foco visible, modo claro y oscuro, desde 320 px; el color nunca va solo (cada estado lleva forma y texto). Los controles miden al menos 24 px, el mínimo de WCAG 2.2 (criterio 2.5.8): casi todos los botones y enlaces del celular, 44 px; en escritorio los botones chicos y las filas de las listas, 40 px, y los puntos de la regla de vencimientos, 26 px.
 
 ## Cómo se usó la IA
@@ -77,19 +91,21 @@ npm run peso         # mide el JavaScript con gzip y falla si la carga inicial p
 
 ## Cómo se verificó
 
-Cifras medidas el 25/11/2026:
+Cifras medidas el 26/11/2026 en una computadora local:
 
 | Comprobación | Comando | Resultado |
 | --- | --- | --- |
-| Pruebas automáticas | `npm test` | 1.935 pruebas en 77 archivos, todas pasan |
-| Las mismas en tres zonas horarias | `npm run test:tz` | 1.935 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
+| Pruebas automáticas | `npm test` | 1.940 pruebas en 77 archivos, todas pasan |
+| Las mismas en tres zonas horarias | `npm run test:tz` | 1.940 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
 | Tipos | `npm run check` | 0 errores y 0 avisos en 376 archivos |
-| Contraste de la paleta | `npm run contraste` | 240 mediciones, 0 fallan |
-| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 248 archivos con el archivo local de términos; 8 reglas sin él) |
-| Tamaño del JavaScript | `npm run peso` | 116.175 B de carga inicial (tope 120.000 B) y 142.593 B en total, con gzip |
+| Contraste de la paleta | `npm run contraste` | 244 mediciones, 0 fallan |
+| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 249 archivos con el archivo local de términos; 8 reglas sin él) |
+| Tamaño del JavaScript | `npm run peso` | 116.725 B de carga inicial (tope 120.000 B) y 143.241 B en total, con gzip |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
-También se miró la demo en un navegador (Chromium con Playwright, contra la compilación servida con la política de contenido real), en claro y oscuro, a 360 y 1280 px: sin desbordes horizontales y sin mensajes en la consola. Eso no se puede reproducir con un comando. La interfaz actual tuvo el 25/11/2026 una revisión de código, pruebas destructivas en Chromium y una auditoría de accesibilidad con mediciones propias (agentes de IA; no se corrió axe-core en la interfaz nueva), y lo que encontraron se corrigió y se volvió a mirar. No se probó en un Safari real, ni en Firefox, ni con un lector de pantalla (detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3). La integración continua (GitHub Actions) corrió por primera vez el 25/11/2026, al publicar el repositorio, y pasó; las cifras de esta sección se midieron en una computadora local, no en ella.
+**Qué son esas 1.940 pruebas.** Unas 90 (89, en los 6 archivos `tests/textos*.test.ts`) fijan textos de la interfaz: mensajes de error, nombres de pantallas y frases con cifras; existen para que un cambio de redacción o de umbral no deje a la pantalla diciendo otra cosa que las reglas. Las otras 1.851 prueban reglas de dominio, comandos, estado, persistencia, el generador de datos y las vistas derivadas; algunas de ellas también comprueban una frase que se muestra, y esas no se separaron de las demás.
+
+También se miró la demo en un navegador (Chromium con Playwright, contra la compilación servida con la política de contenido real), en claro y oscuro, a 360 y 1280 px: sin desbordes horizontales y sin mensajes en la consola. Eso no se puede reproducir con un comando. La interfaz actual tuvo el 25/11/2026 una revisión de código, pruebas destructivas en Chromium y una auditoría de accesibilidad con mediciones propias (agentes de IA; no se corrió axe-core en la interfaz nueva), y lo que encontraron se corrigió y se volvió a mirar. No se probó en un Safari real, ni en Firefox, ni con un lector de pantalla (detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3). La integración continua ([GitHub Actions](https://github.com/aslow01/demo-control-flota/actions/workflows/ci.yml), `.github/workflows/ci.yml`) corre en cada `push` y en cada solicitud de cambios del repositorio público: tipos, pruebas en tres zonas horarias, compilación, peso, búsqueda de lo prohibido y `npm audit`. Las últimas ejecuciones sobre `main` que se consultaron el 26/11/2026 pasaron; las cifras de esta sección salen de la computadora local, no de ella.
 
 ## Límites conocidos
 
@@ -104,7 +120,7 @@ Límites menores: [`docs/limites.md`](docs/limites.md), sección 2.
 
 ## Datos ficticios
 
-Todo es inventado y sale de una semilla fija (24 unidades, 24 conductores y 45 días de partes). De los conductores, 16 tienen unidad asignada y 8 son de relevo: cubren por turnos las unidades sin conductor. El CUIT de la empresa se muestra siempre con la palabra «ficticio». Las patentes empiezan con `Z`; falta verificar qué series existen. Detalle: [`docs/limites.md`](docs/limites.md), sección 4.
+Todo es inventado y sale de una semilla fija (24 unidades, 24 conductores y 45 días de partes). De los conductores, 16 tienen unidad asignada y 8 son de relevo: cubren por turnos las unidades sin conductor. El CUIT de la empresa se muestra siempre con la palabra «ficticio». Las patentes empiezan con `Z` para alejarlas de las series en circulación; no se verificó que ninguna exista. Detalle: [`docs/limites.md`](docs/limites.md), sección 4.
 
 ## Origen
 
@@ -112,15 +128,17 @@ Iniciada el 18/11/2026 y escrita **desde cero** a partir de un enunciado propio.
 
 ## Documentos
 
+Orden de lectura sugerido: este README, luego `pantallas.md` y `limites.md`. `diseno.md` y `registro.md` son bitácoras de trabajo (decisiones y pasos, con fecha), extensas y no hay que leerlas enteras: sirven para buscar el porqué de una regla o de un cambio, por ejemplo con su código (P13, A1…). `diseno-ui.md` es la especificación visual.
+
 | Documento | Contenido |
 | --- | --- |
 | [`docs/pantallas.md`](docs/pantallas.md) | Qué permite cada pantalla. |
 | [`docs/limites.md`](docs/limites.md) | Bordes de las reglas, límites menores y verificación. |
-| [`docs/diseno.md`](docs/diseno.md) | Problema, modelo de datos y reglas con su caso de prueba. |
+| [`docs/diseno.md`](docs/diseno.md) | Bitácora de diseño: problema, modelo de datos y reglas con su caso de prueba. |
 | [`docs/diseno-ui.md`](docs/diseno-ui.md) | Diseño visual y accesibilidad. |
 | [`docs/stack.md`](docs/stack.md) | Tecnología y criterio. |
 | [`docs/plan.md`](docs/plan.md) | Pasos de implementación. |
-| [`docs/registro.md`](docs/registro.md) | Registro de cada paso. |
+| [`docs/registro.md`](docs/registro.md) | Bitácora: registro de cada paso. |
 
 ## Licencia
 
