@@ -104,7 +104,7 @@ export const TEXTO_COMO_FUNCIONA = {
 /** Pie (4.4). La empresa es la de ejemplo; su CUIT no se muestra acá. */
 export const TEXTO_PIE = {
   datos: `Demo escrita desde cero con datos ficticios de una empresa inventada (${EMPRESA.nombre}). Los datos se guardan solo en este navegador.`,
-  autoria: "Diseño, reglas y verificación: Matías Ariel Ormeño. El código lo escribió una IA bajo su dirección.",
+  autoria: "Concebido, diseñado y dirigido por Matías Ariel Ormeño; desarrollado con IA.",
   volverAlPortafolio: "Volver al portafolio",
 } as const;
 

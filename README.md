@@ -82,10 +82,10 @@ Las dependencias van en un solo sentido: `componentes` → `lib/estado` → `lib
 - **Movimiento:** una transición corta entre pantallas (View Transitions), la patente que viaja de la lista a su ficha y una cifra que cuenta al abrir. Con «reducir movimiento» activado en el sistema no hay ninguna de las tres; en los navegadores sin View Transitions, y en Safari y los navegadores de iPhone, entra una animación CSS equivalente. Por qué no se usa View Transitions en WebKit: [`docs/limites.md`](docs/limites.md), sección 3.
 - **Accesibilidad:** teclado, foco visible, modo claro y oscuro, desde 320 px; el color nunca va solo (cada estado lleva forma y texto). Los controles miden al menos 24 px, el mínimo de WCAG 2.2 (criterio 2.5.8): casi todos los botones y enlaces del celular, 44 px; en escritorio los botones chicos y las filas de las listas, 40 px, y los puntos de la regla de vencimientos, 26 px.
 
-## Cómo se usó la IA
+## Cómo se hizo
 
-- **Matías Ariel Ormeño** propuso la demo y definió el problema (el parte en papel se daña, tarda y no deja evidencia), el alcance y las reglas. Eligió entre las alternativas que propuso la IA; cada decisión figura con quién y cuándo en [`docs/diseno.md`](docs/diseno.md), sección 15, y [`docs/stack.md`](docs/stack.md), sección 9.
-- **La IA (Claude, de Anthropic) escribió el código, las pruebas y los documentos;** Matías no escribió el código a mano.
+- **Matías Ariel Ormeño** concibió la demo, definió el problema (el parte en papel se daña, tarda y no deja evidencia), el alcance y las reglas, y dirigió y verificó el trabajo. Eligió entre las alternativas que se le propusieron; cada decisión figura con quién y cuándo en [`docs/diseno.md`](docs/diseno.md), sección 15, y [`docs/stack.md`](docs/stack.md), sección 9.
+- **Desarrollo con IA:** el código, las pruebas y los documentos se desarrollaron con IA (Claude, de Anthropic) bajo su dirección; los commits llevan esa coautoría.
 - **Método:** diseño primero, plan por pasos ([`docs/plan.md`](docs/plan.md)) y lógica con pruebas primero (TDD).
 - **Los roles de `docs/`** («programador», «QA», «revisor», «auditor») son agentes de IA dirigidos por Matías, no personas. Las revisiones por etapa también las hicieron agentes de IA, no terceras personas.
 
@@ -100,7 +100,7 @@ Cifras medidas el 26/11/2026 en una computadora local:
 | Tipos | `npm run check` | 0 errores y 0 avisos en 376 archivos |
 | Contraste de la paleta | `npm run contraste` | 244 mediciones, 0 fallan |
 | Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 249 archivos con el archivo local de términos; 8 reglas sin él) |
-| Tamaño del JavaScript | `npm run peso` | 116.725 B de carga inicial (tope 120.000 B) y 143.241 B en total, con gzip |
+| Tamaño del JavaScript | `npm run peso` | 116.712 B de carga inicial (tope 120.000 B) y 143.221 B en total, con gzip |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
 **Qué son esas 1.940 pruebas.** Unas 90 (89, en los 6 archivos `tests/textos*.test.ts`) fijan textos de la interfaz: mensajes de error, nombres de pantallas y frases con cifras; existen para que un cambio de redacción o de umbral no deje a la pantalla diciendo otra cosa que las reglas. Las otras 1.851 prueban reglas de dominio, comandos, estado, persistencia, el generador de datos y las vistas derivadas; algunas de ellas también comprueban una frase que se muestra, y esas no se separaron de las demás.
