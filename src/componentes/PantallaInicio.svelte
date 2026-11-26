@@ -80,7 +80,7 @@
     {#if recorrido !== null}
       <div class="entrada-recorrido">
         <p class="entrada-recorrido-texto">{TEXTO_INICIO.recorrido.texto}</p>
-        <Boton variante="secundario" aria-haspopup="dialog" onclick={() => alProbarComoConductor(recorrido.conductorId)}>{TEXTO_INICIO.recorrido.boton}</Boton>
+        <Boton aria-haspopup="dialog" onclick={() => alProbarComoConductor(recorrido.conductorId)}>{TEXTO_INICIO.recorrido.boton}<Icono nombre="flecha" /></Boton>
       </div>
     {/if}
 
@@ -259,6 +259,40 @@
   }
   .linea {
     color: var(--c-texto-2);
+  }
+
+  /* ---------- Entrada al recorrido ----------
+     Una franja de una sola línea con el riel en tinta (el color habla de estado; la tinta, de acción) y el único botón primario de la pantalla.
+     Sin fondo de color ni cifra grande: la que manda sigue siendo la cobre de abajo. En el celular el texto va arriba y el botón a todo el ancho. */
+  .entrada-recorrido {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e-3) var(--e-5);
+    padding: var(--e-3) var(--e-4);
+    border: 1px solid var(--c-borde);
+    border-inline-start: 4px solid var(--c-tinta);
+    border-radius: 0 var(--r-2) var(--r-2) 0;
+    background: var(--c-superficie);
+  }
+  .entrada-recorrido-texto {
+    flex: 1 1 20rem;
+    min-width: 0;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .entrada-recorrido :global(.boton) {
+    --icono-tam: 1rem;
+    flex: none;
+  }
+  @media (max-width: 29.99rem) {
+    .entrada-recorrido {
+      padding-inline-end: var(--e-3);
+    }
+    .entrada-recorrido :global(.boton) {
+      flex: 1 1 100%;
+    }
   }
 
   /* ---------- Cifras ----------
@@ -769,6 +803,9 @@
     .conductor {
       border-inline-start: 4px solid CanvasText;
       box-shadow: none;
+    }
+    .entrada-recorrido {
+      border-color: CanvasText;
     }
     .marca-vacia::before,
     .marca-vacia i {
