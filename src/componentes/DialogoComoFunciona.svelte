@@ -8,7 +8,14 @@
   import { TEXTO_COMO_FUNCIONA as T } from "./textos-marco.ts";
   import type { NombreIcono, Tono } from "./tipos.ts";
 
-  let { abierto = $bindable(false) }: { abierto?: boolean } = $props();
+  let {
+    abierto = $bindable(false),
+    focoDestino,
+  }: {
+    abierto?: boolean;
+    /** A dónde va el foco al cerrar si no es el botón que lo abrió (el título de la pantalla nueva, si «Atrás» cambió la pantalla). */
+    focoDestino?: () => HTMLElement | null;
+  } = $props();
 
   // Mismos tonos e íconos que las etiquetas de vencimiento (5.7), en el orden de T.reglas.
   const aspecto: { tono: Tono; icono: NombreIcono }[] = [
@@ -20,7 +27,7 @@
   ];
 </script>
 
-<Dialogo titulo={T.titulo} bind:abierto cancelar={null} focoInicial="titulo">
+<Dialogo titulo={T.titulo} bind:abierto cancelar={null} focoInicial="titulo" {focoDestino}>
   <div class="bloque">
     {#each T.queEs as parrafo (parrafo)}
       <p class="parrafo">{parrafo}</p>

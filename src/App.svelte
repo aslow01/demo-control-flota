@@ -2,9 +2,9 @@
   // El marco de la aplicación «tipo app» (docs/diseno-ui.md, secciones 2, 4, 5.17 a 5.19; el prototipo «Turno» manda donde difieren): enlace «Ir al contenido»,
   // lateral oscuro (escritorio), barra superior con «Atrás» y chip de perfil (celular y tableta), migas y fecha (escritorio), avisos globales,
   // `main` (estado de arranque, error o la pantalla) y barra inferior (celular y tableta). Lee todo del estado (`app`); no tiene reglas de negocio.
-  // Rutas de E3 ya registradas (armazón): Inicio, Vencimientos y Operación diaria son esqueletos que por ahora muestran la pantalla de alertas de siempre.
-  // Una dirección que no corresponde a ninguna pantalla muestra «Página no encontrada».
-  import { tick } from "svelte";
+  // Pantallas: Inicio, Vencimientos, Operación diaria, Movilidades y «Más» (las del encargado); Hoy, Mis partes y el parte (las del conductor); y la ficha de una unidad.
+  // La ficha, el parte, Hoy y Mis partes se bajan al entrar (trozos aparte). Una dirección que no corresponde a ninguna pantalla muestra «Página no encontrada».
+  import { tick, untrack } from "svelte";
   import Aviso from "./componentes/Aviso.svelte";
   import BarraInferior, { type ItemNavegacion } from "./componentes/BarraInferior.svelte";
   import BarraSuperior from "./componentes/BarraSuperior.svelte";
@@ -44,6 +44,21 @@
     irAlTitulo = false;
     return document.querySelector<HTMLElement>("main h1");
   }
+
+  // «Atrás» o «Adelante» con uno de estos diálogos abiertos cambia la pantalla de abajo: el diálogo se cierra con ella (no queda tapando otra pantalla) y el foco va al
+  // título nuevo. Si está trabajando (reiniciando o cambiando de perfil) no se cierra: lo cierra su propio resultado.
+  $effect(() => {
+    void app.versionDePantalla;
+    untrack(() => {
+      const abiertos = dialogoComoFuncionaAbierto || (dialogoReiniciarAbierto && !reiniciando) || (dialogoVerComoAbierto && !cambiandoPerfil);
+      if (!abiertos) return;
+      irAlTitulo = true;
+      dialogoComoFuncionaAbierto = false;
+      if (!reiniciando) dialogoReiniciarAbierto = false;
+      if (!cambiandoPerfil) dialogoVerComoAbierto = false;
+      void tick().then(enfocarTitulo);
+    });
+  });
 
   // Lo que pasó y no se ve en pantalla ("Demo reiniciada", "Flota de ejemplo lista"): una región `role="status"` que existe desde el
   // principio. Se vacía, se escribe unos 250 ms después (cuando el diálogo ya cerró y el foco volvió a su lugar) y se vuelve a vaciar
@@ -189,9 +204,9 @@
       mas: { id: "mas", href: aHash({ tipo: "mas" }), texto: NOMBRES_DE_PANTALLA.mas, icono: "mas", actual: actual("mas") },
     } satisfies Record<string, ItemNavegacion>;
   });
-  // La barra inferior y el lateral no ordenan igual (en el lateral Vencimientos va antes que Operación y «Más» no está: es la pantalla de abajo del lateral).
+  // La barra inferior y el lateral van en el mismo orden (3.2.3 Navegación coherente); la barra suma «Más», que en el lateral es la pantalla de abajo.
   const itemsDeLaBarra = $derived<ItemNavegacion[]>(
-    esConductor ? [destinos.hoy, destinos.partes, destinos.mas] : [destinos.inicio, destinos.movilidades, destinos.operacion, destinos.vencimientos, destinos.mas],
+    esConductor ? [destinos.hoy, destinos.partes, destinos.mas] : [destinos.inicio, destinos.movilidades, destinos.vencimientos, destinos.operacion, destinos.mas],
   );
   const itemsDelLateral = $derived<ItemNavegacion[]>(
     esConductor ? [destinos.hoy, destinos.partes] : [destinos.inicio, destinos.movilidades, destinos.vencimientos, destinos.operacion],
@@ -239,6 +254,18 @@
     // Con éxito el aviso desaparece (y con él el botón que tenía el foco): si no cambió la pantalla, el foco va al título.
     if (r.ok) void tick().then(enfocarTitulo);
   }
+
+  // Si se intenta escribir (enviar, guardar, cambiar de perfil) con cambios de otra pestaña sin actualizar, el error manda a «Actualizar en el aviso»: el aviso está arriba de
+  // todo y en el celular, con la página desplazada, queda fuera de la vista. Se lo trae a la vista (sin tocar el foco: lo escrito sigue donde estaba).
+  let regionDeAvisos = $state<HTMLElement>();
+  let bloqueosVistos = 0;
+  $effect(() => {
+    const bloqueos = app.bloqueosPorOtraPestana;
+    if (bloqueos === bloqueosVistos) return;
+    bloqueosVistos = bloqueos;
+    // Después del siguiente cuadro: el error que acaba de aparecer en la pantalla también mueve la vista, y esta tiene que ser la última.
+    void tick().then(() => requestAnimationFrame(() => regionDeAvisos?.scrollIntoView({ block: "start" })));
+  });
 
   // ---------- Título, foco y desplazamiento al cambiar de pantalla ----------
   $effect(() => {
@@ -371,7 +398,7 @@
       </header>
     {/if}
     <!-- Región viva siempre presente (vacía, sin relleno): lo que llega con la página abierta (D9) se anuncia como un cambio dentro de ella. -->
-    <div class="avisos ancho" class:hay={lista && (app.avisos.length > 0 || app.hayCambiosEnOtraPestana)} role="status">
+    <div class="avisos ancho" class:hay={lista && (app.avisos.length > 0 || app.hayCambiosEnOtraPestana)} role="status" bind:this={regionDeAvisos}>
       {#if app.fase === "lista"}
         <div class="lista-avisos">
           {#each app.avisos as aviso (aviso.tipo)}
@@ -494,7 +521,7 @@
 <div class="solo-lectores" role="status">{anuncio}</div>
 
 <!-- Diálogos al final del body (5.17). -->
-<DialogoComoFunciona bind:abierto={dialogoComoFuncionaAbierto} />
+<DialogoComoFunciona bind:abierto={dialogoComoFuncionaAbierto} focoDestino={destinoDelFoco} />
 <DialogoReiniciar
   bind:abierto={dialogoReiniciarAbierto}
   cargando={reiniciando}

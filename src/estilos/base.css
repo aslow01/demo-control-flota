@@ -187,12 +187,13 @@ html.dialogo-abierto {
   border: 0;
 }
 
-/* Enlace "Ir al contenido": visible solo al recibir el foco. */
+/* Enlace "Ir al contenido": visible solo al recibir el foco. Por encima de las barras fijas (superior e inferior, z-index 50; la de migas, 40): con el mismo z-index
+   la barra superior, que viene después en el DOM, lo tapaba en celular y tableta. */
 .saltar {
   position: absolute;
   left: var(--e-2);
   top: var(--e-2);
-  z-index: 50;
+  z-index: 100;
   padding: var(--e-3) var(--e-4);
   border-radius: var(--r-2);
   background: var(--c-acento);

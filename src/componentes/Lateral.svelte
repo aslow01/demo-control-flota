@@ -52,7 +52,8 @@
   </a>
 {/snippet}
 
-<aside class="lateral" aria-label={TEXTO_MARCO.nombreApp}>
+<!-- Un `div` y no un `aside`: esto no es un complemento del contenido (landmark `complementary`) sino la navegación principal, que ya es su propio `nav`. -->
+<div class="lateral">
   <div class="cabecera">
     {#if cargada}
       <a class="marca" href={inicioHref}><Icono nombre="marca" />{TEXTO_MARCO.nombreApp}</a>
@@ -104,7 +105,7 @@
       {/if}
     </div>
   </div>
-</aside>
+</div>
 
 <style>
   .lateral {
