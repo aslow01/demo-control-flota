@@ -66,11 +66,14 @@ describe("vencimientos: «próximos 30 días» no cuenta lo ya vencido", () => {
   });
 
   it("el número del rótulo es solo lo que vence en 30 días o menos", () => {
-    expect(v.rotuloCantidad).toBe(`${g["7"] + g["15"] + g["30"]} vencen en 30 días`);
+    expect(v.contexto.endsWith(`${g["7"] + g["15"] + g["30"]} vencen en 30 días`)).toBe(true);
+    expect(v.filtrosEnlace.find((f) => f.id === "proximos")?.cantidad).toBe(g["7"] + g["15"] + g["30"]);
   });
 
   it("los subtotales de los filtros suman «Todos» y los grupos no se solapan", () => {
-    const [todos, ...grupos] = v.filtros;
+    const todos = v.filtrosEnlace.find((f) => f.id === "todos");
+    const grupos = v.filtrosEnlace.filter((f) => f.id !== "todos" && f.id !== "proximos"); // «proximos» junta tres grupos: no es un subtotal más
+    expect(grupos.map((f) => f.id)).toEqual(["vencidos", "7", "15", "30"]);
     expect(grupos.reduce((s, f) => s + f.cantidad, 0)).toBe(todos?.cantidad);
     const ids = v.grupos.flatMap((x) => x.filas.map((f) => f.alertaId));
     expect(new Set(ids).size).toBe(ids.length);

@@ -460,7 +460,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const v = completo(edicion(app).valoresIniciales);
     v.checklist.frenos = { respuesta: "con-novedad", descripcion: "Pedal blando y ruido al frenar", impideUso: false };
     await app.cambiarPerfil({ tipo: "encargado" });
-    const horizonteAntes = JSON.stringify(app.centroDeAlertas?.vencimientos.horizonte);
+    const reglaAntes = JSON.stringify(app.centroDeAlertas?.vencimientos.regla);
     const criticasAntes = app.centroDeAlertas?.operacion.filas.find((f) => f.tipo === "novedad-critica")?.cifra ?? 0;
     await app.cambiarPerfil(C01);
     const r = await app.enviarRevisionDeParte(uid, H, v);
@@ -484,8 +484,9 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(app.alertas?.resumen.fueraDeServicio.map((u) => u.patente)).toContain("ZYN469");
     expect(app.alertas?.alertas.some((a) => a.tipo === "novedad-critica" && a.unidadId === uid)).toBe(true);
     expect(app.centroDeAlertas?.operacion.filas.find((f) => f.tipo === "novedad-critica")?.cifra).toBe(criticasAntes + 1);
-    // El parte no toca los vencimientos: el Horizonte queda igual.
-    expect(JSON.stringify(app.centroDeAlertas?.vencimientos.horizonte)).toBe(horizonteAntes);
+    // El parte no toca los vencimientos: la regla del Horizonte queda igual.
+    expect(reglaAntes).not.toBeUndefined();
+    expect(JSON.stringify(app.centroDeAlertas?.vencimientos.regla)).toBe(reglaAntes);
     // Y es la pantalla de la unidad la que dice por qué.
     app.irA({ tipo: "unidad", patente: "ZYN469" });
     expect(app.fichaDeUnidad && app.fichaDeUnidad.encontrada && app.fichaDeUnidad.aptitud.categoria).toBe("fuera-de-servicio");

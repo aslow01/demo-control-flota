@@ -43,7 +43,6 @@ import {
   textoPendientes,
   textoProtagonista,
   textoProtagonistaLector,
-  textoRotuloVencimientos,
   textoVencimiento,
   textoVerTodasEnLaFlota,
 } from "../dominio/textos.ts";
@@ -56,7 +55,6 @@ import {
   recorridoDeRegla,
   type ElementoDeRegla,
   type FormaDeMarca,
-  type Horizonte,
   type TramoHorizonte,
 } from "../dominio/horizonte.ts";
 import { aHash, type FiltroDeVencimientosEnRuta, type SolapaDeOperacion } from "./enrutador.ts";
@@ -81,8 +79,6 @@ const SOLAPA_DE_TIPO: Record<TipoAlertaOperacion, SolapaDeOperacion> = {
 const TONO_GRUPO: Record<Grupo, "critico" | "semana" | "quincena" | "mes"> = { vencidos: "critico", "7": "semana", "15": "quincena", "30": "mes" };
 
 // --- Tipos ---------------------------------------------------------------------------------------
-
-export type IdFiltro = "todos" | Grupo;
 
 export interface Encabezado {
   /** «Hoy es miércoles 18/11/2026 (hora de Argentina) · Logística Andina Demo S.A. · 23 unidades». */
@@ -227,13 +223,6 @@ export interface GrupoVencimientos {
   filas: FilaVencimiento[];
 }
 
-export interface FiltroVencimientos {
-  id: IdFiltro;
-  /** «Todos», «Vencidos y faltantes», «7 días o menos», «8 a 15 días», «16 a 30 días». */
-  etiqueta: string;
-  cantidad: number;
-}
-
 /** Los filtros de la pantalla Vencimientos: los mismos de la dirección (`?filtro=`), más «todos», que no viaja. */
 export type IdFiltroVencimientos = "todos" | FiltroDeVencimientosEnRuta;
 
@@ -277,16 +266,12 @@ export interface PanelVencimientos {
   titulo: string;
   /** Vencidos, faltantes y los de los próximos 30 días: el número de «Todos». El rótulo «próximos 30 días · 9» no cuenta los vencidos. */
   total: number;
-  rotuloCantidad: string;
   /** «3 vencidos o faltantes · 9 vencen en 30 días». */
   contexto: string;
-  /** La pista de las pantallas viejas (hasta 4 por día). Las pantallas nuevas usan `regla`. */
-  horizonte: Horizonte;
   /** La regla interactiva de Inicio y Vencimientos (hasta 2 por día, y «y N más»). */
   regla: ReglaDeVencimientos;
   /** Los filtros de la pantalla Vencimientos como enlaces, en este orden: todos, vencidos, próximos (30 días), 7, 15 y 30. */
   filtrosEnlace: FiltroEnlaceVencimientos[];
-  filtros: FiltroVencimientos[];
   /** Los cuatro grupos (también los vacíos); ver `vencimientosVisibles`. */
   grupos: GrupoVencimientos[];
   /** «No hay vencimientos en los próximos 30 días.» */
@@ -665,15 +650,9 @@ function armarVencimientos(estado: Estado, r: ResultadoAlertas): PanelVencimient
     titulo: TEXTO_CENTRO.vencimientos,
     total,
     // «próximos 30 días» no cuenta lo ya vencido o faltante (tiene su propio grupo y filtro); «Todos» sí.
-    rotuloCantidad: textoRotuloVencimientos(proximos),
     contexto: textoContextoVencimientos(r.resumen.porGrupo.vencidos, proximos),
-    horizonte: horizonteCompleto(r),
     regla: armarRegla(r, filas),
     filtrosEnlace: armarFiltrosEnlace(r, total, proximos),
-    filtros: [
-      { id: "todos", etiqueta: "Todos", cantidad: total },
-      ...grupos.map((g): FiltroVencimientos => ({ id: g.id, etiqueta: TEXTO_GRUPO_VENCIMIENTOS[g.id].filtro, cantidad: g.cantidad })),
-    ],
     grupos,
     textoVacio: TEXTO_CENTRO.vencimientosVacio,
   };
@@ -688,7 +667,7 @@ export interface VencimientosVisibles {
   anuncio: string;
 }
 
-export function vencimientosVisibles(v: PanelVencimientos, filtro: IdFiltro | IdFiltroVencimientos): VencimientosVisibles {
+export function vencimientosVisibles(v: PanelVencimientos, filtro: IdFiltroVencimientos): VencimientosVisibles {
   if (filtro === "todos") {
     const conFilas = v.grupos.filter((g) => g.cantidad > 0);
     return { grupos: conFilas, textoVacio: conFilas.length === 0 ? v.textoVacio : null, anuncio: textoMostrando(v.total, v.total) };

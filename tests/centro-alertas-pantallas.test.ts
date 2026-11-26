@@ -4,7 +4,7 @@ import { SEMILLA_POR_DEFECTO, generar } from "../src/lib/datos/generador.ts";
 import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import { resumenDeAptitud } from "../src/lib/dominio/aptitud.ts";
 import { sumarDias } from "../src/lib/dominio/fechas.ts";
-import { MAX_POR_DIA_EN_REGLA } from "../src/lib/dominio/horizonte.ts";
+import { MAX_POR_DIA_EN_REGLA, horizonteCompleto } from "../src/lib/dominio/horizonte.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { centroDeAlertas, vencimientosVisibles, type CentroDeAlertas } from "../src/lib/estado/centro-alertas.ts";
 import { parsearHash } from "../src/lib/estado/enrutador.ts";
@@ -228,8 +228,8 @@ describe("regla de vencimientos interactiva (3.7) con el ejemplo", () => {
     for (const x of regla.elementos) {
       if (x.tipo !== "marca") continue;
       const t = x.vencimiento.titular;
-      expect(x.etiquetaCorta).toBe(t.tipo === "unidad" ? t.patenteTexto : x.etiquetaCorta);
-      if (t.tipo === "conductor") {
+      if (t.tipo === "unidad") expect(x.etiquetaCorta).toBe(t.patenteTexto);
+      else {
         const [nombre, ...apellido] = t.nombre.split(" ");
         expect(x.etiquetaCorta).toBe(`${nombre?.charAt(0)}. ${apellido.join(" ")}`);
       }
@@ -270,7 +270,8 @@ describe("regla de vencimientos interactiva (3.7) con el ejemplo", () => {
   });
 
   it("el nombre de la pista para lectores es el del horizonte y la regla no está vacía", () => {
-    expect(regla.etiquetaAria).toBe(c.vencimientos.horizonte.etiquetaAria);
+    expect(regla.etiquetaAria).toBe(horizonteCompleto(r).etiquetaAria);
+    expect(regla.etiquetaAria).not.toBeNull();
     expect(regla.vacio).toBeNull();
   });
 });
@@ -351,10 +352,6 @@ describe("Vencimientos como pantalla: filtros por enlace (3.5 y 3.7)", () => {
     expect(vencimientosVisibles(v, "vencidos").anuncio).toBe("Mostrando 3 de 12 vencimientos.");
     const sinProximos = centroDe(flotaDePrueba()).vencimientos;
     expect(vencimientosVisibles(sinProximos, "proximos")).toMatchObject({ grupos: [], textoVacio: "No hay documentos en este grupo.", anuncio: "Mostrando 0 de 0 vencimientos." });
-  });
-
-  it("el filtro viejo de dos valores sigue funcionando para la pantalla actual", () => {
-    expect(v.filtros.map((x) => x.id)).toEqual(["todos", "vencidos", "7", "15", "30"]);
   });
 
   it("cada filtro de la ruta (`?filtro=`) existe como pastilla y lleva a la dirección que el enrutador entiende", () => {
