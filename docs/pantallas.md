@@ -6,7 +6,8 @@ Detalle de lo que se puede hacer en cada pantalla. El resumen para quien llega p
 
 ## Navegación
 
-- **Encargado:** barra inferior (celular y tableta) o lateral oscuro (desde 64 rem) con Inicio, Movilidades, Vencimientos y Operación diaria (que se despliega en Checklists y Novedades); «Más» en el celular. Las insignias de la navegación repiten las cifras de Inicio (no disponibles hoy, vencidos o faltantes) y de Operación diaria (pendientes).
+- **Encargado:** barra inferior (celular y tableta) o lateral oscuro (desde 64 rem) con Inicio, Movilidades, Vencimientos y Operación diaria (que se despliega en Checklists y Novedades); «Más» en el celular. Las insignias de la navegación repiten las cifras de Inicio (no disponibles hoy, vencidos o faltantes) y de Operación diaria (pendientes); la de Inicio se oculta mientras se está en Inicio, donde la cifra grande ya lo dice.
+- **Entrada al recorrido:** mientras haya un conductor con el parte trabado por un seguro vencido, Inicio muestra la franja «Probar como conductor», que abre «Ver como» con ese conductor ya elegido.
 - **Conductor:** Hoy, Mis partes y Más.
 - «Atrás» (arriba a la izquierda en el celular, en la ficha y el parte) vuelve a la pantalla de origen; en Movilidades conserva el filtro y la búsqueda que tenía. En escritorio, las migas hacen lo mismo.
 - Las direcciones usan *hash* (`#/inicio`, `#/movilidades?filtro=bloqueadas&q=zk`, `#/vencimientos?filtro=7`, `#/operacion/novedades`, `#/unidad/ZK214BD`, `#/conductor`, `#/conductor/partes`, `#/parte/ZK214BD/2026-11-25`, `#/mas`). Las viejas (`#/alertas`, `#/flota`) se siguen entendiendo. Cambiar un filtro o escribir en el buscador cambia la dirección sin mover el foco ni el desplazamiento.
