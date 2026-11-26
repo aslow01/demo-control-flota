@@ -1484,3 +1484,22 @@ Nueve commits, uno por punto de la crítica (importantes 1 a 5 y menores 6 a 9);
 **No se hizo.** Renombrar «Checklists» ni la navegación triplicada (después del lanzamiento); el texto del README; Safari, Firefox, lector de pantalla ni pantalla táctil reales.
 
 **Verificación.** `npm run check`: 0 errores y 0 avisos (376 archivos); `npm test`: 1.940 pruebas en 77 archivos; `npm run buscar`: sin hallazgos (9 reglas, 249 archivos); `npm run contraste`: 244 mediciones, 0 fallan, 1 justa (`peligro-hover`, la de antes); `npm run build` sin errores; `npm run peso`: JS inicial 116.508 → **116.725 B** (tope 120.000, margen 3.275) y total 143.241 B (sobre el aviso, como antes). Chromium con Playwright contra `npm run servir` (CSP real): 84 pantallas (9 del Encargado y 5 del Conductor × 360, 390 y 1.440 px × claro y oscuro) sin desborde horizontal y con la consola sin errores ni violaciones de CSP; se miraron además las capturas de Inicio, Movilidades, Vencimientos, ficha, Hoy y parte a 360, 390 y 1.440 px en claro y oscuro.
+
+## 26/11/2026 (rama `interfaz-app`) — Los dos menores de la crítica que quedaban para después del lanzamiento (maquetador, IA)
+
+**1. «Checklists» pasa a «Partes».** La crítica pedía ese nombre. Coincide con lo que la solapa contiene (partes sin enviar, partes sin cerrar y unidades sin parte de ayer) y con «Mis partes» del conductor. Cambia en la solapa, el título de la pestaña, las migas, la columna «sección» de Inicio, los estados vacíos y los documentos. La dirección pasa a `#/operacion/partes`; `#/operacion/checklists` se sigue entendiendo y se reescribe a la nueva sin apilar entradas (prueba en `enrutador.test.ts` y en `app-estado.test.ts`). Los identificadores internos de la solapa también pasaron a `partes`; «checklist» queda donde habla de los puntos de revisión del parte.
+
+**2. Navegación triplicada.** En escritorio, Operación diaria repetía «Checklists / Novedades» cuatro veces: subentradas del lateral, migas, solapas y título de la hoja; en el celular, dos (solapas y título de la hoja, uno sobre el otro).
+
+| | Antes | Después |
+| --- | --- | --- |
+| Lateral | «Operación diaria» con dos subentradas, siempre desplegadas | Una sola entrada «Operación diaria», con la insignia del total |
+| Hoja bajo las solapas | Barra de título visible con el mismo nombre que la solapa y su cuenta | Misma barra, solo para lectores de pantalla (`Panel` con `tituloOculto`): el `h2` sigue nombrando la región |
+| Foco tras «Resolver» | Al título de la hoja | A la solapa elegida (`id="solapa-…"`), que es lo visible más cercano |
+| Migas y solapas | sin cambio | sin cambio |
+
+**No se hizo.** Las migas de escritorio («Operación diaria / Partes») siguen repitiendo el nombre de la solapa: son el camino de «Atrás» y la crítica no las nombró. Quitarlas es una decisión aparte. Safari, Firefox, lector de pantalla ni pantalla táctil reales.
+
+**Capturas.** `docs/img/inicio.png` y `public/og-inicio.png` mostraban «Checklists» en el lateral: rehechas con el `dist/` servido con la CSP real (1280 × 900 y 1200 × 630).
+
+**Verificación.** `npm run check`: 0 errores y 0 avisos (376 archivos); `npm test` y `npm run test:tz`: 1.944 pruebas en 77 archivos (4 nuevas, de la dirección vieja); `npm run buscar`: sin hallazgos (9 reglas, 249 archivos); `npm run contraste`: 244 mediciones, 0 fallan; `npm run build` sin errores; `npm run peso`: JS inicial 116.712 → **116.489 B** (tope 120.000, margen 3.511) y total 143.221 → 143.001 B; `npm audit`: 0 vulnerabilidades. Chromium con Playwright contra `npm run servir`: Operación diaria (Partes, Novedades y la dirección vieja) a 1280 y 360 px en claro y oscuro, sin desborde horizontal y con la consola sin errores.

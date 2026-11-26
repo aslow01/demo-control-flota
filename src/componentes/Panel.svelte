@@ -28,6 +28,7 @@
     herramientas,
     controles,
     sinRelleno = false,
+    tituloOculto = false,
     children,
   }: {
     titulo: string;
@@ -43,6 +44,11 @@
     controles?: Snippet;
     /** El interior llega hasta los bordes y sin separación entre sus hijos: para las listas de filas con riel de color (cada fila trae su propio relleno). */
     sinRelleno?: boolean;
+    /**
+     * La barra de título solo la oyen los lectores de pantalla: para un panel que ya está rotulado justo encima (la hoja de una solapa de Operación diaria),
+     * donde repetir el nombre a la vista sería una navegación más. El `h2` sigue ahí: nombra la región y ordena los encabezados. Sin `controles`.
+     */
+    tituloOculto?: boolean;
     children: Snippet;
   } = $props();
 
@@ -53,7 +59,7 @@
 </script>
 
 <section class="panel" aria-labelledby={idTitulo}>
-  <div class="barra" class:con-icono={icono !== undefined}>
+  <div class="barra" class:con-icono={icono !== undefined} class:oculta={tituloOculto}>
     {#if icono !== undefined}
       <span class="icono-titulo"><Icono nombre={icono} /></span>
     {/if}
@@ -102,6 +108,19 @@
   }
   .barra.con-icono {
     --sangria: calc(1.25rem + var(--e-2));
+  }
+  /* Misma técnica que `.solo-lectores`: fuera de la vista, dentro del árbol de accesibilidad. */
+  .barra.oculta {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
   .icono-titulo {
     display: inline-flex;

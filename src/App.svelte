@@ -184,7 +184,6 @@
 
   const destinos = $derived.by(() => {
     const t = TEXTO_NAVEGACION;
-    const solapa = app.ruta.tipo === "operacion" ? app.ruta.solapa : null;
     const pendientes = cuentas.partes + cuentas.novedades;
     return {
       inicio: { id: "inicio", href: aHash({ tipo: "inicio" }), texto: NOMBRES_DE_PANTALLA.inicio, icono: "inicio", actual: actual("inicio"), insignia: app.ruta.tipo === "inicio" ? undefined : conInsignia(cuentas.noDisponibles, t.insignias.noDisponibles(cuentas.noDisponibles), true) },
@@ -198,10 +197,6 @@
         icono: "parte",
         actual: actual("operacion"),
         insignia: conInsignia(pendientes, t.insignias.pendientes(pendientes), false),
-        subitems: [
-          { id: "partes", href: aHash({ tipo: "operacion", solapa: "partes" }), texto: NOMBRES_DE_PANTALLA.operacionPartes, actual: solapa === "partes" ? "page" : undefined, insignia: conInsignia(cuentas.partes, t.insignias.pendientes(cuentas.partes), false) },
-          { id: "novedades", href: aHash({ tipo: "operacion", solapa: "novedades" }), texto: NOMBRES_DE_PANTALLA.operacionNovedades, actual: solapa === "novedades" ? "page" : undefined, insignia: conInsignia(cuentas.novedades, t.insignias.abiertas(cuentas.novedades), false) },
-        ],
       },
       hoy: { id: "hoy", href: aHash({ tipo: "conductor" }), texto: NOMBRES_DE_PANTALLA.conductor, icono: "parte", actual: actual("hoy") },
       partes: { id: "partes", href: aHash({ tipo: "mis-partes" }), texto: NOMBRES_DE_PANTALLA.conductorPartes, icono: "partes", actual: actual("partes") },

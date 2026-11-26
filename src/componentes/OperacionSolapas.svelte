@@ -1,3 +1,10 @@
+<script lang="ts" module>
+  /** El `id` del enlace de cada solapa: la pantalla le devuelve el foco ahí cuando la fila que lo tenía desaparece (resolver una novedad). */
+  export function idDeSolapa(id: string): string {
+    return `solapa-${id}`;
+  }
+</script>
+
 <script lang="ts">
   // Las dos solapas de Operación diaria (Partes y Novedades): son ENLACES (cada una es una ruta, `#/operacion/partes` y `#/operacion/novedades`), no pestañas con roles de
   // `tablist`: la elegida lleva `aria-current="page"`, Tab recorre las dos y Enter navega. Pestañas de archivo como las de la ficha: la elegida es del color de la hoja, lleva una barra
@@ -27,7 +34,7 @@
   <ul class="solapas">
     {#each solapas as s (s.id)}
       <li>
-        <a class="solapa" href={s.href} aria-current={activa === s.id ? "page" : undefined}>
+        <a class="solapa" id={idDeSolapa(s.id)} href={s.href} aria-current={activa === s.id ? "page" : undefined}>
           {s.rotulo}
           <span class="n" class:critica={s.critica} aria-hidden="true">{s.cantidad}</span>
           <span class="solo-lectores">, {cuenta(s)}</span>

@@ -243,7 +243,7 @@ Cifras (kilómetros, litros, días, conteos, fechas en tablas): `tabular-nums` *
 
 ### 4.1 Escritorio (desde 64 rem): lateral oscuro y barra de migas
 
-- **Lateral** fijo a la izquierda, de `16rem`, oscuro en claro y en oscuro. Arriba: la marca (ícono y «Control de flota») y la etiqueta «Demo con datos ficticios». En el medio, los destinos: encargado, Inicio, Movilidades, Vencimientos y Operación diaria (desplegada en Partes y Novedades); conductor, Hoy y Mis partes. Con insignias (4.3). Abajo: «Cómo funciona», «Reiniciar demo», «Ver como» (el perfil de ahora, con un control para cambiarlo), «Volver al portafolio», la autoría («Concebido, diseñado y dirigido por Matías Ariel Ormeño; desarrollado con IA.») y «Más».
+- **Lateral** fijo a la izquierda, de `16rem`, oscuro en claro y en oscuro. Arriba: la marca (ícono y «Control de flota») y la etiqueta «Demo con datos ficticios». En el medio, los destinos: encargado, Inicio, Movilidades, Vencimientos y Operación diaria (un solo destino: Partes y Novedades se eligen con las solapas de la pantalla, no en el lateral; decisión del 26/11/2026); conductor, Hoy y Mis partes. Con insignias (4.3). Abajo: «Cómo funciona», «Reiniciar demo», «Ver como» (el perfil de ahora, con un control para cambiarlo), «Volver al portafolio», la autoría («Concebido, diseñado y dirigido por Matías Ariel Ormeño; desarrollado con IA.») y «Más».
 - El destino de la pantalla actual sale del contenido como una pestaña de fichero (corte en diagonal) y lleva además una marca de 3 px y negrita: en oscuro el recorte solo no alcanza contraste. `aria-current="page"`.
 - **Barra de migas** fija arriba del contenido: las migas a la izquierda (el último tramo es la pantalla de ahora, sin enlace; los anteriores, enlaces) y la fecha a la derecha. Las pantallas del lateral llevan un solo tramo.
 
@@ -254,7 +254,7 @@ Cifras (kilómetros, litros, días, conteos, fechas en tablas): `tabular-nums` *
 
 ### 4.3 Insignias
 
-Las del lateral y la barra inferior salen de las mismas cifras de Inicio y de Operación diaria (`app.centroDeAlertas`), no de un cálculo aparte: Inicio, no disponibles hoy; Vencimientos, vencidos o faltantes; Operación diaria, pendientes (con su desglose en Partes y Novedades). Las dos primeras son cobre (críticas); las de Operación, grafito. Sin insignia si es 0. El nombre accesible de la insignia dice la cuenta con palabras («4 no disponibles hoy»); `white-space: nowrap` en la insignia y, con el texto al 200 %, la insignia baja de renglón en lugar de ensanchar la página.
+Las del lateral y la barra inferior salen de las mismas cifras de Inicio y de Operación diaria (`app.centroDeAlertas`), no de un cálculo aparte: Inicio, no disponibles hoy; Vencimientos, vencidos o faltantes; Operación diaria, pendientes (el total de las dos solapas, Partes y Novedades, que llevan su propia cuenta). Las dos primeras son cobre (críticas); las de Operación, grafito. Sin insignia si es 0. El nombre accesible de la insignia dice la cuenta con palabras («4 no disponibles hoy»); `white-space: nowrap` en la insignia y, con el texto al 200 %, la insignia baja de renglón en lugar de ensanchar la página.
 
 ### 4.4 Avisos globales
 

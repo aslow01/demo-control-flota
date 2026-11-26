@@ -13,8 +13,6 @@
     insignia?: { cantidad: number; texto: string; critica: boolean };
     /** `page` en la pantalla de la sección; `true` si la pantalla actual está dentro de la sección pero no es su inicio (la ficha, el parte). */
     actual?: "page" | "true";
-    /** Solo los usa el lateral (las solapas de Operación diaria). */
-    subitems?: ItemNavegacion[];
   }
 </script>
 

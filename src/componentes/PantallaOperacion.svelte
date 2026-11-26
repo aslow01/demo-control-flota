@@ -4,8 +4,9 @@
   // y, si no tiene nada, su estado vacío.
   //  - Partes: partes sin enviar, partes sin cerrar y unidades sin parte de ayer, y al pie «Así lo carga el conductor: Abrir el parte diario» (cambia la vista a Conductor).
   //    Novedades: críticas y abiertas, cada una con «Resolver».
+  //  - La hoja no repite el nombre de su solapa: el rótulo es la solapa (con su cuenta) y el título de la hoja solo lo oyen los lectores de pantalla (`tituloOculto`).
   //  - «Resolver» abre el diálogo compartido (`<DialogosDeDocumento>`, origen `operacion`). Al guardar bien la fila desaparece: lo que pasó se dice en la barra de la hoja y el foco
-  //    va al título de la hoja (5.17). Al cancelar, el foco vuelve al botón «Resolver». «Atrás» del navegador cierra el diálogo (lo decide el estado, no esta pantalla).
+  //    va a la solapa elegida, que es lo visible más cercano (5.17). Al cancelar, el foco vuelve al botón «Resolver». «Atrás» del navegador cierra el diálogo (lo decide el estado, no esta pantalla).
   //  - Cambiar de solapa es cambiar de ruta: el foco va al `h1`, como en cualquier pantalla.
   import type { TipoAlertaOperacion } from "../lib/dominio/alertas.ts";
   import type { GrupoDeSolapa } from "../lib/estado/centro-alertas.ts";
@@ -16,7 +17,7 @@
   import { dialogos } from "./dialogos-instancia.ts";
   import Icono from "./Icono.svelte";
   import OperacionFila from "./OperacionFila.svelte";
-  import OperacionSolapas from "./OperacionSolapas.svelte";
+  import OperacionSolapas, { idDeSolapa } from "./OperacionSolapas.svelte";
   import OperacionVacio from "./OperacionVacio.svelte";
   import Panel from "./Panel.svelte";
   import { TEXTO_ALERTAS, TEXTO_NAVEGACION } from "./textos-marco.ts";
@@ -27,8 +28,6 @@
     /** «Abrir el parte diario» (al pie de Partes): abre «Ver como» con el perfil Conductor ya elegido (lo resuelve el marco). */
     alAbrirParte: () => void;
   } = $props();
-
-  const ID_TITULO = "titulo-operacion";
 
   const op = $derived(app.centroDeAlertas?.operacionDiaria ?? null);
   const solapa = $derived(app.ruta.tipo === "operacion" ? app.ruta.solapa : "partes");
@@ -55,9 +54,9 @@
   function resolver(novedadId: string): void {
     dialogos.abrirResolver(novedadId, "operacion");
   }
-  /** Tras guardar, la fila que abrió el diálogo ya no existe: el foco va al título de la hoja, donde se lee lo que pasó. */
+  /** Tras guardar, la fila que abrió el diálogo ya no existe: el foco va a la solapa elegida, justo arriba de la hoja donde se lee lo que pasó. */
   function focoDestino(): HTMLElement | null {
-    return document.getElementById(ID_TITULO);
+    return document.getElementById(idDeSolapa(solapa));
   }
 </script>
 
@@ -73,7 +72,7 @@
 
       <div class="hoja">
         <Panel
-          id={ID_TITULO}
+          tituloOculto
           titulo={actual.rotulo}
           meta={actual.id === "partes" ? TEXTO_NAVEGACION.insignias.pendientes(actual.cantidad) : TEXTO_NAVEGACION.insignias.abiertas(actual.cantidad)}
           estado={mensaje.texto}

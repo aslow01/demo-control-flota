@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Lateral oscuro del escritorio (64 rem o más): marca y rótulo «Demo», los destinos (con Operación diaria desplegada en Partes y Novedades),
+  // Lateral oscuro del escritorio (64 rem o más): marca y rótulo «Demo», los destinos (Operación diaria es uno solo: sus solapas, Partes y Novedades, se eligen dentro de la pantalla)
   // y abajo «Cómo funciona», «Reiniciar demo», «Ver como» y «Volver al portafolio». Oscuro en claro y en oscuro (es el «turno» de la marca).
   // El destino de la pantalla actual sale del contenido como una pestaña de fichero (corte en diagonal) y además lleva una marca de 3 px y negrita:
   // en oscuro el recorte solo no alcanza contraste. Sin la demo cargada (arranque o error) solo muestra la marca.
@@ -35,22 +35,7 @@
     alVerComo: () => void;
   } = $props();
 
-  /** Un destino con solapas no es «la pantalla actual» por sí mismo: la solapa activa lo es. Él queda como «dentro de la sección». */
-  function actualDe(item: ItemNavegacion): "page" | "true" | undefined {
-    return item.subitems !== undefined && item.actual !== undefined ? "true" : item.actual;
-  }
 </script>
-
-{#snippet destino(it: ItemNavegacion, sub: boolean)}
-  <a class="item" class:sub href={it.href} aria-current={sub ? it.actual : actualDe(it)}>
-    {#if it.icono !== undefined}<Icono nombre={it.icono} />{/if}
-    <span>{it.texto}{it.textoOculto ?? ""}</span>
-    {#if it.insignia !== undefined}
-      <span class="insignia" class:neutra={!it.insignia.critica} aria-hidden="true">{it.insignia.cantidad}</span>
-      <span class="solo-lectores">, {it.insignia.texto}</span>
-    {/if}
-  </a>
-{/snippet}
 
 <!-- Un `div` y no un `aside`: esto no es un complemento del contenido (landmark `complementary`) sino la navegación principal, que ya es su propio `nav`. -->
 <div class="lateral">
@@ -68,14 +53,14 @@
       <ul>
         {#each items as it (it.id)}
           <li>
-            {@render destino(it, false)}
-            {#if it.subitems !== undefined}
-              <ul>
-                {#each it.subitems as sub (sub.id)}
-                  <li>{@render destino(sub, true)}</li>
-                {/each}
-              </ul>
-            {/if}
+            <a class="item" href={it.href} aria-current={it.actual}>
+              {#if it.icono !== undefined}<Icono nombre={it.icono} />{/if}
+              <span>{it.texto}{it.textoOculto ?? ""}</span>
+              {#if it.insignia !== undefined}
+                <span class="insignia" class:neutra={!it.insignia.critica} aria-hidden="true">{it.insignia.cantidad}</span>
+                <span class="solo-lectores">, {it.insignia.texto}</span>
+              {/if}
+            </a>
           </li>
         {/each}
       </ul>
@@ -178,12 +163,6 @@
     background: var(--c-lat-hover);
     color: var(--c-lat-tx);
     text-decoration: none;
-  }
-  .item.sub {
-    min-height: var(--alto-tactil);
-    padding-left: 2.75rem;
-    font-size: 0.875rem;
-    font-weight: 500;
   }
   .item .insignia {
     margin-left: auto;

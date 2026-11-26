@@ -109,15 +109,15 @@ Cifras medidas el 26/11/2026 en una computadora local:
 
 | Comprobación | Comando | Resultado |
 | --- | --- | --- |
-| Pruebas automáticas | `npm test` | 1.940 pruebas en 77 archivos, todas pasan |
-| Las mismas en tres zonas horarias | `npm run test:tz` | 1.940 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
+| Pruebas automáticas | `npm test` | 1.944 pruebas en 77 archivos, todas pasan |
+| Las mismas en tres zonas horarias | `npm run test:tz` | 1.944 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
 | Tipos | `npm run check` | 0 errores y 0 avisos en 376 archivos |
 | Contraste de la paleta | `npm run contraste` | 244 mediciones, 0 fallan |
 | Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 249 archivos con el archivo local de términos; 8 reglas sin él) |
-| Tamaño del JavaScript | `npm run peso` | 116.712 B de carga inicial (tope 120.000 B) y 143.221 B en total, con gzip |
+| Tamaño del JavaScript | `npm run peso` | 116.489 B de carga inicial (tope 120.000 B) y 143.001 B en total, con gzip |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
-**Qué son esas 1.940 pruebas.** Unas 90 (89, en los 6 archivos `tests/textos*.test.ts`) fijan textos de la interfaz: mensajes de error, nombres de pantallas y frases con cifras; existen para que un cambio de redacción o de umbral no deje a la pantalla diciendo otra cosa que las reglas. Las otras 1.851 prueban reglas de dominio, comandos, estado, persistencia, el generador de datos y las vistas derivadas; algunas de ellas también comprueban una frase que se muestra, y esas no se separaron de las demás.
+**Qué son esas 1.944 pruebas.** Unas 90 (89, en los 6 archivos `tests/textos*.test.ts`) fijan textos de la interfaz: mensajes de error, nombres de pantallas y frases con cifras; existen para que un cambio de redacción o de umbral no deje a la pantalla diciendo otra cosa que las reglas. Las otras 1.855 prueban reglas de dominio, comandos, estado, persistencia, el generador de datos y las vistas derivadas; algunas de ellas también comprueban una frase que se muestra, y esas no se separaron de las demás.
 
 También se miró la demo en un navegador (Chromium con Playwright, contra la compilación servida con la política de contenido real), en claro y oscuro, a 360 y 1280 px: sin desbordes horizontales y sin mensajes en la consola. Eso no se puede reproducir con un comando. La interfaz actual tuvo el 25/11/2026 una revisión de código, pruebas destructivas en Chromium y una auditoría de accesibilidad con mediciones propias (agentes de IA; no se corrió axe-core en la interfaz nueva), y lo que encontraron se corrigió y se volvió a mirar. No se probó en un Safari real, ni en Firefox, ni con un lector de pantalla (detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3). La integración continua ([GitHub Actions](https://github.com/aslow01/demo-control-flota/actions/workflows/ci.yml), `.github/workflows/ci.yml`) corre en cada `push` y en cada solicitud de cambios del repositorio público: tipos, pruebas en tres zonas horarias, compilación, peso, búsqueda de lo prohibido y `npm audit`. Las últimas ejecuciones sobre `main` que se consultaron el 26/11/2026 pasaron; las cifras de esta sección salen de la computadora local, no de ella.
 
