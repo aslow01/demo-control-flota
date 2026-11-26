@@ -63,10 +63,10 @@ npm run peso         # mide el JavaScript con gzip y falla si la carga inicial p
 - **Todo en el navegador:** datos en IndexedDB; si no se puede guardar, la demo sigue en memoria y avisa.
 - **Reglas en TypeScript puro** (`src/lib/dominio`), probadas en tres zonas horarias.
 - **Seguridad:** política de contenido estricta (`public/_headers`) con `connect-src 'none'`: la página no puede conectarse a ningún servidor ni cargar fuentes de otro sitio.
-- **Tamaño:** 115,6 KB de JavaScript de carga inicial comprimido con gzip (tope fijado: 120 KB) y 141,8 KB en total, porque la ficha, el parte y la pantalla del conductor se bajan al entrar (`npm run peso`, 25/11/2026). Las fuentes, aparte: unos 200 KB, que no cuentan como JavaScript.
+- **Tamaño:** 116,2 KB de JavaScript de carga inicial comprimido con gzip (tope fijado: 120 KB) y 142,6 KB en total, porque la ficha, el parte y la pantalla del conductor se bajan al entrar (`npm run peso`, 25/11/2026). Las fuentes, aparte: unos 200 KB, que no cuentan como JavaScript.
 - **Tipografías:** Bricolage Grotesque (títulos y cifras), Schibsted Grotesk (texto) y Red Hat Mono (patentes y números), alojadas en el repositorio, solo el subconjunto latino. Las tres son de código abierto con licencia SIL Open Font License 1.1; las licencias están en `src/estilos/fuentes/`.
-- **Movimiento:** una transición corta entre pantallas (View Transitions), la patente que viaja de la lista a su ficha y una cifra que cuenta al abrir. Con «reducir movimiento» activado en el sistema no hay ninguna de las tres; en los navegadores sin View Transitions entra una animación CSS equivalente.
-- **Accesibilidad:** teclado, foco visible, controles de 44 px, modo claro y oscuro, desde 320 px; el color nunca va solo (cada estado lleva forma y texto).
+- **Movimiento:** una transición corta entre pantallas (View Transitions), la patente que viaja de la lista a su ficha y una cifra que cuenta al abrir. Con «reducir movimiento» activado en el sistema no hay ninguna de las tres; en los navegadores sin View Transitions, y en Safari y los navegadores de iPhone (donde no se la usa: en el WebKit de Playwright tiraba abajo la página y no se pudo mirar en un Safari real), entra una animación CSS equivalente.
+- **Accesibilidad:** teclado, foco visible, modo claro y oscuro, desde 320 px; el color nunca va solo (cada estado lleva forma y texto). Los controles miden al menos 24 px, el mínimo de WCAG 2.2 (criterio 2.5.8): casi todos los botones y enlaces del celular, 44 px; en escritorio los botones chicos y las filas de las listas, 40 px, y los puntos de la regla de vencimientos, 26 px.
 
 ## Cómo se usó la IA
 
@@ -81,15 +81,15 @@ Cifras medidas el 25/11/2026:
 
 | Comprobación | Comando | Resultado |
 | --- | --- | --- |
-| Pruebas automáticas | `npm test` | 1.921 pruebas en 76 archivos, todas pasan |
-| Las mismas en tres zonas horarias | `npm run test:tz` | 1.921 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
-| Tipos | `npm run check` | 0 errores y 0 avisos en 374 archivos |
+| Pruebas automáticas | `npm test` | 1.935 pruebas en 77 archivos, todas pasan |
+| Las mismas en tres zonas horarias | `npm run test:tz` | 1.935 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
+| Tipos | `npm run check` | 0 errores y 0 avisos en 376 archivos |
 | Contraste de la paleta | `npm run contraste` | 240 mediciones, 0 fallan |
-| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 246 archivos con el archivo local de términos; 8 reglas sin él) |
-| Tamaño del JavaScript | `npm run peso` | 115.571 B de carga inicial (tope 120.000 B) y 141.847 B en total, con gzip |
+| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 248 archivos con el archivo local de términos; 8 reglas sin él) |
+| Tamaño del JavaScript | `npm run peso` | 116.175 B de carga inicial (tope 120.000 B) y 142.593 B en total, con gzip |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
-También se miró la demo en un navegador (Chromium con Playwright, contra la compilación servida con la política de contenido real), en claro y oscuro, a 360 y 1280 px: sin desbordes horizontales y sin mensajes en la consola. Eso no se puede reproducir con un comando. La revisión de accesibilidad con axe-core y las pruebas destructivas de la interfaz actual todavía no se repitieron: las de 22/11/2026 son de la interfaz anterior (detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3). La integración continua (GitHub Actions) corrió por primera vez el 25/11/2026, al publicar el repositorio, y pasó; las cifras de esta sección se midieron en una computadora local, no en ella.
+También se miró la demo en un navegador (Chromium con Playwright, contra la compilación servida con la política de contenido real), en claro y oscuro, a 360 y 1280 px: sin desbordes horizontales y sin mensajes en la consola. Eso no se puede reproducir con un comando. La interfaz actual tuvo el 25/11/2026 una revisión de código, pruebas destructivas en Chromium y una auditoría de accesibilidad con mediciones propias (agentes de IA; no se corrió axe-core en la interfaz nueva), y lo que encontraron se corrigió y se volvió a mirar. No se probó en un Safari real, ni en Firefox, ni con un lector de pantalla (detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3). La integración continua (GitHub Actions) corrió por primera vez el 25/11/2026, al publicar el repositorio, y pasó; las cifras de esta sección se midieron en una computadora local, no en ella.
 
 ## Límites conocidos
 

@@ -1,4 +1,4 @@
-// Mide los contrastes de la paleta «Turno» (docs/diseno-ui.md 3.3 y NOTAS.md del prototipo) leyendo los valores reales de src/estilos/tokens.css,
+// Mide los contrastes de la paleta «Turno» (docs/diseno-ui.md, sección 3.3) leyendo los valores reales de src/estilos/tokens.css,
 // en claro y en oscuro. Fórmula de luminancia relativa de WCAG 2.x. Sale con código 1 si algún par no llega a su mínimo.
 // Uso: npm run contraste   (con `-- --todo` muestra también los pares que pasan con holgura; por defecto lista todos igual).
 // Un par "justo" (menos de 0,3 por encima del mínimo) se marca con "~" para mirarlo antes de tocar la paleta.
@@ -131,7 +131,7 @@ par("Franja de baja con el cursor (neutro-r / superficie-2, B8)", "neutro-r", "s
 par("Foco / superficie", "foco", "superficie", 3);
 par("Foco / escritorio", "foco", "escritorio", 3);
 
-// ---------- Paleta «Turno» (E0-M, 25/11/2026): pares nuevos del prototipo aprobado. Los valores medidos de NOTAS.md tienen que dar lo mismo. ----------
+// ---------- Paleta «Turno» (E0-M, 25/11/2026): pares nuevos del prototipo aprobado. Los valores de docs/diseno-ui.md, sección 3.3, tienen que dar lo mismo. ----------
 // Enlaces azurita (texto) y su fondo más débil.
 for (const f of ["superficie", "superficie-2", "escritorio"]) par("Enlace azurita (texto / fondo)", "enlace", f, 4.5);
 par("Enlace azurita (texto / fila elegida)", "enlace", "acento-suave", 4.5);

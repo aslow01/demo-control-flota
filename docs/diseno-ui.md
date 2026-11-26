@@ -34,6 +34,8 @@ regla nueva **«Cerrar antes»** (estado 5 bis del inicio y pantalla E). Aplicad
 | Horizonte grande (5.6, variante completa de solo lectura) | Regla interactiva de 0 a 30 días (`HorizonteRegla.svelte`): un solo punto de tabulación, flechas, Inicio y Fin, detalle anunciado; las variantes mediana y mínima no cambiaron |
 | Filtros por radios con conteo (5.8) | Pastillas que son enlaces (`FiltrosEnlace.svelte`), con la forma del tono |
 | Diálogo centrado | Hoja inferior en el celular (5.17) |
+| Componentes `PantallaAlertas`, `BarraApp` y `SelectorPerfil` (citados en las secciones 14.2 y 14.3 y en el registro) | `PantallaInicio`, `PantallaVencimientos` y `PantallaOperacion`; `BarraSuperior`, `BarraInferior` y `Lateral`; `DialogoConductor` («Ver como»). Esos tres nombres ya no existen en el código |
+| Orden de la navegación | El mismo en el lateral y en la barra inferior: Inicio, Movilidades, Vencimientos, Operación diaria (y «Más» en la barra inferior) |
 
 Los **textos** de interfaz salen de `src/lib/dominio/textos.ts` y `src/componentes/textos-marco.ts`; la sección 7 es histórica. Lo que sigue vigente tal cual: componentes de formulario, parte diario (5.12 a 5.16, 6.5), reglas de foco, accesibilidad (9) y verificación (12), salvo las rutas.
 
@@ -1631,6 +1633,8 @@ Decididas el 22/11/2026 (revisión de la etapa 6, informe de revisión interno (
 ---
 
 ## 14. Cambios del 19/11/2026 y del 22/11/2026 — vista: resumen y tareas del maquetador
+
+> Es el historial de dos tandas de trabajo anteriores al porte «tipo app». Los componentes que nombra `PantallaAlertas`, `BarraApp` y `SelectorPerfil` hoy son los del mapa de la nota del 25/11/2026 (al principio de este documento); las líneas y las medidas de las tareas son las de entonces.
 
 ### 14.1 Qué cambió y dónde está
 

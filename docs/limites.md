@@ -17,6 +17,9 @@ Las cifras de este documento se midieron el 22/11/2026 salvo que se indique otra
 ## 2. Límites menores
 
 - **Pestañas desactualizadas:** si el navegador no tiene `BroadcastChannel`, una pestaña abierta antes no se entera de los cambios hechos en otra. Donde sí lo tiene, la pestaña vieja pasa a solo lectura hasta que se actualiza.
+- **Una demo abierta pasada la medianoche (hora de Argentina) cambia las cifras sin avisar:** Inicio recalcula con el día nuevo (más vencidos, más partes pendientes) y el aviso de que los datos de ejemplo son de otro día recién aparece al recargar.
+- **La búsqueda de Movilidades corta antes de 60 caracteres con letras acentuadas o «ñ»:** la dirección de la página no puede pasar de cierto largo una vez codificada, así que con muchas letras no ASCII queda en unos 25 caracteres, sin aviso.
+- **«Atrás» desde una ficha vuelve a Movilidades arriba de todo,** no al lugar donde estaba en la lista.
 - **Requisitos simplificados:** sin exenciones de revisión técnica ni clases de licencia (la licencia vale o no vale, sin distinguir qué categoría de vehículo habilita).
 - **Un registro de parte por unidad y por día, con dos envíos:** la revisión y el cierre son dos envíos sobre el mismo registro. No hay turnos ni relevos de conductor dentro del mismo día. Una jornada que cruza la medianoche pertenece a la fecha de su revisión, y la licencia se mira para esa fecha.
 - **«Sin cerrar» desde las 00:00:** el modelo es por fecha y no tiene turnos ni relevos. Un parte en uso de una jornada que cruza la medianoche figura como «sin cerrar» en las alertas desde las 00:00 del día siguiente, aunque su fecha siga siendo la de la revisión; la demo no distingue una jornada en curso de un cierre olvidado.
@@ -38,14 +41,19 @@ Las cifras de este documento se midieron el 22/11/2026 salvo que se indique otra
 
 **Texto al 200 %:** con el texto al 200 % y a 320 px de ancho, la página no se desplaza en horizontal. En la medición del registro previa a P21 (432 combinaciones) quedaba un solo caso, la etiqueta «Circuló con documentación vencida» del antiguo centro de alertas (hoy Inicio), que se partía dentro de una palabra; esa alerta ya no existe. La última medición (22/11/2026, 38 pantallas y estados por claro y oscuro por 320, 360, 768 y 1280 px, y 320 y 360 con el texto al 200 %: 456 combinaciones) dio 0 desbordes, 0 palabras partidas y 0 controles de menos de 44 px.
 
+**Revisión de la interfaz «tipo app» (25/11/2026, etapa 5):** tres revisiones hechas por agentes de IA (código, pruebas destructivas y accesibilidad) sobre la interfaz nueva; los informes son internos (no publicados). Las pruebas destructivas corrieron en Chromium con Playwright (a 360, 768, 1.024 y 1.280 px, con zoom del 200 %, en claro y oscuro, con teclado y con movimiento reducido) y el WebKit de Playwright solo de humo; la accesibilidad se midió con guiones propios (árbol de accesibilidad, contraste calculado sobre cada texto, tamaños de los controles, texto al 200 % y espaciado de texto de WCAG 1.4.12), no con axe-core. Los hallazgos se corrigieron en la misma etapa y se volvió a mirar lo corregido en Chromium. Dos aclaraciones sobre lo que se mide:
+
+- **Tamaño de los controles:** el mínimo que se cumple es el de WCAG 2.2 (criterio 2.5.8, 24 px). Casi todos los botones y enlaces miden 44 px en el celular, pero en escritorio los botones chicos y las filas de las listas miden 40 px, y los puntos de la regla de vencimientos, 26 px en todos los anchos. La frase «ninguno baja de 44 px» de más arriba es de la interfaz anterior.
+- **Safari y los navegadores de iPhone:** en el WebKit de Playwright para Windows la página se caía al navegar con View Transitions. No se pudo mirar en un Safari real; por eso en cualquier WebKit que no sea Chromium no se usa esa transición (entra la animación CSS de respaldo, que ahí sí se miró: las siete pantallas navegan sin caídas).
+
 **No se probó:**
 
-- axe-core y el zoom se midieron una sola vez, el 22/11/2026: no se repiten con cada cambio de interfaz;
+- axe-core: se midieron una sola vez el 22/11/2026 (interfaz anterior) y, con guiones propios, el 25/11/2026 (interfaz nueva); no se repiten con cada cambio;
 - un lector de pantalla real (los avisos llevan su rol, pero el anuncio real no se escuchó);
-- Firefox ni Safari;
-- una pantalla táctil real (solo emulación y clics de mouse);
-- las transiciones entre pantallas fuera de Chromium (View Transitions; en otros navegadores entra una animación CSS que no se miró), ni con un lector de pantalla: la cuenta de la cifra de Inicio deja el valor final en un texto aparte para lectores, pero no se escuchó;
-- axe-core, el texto al 200 % y las pruebas destructivas sobre la interfaz «tipo app»: pendientes de la revisión final del porte (etapa 5);
+- Firefox ni un Safari real (ni iPhone);
+- una pantalla táctil real (solo emulación y clics de mouse) ni el teclado virtual del celular;
+- las transiciones entre pantallas con un lector de pantalla: la cuenta de la cifra de Inicio deja el valor final en un texto aparte para lectores, pero no se escuchó;
+- Cloudflare Pages en producción (cabeceras reales y comportamiento del 404);
 - el modo de contraste alto de Windows (solo colores forzados emulados).
 
 **Integración continua:** el archivo `.github/workflows/ci.yml` corrió por primera vez el 25/11/2026, al publicar el repositorio, y pasó (según el README). Las cifras de este documento y del README salen de corridas locales, no de ella; desde el porte a la interfaz «tipo app» el flujo también controla el tope de JavaScript de la carga inicial (`npm run peso`).
