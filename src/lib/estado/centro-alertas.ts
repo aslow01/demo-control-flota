@@ -69,12 +69,12 @@ const TIPOS_OPERACION: readonly TipoAlertaOperacion[] = [
   "sin-parte",
   "novedad-abierta",
 ];
-/** En qué solapa de Operación diaria se ve cada tipo: los partes en Checklists y las novedades en Novedades. */
+/** En qué solapa de Operación diaria se ve cada tipo: los partes en Partes y las novedades en Novedades. */
 const SOLAPA_DE_TIPO: Record<TipoAlertaOperacion, SolapaDeOperacion> = {
   "novedad-critica": "novedades",
   "novedad-abierta": "novedades",
-  "parte-sin-enviar": "checklists",
-  "sin-parte": "checklists",
+  "parte-sin-enviar": "partes",
+  "sin-parte": "partes",
 };
 const TONO_GRUPO: Record<Grupo, "critico" | "semana" | "quincena" | "mes"> = { vencidos: "critico", "7": "semana", "15": "quincena", "30": "mes" };
 
@@ -352,7 +352,7 @@ export interface GrupoDeSolapa {
 
 export interface PanelSolapaOperacion {
   id: SolapaDeOperacion;
-  /** «Checklists» · «Novedades». */
+  /** «Partes» · «Novedades». */
   rotulo: string;
   /** Pendientes de la solapa: la cifra de su pestaña. */
   cantidad: number;
@@ -365,7 +365,7 @@ export interface PanelSolapaOperacion {
   vacio: { titulo: string; ayuda: string } | null;
 }
 
-/** Operación diaria de la pantalla nueva: el reparto del detalle en dos solapas (Checklists y Novedades). */
+/** Operación diaria de la pantalla nueva: el reparto del detalle en dos solapas (Partes y Novedades). */
 export interface OperacionDiaria {
   titulo: string;
   total: number;
@@ -774,7 +774,7 @@ function armarCifras(r: ResultadoAlertas, protagonista: Protagonista): CifrasDeI
     },
     vencidos: cifra(g.vencidos, TEXTO_INICIO.cifraVencidos, "critico", aHash({ tipo: "vencimientos", filtro: "vencidos" })),
     proximos: cifra(g["7"] + g["15"] + g["30"], TEXTO_INICIO.cifraProximos, "semana", aHash({ tipo: "vencimientos", filtro: "proximos" })),
-    partes: cifra(op["parte-sin-enviar"] + op["sin-parte"], TEXTO_INICIO.cifraPartes, null, aHash({ tipo: "operacion", solapa: "checklists" })),
+    partes: cifra(op["parte-sin-enviar"] + op["sin-parte"], TEXTO_INICIO.cifraPartes, null, aHash({ tipo: "operacion", solapa: "partes" })),
     novedadCritica: cifra(op["novedad-critica"], TEXTO_INICIO.cifraNovedadCritica(op["novedad-critica"]), "critico", aHash({ tipo: "operacion", solapa: "novedades" })),
   };
 }
@@ -806,7 +806,7 @@ function armarOperacionDiaria(estado: Estado, r: ResultadoAlertas, hoy: FechaCiv
   const total = r.resumen.totalOperacion;
   const solapa = (id: SolapaDeOperacion, cantidad: number, critica: boolean, grupos: GrupoDeSolapa[]): PanelSolapaOperacion => ({
     id,
-    rotulo: id === "checklists" ? NOMBRES_DE_PANTALLA.operacionChecklists : NOMBRES_DE_PANTALLA.operacionNovedades,
+    rotulo: id === "partes" ? NOMBRES_DE_PANTALLA.operacionPartes : NOMBRES_DE_PANTALLA.operacionNovedades,
     cantidad,
     critica,
     href: aHash({ tipo: "operacion", solapa: id }),
@@ -819,7 +819,7 @@ function armarOperacionDiaria(estado: Estado, r: ResultadoAlertas, hoy: FechaCiv
     rotuloTotal: textoPendientes(total),
     contexto: textoContextoOperacion(total, hoy),
     solapas: [
-      solapa("checklists", r.resumen.operacion["parte-sin-enviar"] + r.resumen.operacion["sin-parte"], false, [
+      solapa("partes", r.resumen.operacion["parte-sin-enviar"] + r.resumen.operacion["sin-parte"], false, [
         grupoDeSolapa("sin-enviar", tituloGrupoPartesIncompletos(1, 0), sinEnviar),
         grupoDeSolapa("sin-cerrar", tituloGrupoPartesIncompletos(0, 1), sinCerrar),
         grupoDeSolapa("sin-parte", TEXTO_GRUPO_OPERACION["sin-parte"], sinParte),

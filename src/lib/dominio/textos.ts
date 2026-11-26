@@ -401,14 +401,14 @@ export const RESUMEN_EVENTO = {
 
 /**
  * Cómo se llama cada pantalla (barra, título de la página, migas, «Volver a …»). Lo usa el enrutador desde la etapa E1; hasta entonces `nombreDePantalla` conserva los nombres viejos.
- * `operacion` es la sección («Operación diaria»); sus dos solapas son «Checklists» y «Novedades». `conductor` es «Hoy» y `conductorPartes`, «Mis partes».
+ * `operacion` es la sección («Operación diaria»); sus dos solapas son «Partes» y «Novedades». `conductor` es «Hoy» y `conductorPartes`, «Mis partes».
  */
 export const NOMBRES_DE_PANTALLA = {
   inicio: "Inicio",
   movilidades: "Movilidades",
   vencimientos: "Vencimientos",
   operacion: "Operación diaria",
-  operacionChecklists: "Checklists",
+  operacionPartes: "Partes",
   operacionNovedades: "Novedades",
   conductor: "Hoy",
   conductorPartes: "Mis partes",
@@ -711,7 +711,7 @@ export function textoContextoOperacion(pendientes: number, hoy: FechaCivil): str
 /** Estados vacíos de Vencimientos y de las dos solapas de Operación: qué pasó y qué va a aparecer ahí. */
 export const TEXTO_VACIO_PANTALLAS = {
   vencimientos: { titulo: "Nada vence en los próximos 30 días.", ayuda: "Cuando un documento entre en esa ventana, aparecerá aquí con su fecha." },
-  checklists: { titulo: "No hay partes pendientes.", ayuda: "Si un conductor deja un parte sin enviar o sin cerrar, o una unidad queda sin parte, aparecerá aquí." },
+  partes: { titulo: "No hay partes pendientes.", ayuda: "Si un conductor deja un parte sin enviar o sin cerrar, o una unidad queda sin parte, aparecerá aquí." },
   novedades: { titulo: "No hay novedades abiertas.", ayuda: "Las novedades que se cargan en un parte o en una ficha aparecerán aquí hasta que se resuelvan." },
   /** Un grupo sin filas dentro de una lista con otros grupos (por ejemplo, «Partes sin cerrar (0)»). */
   grupoSinFilas: "Ninguno.",

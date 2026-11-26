@@ -7,19 +7,19 @@ export interface CuentasDeNavegacion {
   noDisponibles: number;
   /** Vencimientos: vencidos o faltantes. */
   vencidos: number;
-  /** Operación diaria, solapa Checklists: partes sin enviar o sin cerrar y unidades sin parte. */
-  checklists: number;
+  /** Operación diaria, solapa Partes: partes sin enviar o sin cerrar y unidades sin parte. */
+  partes: number;
   /** Operación diaria, solapa Novedades: críticas y abiertas. */
   novedades: number;
 }
 
 export function cuentasDeNavegacion(centro: CentroDeAlertas | null): CuentasDeNavegacion {
-  if (centro === null) return { noDisponibles: 0, vencidos: 0, checklists: 0, novedades: 0 };
-  const [checklists, novedades] = centro.operacionDiaria.solapas;
+  if (centro === null) return { noDisponibles: 0, vencidos: 0, partes: 0, novedades: 0 };
+  const [partes, novedades] = centro.operacionDiaria.solapas;
   return {
     noDisponibles: centro.cifras.noDisponibles.valor,
     vencidos: centro.cifras.vencidos.valor,
-    checklists: checklists.cantidad,
+    partes: partes.cantidad,
     novedades: novedades.cantidad,
   };
 }

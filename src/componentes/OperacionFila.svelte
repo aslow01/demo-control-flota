@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Una fila de Operación diaria (Checklists o Novedades): riel del color del estado, etiqueta, el texto de la alerta, la unidad (chapa que lleva a su ficha) y a la derecha la acción:
+  // Una fila de Operación diaria (Partes o Novedades): riel del color del estado, etiqueta, el texto de la alerta, la unidad (chapa que lleva a su ficha) y a la derecha la acción:
   // «Resolver» (botón: abre el diálogo), «Abrir parte» o «Ver ficha» (enlaces). Todo lo arma `FilaOperacion` (`centro-alertas.ts`); acá solo se dibuja.
   //  - La fecha solo se muestra en las novedades: en los partes ya está dentro del texto de la alerta («Parte del 24/11/2026 sin enviar»).
   //  - Con poco ancho (el interior de la hoja mide menos de 30 rem, también con el texto agrandado) la acción baja a su renglón, debajo del texto.

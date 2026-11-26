@@ -130,7 +130,8 @@ describe("rutas", () => {
       ["#/alertas", "#/inicio", { tipo: "inicio" }],
       ["#/flota", "#/movilidades", { tipo: "movilidades" }],
       ["#/flota?filtro=de-baja", "#/movilidades?filtro=baja", { tipo: "movilidades", filtro: "de-baja" }],
-      ["#/operacion", "#/operacion/checklists", { tipo: "operacion", solapa: "checklists" }],
+      ["#/operacion", "#/operacion/partes", { tipo: "operacion", solapa: "partes" }],
+      ["#/operacion/checklists", "#/operacion/partes", { tipo: "operacion", solapa: "partes" }],
     ] as const) {
       const { app, ubicacion } = armar();
       ubicacion.hash = viejo;
@@ -260,7 +261,7 @@ describe("pantalla y consulta: filtrar o escribir en el buscador no sube la pág
   it("cambiar de pantalla sí sube versionDePantalla (también la solapa de Operación, la ficha y el parte)", async () => {
     const { app, ubicacion } = await iniciada();
     const v0 = app.versionDePantalla;
-    ubicacion.irA("#/operacion/checklists");
+    ubicacion.irA("#/operacion/partes");
     ubicacion.irA("#/operacion/novedades");
     ubicacion.irA("#/unidad/ZK214BD");
     ubicacion.irA("#/unidad/ZKB482");
@@ -341,7 +342,7 @@ describe("ruta padre («Atrás» y migas)", () => {
     ubicacion.irA("#/unidad/ZKB482");
     expect(app.padre).toEqual({ tipo: "movilidades", filtro: "de-baja" });
     ubicacion.irA("#/parte/ZK214BD/2026-11-17");
-    expect(app.padre).toEqual({ tipo: "operacion", solapa: "checklists" });
+    expect(app.padre).toEqual({ tipo: "operacion", solapa: "partes" });
     ubicacion.irA("#/inicio");
     expect(app.padre).toBeNull();
   });

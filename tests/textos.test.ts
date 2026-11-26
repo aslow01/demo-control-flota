@@ -154,7 +154,7 @@ describe("R3: textos de Inicio, Vencimientos y Operación diaria", () => {
 
   it("estados vacíos: dicen qué pasó y qué va a aparecer ahí", () => {
     expect(TEXTO_VACIO_PANTALLAS.vencimientos.titulo).toBe("Nada vence en los próximos 30 días.");
-    expect(TEXTO_VACIO_PANTALLAS.checklists.titulo).toBe("No hay partes pendientes.");
+    expect(TEXTO_VACIO_PANTALLAS.partes.titulo).toBe("No hay partes pendientes.");
     expect(TEXTO_VACIO_PANTALLAS.novedades.titulo).toBe("No hay novedades abiertas.");
     expect(TEXTO_VACIO_PANTALLAS.grupoSinFilas).toBe("Ninguno.");
     expect(TEXTO_INICIO.noDisponiblesVacio.ayuda).toBe("Ninguna está bloqueada por documentos ni fuera de servicio.");

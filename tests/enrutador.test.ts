@@ -24,7 +24,7 @@ describe("enrutador: rutas válidas (docs/diseno-ui.md, sección 2, con las ruta
     ["#/inicio", { tipo: "inicio" }],
     ["#/movilidades", { tipo: "movilidades" }],
     ["#/vencimientos", { tipo: "vencimientos" }],
-    ["#/operacion/checklists", { tipo: "operacion", solapa: "checklists" }],
+    ["#/operacion/partes", { tipo: "operacion", solapa: "partes" }],
     ["#/operacion/novedades", { tipo: "operacion", solapa: "novedades" }],
     ["#/conductor", { tipo: "conductor" }],
     ["#/conductor/partes", { tipo: "mis-partes" }],
@@ -60,8 +60,11 @@ describe("enrutador: alias de las rutas viejas (un enlace guardado sigue abriend
     ["#/flota/", { tipo: "movilidades" }],
     ["#/flota?filtro=no-disponibles", { tipo: "movilidades", filtro: "no-disponibles" }],
     ["#/flota?filtro=pueden-salir", { tipo: "movilidades", filtro: "pueden-salir" }],
-    ["#/operacion", { tipo: "operacion", solapa: "checklists" }],
-    ["#/operacion/", { tipo: "operacion", solapa: "checklists" }],
+    ["#/operacion", { tipo: "operacion", solapa: "partes" }],
+    ["#/operacion/", { tipo: "operacion", solapa: "partes" }],
+    // La solapa «Partes» se llamó «Checklists»: el enlace guardado sigue abriendo la misma pantalla.
+    ["#/operacion/checklists", { tipo: "operacion", solapa: "partes" }],
+    ["#/operacion/checklists/", { tipo: "operacion", solapa: "partes" }],
   ] satisfies [string, Ruta][])("%s", (hash, ruta) => {
     expect(parsearHash(hash)).toEqual(ruta);
   });
@@ -70,7 +73,8 @@ describe("enrutador: alias de las rutas viejas (un enlace guardado sigue abriend
     expect(aHash(parsearHash("#/alertas") as Ruta)).toBe("#/inicio");
     expect(aHash(parsearHash("#/flota") as Ruta)).toBe("#/movilidades");
     expect(aHash(parsearHash("#/flota?filtro=de-baja") as Ruta)).toBe("#/movilidades?filtro=baja");
-    expect(aHash(parsearHash("#/operacion") as Ruta)).toBe("#/operacion/checklists");
+    expect(aHash(parsearHash("#/operacion") as Ruta)).toBe("#/operacion/partes");
+    expect(aHash(parsearHash("#/operacion/checklists") as Ruta)).toBe("#/operacion/partes");
   });
 });
 
@@ -112,6 +116,8 @@ describe("enrutador: rutas inválidas (nunca una pantalla en blanco ni una excep
     "#/vencimientos/x",
     "#/operacion/otra",
     "#/operacion/checklists/x",
+    "#/operacion/partes/x",
+    "#/operacion/Checklists-",
     "#/conductor/otra",
     "#/conductor/partes/x",
     "#/mas/x",
@@ -156,6 +162,7 @@ describe("enrutador: rutas inválidas (nunca una pantalla en blanco ni una excep
       "#/conductor?x=1",
       "#/conductor/partes?x=1",
       "#/operacion/checklists?filtro=vencidos",
+      "#/operacion/partes?filtro=vencidos",
       "#/operacion?x=1",
       "#/mas?q=a",
       "#/parte/ZK214BD/2026-11-18?x=1",
@@ -170,7 +177,7 @@ describe("enrutador: ida y vuelta", () => {
     { tipo: "inicio" },
     { tipo: "movilidades" },
     { tipo: "vencimientos" },
-    { tipo: "operacion", solapa: "checklists" },
+    { tipo: "operacion", solapa: "partes" },
     { tipo: "operacion", solapa: "novedades" },
     { tipo: "conductor" },
     { tipo: "mis-partes" },
@@ -190,7 +197,7 @@ describe("enrutador: ida y vuelta", () => {
       "#/inicio",
       "#/movilidades",
       "#/vencimientos",
-      "#/operacion/checklists",
+      "#/operacion/partes",
       "#/operacion/novedades",
       "#/conductor",
       "#/conductor/partes",
@@ -233,7 +240,7 @@ describe("enrutador: ruta por defecto y perfil", () => {
     expect(resolverRuta("#/conductor/partes", CONDUCTOR)).toEqual({ tipo: "mis-partes" });
     expect(resolverRuta("#/parte/ZK214BD/2026-11-18", CONDUCTOR)).toEqual({ tipo: "parte", patente: "ZK214BD", fecha: "2026-11-18" });
     expect(resolverRuta("#/mas", CONDUCTOR)).toEqual({ tipo: "mas" });
-    for (const h of ["#/inicio", "#/alertas", "#/flota", "#/movilidades", "#/vencimientos", "#/operacion/checklists", "#/operacion", "#/unidad/ZK214BD"]) {
+    for (const h of ["#/inicio", "#/alertas", "#/flota", "#/movilidades", "#/vencimientos", "#/operacion/partes", "#/operacion/checklists", "#/operacion", "#/unidad/ZK214BD"]) {
       expect(resolverRuta(h, CONDUCTOR)).toEqual({ tipo: "conductor" });
     }
   });
@@ -250,7 +257,7 @@ describe("enrutador: nombre y título de la pantalla (NOMBRES_DE_PANTALLA)", () 
       [{ tipo: "inicio" }, "Inicio"],
       [{ tipo: "movilidades" }, "Movilidades"],
       [{ tipo: "vencimientos" }, "Vencimientos"],
-      [{ tipo: "operacion", solapa: "checklists" }, "Operación diaria"],
+      [{ tipo: "operacion", solapa: "partes" }, "Operación diaria"],
       [{ tipo: "operacion", solapa: "novedades" }, "Operación diaria"],
       [{ tipo: "conductor" }, "Hoy"],
       [{ tipo: "mis-partes" }, "Mis partes"],
@@ -268,7 +275,7 @@ describe("enrutador: nombre y título de la pantalla (NOMBRES_DE_PANTALLA)", () 
   it("'{Pantalla} · Control de flota (demo)'; en Operación el título dice la solapa", () => {
     expect(tituloDePagina({ tipo: "inicio" })).toBe("Inicio · Control de flota (demo)");
     expect(tituloDePagina({ tipo: "movilidades" })).toBe("Movilidades · Control de flota (demo)");
-    expect(tituloDePagina({ tipo: "operacion", solapa: "checklists" })).toBe("Checklists · Control de flota (demo)");
+    expect(tituloDePagina({ tipo: "operacion", solapa: "partes" })).toBe("Partes · Control de flota (demo)");
     expect(tituloDePagina({ tipo: "operacion", solapa: "novedades" })).toBe("Novedades · Control de flota (demo)");
     expect(tituloDePagina({ tipo: "conductor" })).toBe("Hoy · Control de flota (demo)");
     expect(tituloDePagina({ tipo: "unidad", patente: "ZK214BD" })).toBe("Unidad ZK 214 BD · Control de flota (demo)");
@@ -436,7 +443,7 @@ describe("enrutador: «pantalla» y «consulta» son cosas distintas (riesgo R3:
       { tipo: "inicio" },
       { tipo: "movilidades" },
       { tipo: "vencimientos" },
-      { tipo: "operacion", solapa: "checklists" },
+      { tipo: "operacion", solapa: "partes" },
       { tipo: "operacion", solapa: "novedades" },
       { tipo: "conductor" },
       { tipo: "mis-partes" },
@@ -469,7 +476,7 @@ describe("enrutador: ruta padre (para «Atrás» y las migas)", () => {
 
   it("el parte vuelve a Operación diaria (encargado) o a Hoy (conductor)", () => {
     const parte: Ruta = { tipo: "parte", patente: "ZK214BD", fecha: "2026-11-18" };
-    expect(rutaPadre(parte, ENCARGADO)).toEqual({ tipo: "operacion", solapa: "checklists" });
+    expect(rutaPadre(parte, ENCARGADO)).toEqual({ tipo: "operacion", solapa: "partes" });
     expect(rutaPadre(parte, CONDUCTOR)).toEqual({ tipo: "conductor" });
   });
 
@@ -506,7 +513,7 @@ describe("enrutador: ruta padre (para «Atrás» y las migas)", () => {
       { nombre: "Unidad ZK 214 BD", ruta: null },
     ]);
     expect(migasDe({ tipo: "parte", patente: "ZK214BD", fecha: "2026-11-18" }, ENCARGADO)).toEqual([
-      { nombre: "Operación diaria", ruta: { tipo: "operacion", solapa: "checklists" } },
+      { nombre: "Operación diaria", ruta: { tipo: "operacion", solapa: "partes" } },
       { nombre: "Parte diario", ruta: null },
     ]);
     expect(migasDe({ tipo: "parte", patente: "ZK214BD", fecha: "2026-11-18" }, CONDUCTOR)).toEqual([
@@ -514,8 +521,12 @@ describe("enrutador: ruta padre (para «Atrás» y las migas)", () => {
       { nombre: "Parte diario", ruta: null },
     ]);
     expect(migasDe({ tipo: "operacion", solapa: "novedades" }, ENCARGADO)).toEqual([
-      { nombre: "Operación diaria", ruta: { tipo: "operacion", solapa: "checklists" } },
+      { nombre: "Operación diaria", ruta: { tipo: "operacion", solapa: "partes" } },
       { nombre: "Novedades", ruta: null },
+    ]);
+    expect(migasDe({ tipo: "operacion", solapa: "partes" }, ENCARGADO)).toEqual([
+      { nombre: "Operación diaria", ruta: { tipo: "operacion", solapa: "partes" } },
+      { nombre: "Partes", ruta: null },
     ]);
   });
 

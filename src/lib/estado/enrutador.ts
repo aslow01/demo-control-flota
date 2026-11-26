@@ -5,7 +5,7 @@
 // Dos ideas que importan para la vista:
 //  - La «pantalla» (`clavePantalla`) es a dónde se llegó: cambia el foco al título y sube la página. La «consulta»
 //    (`claveConsulta`: `?filtro=` y `&q=`) es lo que se muestra dentro de esa pantalla: no mueve ni foco ni desplazamiento.
-//  - Las rutas viejas (`#/alertas`, `#/flota…`, `#/operacion`) se entienden y se reescriben a la forma nueva.
+//  - Las rutas viejas (`#/alertas`, `#/flota…`, `#/operacion`, `#/operacion/checklists`) se entienden y se reescriben a la forma nueva.
 
 import { formatearPatente, formatoDePatente, normalizarPatente } from "../dominio/patente.ts";
 import { formatearFechaConDia, parsearFechaCivil } from "../dominio/fechas.ts";
@@ -33,9 +33,11 @@ const FILTRO_EN_RUTA: Record<FiltroDeFlotaEnRuta, string> = {
 export const FILTROS_DE_VENCIMIENTOS_EN_RUTA = ["vencidos", "proximos", "7", "15", "30"] as const;
 export type FiltroDeVencimientosEnRuta = (typeof FILTROS_DE_VENCIMIENTOS_EN_RUTA)[number];
 
-/** Las dos solapas de Operación diaria (`#/operacion/checklists`, `#/operacion/novedades`). */
-export const SOLAPAS_DE_OPERACION = ["checklists", "novedades"] as const;
+/** Las dos solapas de Operación diaria (`#/operacion/partes`, `#/operacion/novedades`). */
+export const SOLAPAS_DE_OPERACION = ["partes", "novedades"] as const;
 export type SolapaDeOperacion = (typeof SOLAPAS_DE_OPERACION)[number];
+/** Cómo se llamaba antes la solapa «Partes» en la dirección (`#/operacion/checklists`): se sigue entendiendo y se reescribe a la nueva. */
+const SOLAPA_VIEJA_DE_PARTES = "checklists";
 
 export type Ruta =
   | { tipo: "inicio" }
@@ -135,13 +137,13 @@ export function parsearHash(hash: string, hoy?: FechaCivil): RutaLeida {
       if (pantalla === "inicio" || pantalla === "alertas") return { tipo: "inicio" };
       if (pantalla === "movilidades" || pantalla === "flota") return rutaDeMovilidades(consulta);
       if (pantalla === "vencimientos") return rutaDeVencimientos(consulta);
-      if (pantalla === "operacion") return { tipo: "operacion", solapa: "checklists" };
+      if (pantalla === "operacion") return { tipo: "operacion", solapa: "partes" };
       if (pantalla === "conductor") return { tipo: "conductor" };
       if (pantalla === "mas") return { tipo: "mas" };
       return DESCONOCIDA;
     case 2: {
       if (pantalla === "operacion") {
-        const solapa = SOLAPAS_DE_OPERACION.find((s) => s === a);
+        const solapa = SOLAPAS_DE_OPERACION.find((s) => s === (a === SOLAPA_VIEJA_DE_PARTES ? "partes" : a));
         return solapa === undefined ? DESCONOCIDA : { tipo: "operacion", solapa };
       }
       if (pantalla === "conductor") return a === "partes" ? { tipo: "mis-partes" } : DESCONOCIDA;
@@ -251,7 +253,7 @@ export function rutaPadre(ruta: Ruta, perfil: Perfil): Ruta | null {
     case "unidad":
       return { tipo: "movilidades" };
     case "parte":
-      return perfil.tipo === "conductor" ? { tipo: "conductor" } : { tipo: "operacion", solapa: "checklists" };
+      return perfil.tipo === "conductor" ? { tipo: "conductor" } : { tipo: "operacion", solapa: "partes" };
     default:
       return null;
   }
@@ -277,7 +279,7 @@ export function migasDe(ruta: Ruta, perfil: Perfil): Miga[] {
     }
     case "operacion":
       return [
-        { nombre: NOMBRES.operacion, ruta: { tipo: "operacion", solapa: "checklists" } },
+        { nombre: NOMBRES.operacion, ruta: { tipo: "operacion", solapa: "partes" } },
         { nombre: nombreDeSolapa(ruta.solapa), ruta: null },
       ];
     default:
@@ -288,7 +290,7 @@ export function migasDe(ruta: Ruta, perfil: Perfil): Miga[] {
 const SUFIJO_TITULO = "Control de flota (demo)";
 
 function nombreDeSolapa(solapa: SolapaDeOperacion): string {
-  return solapa === "checklists" ? NOMBRES.operacionChecklists : NOMBRES.operacionNovedades;
+  return solapa === "partes" ? NOMBRES.operacionPartes : NOMBRES.operacionNovedades;
 }
 
 /** El nombre de la pantalla, sin el sufijo del título: lo que dice el `h1` de la barra y el aviso de cambio de pantalla. */

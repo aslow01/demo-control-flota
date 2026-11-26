@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Las dos solapas de Operación diaria (Checklists y Novedades): son ENLACES (cada una es una ruta, `#/operacion/checklists` y `#/operacion/novedades`), no pestañas con roles de
+  // Las dos solapas de Operación diaria (Partes y Novedades): son ENLACES (cada una es una ruta, `#/operacion/partes` y `#/operacion/novedades`), no pestañas con roles de
   // `tablist`: la elegida lleva `aria-current="page"`, Tab recorre las dos y Enter navega. Pestañas de archivo como las de la ficha: la elegida es del color de la hoja, lleva una barra
   // de tinta arriba y el corte en diagonal a la derecha. El número es la cuenta de pendientes (en tono crítico si hay una novedad crítica); un lector de pantalla lo oye con palabras.
   import type { PanelSolapaOperacion } from "../lib/estado/centro-alertas.ts";
@@ -17,9 +17,9 @@
     activa: PanelSolapaOperacion["id"];
   } = $props();
 
-  /** «3 pendientes» (Checklists) · «2 abiertas» (Novedades): lo mismo que dicen las insignias de la navegación. */
+  /** «3 pendientes» (Partes) · «2 abiertas» (Novedades): lo mismo que dicen las insignias de la navegación. */
   function cuenta(s: PanelSolapaOperacion): string {
-    return s.id === "checklists" ? TEXTO_NAVEGACION.insignias.pendientes(s.cantidad) : TEXTO_NAVEGACION.insignias.abiertas(s.cantidad);
+    return s.id === "partes" ? TEXTO_NAVEGACION.insignias.pendientes(s.cantidad) : TEXTO_NAVEGACION.insignias.abiertas(s.cantidad);
   }
 </script>
 

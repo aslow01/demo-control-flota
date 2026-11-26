@@ -43,8 +43,8 @@ describe("cifras de Inicio (3.5) con el ejemplo", () => {
     expect(f.proximos.valor).toBe(r.resumen.porGrupo["7"] + r.resumen.porGrupo["15"] + r.resumen.porGrupo["30"]);
   });
 
-  it("«Partes pendientes»: 3 (1 sin enviar y 2 unidades sin parte), neutra, lleva a Checklists", () => {
-    expect(f.partes).toEqual({ valor: 3, rotulo: "Partes pendientes", tono: "neutro", forma: null, href: "#/operacion/checklists" });
+  it("«Partes pendientes»: 3 (1 sin enviar y 2 unidades sin parte), neutra, lleva a la solapa Partes", () => {
+    expect(f.partes).toEqual({ valor: 3, rotulo: "Partes pendientes", tono: "neutro", forma: null, href: "#/operacion/partes" });
     expect(f.partes.valor).toBe(r.resumen.operacion["parte-sin-enviar"] + r.resumen.operacion["sin-parte"]);
   });
 
@@ -55,7 +55,7 @@ describe("cifras de Inicio (3.5) con el ejemplo", () => {
   it("las cifras coinciden con las listas a las que llevan", () => {
     expect(f.vencidos.valor).toBe(c.vencimientos.grupos.find((g) => g.id === "vencidos")?.filas.length);
     expect(f.proximos.valor).toBe(c.vencimientos.grupos.filter((g) => g.id !== "vencidos").reduce((n, g) => n + g.filas.length, 0));
-    expect(f.partes.valor).toBe(c.operacionDiaria.solapas.find((s) => s.id === "checklists")?.cantidad);
+    expect(f.partes.valor).toBe(c.operacionDiaria.solapas.find((s) => s.id === "partes")?.cantidad);
     expect(f.novedadCritica.valor).toBe(c.operacionDiaria.solapas.find((s) => s.id === "novedades")?.grupos.find((g) => g.id === "criticas")?.cantidad);
     expect(f.vencidos.valor + f.proximos.valor).toBe(c.vencimientos.total);
   });
@@ -104,7 +104,7 @@ describe("cifras de Inicio con una unidad que no existe más o datos raros", () 
 
 describe("Operación diaria en dos solapas (3.6) con el ejemplo", () => {
   const op = c.operacionDiaria;
-  const checklists = op.solapas[0]!;
+  const partes = op.solapas[0]!;
   const novedades = op.solapas[1]!;
 
   it("el total, su rótulo y la línea de contexto con la fecha", () => {
@@ -114,23 +114,23 @@ describe("Operación diaria en dos solapas (3.6) con el ejemplo", () => {
     expect(op.total).toBe(c.operacion.total);
   });
 
-  it("son dos, Checklists y Novedades, en ese orden, cada una con su enlace y su cuenta", () => {
-    expect(op.solapas.map((s) => s.id)).toEqual(["checklists", "novedades"]);
-    expect(checklists).toMatchObject({ rotulo: "Checklists", cantidad: 3, critica: false, href: "#/operacion/checklists", vacio: null });
+  it("son dos, Partes y Novedades, en ese orden, cada una con su enlace y su cuenta", () => {
+    expect(op.solapas.map((s) => s.id)).toEqual(["partes", "novedades"]);
+    expect(partes).toMatchObject({ rotulo: "Partes", cantidad: 3, critica: false, href: "#/operacion/partes", vacio: null });
     expect(novedades).toMatchObject({ rotulo: "Novedades", cantidad: 2, critica: true, href: "#/operacion/novedades", vacio: null });
-    expect(checklists.cantidad + novedades.cantidad).toBe(op.total);
+    expect(partes.cantidad + novedades.cantidad).toBe(op.total);
   });
 
-  it("Checklists reparte en sin enviar (borrador), sin cerrar (en uso) y unidades sin parte, y los tres grupos siempre están", () => {
-    expect(checklists.grupos.map((g) => [g.id, g.titulo, g.cantidad])).toEqual([
+  it("Partes reparte en sin enviar (borrador), sin cerrar (en uso) y unidades sin parte, y los tres grupos siempre están", () => {
+    expect(partes.grupos.map((g) => [g.id, g.titulo, g.cantidad])).toEqual([
       ["sin-enviar", "Partes sin enviar", 1],
       ["sin-cerrar", "Partes sin cerrar", 0],
       ["sin-parte", "Unidades sin parte de ayer", 2],
     ]);
-    expect(checklists.grupos.map((g) => g.tituloConCantidad)).toEqual(["Partes sin enviar (1)", "Partes sin cerrar (0)", "Unidades sin parte de ayer (2)"]);
-    expect(checklists.grupos.map((g) => g.filas.length)).toEqual([1, 0, 2]);
-    expect(checklists.grupos[1]?.sinFilas).toBe("Ninguno.");
-    expect(checklists.grupos[0]?.sinFilas).toBeNull();
+    expect(partes.grupos.map((g) => g.tituloConCantidad)).toEqual(["Partes sin enviar (1)", "Partes sin cerrar (0)", "Unidades sin parte de ayer (2)"]);
+    expect(partes.grupos.map((g) => g.filas.length)).toEqual([1, 0, 2]);
+    expect(partes.grupos[1]?.sinFilas).toBe("Ninguno.");
+    expect(partes.grupos[0]?.sinFilas).toBeNull();
   });
 
   it("Novedades reparte en críticas y abiertas", () => {
@@ -149,8 +149,8 @@ describe("Operación diaria en dos solapas (3.6) con el ejemplo", () => {
   });
 
   it("las acciones: abrir el parte sin enviar, ver la ficha de la unidad sin parte, resolver una novedad", () => {
-    expect(checklists.grupos[0]?.filas[0]?.accion).toMatchObject({ tipo: "abrir-parte", etiqueta: "Abrir parte" });
-    expect(checklists.grupos[2]?.filas.map((x) => x.accion.tipo)).toEqual(["ver-ficha", "ver-ficha"]);
+    expect(partes.grupos[0]?.filas[0]?.accion).toMatchObject({ tipo: "abrir-parte", etiqueta: "Abrir parte" });
+    expect(partes.grupos[2]?.filas.map((x) => x.accion.tipo)).toEqual(["ver-ficha", "ver-ficha"]);
     expect(novedades.grupos.flatMap((g) => g.filas).map((x) => x.accion.tipo)).toEqual(["resolver", "resolver"]);
   });
 
@@ -382,8 +382,8 @@ describe("filas de Inicio: estado de cada unidad y destino de cada fila de opera
   it("cada fila del panel de operación lleva a la solapa de su tipo", () => {
     expect(c.operacion.filas.map((f) => [f.tipo, f.solapa, f.href])).toEqual([
       ["novedad-critica", "novedades", "#/operacion/novedades"],
-      ["parte-sin-enviar", "checklists", "#/operacion/checklists"],
-      ["sin-parte", "checklists", "#/operacion/checklists"],
+      ["parte-sin-enviar", "partes", "#/operacion/partes"],
+      ["sin-parte", "partes", "#/operacion/partes"],
       ["novedad-abierta", "novedades", "#/operacion/novedades"],
     ]);
   });
@@ -393,8 +393,8 @@ describe("filas de Inicio: estado de cada unidad y destino de cada fila de opera
       const s = c.operacionDiaria.solapas.find((x) => x.id === f.solapa);
       expect(s?.href, f.tipo).toBe(f.href);
     }
-    const porSolapa = (id: "checklists" | "novedades") => c.operacion.filas.filter((f) => f.solapa === id).reduce((n, f) => n + f.cifra, 0);
-    expect(porSolapa("checklists")).toBe(c.operacionDiaria.solapas[0].cantidad);
+    const porSolapa = (id: "partes" | "novedades") => c.operacion.filas.filter((f) => f.solapa === id).reduce((n, f) => n + f.cifra, 0);
+    expect(porSolapa("partes")).toBe(c.operacionDiaria.solapas[0].cantidad);
     expect(porSolapa("novedades")).toBe(c.operacionDiaria.solapas[1].cantidad);
   });
 });

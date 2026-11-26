@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Lateral oscuro del escritorio (64 rem o más): marca y rótulo «Demo», los destinos (con Operación diaria desplegada en Checklists y Novedades),
+  // Lateral oscuro del escritorio (64 rem o más): marca y rótulo «Demo», los destinos (con Operación diaria desplegada en Partes y Novedades),
   // y abajo «Cómo funciona», «Reiniciar demo», «Ver como» y «Volver al portafolio». Oscuro en claro y en oscuro (es el «turno» de la marca).
   // El destino de la pantalla actual sale del contenido como una pestaña de fichero (corte en diagonal) y además lleva una marca de 3 px y negrita:
   // en oscuro el recorte solo no alcanza contraste. Sin la demo cargada (arranque o error) solo muestra la marca.

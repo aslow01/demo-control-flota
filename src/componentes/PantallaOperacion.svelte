@@ -1,8 +1,8 @@
 <script lang="ts">
-  // Operación diaria (`#/operacion/checklists` y `#/operacion/novedades`): título y línea de contexto, las dos solapas (enlaces, una por ruta) y la hoja de la solapa elegida.
+  // Operación diaria (`#/operacion/partes` y `#/operacion/novedades`): título y línea de contexto, las dos solapas (enlaces, una por ruta) y la hoja de la solapa elegida.
   // No tiene reglas de negocio: todo lo arma `app.centroDeAlertas.operacionDiaria` (`centro-alertas.ts`, 3.6): cada solapa trae sus grupos (también los vacíos, con «Ninguno.»)
   // y, si no tiene nada, su estado vacío.
-  //  - Checklists: partes sin enviar, partes sin cerrar y unidades sin parte de ayer, y al pie «Así lo carga el conductor: Abrir el parte diario» (cambia la vista a Conductor).
+  //  - Partes: partes sin enviar, partes sin cerrar y unidades sin parte de ayer, y al pie «Así lo carga el conductor: Abrir el parte diario» (cambia la vista a Conductor).
   //    Novedades: críticas y abiertas, cada una con «Resolver».
   //  - «Resolver» abre el diálogo compartido (`<DialogosDeDocumento>`, origen `operacion`). Al guardar bien la fila desaparece: lo que pasó se dice en la barra de la hoja y el foco
   //    va al título de la hoja (5.17). Al cancelar, el foco vuelve al botón «Resolver». «Atrás» del navegador cierra el diálogo (lo decide el estado, no esta pantalla).
@@ -24,16 +24,16 @@
   let {
     alAbrirParte,
   }: {
-    /** «Abrir el parte diario» (al pie de Checklists): abre «Ver como» con el perfil Conductor ya elegido (lo resuelve el marco). */
+    /** «Abrir el parte diario» (al pie de Partes): abre «Ver como» con el perfil Conductor ya elegido (lo resuelve el marco). */
     alAbrirParte: () => void;
   } = $props();
 
   const ID_TITULO = "titulo-operacion";
 
   const op = $derived(app.centroDeAlertas?.operacionDiaria ?? null);
-  const solapa = $derived(app.ruta.tipo === "operacion" ? app.ruta.solapa : "checklists");
+  const solapa = $derived(app.ruta.tipo === "operacion" ? app.ruta.solapa : "partes");
   const actual = $derived(op?.solapas.find((s) => s.id === solapa) ?? null);
-  /** El pie «Así lo carga el conductor» es de Checklists: los partes los carga el conductor desde su perfil. */
+  /** El pie «Así lo carga el conductor» es de Partes: los partes los carga el conductor desde su perfil. */
   const conductor = $derived(app.centroDeAlertas?.operacion.barraEstado ?? null);
   const mensaje = $derived(dialogos.mensaje("operacion"));
 
@@ -75,7 +75,7 @@
         <Panel
           id={ID_TITULO}
           titulo={actual.rotulo}
-          meta={actual.id === "checklists" ? TEXTO_NAVEGACION.insignias.pendientes(actual.cantidad) : TEXTO_NAVEGACION.insignias.abiertas(actual.cantidad)}
+          meta={actual.id === "partes" ? TEXTO_NAVEGACION.insignias.pendientes(actual.cantidad) : TEXTO_NAVEGACION.insignias.abiertas(actual.cantidad)}
           estado={mensaje.texto}
           repetir={mensaje}
           sinRelleno
@@ -104,7 +104,7 @@
             <p class="pie-hoja">{TEXTO_ALERTAS.pieNovedades}</p>
           {/if}
 
-          {#if actual.id === "checklists" && conductor !== null}
+          {#if actual.id === "partes" && conductor !== null}
             <div class="conductor">
               <span id="conductor-intro">{conductor.intro}</span>
               <Boton variante="texto" aria-describedby="conductor-aclaracion" onclick={alAbrirParte}>
@@ -172,7 +172,7 @@
     color: var(--c-texto-3);
   }
 
-  /* Pie de la solapa Novedades: una línea de aclaración, con el mismo filete y tamaño que el pie de Checklists. */
+  /* Pie de la solapa Novedades: una línea de aclaración, con el mismo filete y tamaño que el pie de Partes. */
   .pie-hoja {
     padding: var(--e-3) var(--e-4);
     border-top: 1px solid var(--c-borde);

@@ -26,7 +26,7 @@ regla nueva **«Cerrar antes»** (estado 5 bis del inicio y pantalla E). Aplicad
 
 | En las secciones 1 y 5 a 14 dice | Hoy es |
 | --- | --- |
-| Centro de alertas (`#/alertas`) | **Inicio** (`#/inicio`); sus vencimientos tienen pantalla propia, **Vencimientos**, y la operación diaria también, **Operación diaria** (Checklists y Novedades) |
+| Centro de alertas (`#/alertas`) | **Inicio** (`#/inicio`); sus vencimientos tienen pantalla propia, **Vencimientos**, y la operación diaria también, **Operación diaria** (Partes y Novedades) |
 | Flota (`#/flota`) | **Movilidades** (`#/movilidades`) |
 | Inicio del conductor | **Hoy**; los partes anteriores, en **Mis partes** |
 | «No pueden salir», «Puede salir», «No puede salir» | «No disponibles hoy», «Disponible», «Bloqueada» (por documentos) y «Fuera de servicio» |
@@ -132,7 +132,7 @@ Aplicación de una sola página con rutas por *hash* (no necesita configurar el 
 | `#/inicio` (por defecto del encargado; alias `#/alertas`) | Inicio | Encargado |
 | `#/movilidades?filtro=…&q=…` (alias `#/flota`) | Movilidades | Encargado |
 | `#/vencimientos?filtro=…` | Vencimientos | Encargado |
-| `#/operacion/checklists` y `#/operacion/novedades` (`#/operacion` lleva a Checklists) | Operación diaria | Encargado |
+| `#/operacion/partes` y `#/operacion/novedades` (`#/operacion` y la dirección vieja `#/operacion/checklists` llevan a Partes) | Operación diaria | Encargado |
 | `#/unidad/ZK214BD` (patente normalizada) | Ficha de unidad | Encargado |
 | `#/conductor` (por defecto del conductor) | Hoy | Conductor |
 | `#/conductor/partes` | Mis partes | Conductor |
@@ -143,7 +143,7 @@ Aplicación de una sola página con rutas por *hash* (no necesita configurar el 
 - **Pantalla no es consulta.** Cambiar de pantalla mueve el foco al `h1` (`tabindex="-1"`, sin anillo: D3 (b), ver «Foco visible» al comienzo de la sección 5), sube la página (sin desplazamiento suave) y actualiza `document.title` = «{Pantalla} · Control de flota (demo)». Cambiar de filtro o escribir en el buscador **no** mueve foco ni desplazamiento; un filtro agrega una entrada al historial y cada letra del buscador, no.
 - Ruta desconocida o patente que no existe: estado de error de la pantalla (sección 8), nunca una pantalla en blanco. Un perfil que abre una ruta del otro perfil va a su propio inicio.
 - Cambiar de perfil (con «Ver como») lleva a la ruta por defecto del perfil elegido, sin agregar historial.
-- «Atrás» (en la barra superior del celular y en las migas de escritorio) es un enlace al **padre** de la pantalla: la ficha vuelve a Movilidades con el filtro y la búsqueda que tenía; el parte, a Operación diaria (encargado) o a Hoy (conductor); Checklists y Novedades, a Operación diaria. En las pantallas de la navegación no hay.
+- «Atrás» (en la barra superior del celular y en las migas de escritorio) es un enlace al **padre** de la pantalla: la ficha vuelve a Movilidades con el filtro y la búsqueda que tenía; el parte, a Operación diaria (encargado) o a Hoy (conductor); Partes y Novedades, a Operación diaria. En las pantallas de la navegación no hay.
 - Un diálogo abierto no sobrevive a un cambio de pantalla: «Atrás» del navegador lo cierra.
 - La ficha, el parte, Hoy y Mis partes se bajan al entrar (`import()` dinámico) para que la carga inicial siga bajo el tope de JavaScript (`docs/stack.md`, sección 7); mientras llegan se muestra «Cargando…» (a partir de 300 ms) y, si no llegan, un error con «Recargar».
 
@@ -243,7 +243,7 @@ Cifras (kilómetros, litros, días, conteos, fechas en tablas): `tabular-nums` *
 
 ### 4.1 Escritorio (desde 64 rem): lateral oscuro y barra de migas
 
-- **Lateral** fijo a la izquierda, de `16rem`, oscuro en claro y en oscuro. Arriba: la marca (ícono y «Control de flota») y la etiqueta «Demo con datos ficticios». En el medio, los destinos: encargado, Inicio, Movilidades, Vencimientos y Operación diaria (desplegada en Checklists y Novedades); conductor, Hoy y Mis partes. Con insignias (4.3). Abajo: «Cómo funciona», «Reiniciar demo», «Ver como» (el perfil de ahora, con un control para cambiarlo), «Volver al portafolio», la autoría («Concebido, diseñado y dirigido por Matías Ariel Ormeño; desarrollado con IA.») y «Más».
+- **Lateral** fijo a la izquierda, de `16rem`, oscuro en claro y en oscuro. Arriba: la marca (ícono y «Control de flota») y la etiqueta «Demo con datos ficticios». En el medio, los destinos: encargado, Inicio, Movilidades, Vencimientos y Operación diaria (desplegada en Partes y Novedades); conductor, Hoy y Mis partes. Con insignias (4.3). Abajo: «Cómo funciona», «Reiniciar demo», «Ver como» (el perfil de ahora, con un control para cambiarlo), «Volver al portafolio», la autoría («Concebido, diseñado y dirigido por Matías Ariel Ormeño; desarrollado con IA.») y «Más».
 - El destino de la pantalla actual sale del contenido como una pestaña de fichero (corte en diagonal) y lleva además una marca de 3 px y negrita: en oscuro el recorte solo no alcanza contraste. `aria-current="page"`.
 - **Barra de migas** fija arriba del contenido: las migas a la izquierda (el último tramo es la pantalla de ahora, sin enlace; los anteriores, enlaces) y la fecha a la derecha. Las pantallas del lateral llevan un solo tramo.
 
@@ -254,7 +254,7 @@ Cifras (kilómetros, litros, días, conteos, fechas en tablas): `tabular-nums` *
 
 ### 4.3 Insignias
 
-Las del lateral y la barra inferior salen de las mismas cifras de Inicio y de Operación diaria (`app.centroDeAlertas`), no de un cálculo aparte: Inicio, no disponibles hoy; Vencimientos, vencidos o faltantes; Operación diaria, pendientes (con su desglose en Checklists y Novedades). Las dos primeras son cobre (críticas); las de Operación, grafito. Sin insignia si es 0. El nombre accesible de la insignia dice la cuenta con palabras («4 no disponibles hoy»); `white-space: nowrap` en la insignia y, con el texto al 200 %, la insignia baja de renglón en lugar de ensanchar la página.
+Las del lateral y la barra inferior salen de las mismas cifras de Inicio y de Operación diaria (`app.centroDeAlertas`), no de un cálculo aparte: Inicio, no disponibles hoy; Vencimientos, vencidos o faltantes; Operación diaria, pendientes (con su desglose en Partes y Novedades). Las dos primeras son cobre (críticas); las de Operación, grafito. Sin insignia si es 0. El nombre accesible de la insignia dice la cuenta con palabras («4 no disponibles hoy»); `white-space: nowrap` en la insignia y, con el texto al 200 %, la insignia baja de renglón en lugar de ensanchar la página.
 
 ### 4.4 Avisos globales
 

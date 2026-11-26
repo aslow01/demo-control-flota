@@ -13,7 +13,7 @@ describe("nombres de las pantallas del marco nuevo", () => {
       "Vencimientos",
       "Más",
     ]);
-    expect([NOMBRES_DE_PANTALLA.operacionChecklists, NOMBRES_DE_PANTALLA.operacionNovedades]).toEqual(["Checklists", "Novedades"]);
+    expect([NOMBRES_DE_PANTALLA.operacionPartes, NOMBRES_DE_PANTALLA.operacionNovedades]).toEqual(["Partes", "Novedades"]);
     expect([NOMBRES_DE_PANTALLA.conductor, NOMBRES_DE_PANTALLA.conductorPartes]).toEqual(["Hoy", "Mis partes"]);
   });
 

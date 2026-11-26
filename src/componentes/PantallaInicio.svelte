@@ -65,7 +65,7 @@
   }
 
   const cifrasSecundarias = $derived<CifraDeInicio[]>(c === null ? [] : [c.cifras.vencidos, c.cifras.proximos, c.cifras.partes, c.cifras.novedadCritica]);
-  const rotuloDeSolapa = (id: "checklists" | "novedades"): string => c?.operacionDiaria.solapas.find((s) => s.id === id)?.rotulo ?? "";
+  const rotuloDeSolapa = (id: "partes" | "novedades"): string => c?.operacionDiaria.solapas.find((s) => s.id === id)?.rotulo ?? "";
 </script>
 
 {#if c !== null}

@@ -185,21 +185,21 @@
   const destinos = $derived.by(() => {
     const t = TEXTO_NAVEGACION;
     const solapa = app.ruta.tipo === "operacion" ? app.ruta.solapa : null;
-    const pendientes = cuentas.checklists + cuentas.novedades;
+    const pendientes = cuentas.partes + cuentas.novedades;
     return {
       inicio: { id: "inicio", href: aHash({ tipo: "inicio" }), texto: NOMBRES_DE_PANTALLA.inicio, icono: "inicio", actual: actual("inicio"), insignia: app.ruta.tipo === "inicio" ? undefined : conInsignia(cuentas.noDisponibles, t.insignias.noDisponibles(cuentas.noDisponibles), true) },
       movilidades: { id: "movilidades", href: aHash({ tipo: "movilidades" }), texto: NOMBRES_DE_PANTALLA.movilidades, icono: "unidad", actual: actual("movilidades") },
       vencimientos: { id: "vencimientos", href: aHash({ tipo: "vencimientos" }), texto: NOMBRES_DE_PANTALLA.vencimientos, icono: "calendario", actual: actual("vencimientos"), insignia: conInsignia(cuentas.vencidos, t.insignias.vencidosOFaltantes(cuentas.vencidos), true) },
       operacion: {
         id: "operacion",
-        href: aHash({ tipo: "operacion", solapa: "checklists" }),
+        href: aHash({ tipo: "operacion", solapa: "partes" }),
         texto: t.operacionCorto,
         textoOculto: t.operacionOculto,
         icono: "parte",
         actual: actual("operacion"),
         insignia: conInsignia(pendientes, t.insignias.pendientes(pendientes), false),
         subitems: [
-          { id: "checklists", href: aHash({ tipo: "operacion", solapa: "checklists" }), texto: NOMBRES_DE_PANTALLA.operacionChecklists, actual: solapa === "checklists" ? "page" : undefined, insignia: conInsignia(cuentas.checklists, t.insignias.pendientes(cuentas.checklists), false) },
+          { id: "partes", href: aHash({ tipo: "operacion", solapa: "partes" }), texto: NOMBRES_DE_PANTALLA.operacionPartes, actual: solapa === "partes" ? "page" : undefined, insignia: conInsignia(cuentas.partes, t.insignias.pendientes(cuentas.partes), false) },
           { id: "novedades", href: aHash({ tipo: "operacion", solapa: "novedades" }), texto: NOMBRES_DE_PANTALLA.operacionNovedades, actual: solapa === "novedades" ? "page" : undefined, insignia: conInsignia(cuentas.novedades, t.insignias.abiertas(cuentas.novedades), false) },
         ],
       },
@@ -222,7 +222,7 @@
   const nombreDeLaPantalla = $derived(app.nombrePantalla);
   /** El nombre que se ve en la barra superior al bajar: el de la solapa en Operación diaria. */
   const tituloDeLaBarra = $derived(
-    app.ruta.tipo === "operacion" ? (app.ruta.solapa === "checklists" ? NOMBRES_DE_PANTALLA.operacionChecklists : NOMBRES_DE_PANTALLA.operacionNovedades) : nombreDeLaPantalla,
+    app.ruta.tipo === "operacion" ? (app.ruta.solapa === "partes" ? NOMBRES_DE_PANTALLA.operacionPartes : NOMBRES_DE_PANTALLA.operacionNovedades) : nombreDeLaPantalla,
   );
   // «Atrás» lleva al padre (la ficha, a Movilidades con el filtro y la búsqueda que tenía); en las pantallas de la barra no hay.
   const atras = $derived.by(() => {
