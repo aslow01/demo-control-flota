@@ -127,7 +127,7 @@
     return textoPuntoDeLaRegla(titular, v.accion.tipoDocumento, v.estado);
   }
   const hayPuntos = $derived(regla.elementos.length > 0);
-  const quienes = $derived(regla.vencidos.quienes.join(" · "));
+  const quienes = $derived(regla.vencidos.quienes);
 </script>
 
 {#snippet formaDelPunto(forma: FormaDeMarca)}
@@ -144,7 +144,7 @@
   <div class="marco">
     {#if regla.vencidos.cantidad > 0}
       <a class="vencidos" data-tono="critico" href={regla.vencidos.href}>
-        <span class="v-texto">{TEXTO_HORIZONTE.rotuloCajaCompleta}{#if quienes !== ""}{" "}<small class="codigo">{quienes}</small>{/if}</span>
+        <span class="v-texto">{TEXTO_HORIZONTE.rotuloCajaCompleta}{#if quienes.length > 0}{" "}<small class="codigo">{#each quienes as q, i (q)}{#if i > 0}<span class="sep">{" · "}</span>{/if}<span class="quien">{q}</span>{/each}</small>{/if}</span>
         <span class="v-cifra num">{regla.vencidos.cantidad}</span>
       </a>
     {:else}
@@ -287,26 +287,6 @@
     gap: var(--e-2);
     min-width: 0;
   }
-  @container regla (min-width: 44rem) {
-    .marco {
-      flex-direction: row;
-      align-items: flex-start;
-      gap: var(--e-4);
-    }
-    .vencidos {
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: center;
-      inline-size: 10rem;
-      /* La regla arranca 22 px más abajo (el aire para las etiquetas de la fila de arriba): la caja baja lo mismo. */
-      margin-top: 1.375rem;
-    }
-    .v-texto small {
-      display: block;
-      margin: var(--e-1) 0 0;
-    }
-  }
-
   /* ---------- Caja de vencidos y faltantes ---------- */
   .vencidos {
     display: flex;
@@ -349,7 +329,10 @@
     font-weight: 600;
     letter-spacing: 0;
     text-transform: none;
-    overflow-wrap: anywhere;
+  }
+  /* Cada patente o nombre es una pieza: puede bajar de renglón entre una y otra, nunca por la mitad. */
+  .quien {
+    white-space: nowrap;
   }
   .v-cifra {
     flex: none;
@@ -357,6 +340,34 @@
     font-size: 1.75rem;
     font-weight: 700;
     line-height: 1;
+  }
+
+  /* Va después de las reglas base de la caja: si no, `.vencidos` y `.v-texto small` las pisan (nunca se aplicaban). */
+  @container regla (min-width: 44rem) {
+    .marco {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: var(--e-4);
+    }
+    .vencidos {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      inline-size: 10rem;
+      /* La regla arranca 22 px más abajo (el aire para las etiquetas de la fila de arriba): la caja baja lo mismo. */
+      margin-top: 1.375rem;
+    }
+    .v-texto small {
+      display: block;
+      margin: var(--e-1) 0 0;
+    }
+    /* Uno por renglón: el separador sobra. */
+    .quien {
+      display: block;
+    }
+    .sep {
+      display: none;
+    }
   }
 
   /* ---------- Pista ---------- */
