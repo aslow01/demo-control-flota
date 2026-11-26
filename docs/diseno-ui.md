@@ -563,7 +563,7 @@ parte · Novedades · Proyecto y conductor.
 | Normal | Alto 2.75rem (3rem en el parte), fondo `--c-superficie`, borde 1 px `--c-borde-fuerte`, `--r-2`, texto `--t-cuerpo`. Etiqueta arriba (`--t-chico` 600 `--c-texto`), ayuda debajo de la etiqueta (`--t-chico` `--c-texto-2`) asociada con `aria-describedby`. |
 | Hover | Borde `--c-texto-2`. |
 | Foco | Anillo estándar (2 px `--c-foco`, `offset 2px`). |
-| Con dato precargado | Igual que normal (no se marca: es un valor más). La ayuda dice de dónde sale ("Último registro: 84.320 km, parte del 17/11/2026"). |
+| Con dato precargado | Igual que normal (no se marca: es un valor más). Vale para el conductor y el emisor; el kilometraje al salir arranca vacío (P13) y su ayuda dice el último registro ("Último registro: 84.320 km (parte del 17/11/2026).") |
 | Inválido | `aria-invalid="true"`, borde 2 px `--c-critico-r`, mensaje arriba del campo (entre etiqueta y campo, patrón GOV.UK) con `i-vencido` y texto `--c-critico-t` 600, `id` primero en `aria-describedby`. El texto escrito **se conserva**. |
 | Solo lectura | Sin caja: el valor como texto `--c-texto` con su etiqueta (parte enviado, datos de la unidad). No se usan campos `disabled` para mostrar datos. |
 | Deshabilitado | No se usa. Si un campo no aplica, no se muestra. |
@@ -1489,8 +1489,9 @@ Fechas siempre `dd/mm/aaaa`; con día de la semana en encabezados. Kilómetros c
   `scroll-padding-bottom` con la barra de envío (5.14).
 - **Tamaño de objetivos (2.5.8):** mínimo 44 × 44 en todo lo que se pulsa (la norma pide 24; se usa 44 por el uso con
   guantes); 48 en el checklist y el combustible.
-- **Entrada redundante (3.3.7):** el parte precarga km de inicio, conductor y unidad (P13); el emisor de un documento
-  renovado se precarga.
+- **Entrada redundante (3.3.7):** el parte precarga conductor y unidad (P13); el emisor de un documento renovado se
+  precarga. El km de inicio **no** se precarga (26/11/2026): es una lectura nueva del tablero, no un dato ya ingresado
+  en el mismo proceso; el campo arranca vacío y su ayuda dice el último registro.
 - **Ayuda consistente (3.2.6):** "Cómo funciona" siempre en el mismo lugar (barra superior o menú "Más").
 - **Errores (3.3.1, 3.3.3):** texto que dice qué pasó y cómo arreglarlo; asociado al campo; resumen con enlaces; nunca
   desaparece solo.

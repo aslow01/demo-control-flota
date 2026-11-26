@@ -153,16 +153,20 @@ describe("guardarBorrador (P3)", () => {
 
   it("D11: guardar un borrador vacío no marca la demo como modificada; uno con datos sí", () => {
     const e = flotaDePrueba();
-    const vacio = ejecutarOk(e, borrador());
+    const vacio = ejecutarOk(e, borrador({ kmInicio: null }));
     expect(vacio.estado.meta.modificada).toBe(false);
     expect(vacio.cambios.meta).toBeNull();
     const conDatos = ejecutarOk(e, borrador({ kmFin: 84400 }));
     expect(conDatos.estado.meta.modificada).toBe(true);
   });
 
+  it("D11: escribir solo el kilometraje al salir ya es un cambio (el formulario arranca sin él, P13)", () => {
+    expect(ejecutarOk(flotaDePrueba(), borrador({ kmInicio: 84320 })).estado.meta.modificada).toBe(true);
+  });
+
   it("D11: abrir y cerrar el parte sin escribir (guardar y descartar el vacío) sigue sin modificar", () => {
     const e = flotaDePrueba();
-    const { estado, parteId } = conBorrador(e, borrador());
+    const { estado, parteId } = conBorrador(e, borrador({ kmInicio: null }));
     const r = ejecutarOk(estado, { tipo: "descartarBorrador", parteId });
     expect(r.estado.meta.modificada).toBe(false);
   });

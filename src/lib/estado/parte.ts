@@ -952,7 +952,6 @@ export function vistaDeParte(estado: Estado, hoy: FechaCivil, perfil: Perfil, pa
   }
 
   const previo = registroAnterior(unidad.id, fecha, estado.partes, estado.correccionesKm);
-  const kmPrevio = previo === null ? null : kmDeRegistro(previo);
 
   // El conductor del parte: quien lo completa (perfil Conductor), o el del borrador / el asignado con licencia vigente (perfil Encargado, P13).
   const activos = new Set(estado.conductores.filter((c) => c.activo).map((c) => c.id));
@@ -960,7 +959,7 @@ export function vistaDeParte(estado: Estado, hoy: FechaCivil, perfil: Perfil, pa
   const asignado = delPerfil !== null && activos.has(delPerfil) ? delPerfil : null;
   const conductorId = perfil.tipo === "conductor" ? perfil.conductorId : (existente?.conductorId ?? asignado);
 
-  const valores = existente === undefined ? valoresIniciales({ conductorId, kmInicio: kmPrevio }) : { ...valoresDeParte(existente), conductorId: conductorId ?? "" };
+  const valores = existente === undefined ? valoresIniciales({ conductorId }) : { ...valoresDeParte(existente), conductorId: conductorId ?? "" };
 
   let conductor: ParteEnEdicion["conductor"];
   if (perfil.tipo === "conductor") {

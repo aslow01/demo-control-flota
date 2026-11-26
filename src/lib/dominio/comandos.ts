@@ -1050,8 +1050,7 @@ function guardarBorrador(
     enviado: null,
     autor: existente?.autor ?? ctx.autor,
   };
-  const actual = kmActual(c.unidadId, estado.partes, estado.correccionesKm);
-  return ok({ cambios: { partes: [parte] }, eventos: [], modifica: !esBorradorVacio(parte, actual) });
+  return ok({ cambios: { partes: [parte] }, eventos: [], modifica: !esBorradorVacio(parte) });
 }
 
 function descartarBorrador(estado: Estado, c: Extract<Comando, { tipo: "descartarBorrador" }>): Resultado<Parcial> {
@@ -1059,8 +1058,7 @@ function descartarBorrador(estado: Estado, c: Extract<Comando, { tipo: "descarta
   if (parte === undefined) return fallo("parte-inexistente", ERRORES.parteInexistente);
   if (parte.estado === "enviado") return fallo("parte-enviado-inmutable", ERRORES.parteEnviadoInmutable);
   if (parte.estado === "en-uso") return fallo("revision-ya-enviada", ERRORES.revisionYaEnviada);
-  const actual = kmActual(parte.unidadId, estado.partes, estado.correccionesKm);
-  return ok({ cambios: { partesBorrados: [parte.id] }, eventos: [], modifica: !esBorradorVacio(parte, actual) });
+  return ok({ cambios: { partesBorrados: [parte.id] }, eventos: [], modifica: !esBorradorVacio(parte) });
 }
 
 function recortarRespuestas(checklist: Parte["checklist"]): Parte["checklist"] {

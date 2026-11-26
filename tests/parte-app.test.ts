@@ -4,7 +4,7 @@
 // con su último parte del 17/11 terminado en 141.711 km; ZK 214 BD (Int. 07) es de Tamara Olivera (c-07) y tiene el seguro vencido (C01).
 import { describe, expect, it } from "vitest";
 import { ENCARGADA, generar } from "../src/lib/datos/generador.ts";
-import { valoresDeParte, valoresIniciales, type ValoresParte } from "../src/lib/dominio/formulario-parte.ts";
+import { valoresDeParte, type ValoresParte } from "../src/lib/dominio/formulario-parte.ts";
 import { ERRORES } from "../src/lib/dominio/textos.ts";
 import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
 import { EstadoApp, type DependenciasApp } from "../src/lib/estado/app.svelte.ts";
@@ -13,6 +13,7 @@ import { crearReloj } from "../src/lib/estado/reloj.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 import type { ParteEnCierre, ParteEnEdicion } from "../src/lib/estado/parte.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
+import { valoresConKm } from "./ayuda.ts";
 
 const H = "2026-11-18";
 const MEDIODIA = "2026-11-18T15:00:00.000Z"; // 12:00 en Argentina
@@ -54,9 +55,13 @@ function idDe(app: EstadoApp, patente: string): string {
   return u.id;
 }
 
-/** Un parte completo: todos los puntos en orden, el fin 100 km más que el inicio y el combustible a la mitad. */
+/**
+ * Un parte completo: todos los puntos en orden, el inicio que escribiría la persona (141.711, el último registro de ZYN 469, si el formulario lo trae vacío:
+ * arranca vacío, P13), el fin 100 km más que el inicio y el combustible a la mitad.
+ */
 function completo(v: ValoresParte, cambios: Partial<ValoresParte> = {}): ValoresParte {
   const copia = structuredClone(v);
+  if (copia.kmInicio === "") copia.kmInicio = "141.711";
   for (const k of Object.keys(copia.checklist) as (keyof ValoresParte["checklist"])[]) {
     if (copia.checklist[k].respuesta === "") copia.checklist[k] = { respuesta: "en-orden", descripcion: "", impideUso: false };
   }
@@ -82,12 +87,24 @@ describe("las vistas según la ruta y el perfil", () => {
     expect(app.parteDeLaRuta).toBeNull(); // #/inicio
   });
 
-  it("perfil Conductor en #/parte/ZYN469/…: el parte nuevo con su kilometraje inicial (P13) y el conductor fijo", async () => {
+  it("perfil Conductor en #/parte/ZYN469/…: el parte nuevo con el conductor fijo y el kilometraje al salir vacío, con la ayuda del último registro (P13)", async () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
     const v = edicion(app);
     expect(v).toMatchObject({ patenteTexto: "ZYN 469", interno: "Int. 01", parteId: null, borrador: null, conductor: { tipo: "fijo", id: "c-01", nombre: "Andrés Echegaray" } });
-    expect(v.valoresIniciales).toMatchObject({ conductorId: "c-01", kmInicio: "141.711" });
+    expect(v.valoresIniciales).toMatchObject({ conductorId: "c-01", kmInicio: "" });
     expect(v.ayudaKmInicio).toBe("Último registro: 141.711 km (parte del 17/11/2026).");
+  });
+
+  it("P13: abrir el parte y no escribir nada no deja borrador; enviar con el kilometraje al salir vacío lo pide en su campo", async () => {
+    const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
+    const uid = idDe(app, "ZYN469");
+    expect(await app.guardarBorradorDeParte(uid, H, edicion(app).valoresIniciales)).toMatchObject({ ok: true, sinCambios: true });
+    expect(estadoDe(app).partes.some((p) => p.unidadId === uid && p.fecha === H)).toBe(false);
+    const r = await app.enviarRevisionDeParte(uid, H, completo(edicion(app).valoresIniciales, { kmInicio: "" }));
+    expect(r.tipo).toBe("errores");
+    if (r.tipo !== "errores") return;
+    expect(r.errores.porCampo.kmInicio).toBe("Escriba el kilometraje al iniciar.");
+    expect(r.primerCampo).toBe("kmInicio");
   });
 
   it("perfil Encargado: el conductor se elige y arranca con el asignado", async () => {
@@ -226,7 +243,7 @@ describe("autoguardado del borrador (P3) y recarga", () => {
 
   it("P8: una unidad fuera de servicio no recibe borradores (ZU 899 QE, C11): error de regla con el mensaje", async () => {
     const { app } = await iniciada({ perfil: { tipo: "conductor", conductorId: "c-11" } });
-    const v = valoresIniciales({ conductorId: "c-11", kmInicio: 31074 });
+    const v = valoresConKm({ conductorId: "c-11", kmInicio: 31074 });
     const r = await app.guardarBorradorDeParte(idDe(app, "ZU899QE"), H, { ...v, kmFin: "31.100" });
     expect(r).toMatchObject({ ok: false, tipo: "regla" });
     if (!r.ok) expect(r.errores.general).toMatch(/^La unidad está fuera de servicio desde el 16\/11\/2026/);
@@ -254,12 +271,12 @@ describe("autoguardado del borrador (P3) y recarga", () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
     const uid = idDe(app, "ZYN469");
     await app.enviarRevisionDeParte(uid, H, completo(edicion(app).valoresIniciales));
-    const r = await app.guardarBorradorDeParte(uid, H, { ...valoresIniciales({ conductorId: "c-01", kmInicio: 1 }), kmFin: "5" });
+    const r = await app.guardarBorradorDeParte(uid, H, { ...valoresConKm({ conductorId: "c-01", kmInicio: 1 }), kmFin: "5" });
     expect(r).toMatchObject({ ok: false, tipo: "regla" });
     if (!r.ok) expect(r.errores.general).toBe(ERRORES.revisionYaEnviada);
-    await app.guardarCierreDeParte(uid, H, { ...valoresIniciales({ conductorId: "c-01", kmInicio: 141711 }), kmFin: "141.800", combustible: "medio" });
-    await app.enviarCierreDeParte(uid, H, { ...valoresIniciales({ conductorId: "c-01", kmInicio: 141711 }), kmFin: "141.800", combustible: "medio" });
-    const c = await app.guardarBorradorDeParte(uid, H, valoresIniciales({ conductorId: "c-01", kmInicio: 1 }));
+    await app.guardarCierreDeParte(uid, H, { ...valoresConKm({ conductorId: "c-01", kmInicio: 141711 }), kmFin: "141.800", combustible: "medio" });
+    await app.enviarCierreDeParte(uid, H, { ...valoresConKm({ conductorId: "c-01", kmInicio: 141711 }), kmFin: "141.800", combustible: "medio" });
+    const c = await app.guardarBorradorDeParte(uid, H, valoresConKm({ conductorId: "c-01", kmInicio: 1 }));
     if (!c.ok) expect(c.errores.general).toBe(ERRORES.parteEnviadoInmutable);
   });
 
@@ -381,15 +398,15 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(r.tipo).toBe("errores");
     if (r.tipo !== "errores") return;
     expect(r.foco).toBe("resumen-de-errores");
-    expect(r.errores.titulo).toBe("Faltan 14 datos para enviar la revisión");
-    expect(r.errores.lista.map((e) => e.campo)).toEqual(["frenos", "direccion", "neumaticos", "luces", "cinturones", "perticaBaliza", "alarmaRetroceso", "niveles", "matafuego", "botiquin", "documentacion", "cabina", "calzasAntiderrame", "radio"]);
-    expect(r.primerCampo).toBe("frenos");
+    expect(r.errores.titulo).toBe("Faltan 15 datos para enviar la revisión");
+    expect(r.errores.lista.map((e) => e.campo)).toEqual(["kmInicio", "frenos", "direccion", "neumaticos", "luces", "cinturones", "perticaBaliza", "alarmaRetroceso", "niveles", "matafuego", "botiquin", "documentacion", "cabina", "calzasAntiderrame", "radio"]);
+    expect(r.primerCampo).toBe("kmInicio");
     expect(await repo.cargar()).toEqual(antes);
   });
 
   it("enviar con faltantes igual guarda lo escrito como borrador (no se pierde lo de los últimos 500 ms)", async () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
-    const v = edicion(app).valoresIniciales;
+    const v = { ...edicion(app).valoresIniciales, kmInicio: "141.711" };
     v.checklist.frenos = { respuesta: "en-orden", descripcion: "", impideUso: false };
     const r = await app.enviarRevisionDeParte(idDe(app, "ZYN469"), H, v);
     expect(r.tipo === "errores" && r.errores.titulo).toBe("Faltan 13 datos para enviar la revisión");
@@ -654,7 +671,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
       borrador: null,
     });
     // con un borrador de hoy: se conserva y se puede descartar (L4); el guardado del borrador no mira la licencia
-    const g = await app.guardarBorradorDeParte(idDe(app, "ZYN469"), H, { ...valoresIniciales({ conductorId: "c-01", kmInicio: 141711 }), checklist: completo(valoresIniciales({ conductorId: "c-01", kmInicio: 141711 })).checklist });
+    const g = await app.guardarBorradorDeParte(idDe(app, "ZYN469"), H, { ...valoresConKm({ conductorId: "c-01", kmInicio: 141711 }), checklist: completo(valoresConKm({ conductorId: "c-01", kmInicio: 141711 })).checklist });
     expect(g).toMatchObject({ ok: true });
     expect(app.parteDeLaRuta).toMatchObject({ tipo: "no-disponible", nota: "El borrador se conserva: cuando el encargado cargue una licencia vigente, podrá enviarlo.", borrador: { descartar: "Descartar borrador" } });
     expect(app.inicioDelConductor()?.hoyEstado).toMatchObject({ tipo: "licencia-no-vigente", borrador: { texto: "Tiene una revisión empezada: se conserva." } });
@@ -677,7 +694,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const uid = idDe(app, "ZYN469");
     await app.enviarRevisionDeParte(uid, H, completo(edicion(app).valoresIniciales));
     const antes = app.estado;
-    const r = await app.enviarRevisionDeParte(uid, H, completo(valoresIniciales({ conductorId: "c-01", kmInicio: 5 })));
+    const r = await app.enviarRevisionDeParte(uid, H, completo(valoresConKm({ conductorId: "c-01", kmInicio: 5 })));
     expect(r).toMatchObject({ tipo: "enviado", yaEnviado: true });
     expect(app.estado).toBe(antes);
   });
@@ -709,7 +726,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
 
   it("P8: una unidad fuera de servicio no se envía: error general con el mensaje de la regla", async () => {
     const { app } = await iniciada({ perfil: { tipo: "conductor", conductorId: "c-11" } });
-    const r = await app.enviarRevisionDeParte(idDe(app, "ZU899QE"), H, completo(valoresIniciales({ conductorId: "c-11", kmInicio: 31074 })));
+    const r = await app.enviarRevisionDeParte(idDe(app, "ZU899QE"), H, completo(valoresConKm({ conductorId: "c-11", kmInicio: 31074 })));
     expect(r.tipo).toBe("errores");
     if (r.tipo === "errores") {
       expect(r.errores.titulo).toBe("No se pudo enviar la revisión");
@@ -719,7 +736,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
 
   it("una unidad que no existe: error general", async () => {
     const { app } = await iniciada({ perfil: C01 });
-    const r = await app.enviarRevisionDeParte("no-existe", H, completo(valoresIniciales({ conductorId: "c-01", kmInicio: 5 })));
+    const r = await app.enviarRevisionDeParte("no-existe", H, completo(valoresConKm({ conductorId: "c-01", kmInicio: 5 })));
     expect(r.tipo === "errores" && r.errores.general).toBe(ERRORES.unidadInexistente);
   });
 
@@ -943,7 +960,7 @@ describe("descartar el borrador", () => {
     await app.enviarRevisionDeParte(uid, H, completo(edicion(app).valoresIniciales));
     const enUso = estadoDe(app).partes.find((p) => p.unidadId === uid && p.fecha === H);
     expect(await app.descartarBorradorDeParte(enUso?.id ?? "")).toMatchObject({ ok: false, mensaje: ERRORES.revisionYaEnviada });
-    const v = { ...valoresIniciales({ conductorId: "c-01", kmInicio: 141711 }), kmFin: "141.800", combustible: "medio" as const };
+    const v = { ...valoresConKm({ conductorId: "c-01", kmInicio: 141711 }), kmFin: "141.800", combustible: "medio" as const };
     await app.enviarCierreDeParte(uid, H, v);
     expect(await app.descartarBorradorDeParte(enUso?.id ?? "")).toMatchObject({ ok: false, mensaje: ERRORES.parteEnviadoInmutable });
     expect(await app.descartarBorradorDeParte("no-existe")).toMatchObject({ ok: false, mensaje: ERRORES.parteInexistente });

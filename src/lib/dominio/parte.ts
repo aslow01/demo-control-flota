@@ -360,16 +360,15 @@ export function nuevoBorrador(entrada: EntradaBorrador): Parte {
 }
 
 /**
- * D11: un borrador "vacío" es el que se abrió y no se escribió nada (el kilometraje inicial y el conductor vienen
- * completados por P13): guardarlo o descartarlo no cuenta como un cambio del visitante.
+ * D11: un borrador "vacío" es el que se abrió y no se escribió nada (solo el conductor viene elegido, P13, y no cuenta): guardarlo o descartarlo no cuenta como
+ * un cambio del visitante. El kilometraje inicial arranca vacío: cualquiera que haya, lo escribió la persona.
  */
-export function esBorradorVacio(parte: Parte, kmActualDeLaUnidad: number | null): boolean {
+export function esBorradorVacio(parte: Parte): boolean {
   // `?.`: un borrador con la forma rota (almacenamiento editado a mano) no es «vacío», pero tampoco tiene que impedir descartarlo.
   const sinRespuestas = ITEMS_CHECKLIST.every((i) => (parte.checklist as Partial<Parte["checklist"]> | undefined)?.[i.id]?.estado === "sin-responder");
-  const kmInicioPropio = parte.kmInicio !== null && parte.kmInicio !== kmActualDeLaUnidad;
   return (
     sinRespuestas &&
-    !kmInicioPropio &&
+    parte.kmInicio === null &&
     parte.kmFin === null &&
     parte.combustible === null &&
     parte.litrosCargados === null &&

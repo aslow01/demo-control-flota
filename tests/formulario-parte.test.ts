@@ -22,7 +22,7 @@ import {
   type ValoresParte,
 } from "../src/lib/dominio/formulario-parte.ts";
 import { ERRORES } from "../src/lib/dominio/textos.ts";
-import { parte } from "./ayuda.ts";
+import { parte, valoresConKm } from "./ayuda.ts";
 
 function borrador(valores: ValoresParte, cambios: Partial<ValoresParte> = {}) {
   return comandoDeBorrador("u1", "2026-11-18", null, { ...valores, ...cambios });
@@ -33,21 +33,27 @@ function cierre(valores: ValoresParte, cambios: Partial<ValoresParte> = {}) {
 }
 
 function completos(extra: Partial<ValoresParte> = {}): ValoresParte {
-  const v = valoresIniciales({ conductorId: "c1", kmInicio: 84320 });
+  const v = valoresConKm({ conductorId: "c1", kmInicio: 84320 });
   for (const clave of Object.keys(v.checklist) as (keyof ValoresParte["checklist"])[]) v.checklist[clave] = { respuesta: "en-orden", descripcion: "", impideUso: false };
   return { ...v, kmFin: "84452", combustible: "tres-cuartos", ...extra };
 }
 
 describe("valores iniciales y de un parte guardado (P13)", () => {
-  it("P13: el borrador nuevo trae el conductor y el kilometraje inicial ya escritos; todo lo demás vacío", () => {
-    const v = valoresIniciales({ conductorId: "c1", kmInicio: 84320 });
-    expect(v).toMatchObject({ conductorId: "c1", kmInicio: "84.320", kmFin: "", combustible: "", litros: "", otraNovedad: { descripcion: "", impideUso: false } });
+  it("P13: el borrador nuevo trae el conductor ya elegido y el kilometraje inicial vacío (el odómetro lo escribe quien sale); todo lo demás vacío", () => {
+    const v = valoresIniciales({ conductorId: "c1" });
+    expect(v).toMatchObject({ conductorId: "c1", kmInicio: "", kmFin: "", combustible: "", litros: "", otraNovedad: { descripcion: "", impideUso: false } });
     expect(Object.values(v.checklist).every((i) => i.respuesta === "" && i.descripcion === "" && !i.impideUso)).toBe(true);
     expect(Object.keys(v.checklist)).toHaveLength(14);
   });
 
-  it("sin kilometraje previo ni conductor, los campos arrancan vacíos", () => {
-    expect(valoresIniciales({ conductorId: null, kmInicio: null })).toMatchObject({ conductorId: "", kmInicio: "" });
+  it("sin conductor, el campo arranca vacío", () => {
+    expect(valoresIniciales({ conductorId: null })).toMatchObject({ conductorId: "", kmInicio: "" });
+  });
+
+  it("P13: con el inicio vacío, enviar la revisión lo pide por su nombre (el campo es obligatorio)", () => {
+    const e = validarParaEnviar({ ...completos(), kmInicio: "" });
+    expect(e?.lista.map((x) => x.campo)).toEqual(["kmInicio"]);
+    expect(e?.porCampo.kmInicio).toBe("Escriba el kilometraje al iniciar.");
   });
 
   it("de un borrador guardado: números con punto de miles y coma decimal, y los puntos con novedad con su texto", () => {
@@ -95,13 +101,13 @@ describe("valores iniciales y de un parte guardado (P13)", () => {
 describe("P3: de los valores al comando de borrador", () => {
   it("P3: cualquier subconjunto de datos se guarda; el kilometraje acepta punto, espacio o nada (K1)", () => {
     for (const [texto, esperado] of [["84320", 84320], ["84.320", 84320], ["84 320", 84320]] as const) {
-      const r = borrador(valoresIniciales({ conductorId: "c1", kmInicio: null }), { kmInicio: texto });
+      const r = borrador(valoresConKm({ conductorId: "c1", kmInicio: null }), { kmInicio: texto });
       expect(r.ok && r.comando.kmInicio).toBe(esperado);
     }
   });
 
   it("un borrador con solo el kilometraje inicial: todo lo demás nulo y el checklist sin responder", () => {
-    const r = borrador(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
+    const r = borrador(valoresConKm({ conductorId: "c1", kmInicio: 84320 }));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.comando).toMatchObject({ tipo: "guardarBorrador", parteId: null, unidadId: "u1", fecha: "2026-11-18", conductorId: "c1", kmInicio: 84320, kmFin: null, combustible: null, litrosCargados: null, otraNovedad: null });
@@ -109,7 +115,7 @@ describe("P3: de los valores al comando de borrador", () => {
   });
 
   it("sin conductor elegido el comando lleva null", () => {
-    const r = comandoDeBorrador("u1", "2026-11-18", "pt1", valoresIniciales({ conductorId: null, kmInicio: null }));
+    const r = comandoDeBorrador("u1", "2026-11-18", "pt1", valoresConKm({ conductorId: null, kmInicio: null }));
     expect(r.ok && r.comando).toMatchObject({ conductorId: null, parteId: "pt1", kmInicio: null });
   });
 
@@ -248,7 +254,7 @@ describe("P4: qué falta para enviar la revisión, en el orden del formulario", 
   });
 
   it("respondidos: «3 de 14»", () => {
-    const v = valoresIniciales({ conductorId: "c1", kmInicio: 1 });
+    const v = valoresConKm({ conductorId: "c1", kmInicio: 1 });
     v.checklist.frenos.respuesta = "en-orden";
     v.checklist.luces.respuesta = "con-novedad";
     v.checklist.cabina.respuesta = "en-orden";
@@ -286,7 +292,7 @@ describe("C5: la barra de envío no dice «Listo» con un error de reglas a la v
 
 describe("P4: qué falta para cerrar el parte", () => {
   it("un cierre sin nada: kmFin y combustible; «Faltan 2 datos»", () => {
-    const v = valoresIniciales({ conductorId: "c1", kmInicio: 84320 });
+    const v = valoresConKm({ conductorId: "c1", kmInicio: 84320 });
     expect(faltantesDeValores(v, "cierre")).toEqual(["kmFin", "combustible"]);
     expect(textoBarraDeEnvio(v, "cierre")).toBe("Faltan 2 datos");
   });
@@ -306,8 +312,8 @@ describe("P4: qué falta para cerrar el parte", () => {
 });
 
 describe("5.15: el resumen de errores al enviar", () => {
-  it("enviar la revisión vacía (solo con el inicio precargado y el conductor): faltan 14 datos, en el orden del formulario y con un mensaje por campo", () => {
-    const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
+  it("enviar la revisión vacía (solo con el inicio escrito y el conductor): faltan 14 datos, en el orden del formulario y con un mensaje por campo", () => {
+    const e = validarParaEnviar(valoresConKm({ conductorId: "c1", kmInicio: 84320 }));
     expect(e).not.toBeNull();
     if (e === null) return;
     expect(e.titulo).toBe("Faltan 14 datos para enviar la revisión");
@@ -318,7 +324,7 @@ describe("5.15: el resumen de errores al enviar", () => {
   });
 
   it("cerrar vacío: faltan 2 datos, con su mensaje por campo", () => {
-    const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }), "cierre");
+    const e = validarParaEnviar(valoresConKm({ conductorId: "c1", kmInicio: 84320 }), "cierre");
     expect(e?.titulo).toBe("Faltan 2 datos para cerrar el parte");
     expect(e?.lista.map((x) => x.campo)).toEqual(["kmFin", "combustible"]);
     expect(e?.porCampo.kmFin).toBe("Escriba el kilometraje al terminar.");
@@ -353,7 +359,7 @@ describe("5.15: el resumen de errores al enviar", () => {
   });
 
   it("D1: con más de 3 puntos sin responder el resumen es un solo enlace al primero; con 3 o menos, uno por punto", () => {
-    const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
+    const e = validarParaEnviar(valoresConKm({ conductorId: "c1", kmInicio: 84320 }));
     expect(e?.lista).toHaveLength(14); // el mensaje por campo no cambia: cada punto sigue diciendo qué le falta
     expect(agruparResumen(e?.lista ?? [])).toEqual([{ campo: "frenos", mensaje: "Faltan 14 puntos de la revisión" }]);
 
@@ -369,7 +375,7 @@ describe("5.15: el resumen de errores al enviar", () => {
   });
 
   it("D1: lo que no es un punto sin completar sigue en su lugar, uno por campo, y el enlace agrupado va donde estaba el primer punto", () => {
-    const v = valoresIniciales({ conductorId: "", kmInicio: 84320 });
+    const v = valoresConKm({ conductorId: "", kmInicio: 84320 });
     v.kmInicio = "";
     v.otraNovedad = { descripcion: "", impideUso: true };
     const e = validarParaEnviar(v);
@@ -382,7 +388,7 @@ describe("5.15: el resumen de errores al enviar", () => {
   });
 
   it("D1: un punto con novedad sin descripción cuenta con los sin responder; uno con un texto demasiado largo no (es otro error)", () => {
-    const v = valoresIniciales({ conductorId: "c1", kmInicio: 84320 });
+    const v = valoresConKm({ conductorId: "c1", kmInicio: 84320 });
     v.checklist.frenos = { respuesta: "con-novedad", descripcion: "", impideUso: false };
     v.checklist.luces = { respuesta: "con-novedad", descripcion: "x".repeat(501), impideUso: false };
     const e = validarParaEnviar(v);
@@ -393,7 +399,7 @@ describe("5.15: el resumen de errores al enviar", () => {
   });
 
   it("D1: agruparResumen se puede volver a aplicar a la parte que sigue vigente (a medida que se completan los puntos)", () => {
-    const e = validarParaEnviar(valoresIniciales({ conductorId: "c1", kmInicio: 84320 }));
+    const e = validarParaEnviar(valoresConKm({ conductorId: "c1", kmInicio: 84320 }));
     const quedan = (e?.lista ?? []).slice(10); // quedan 4
     expect(agruparResumen(quedan)).toEqual([{ campo: "documentacion", mensaje: "Faltan 4 puntos de la revisión" }]);
     expect(agruparResumen(quedan.slice(1))).toEqual(quedan.slice(1)); // quedan 3: uno por punto

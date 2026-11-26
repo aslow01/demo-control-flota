@@ -521,7 +521,7 @@ describe("opciones del diálogo «¿Quién completa el parte?» (L1)", () => {
 describe("pantalla del parte, edición (6.5)", () => {
   const ver = (e: Estado, perfil: Perfil, patente = "ZK214BD", fecha = H) => vistaDeParte(e, H, perfil, patente, fecha);
 
-  it("parte nuevo de hoy con el perfil Conductor: P13 (conductor y kilometraje inicial ya completados), ayuda del último registro y catorce puntos", () => {
+  it("parte nuevo de hoy con el perfil Conductor: P13 (conductor ya elegido y kilometraje inicial vacío), ayuda del último registro y catorce puntos", () => {
     const v = ver(flotaDePrueba(), COND);
     expect(v.tipo).toBe("edicion");
     if (v.tipo !== "edicion") return;
@@ -545,7 +545,7 @@ describe("pantalla del parte, edición (6.5)", () => {
       ayudaKmFin: "Lo que marca el tablero al terminar la jornada.",
       ayudaLitros: "Déjelo vacío si no cargó.",
     });
-    expect(v.valoresIniciales).toMatchObject({ conductorId: "c1", kmInicio: "84.320", kmFin: "", combustible: "" });
+    expect(v.valoresIniciales).toMatchObject({ conductorId: "c1", kmInicio: "", kmFin: "", combustible: "" });
     expect(v.puntos).toHaveLength(14);
     expect(v.puntos[0]).toEqual({ id: "frenos", texto: "Frenos", critico: true, notaCritica: "Al enviar la revisión, la unidad queda fuera de servicio y no sale, hasta que el encargado resuelva la novedad y la vuelva a poner en servicio." });
     expect(v.puntos[7]).toEqual({ id: "niveles", texto: "Niveles de aceite y agua", critico: false, notaCritica: null });
@@ -600,7 +600,7 @@ describe("pantalla del parte, edición (6.5)", () => {
     expect(v.borrador).toEqual({ mensaje: "Borrador recuperado, guardado en este equipo el 18/11/2026 a las 12:00." });
   });
 
-  it("un parte de un día pasado (dentro de los 7 días): aviso de fuera de plazo y el kilometraje inicial sale del registro anterior a esa fecha", () => {
+  it("un parte de un día pasado (dentro de los 7 días): aviso de fuera de plazo y la ayuda dice el registro anterior a esa fecha (el inicio queda vacío)", () => {
     const e = flotaDePrueba();
     e.partes.push(parte({ id: "p16", unidadId: "u1", fecha: "2026-11-16", kmInicio: 83800, kmFin: 84000, enviado: "2026-11-16T21:00:00.000Z" }));
     e.partes = e.partes.filter((p) => !(p.unidadId === "u1" && p.fecha === "2026-11-17"));
@@ -613,7 +613,7 @@ describe("pantalla del parte, edición (6.5)", () => {
     expect(w.tipo).toBe("edicion");
     if (w.tipo !== "edicion") return;
     expect(w).toMatchObject({ avisoFueraDePlazo: "Este parte es del 17/11/2026: la revisión se enviará fuera de plazo.", contexto: "Parte del martes 17/11/2026 · paso 1 de 2", ayudaKmInicio: "Último registro: 84.000 km (parte del 16/11/2026)." });
-    expect(w.valoresIniciales.kmInicio).toBe("84.000");
+    expect(w.valoresIniciales.kmInicio).toBe("");
   });
 
   it("una unidad sin registros de kilometraje: el inicio queda vacío y la ayuda dice que es el primer registro", () => {
@@ -629,7 +629,7 @@ describe("pantalla del parte, edición (6.5)", () => {
     e.correccionesKm.push({ id: "k1", unidadId: "u1", desde: H, kmBase: 120, motivo: "Cambio de tablero", instante: "2026-11-18T14:00:00.000Z", autor: "Rocío" });
     const v = ver(e, COND);
     expect(v).toMatchObject({ tipo: "edicion", ayudaKmInicio: "Último registro: 120 km (corrección de kilometraje del 18/11/2026)." });
-    expect(v.tipo === "edicion" && v.valoresIniciales.kmInicio).toBe("120");
+    expect(v.tipo === "edicion" && v.valoresIniciales.kmInicio).toBe("");
   });
 
   it("P21: con el seguro vencido la pantalla del parte dice «No se puede cargar» con el motivo (conductor: avisar al encargado)", () => {

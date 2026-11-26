@@ -82,8 +82,8 @@ describe("parteLegible: lo que se puede leer de un parte con la forma rota", () 
   });
 
   it("esBorradorVacio no revienta con un borrador roto (descartarlo tiene que andar siempre)", () => {
-    expect(esBorradorVacio(roto({ checklist: undefined }), 100)).toBe(false);
-    expect(esBorradorVacio(roto({ checklist: { frenos: null } }), 100)).toBe(false);
+    expect(esBorradorVacio(roto({ checklist: undefined }))).toBe(false);
+    expect(esBorradorVacio(roto({ checklist: { frenos: null } }))).toBe(false);
   });
 
   it("valoresDeParte de un parte legible no revienta y arranca el formulario con lo que se pudo leer", () => {

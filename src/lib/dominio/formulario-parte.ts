@@ -90,11 +90,14 @@ function checklistVacio(): Record<ItemChecklist, ValoresItem> {
   return lista;
 }
 
-/** P13: un formulario nuevo con el conductor y el kilometraje inicial ya completados; todo lo demás, vacío. */
-export function valoresIniciales(entrada: { conductorId: string | null; kmInicio: number | null }): ValoresParte {
+/**
+ * P13: un formulario nuevo con el conductor ya elegido; todo lo demás, vacío. El kilometraje inicial NO se completa: el odómetro es justamente el dato que se
+ * controla, y la ayuda del campo dice el último registro (K3 rechaza uno menor).
+ */
+export function valoresIniciales(entrada: { conductorId: string | null }): ValoresParte {
   return {
     conductorId: entrada.conductorId ?? "",
-    kmInicio: entrada.kmInicio === null ? "" : formatearKm(entrada.kmInicio),
+    kmInicio: "",
     kmFin: "",
     checklist: checklistVacio(),
     combustible: "",

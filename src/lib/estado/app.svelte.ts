@@ -33,7 +33,7 @@ import {
 import { formatearHora } from "../dominio/fechas.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
 import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, sumarErrorDeRegla, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
-import { kmDeRegistro, registroAnterior, validarKmDeSalida } from "../dominio/kilometraje.ts";
+import { validarKmDeSalida } from "../dominio/kilometraje.ts";
 import { advertenciasLegibles, esBorradorVacio, unidadSinSalidaHoy } from "../dominio/parte.ts";
 import {
   comandoDeAsignacion,
@@ -833,8 +833,7 @@ export class EstadoApp {
       // Un parte nuevo se crea con el primer cambio: abrirlo y no escribir nada no deja un borrador (ni marca la demo como modificada, D11).
       if (!ensayo.ok) return this.erroresDeBorrador(ensayo.error);
       const nuevo = ensayo.valor.cambios.partes[0];
-      const previo = registroAnterior(unidadId, fecha, estado.partes, estado.correccionesKm);
-      if (nuevo !== undefined && esBorradorVacio(nuevo, previo === null ? null : kmDeRegistro(previo))) return { ok: true, parteId: null, hora: null, sinCambios: true };
+      if (nuevo !== undefined && esBorradorVacio(nuevo)) return { ok: true, parteId: null, hora: null, sinCambios: true };
     } else if (ensayo.ok) {
       // Código B8: lo que ya está guardado no se vuelve a escribir (por ejemplo, «Enviar parte» guarda de nuevo lo que el autoguardado acababa de guardar).
       const nuevo = ensayo.valor.cambios.partes[0];

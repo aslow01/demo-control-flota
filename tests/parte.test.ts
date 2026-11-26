@@ -444,22 +444,23 @@ describe("parteLegible: los estados nuevos (P7, P16)", () => {
 });
 
 describe("D11: borrador vacío", () => {
-  const vacio = (): Parte => parte({ estado: "borrador", enviado: null, kmInicio: 84320, kmFin: null, combustible: null, litrosCargados: null, checklist: checklistVacio(), otraNovedad: null });
+  const vacio = (): Parte => parte({ estado: "borrador", enviado: null, kmInicio: null, kmFin: null, combustible: null, litrosCargados: null, checklist: checklistVacio(), otraNovedad: null });
 
-  it("D11: con solo el kilometraje inicial que puso el sistema (P13) está vacío", () => {
-    expect(esBorradorVacio(vacio(), 84320)).toBe(true);
-    expect(esBorradorVacio({ ...vacio(), kmInicio: null }, null)).toBe(true);
+  it("D11: sin nada escrito (el conductor viene elegido y no cuenta) está vacío", () => {
+    expect(esBorradorVacio(vacio())).toBe(true);
+    expect(esBorradorVacio({ ...vacio(), conductorId: "c-otro" })).toBe(true);
   });
 
-  it("D11: si la persona cambió el kilometraje inicial ya no está vacío", () => {
-    expect(esBorradorVacio({ ...vacio(), kmInicio: 84500 }, 84320)).toBe(false);
+  it("D11: cualquier kilometraje inicial escrito lo vuelve no vacío (el formulario arranca sin él, P13)", () => {
+    expect(esBorradorVacio({ ...vacio(), kmInicio: 84320 })).toBe(false);
+    expect(esBorradorVacio({ ...vacio(), kmInicio: 0 })).toBe(false);
   });
 
   it("D11: cualquier otro dato lo vuelve no vacío", () => {
-    expect(esBorradorVacio({ ...vacio(), kmFin: 84400 }, 84320)).toBe(false);
-    expect(esBorradorVacio({ ...vacio(), combustible: "lleno" }, 84320)).toBe(false);
-    expect(esBorradorVacio({ ...vacio(), litrosCargados: 10 }, 84320)).toBe(false);
-    expect(esBorradorVacio({ ...vacio(), otraNovedad: { descripcion: "", impideUso: false } }, 84320)).toBe(false);
-    expect(esBorradorVacio({ ...vacio(), checklist: { ...checklistVacio(), cabina: { estado: "en-orden" } } }, 84320)).toBe(false);
+    expect(esBorradorVacio({ ...vacio(), kmFin: 84400 })).toBe(false);
+    expect(esBorradorVacio({ ...vacio(), combustible: "lleno" })).toBe(false);
+    expect(esBorradorVacio({ ...vacio(), litrosCargados: 10 })).toBe(false);
+    expect(esBorradorVacio({ ...vacio(), otraNovedad: { descripcion: "", impideUso: false } })).toBe(false);
+    expect(esBorradorVacio({ ...vacio(), checklist: { ...checklistVacio(), cabina: { estado: "en-orden" } } })).toBe(false);
   });
 });

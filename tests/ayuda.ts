@@ -1,6 +1,8 @@
 // Fábricas de datos ficticios para los tests (nada de esto se parece a datos reales).
 import { VERSION_ESQUEMA } from "../src/lib/datos/generador.ts";
 import { ejecutar, type Comando, type Contexto } from "../src/lib/dominio/comandos.ts";
+import { valoresIniciales, type ValoresParte } from "../src/lib/dominio/formulario-parte.ts";
+import { formatearKm } from "../src/lib/dominio/textos.ts";
 import type {
   Conductor,
   Documento,
@@ -66,6 +68,11 @@ export function novedad(parcial: Partial<Novedad> = {}): Novedad {
     resolucion: null,
     ...parcial,
   };
+}
+
+/** Los valores de un formulario de parte con el inicio ya escrito (lo que la persona escribiría): el formulario nuevo arranca con el inicio vacío. */
+export function valoresConKm(entrada: { conductorId: string | null; kmInicio: number | null }): ValoresParte {
+  return { ...valoresIniciales({ conductorId: entrada.conductorId }), kmInicio: entrada.kmInicio === null ? "" : formatearKm(entrada.kmInicio) };
 }
 
 export function checklistVacio(): Parte["checklist"] {
