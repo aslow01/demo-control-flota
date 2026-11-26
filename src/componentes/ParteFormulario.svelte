@@ -292,7 +292,7 @@
       <section class="seccion" aria-labelledby={id("revision-titulo")}>
         <h2 id={id("revision-titulo")}>{T.secciones.revision.puntos}</h2>
         <div class="progreso">
-          <p class="respondidos num">{T.respondidos(respondidos(valores), vista.puntos.length)}</p>
+          <p class="respondidos">{T.respondidos(respondidos(valores), vista.puntos.length)}</p>
           <!-- El parte en miniatura: un segmento por punto (gris sin responder, malaquita en orden, cobre con novedad). Decorativo: el conteo de al lado lo dice con texto. -->
           <span class="barra-prog" aria-hidden="true">
             {#each vista.puntos as p (p.id)}

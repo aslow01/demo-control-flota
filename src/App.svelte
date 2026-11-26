@@ -606,7 +606,6 @@
     }
     .fecha {
       flex: none;
-      font-variant-numeric: tabular-nums;
     }
   }
 

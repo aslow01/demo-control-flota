@@ -80,17 +80,17 @@
                       <dl class="detalle">
                         <div>
                           <dt>{T.historial.kilometraje}</dt>
-                          <dd class="num">{d.kmInicio} → {d.kmFin} ({d.recorrido})</dd>
+                          <dd>{d.kmInicio} → {d.kmFin} ({d.recorrido})</dd>
                         </div>
                         {#if d.combustible !== null}
                           <div>
                             <dt>{T.historial.combustible}</dt>
-                            <dd class="num">{d.combustible}</dd>
+                            <dd>{d.combustible}</dd>
                           </div>
                         {/if}
                         <div>
                           <dt>{T.historial.litros}</dt>
-                          <dd class="num">{d.litros}</dd>
+                          <dd>{d.litros}</dd>
                         </div>
                         {#if d.novedades.length > 0}
                           <div>

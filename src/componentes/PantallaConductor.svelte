@@ -87,7 +87,7 @@
                 <span class="interno">{inicio.unidad.interno}</span>
               </p>
               <p class="descripcion">{inicio.unidad.descripcion}</p>
-              <p class="nota num">{inicio.unidad.ultimoRegistro}</p>
+              <p class="nota">{inicio.unidad.ultimoRegistro}</p>
             </div>
           {/if}
 

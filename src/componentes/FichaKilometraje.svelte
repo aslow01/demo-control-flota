@@ -50,7 +50,7 @@
               {/if}
             </th>
             <td {...CELDA} class="registro">
-              <span class="texto num">
+              <span class="texto">
                 {#if f.tipo === "correccion"}<Icono nombre="km" />{/if}{f.texto}
               </span>
               {#if f.motivo !== null}<span class="nota">{T.kilometraje.motivo(f.motivo)}</span>{/if}

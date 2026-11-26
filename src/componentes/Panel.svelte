@@ -124,7 +124,6 @@
     font-size: var(--t-chico);
     line-height: 1rem;
     color: var(--c-texto-3);
-    font-variant-numeric: tabular-nums lining-nums;
   }
   .controles {
     display: flex;

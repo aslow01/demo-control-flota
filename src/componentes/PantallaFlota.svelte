@@ -260,7 +260,7 @@
             </td>
             <td {...CELDA} data-col="novedades" data-etiqueta={T.columnas.novedades} data-sin-valor={f.novedades.abiertas === 0 ? "" : undefined}>
               {#if f.novedades.criticas > 0}
-                <span class="novedad-critica num"><Icono nombre="octogono" />{f.novedades.texto}</span>
+                <span class="novedad-critica"><Icono nombre="octogono" />{f.novedades.texto}</span>
               {:else}
                 <span class="num">{f.novedades.texto}</span>
               {/if}
