@@ -16,7 +16,7 @@ export const SEMILLA_POR_DEFECTO = 20261118;
 /** D4: "Preparando la flota de ejemplo…" solo si el arranque tarda más que esto. */
 export const UMBRAL_PREPARANDO_MS = 300;
 
-/** Si abrir el almacenamiento no responde en este plazo, se lo da por no disponible y se sigue en memoria (D8). */
+/** Si abrir el almacenamiento, o después leerlo o escribir el ejemplo, no responde en este plazo (cada paso), se lo da por no disponible y se sigue en memoria (D8). */
 export const PLAZO_ABRIR_MS = 8000;
 
 /** Avisos globales que el arranque deja para la interfaz (los textos están en `textos.ts`). */
@@ -36,7 +36,7 @@ export interface OpcionesArranque {
   /** Abre el almacenamiento real (en el navegador, `abrirIndexedDB`). Puede rechazar: entonces se usa la memoria (D8). */
   abrirAlmacenamiento: () => Promise<Repositorio>;
   semilla?: number;
-  /** Cuánto se espera a que abra el almacenamiento antes de seguir en memoria (D8). Por defecto, `PLAZO_ABRIR_MS`. */
+  /** Cuánto se espera a que abra, lea y escriba el almacenamiento (cada paso) antes de seguir en memoria (D8). Por defecto, `PLAZO_ABRIR_MS`. */
   plazoAbrirMs?: number;
   /** Se llama una vez si el arranque tarda más de `umbralPreparandoMs` (D4). */
   alTardar?: () => void;
@@ -266,11 +266,36 @@ function conPerfilValido(guardado: Estado): Estado {
   return igual ? guardado : { ...guardado, meta: { ...guardado.meta, perfil: valido } };
 }
 
+/**
+ * Lo mismo que `usarAlmacenamiento`, pero con plazo: abrir puede andar y aun así leer o escribir el ejemplo no terminar nunca (una transacción grande en el WebKit de
+ * Windows no completó en 8 s; en Chromium tarda 160 ms). Sin esto, la pantalla se quedaba en «Preparando la flota de ejemplo…» para siempre. Pasado el plazo rechaza.
+ */
+function usarAlmacenamientoConPlazo(repositorio: Repositorio, opciones: OpcionesArranque, semilla: number): Promise<ResultadoArranque> {
+  const plazo = opciones.plazoAbrirMs ?? PLAZO_ABRIR_MS;
+  return new Promise<ResultadoArranque>((resolver, rechazar) => {
+    let vencido = false;
+    const temporizador = setTimeout(() => {
+      vencido = true;
+      rechazar(new Error("El almacenamiento no respondió a tiempo."));
+    }, plazo);
+    usarAlmacenamiento(repositorio, opciones, semilla).then(
+      (resultado) => {
+        clearTimeout(temporizador);
+        if (!vencido) resolver(resultado);
+      },
+      (error: unknown) => {
+        clearTimeout(temporizador);
+        if (!vencido) rechazar(error);
+      },
+    );
+  });
+}
+
 /** Todo el camino feliz sobre un almacenamiento que anda. Cualquier falla sube y `arrancar` pasa a la memoria. */
 async function arrancarConAlmacenamiento(opciones: OpcionesArranque, semilla: number): Promise<ResultadoArranque> {
   const repositorio = await abrirConPlazo(opciones);
   try {
-    return await usarAlmacenamiento(repositorio, opciones, semilla);
+    return await usarAlmacenamientoConPlazo(repositorio, opciones, semilla);
   } catch (error) {
     repositorio.cerrar?.(); // se sigue en memoria: no dejar la conexión abierta
     throw error;

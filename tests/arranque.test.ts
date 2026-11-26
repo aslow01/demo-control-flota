@@ -250,6 +250,21 @@ describe("D8: un almacenamiento que no responde", () => {
     expect(r.avisos).toEqual([{ tipo: "sin-almacenamiento" }]);
   });
 
+  it("QA E5: si abre pero leer o escribir no termina en el plazo (WebKit con una escritura grande), arranca en memoria y cierra esa conexión", async () => {
+    for (const cuelga of ["cargar", "reemplazarTodo"] as const) {
+      const repo: Repositorio = await repoCon(null);
+      let cerrada = 0;
+      repo.cerrar = () => void cerrada++;
+      if (cuelga === "cargar") repo.cargar = () => new Promise<never>(() => {});
+      else repo.reemplazarTodo = () => new Promise<never>(() => {});
+      const r = await arrancar({ hoy: HOY, abrirAlmacenamiento: almacenamiento(repo), plazoAbrirMs: 20 });
+      expect(r.enMemoria, cuelga).toBe(true);
+      expect(r.repositorio, cuelga).toBeInstanceOf(RepositorioMemoria);
+      expect(r.avisos, cuelga).toEqual([{ tipo: "sin-almacenamiento" }]);
+      expect(cerrada, cuelga).toBe(1);
+    }
+  });
+
   it("si la conexión llega tarde (después del plazo) se cierra: no queda una conexión colgada", async () => {
     let cerrada = 0;
     const tardio = async (): Promise<Repositorio> => {

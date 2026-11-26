@@ -28,7 +28,15 @@ const tipos = {
 };
 
 createServer((req, res) => {
-  const ruta = decodeURIComponent((req.url ?? "/").split("?")[0] ?? "/");
+  let ruta;
+  try {
+    ruta = decodeURIComponent((req.url ?? "/").split("?")[0] ?? "/");
+  } catch {
+    // Una dirección mal codificada (`/%E0%A4%A`) no tiene que tirar abajo el servidor de quien está probando.
+    res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Dirección mal codificada.");
+    return;
+  }
   let archivo = normalize(join(dist, ruta === "/" ? "index.html" : ruta));
   if (!archivo.startsWith(dist + sep) || !existsSync(archivo) || !statSync(archivo).isFile()) archivo = join(dist, "index.html");
   res.writeHead(200, { ...cabeceras, "Content-Type": tipos[extname(archivo)] ?? "application/octet-stream" });
