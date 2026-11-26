@@ -39,7 +39,7 @@
 
   // El texto del mensaje entra a la región `role="status"` (que existe desde el principio, vacía) unos ms después: también el de llegada («Unidad agregada…»), que nace con la pantalla.
   const anunciado = textoAnunciado(() => ({ texto: mensaje, repetir }));
-  const aspecto = $derived(aspectoDeAptitud(ficha.aptitud.categoria));
+  const aspecto = $derived(aspectoDeAptitud(ficha.aptitud.categoria, ficha.estadoOperativo.origen));
   const items = $derived<ItemMenu[]>(
     ficha.acciones.masAcciones.map((a: AccionDeFicha) => ({ id: a.id, texto: a.etiqueta, alActivar: () => alAccion(a.id) })),
   );

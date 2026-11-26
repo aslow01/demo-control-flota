@@ -24,7 +24,7 @@
   } from "../lib/estado/flota.ts";
   import { LARGO_MAXIMO_BUSQUEDA } from "../lib/estado/enrutador.ts";
   import { app } from "../lib/estado/instancia.ts";
-  import { aspectoDeAptitud } from "./alertas-aspecto.ts";
+  import { aspectoDeAptitud, origenDeFueraDeServicio } from "./alertas-aspecto.ts";
   import Boton from "./Boton.svelte";
   import DialogoUnidad from "./DialogoUnidad.svelte";
   import Etiqueta from "./Etiqueta.svelte";
@@ -129,6 +129,13 @@
   /** «Volkswagen Amarok 2015 · Camioneta» -> «Volkswagen Amarok 2015»: con el tipo la segunda línea de la celda se parte en dos (C9); el tipo está en la ficha. */
   const sinTipo = (descripcion: string): string => (descripcion.includes(" · ") ? descripcion.slice(0, descripcion.lastIndexOf(" · ")) : descripcion);
   const grupos = $derived<GrupoDeLista<FilaFlota>[]>(v === null ? [] : [{ clave: "flota", titulo: "", tono: "neutro", filas: v.filas }]);
+  /** La franja de la fila: la de «Fuera de servicio» sale de su origen (novedad crítica: crítico; taller: neutro), no del ámbar de «por vencer». */
+  const tonoDeLaFila = (f: FilaFlota) =>
+    f.estado.categoria === "fuera-de-servicio" ? aspectoDeAptitud(f.estado.categoria, origenDeFueraDeServicio(f.unidadId)).tono : (f.franja ?? undefined);
+  /** La pastilla «Fuera de servicio» reúne las dos clases (crítica y de taller): va en neutro con su cuadrado, no en el ámbar de «por vencer». */
+  const filtros = $derived(
+    v === null ? [] : v.filtros.map((f) => (f.id === "fuera-de-servicio" ? { ...f, tono: "neutro" as const, forma: "cuadro" as const } : f)),
+  );
 
   // ---------- Diálogo «Agregar unidad» ----------
   let dialogoAbierto = $state(false);
@@ -187,7 +194,7 @@
           </select>
         </label>
         <div class="filtros">
-          <FiltrosEnlace leyenda={T.mostrar} opciones={v.filtros} valor={consulta.filtro} />
+          <FiltrosEnlace leyenda={T.mostrar} opciones={filtros} valor={consulta.filtro} />
         </div>
       {/snippet}
 
@@ -207,10 +214,10 @@
           {columnas}
           {grupos}
           claveDeFila={(f) => f.unidadId}
-          tonoDeFila={(f) => f.franja ?? undefined}
+          tonoDeFila={tonoDeLaFila}
         >
           {#snippet fila(f: FilaFlota)}
-            {@const aspecto = aspectoDeAptitud(f.estado.categoria)}
+            {@const aspecto = aspectoDeAptitud(f.estado.categoria, origenDeFueraDeServicio(f.unidadId))}
             {@const pv = f.proximoVencimiento}
             <td {...ENCABEZADO_DE_FILA} data-col="unidad">
               <!-- Tabla: la patente y el interno en un renglón, el modelo debajo. Tarjeta (C8): el interno y el modelo van juntos en un solo grupo sin cortes (`grupo-int`) que baja entero si no entra. -->

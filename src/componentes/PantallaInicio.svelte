@@ -10,7 +10,7 @@
   import type { AccionDeDocumento, CifraDeInicio, FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
   import { aHash } from "../lib/estado/enrutador.ts";
   import { app } from "../lib/estado/instancia.ts";
-  import { aspectoDeAptitud, aspectoDeOperacion } from "./alertas-aspecto.ts";
+  import { aspectoDeAptitud, aspectoDeOperacion, origenDeFueraDeServicio } from "./alertas-aspecto.ts";
   import DialogosDeDocumento from "./DialogosDeDocumento.svelte";
   import { dialogos } from "./dialogos-instancia.ts";
   import Boton from "./Boton.svelte";
@@ -125,7 +125,7 @@
           {#if c.protagonista.items.length > 0}
             <ul class="filas">
               {#each c.protagonista.items as u (u.unidadId)}
-                {@const aspecto = aspectoDeAptitud(u.categoria)}
+                {@const aspecto = aspectoDeAptitud(u.categoria, origenDeFueraDeServicio(u.unidadId))}
                 <li>
                   <a class="fila" data-tono={aspecto.tono} href={u.href}>
                     <span class="cuerpo">

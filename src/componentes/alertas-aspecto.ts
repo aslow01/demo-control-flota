@@ -3,6 +3,7 @@
 import type { FilaVencimiento } from "../lib/estado/centro-alertas.ts";
 import type { TipoAlertaOperacion } from "../lib/dominio/alertas.ts";
 import { textoVencimiento } from "../lib/dominio/textos.ts";
+import { app } from "../lib/estado/instancia.ts";
 import type { NombreIcono, Tono } from "./tipos.ts";
 
 export interface Aspecto {
@@ -32,14 +33,28 @@ export function aspectoDeOperacion(tipo: TipoAlertaOperacion): Aspecto {
   return OPERACION[tipo];
 }
 
-/** Cómo se ve la aptitud de una unidad (5.7): la etiqueta de la flota y de la ficha. */
+/** Cómo se ve la aptitud de una unidad (5.7): la etiqueta de la flota y de la ficha. «Fuera de servicio» sin origen conocido es el de taller (ver `aspectoDeAptitud`). */
 const APTITUD: Record<"puede-salir" | "no-puede-salir" | "fuera-de-servicio" | "baja", Aspecto> = {
   "puede-salir": { tono: "vigente", icono: "check" },
   "no-puede-salir": { tono: "critico", icono: "vencido" },
-  "fuera-de-servicio": { tono: "semana", icono: "llave" },
+  "fuera-de-servicio": { tono: "neutro", icono: "llave" },
   baja: { tono: "neutro", icono: "caja" },
 };
 
-export function aspectoDeAptitud(categoria: keyof typeof APTITUD): Aspecto {
+/** Por qué una unidad está fuera de servicio (el `origen` de su estado): una novedad crítica o una decisión a mano (taller, etc.). */
+export type OrigenFueraDeServicio = "novedad-critica" | "manual";
+
+/**
+ * Una unidad fuera de servicio por una novedad crítica (frenos, por ejemplo) es tan grave como una con el seguro vencido: va en tono crítico.
+ * La que está en el taller es una situación conocida y en curso: va en neutro (grafito, cuadrado) y ya no se confunde con «vence en 7 días o menos» (ámbar, triángulo).
+ */
+export function aspectoDeAptitud(categoria: keyof typeof APTITUD, origen: OrigenFueraDeServicio | null = null): Aspecto {
+  if (categoria === "fuera-de-servicio" && origen === "novedad-critica") return { tono: "critico", icono: "octogono" };
   return APTITUD[categoria];
+}
+
+/** El origen del fuera de servicio de una unidad, leído del estado (las filas de Inicio y de Movilidades no lo traen); `null` si no está fuera de servicio. */
+export function origenDeFueraDeServicio(unidadId: string): OrigenFueraDeServicio | null {
+  const e = app.estado?.unidades.find((u) => u.id === unidadId)?.estado;
+  return e?.tipo === "fuera-de-servicio" ? e.origen : null;
 }

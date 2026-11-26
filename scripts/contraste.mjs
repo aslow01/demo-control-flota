@@ -149,7 +149,9 @@ par("Borde de «Con novedad» (cobre / superficie, 3:1)", "critico-r", "superfic
 par("Borde de «Con novedad» (cobre / fondo, 3:1)", "critico-r", "escritorio", 3);
 par("Insignia neutra (superficie / texto secundario)", "superficie", "texto-2", 4.5);
 // Marca del horizonte sobre su propio tramo (fondo de la pastilla de cada tramo).
-for (const t of ["semana", "mes", "quincena", "critico", "vigente"]) par("Marca / fondo de su tramo (3:1)", `${t}-r`, `${t}-f`, 3);
+for (const t of ["semana", "mes", "quincena", "critico", "vigente", "neutro"]) par("Marca / fondo de su tramo (3:1)", `${t}-r`, `${t}-f`, 3);
+// «Fuera de servicio» por taller (neutro): el cuadrado de la etiqueta y la franja de la fila (en Inicio sobre la superficie del panel).
+par("Franja de «Fuera de servicio» por taller (neutro-r / superficie, 3:1)", "neutro-r", "superficie", 3);
 // Lateral oscuro de escritorio.
 par("Lateral: texto / fondo", "lat-tx", "lat", 4.5);
 par("Lateral: texto secundario / fondo", "lat-tx-2", "lat", 4.5);
