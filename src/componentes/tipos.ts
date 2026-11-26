@@ -59,9 +59,6 @@ export interface OpcionConductor {
   paraProbar?: { etiqueta: string; sinLicencia: boolean } | null;
 }
 
-/** La pestaña de la barra de la aplicación que corresponde a la pantalla actual. */
-export type SeccionActiva = "alertas" | "flota" | "conductor" | "inicio" | "partes" | null;
-
 /** Una acción del marco que va en la barra superior y, con poco ancho, en el menú "Más". */
 export interface ItemMenu {
   id: string;

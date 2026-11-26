@@ -9,7 +9,6 @@ import {
   faltantesDeCierre,
   faltantesDeRevision,
   novedadesDelParte,
-  nuevoBorrador,
   parsearLitros,
   parteLegible,
   validarFechaParte,
@@ -363,30 +362,6 @@ describe("parteLegible: un cierre con el kilometraje final menor que el inicial 
     expect(p).toMatchObject({ estado: "en-uso", kmInicio: 84400, kmFin: null, combustible: "medio" });
     expect(parteLegible({ ...parte({ estado: "en-uso", enviado: null }), kmInicio: 84400, kmFin: 84400 })?.kmFin).toBe(84400);
     expect(parteLegible({ ...parte({ estado: "en-uso", enviado: null }), kmInicio: null, kmFin: 84000 })?.kmFin).toBe(84000);
-  });
-});
-
-describe("P13: borrador nuevo", () => {
-  it("P13: kmInicio sale del kilometraje actual y el conductor del perfil o del asignado", () => {
-    const u = unidad({ id: "u1", conductorId: "c-asignado" });
-    const p = nuevoBorrador({ id: "pt-nuevo", unidad: u, fecha: H, kmActual: 84320, conductorId: "c-asignado", ahora: "2026-11-18T12:00:00.000Z", autor: "Luis Ferreyra" });
-    expect(p.kmInicio).toBe(84320);
-    expect(p.conductorId).toBe("c-asignado");
-    expect(p.estado).toBe("borrador");
-    expect(p.revisado).toBeNull();
-    expect(p.sinSalida).toBe(false);
-    expect(p.kmFin).toBeNull();
-    expect(p.combustible).toBeNull();
-    expect(p.enviado).toBeNull();
-    expect(p.creado).toBe("2026-11-18T12:00:00.000Z");
-    expect(Object.values(p.checklist).every((r) => r.estado === "sin-responder")).toBe(true);
-    expect(Object.keys(p.checklist)).toHaveLength(14);
-  });
-
-  it("P13: sin registros de kilometraje, kmInicio queda vacío", () => {
-    const p = nuevoBorrador({ id: "x", unidad: unidad(), fecha: H, kmActual: null, conductorId: null, ahora: "2026-11-18T12:00:00.000Z", autor: "" });
-    expect(p.kmInicio).toBeNull();
-    expect(p.conductorId).toBeNull();
   });
 });
 

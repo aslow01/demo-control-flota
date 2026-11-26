@@ -421,13 +421,6 @@ export const NOMBRES_DE_PANTALLA = {
   parteDelDia: (diaConFecha: string) => `Parte del ${diaConFecha}`,
 } as const;
 
-/** D3: la empresa de ejemplo con su CUIT, que siempre se muestra rotulado como ficticio (puede coincidir con uno real). */
-export function textoEmpresa(nombre: string, cuit: string): string {
-  const digitos = cuit.replace(/[^0-9]/g, "");
-  const escrito = digitos.length === 11 ? `${digitos.slice(0, 2)}-${digitos.slice(2, 10)}-${digitos.slice(10)}` : cuit;
-  return `${nombre} · CUIT ficticio ${escrito}`;
-}
-
 /** A8: la cifra «No disponibles hoy» de Inicio (bloqueadas por documentos + fuera de servicio), dicha en una frase. */
 export function textoProtagonista(n: number): string {
   if (n === 0) return "Todas las unidades activas están disponibles hoy";
@@ -469,12 +462,6 @@ export function textoHoy(hoy: FechaCivil): string {
 export function textoUltimoRegistro(km: number | null, origen: string | null): string {
   if (km === null || origen === null) return "Sin registros";
   return `Último registro: ${formatearKm(km)} km (${origen}).`;
-}
-
-/** Texto accesible de la insignia de la pestaña "Inicio". */
-export function textoInsigniaAlertas(criticas: number): string {
-  if (criticas === 0) return "Inicio";
-  return `Inicio, ${pluralizar(criticas, "alerta crítica", "alertas críticas")}`;
 }
 
 /** Barra de estado después de renovar: "Quedan 10 vencimientos." */
@@ -704,14 +691,6 @@ export function textoPuntoDeLaRegla(titular: { patente: string } | { conductor: 
   const documento = NOMBRES_DOCUMENTO[tipo].toLowerCase();
   const que = "patente" in titular ? `${titular.patente}, ${documento}` : `${documento} de ${titular.conductor}`;
   return `${que}: ${estado.charAt(0).toLowerCase()}${estado.slice(1)}`;
-}
-
-/**
- * Texto para lector de pantalla del aro hueco de un día con más vencimientos de los que caben: «y 1 vencimiento más ese día», «y 3 vencimientos más ese día».
- * Sin vencimientos de más, vacío.
- */
-export function textoYMasDelDia(ocultas: number): string {
-  return ocultas <= 0 ? "" : `y ${pluralizar(ocultas, "vencimiento", "vencimientos")} más ese día`;
 }
 
 /** Un número de la leyenda dicho completo: «4 documentos, 7 días o menos». */
@@ -1628,16 +1607,6 @@ export function textoResumenDeLaRevision(hora: string | null, kmInicio: number |
   partes.push(novedades.length === 0 ? TEXTO_PANTALLA_PARTE.sinNovedades : `${pluralizar(novedades.length, "novedad", "novedades")}: ${novedades.join(", ")}`);
   if (conductor !== null) partes.push(`Conductor: ${conductor}`);
   return partes.join(" · ");
-}
-
-/**
- * Línea del panel «Parte enviado»: «ZK 214 BD, 18/11/2026, enviado a las 18:42.»; fuera de plazo, con el día del envío. Sin hora legible: «ZK 214 BD,
- * 16/11/2026, enviado.»
- */
-export function textoLineaParteEnviado(patente: string, fecha: FechaCivil, diaDeEnvio: FechaCivil | null, hora: string | null): string {
-  if (diaDeEnvio === null || hora === null) return `${patente}, ${formatearFecha(fecha)}, enviado.`;
-  if (fecha === diaDeEnvio) return `${patente}, ${formatearFecha(fecha)}, enviado a las ${hora}.`;
-  return `${patente}, ${formatearFecha(fecha)}, enviado el ${formatearFecha(diaDeEnvio)} a las ${hora} (fuera de plazo).`;
 }
 
 /** Novedades de un parte enviado: «Sin novedades», «1 crítica: Frenos», «2 críticas: Frenos, Dirección; 1 normal: Otra novedad». */

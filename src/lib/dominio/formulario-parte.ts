@@ -386,11 +386,6 @@ export function barraDeEnvio(
   return { texto: deReglas.size > 0 ? T.barraRevise(n) : textoFaltantes(n), lista: false };
 }
 
-/** El texto de `barraDeEnvio`. */
-export function textoBarraDeEnvio(v: ValoresParte, paso: PasoDelParte = "revision", camposDelIntento: readonly CampoParte[] = []): string {
-  return barraDeEnvio(v, paso, camposDelIntento).texto;
-}
-
 /** «Respondidos: 3 de 14» (5.12). */
 export function respondidos(v: ValoresParte): number {
   return ITEMS_CHECKLIST.filter((i) => v.checklist[i.id].respuesta !== "").length;

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { aplicar, ejecutar, type Comando } from "../src/lib/dominio/comandos.ts";
-import { aplicarCambios, unidadesEnServicioConNovedadCritica } from "../src/lib/dominio/estado.ts";
+import { aplicarCambios } from "../src/lib/dominio/estado.ts";
 import { historialDeUnidad, ordenarHistorial } from "../src/lib/dominio/historial.ts";
 import type { Estado, Evento } from "../src/lib/dominio/tipos.ts";
-import { checklistEnOrden, checklistVacio, contexto, ejecutarOk, flotaDePrueba, novedad } from "./ayuda.ts";
+import { checklistEnOrden, checklistVacio, contexto, ejecutarOk, flotaDePrueba, novedad, unidadesEnServicioConNovedadCritica } from "./ayuda.ts";
 
 const H = "2026-11-18";
 

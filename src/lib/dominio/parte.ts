@@ -21,7 +21,6 @@ import {
   type Documento,
   type Estado,
   type FechaCivil,
-  type Instante,
   type ItemChecklist,
   type NivelCombustible,
   type Parte,
@@ -307,56 +306,6 @@ export function conductorParaParte(perfil: Perfil, unidad: Unidad, documentos: r
   if (perfil.tipo === "conductor") return perfil.conductorId;
   if (unidad.conductorId === null) return null;
   return estadoDeLicencia(documentos, unidad.conductorId, fecha).vigente ? unidad.conductorId : null;
-}
-
-export interface EntradaBorrador {
-  id: string;
-  unidad: Unidad;
-  fecha: FechaCivil;
-  kmActual: number | null;
-  conductorId: string | null;
-  ahora: Instante;
-  autor: string;
-}
-
-/** P13: borrador nuevo con el kilometraje inicial y el conductor ya completados. */
-export function nuevoBorrador(entrada: EntradaBorrador): Parte {
-  const sin: RespuestaItem = { estado: "sin-responder" };
-  return {
-    id: entrada.id,
-    unidadId: entrada.unidad.id,
-    fecha: entrada.fecha,
-    conductorId: entrada.conductorId,
-    estado: "borrador",
-    revisado: null,
-    sinSalida: false,
-    kmInicio: entrada.kmActual,
-    kmFin: null,
-    combustible: null,
-    litrosCargados: null,
-    checklist: {
-      frenos: sin,
-      direccion: sin,
-      neumaticos: sin,
-      luces: sin,
-      cinturones: sin,
-      perticaBaliza: sin,
-      alarmaRetroceso: sin,
-      niveles: sin,
-      matafuego: sin,
-      botiquin: sin,
-      documentacion: sin,
-      cabina: sin,
-      calzasAntiderrame: sin,
-      radio: sin,
-    },
-    otraNovedad: null,
-    advertenciasAceptadas: [],
-    creado: entrada.ahora,
-    actualizado: entrada.ahora,
-    enviado: null,
-    autor: entrada.autor,
-  };
 }
 
 /**

@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPRESA } from "../src/lib/datos/generador.ts";
 import { renglonesDeAvisosAceptados } from "../src/lib/dominio/parte.ts";
-import { formatearCuit } from "../src/lib/datos/cuit.ts";
 import {
   ERRORES,
   RESUMEN_EVENTO,
@@ -36,11 +34,9 @@ import {
   textoDocumentacionDeLaUnidad,
   textoOpcionDeConductor,
   textoDisponibles,
-  textoEmpresa,
   textoFaltantes,
   textoHoy,
   textoHorizonte,
-  textoInsigniaAlertas,
   textoLeFaltan,
   textoProtagonista,
   textoQuedanVencimientos,
@@ -180,12 +176,6 @@ describe("otros textos de la interfaz", () => {
     expect(textoUltimoRegistro(null, null)).toBe("Sin registros");
   });
 
-  it("insignia de la pestaña Inicio", () => {
-    expect(textoInsigniaAlertas(4)).toBe("Inicio, 4 alertas críticas");
-    expect(textoInsigniaAlertas(1)).toBe("Inicio, 1 alerta crítica");
-    expect(textoInsigniaAlertas(0)).toBe("Inicio");
-  });
-
   it("'Quedan N vencimientos' (barra de estado después de renovar)", () => {
     expect(textoQuedanVencimientos(10)).toBe("Quedan 10 vencimientos.");
     expect(textoQuedanVencimientos(1)).toBe("Queda 1 vencimiento.");
@@ -302,15 +292,6 @@ describe("errores y resúmenes que arman otros textos", () => {
       expect(texto.length, clave).toBeGreaterThan(5);
       expect(texto.endsWith("."), clave).toBe(true);
     }
-  });
-});
-
-describe("D3: el CUIT de ejemplo siempre se muestra como ficticio", () => {
-  it("textoEmpresa rotula el CUIT con la palabra 'ficticio' y lo escribe con guiones", () => {
-    const t = textoEmpresa(EMPRESA.nombre, EMPRESA.cuit);
-    expect(t).toBe(`Logística Andina Demo S.A. · CUIT ficticio ${formatearCuit(EMPRESA.cuit)}`);
-    expect(t).toContain("ficticio");
-    expect(t).toMatch(/^Logística Andina Demo S\.A\. · CUIT ficticio \d{2}-\d{8}-\d$/);
   });
 });
 

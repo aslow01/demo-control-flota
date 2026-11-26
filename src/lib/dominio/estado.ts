@@ -45,9 +45,3 @@ export function aplicarCambios(estado: Estado, cambios: Cambios, eventos: readon
     eventos: [...estado.eventos, ...eventos],
   };
 }
-
-/** A3: unidades en servicio con una novedad crítica abierta. Tiene que ser siempre una lista vacía. */
-export function unidadesEnServicioConNovedadCritica(estado: Estado): Unidad[] {
-  const conCritica = new Set(estado.novedades.filter((n) => n.estado === "abierta" && n.gravedad === "critica").map((n) => n.unidadId));
-  return estado.unidades.filter((u) => u.estado.tipo === "en-servicio" && conCritica.has(u.id));
-}

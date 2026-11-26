@@ -15,7 +15,6 @@ import {
   recorridoDe,
   reformatearKm,
   respondidos,
-  textoBarraDeEnvio,
   validarParaEnviar,
   valoresDeParte,
   valoresIniciales,
@@ -23,6 +22,9 @@ import {
 } from "../src/lib/dominio/formulario-parte.ts";
 import { ERRORES } from "../src/lib/dominio/textos.ts";
 import { parte, valoresConKm } from "./ayuda.ts";
+
+/** El texto de la barra de envío (5.14): lo único que estas pruebas miran de `barraDeEnvio`. */
+const textoBarraDeEnvio = (...argumentos: Parameters<typeof barraDeEnvio>): string => barraDeEnvio(...argumentos).texto;
 
 function borrador(valores: ValoresParte, cambios: Partial<ValoresParte> = {}) {
   return comandoDeBorrador("u1", "2026-11-18", null, { ...valores, ...cambios });

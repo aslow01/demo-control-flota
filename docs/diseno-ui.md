@@ -630,7 +630,7 @@ texto 600 e ícono `i-check`. El valor se lee por el radio, no por la barra.
 - Izquierda: estado del formulario (`--t-chico` 600): "Faltan 5 datos" (`--c-texto-2`) o "Listo para enviar" /
   "Listo para cerrar" (`--c-vigente-t` + `i-check`). **Después de un intento con errores de reglas** (K2–K4, P2, P8,
   L1; S4, C5 del 22/11/2026): "Revise N datos" (`--c-texto-2`, sin `i-check`; el mismo N que el título del resumen)
-  hasta el próximo intento. Nunca "Listo para enviar" con un error en pantalla. El texto lo da `textoBarraDeEnvio`
+  hasta el próximo intento. Nunca "Listo para enviar" con un error en pantalla. El texto lo da `barraDeEnvio(...).texto`
   (`src/lib/dominio/formulario-parte.ts`). Derecha: primario grande **"Enviar revisión"** (paso 1) o **"Cerrar
   el parte"** (paso 2). Es `type="button"` (4.5 (2) de `diseno.md`).
 - **El primario nunca se deshabilita**: si falta algo, al pulsarlo aparece el resumen de errores (5.15).
@@ -1775,7 +1775,7 @@ sección 7**: el maquetador los ajusta y lo anota en `docs/registro.md`.
     sigue "Revisión enviada".
 17. **"Avisos aceptados"** (C6, 6.5). [Desde P21, solo kilómetros, en tono semana.] Esperaba los textos por documento de `textos.ts` (~379–395). Ícono `i-vencido` en
     `--c-critico-t`, sin fondo, un renglón por documento, en C1, C3 y D.
-18. **Barra "Revise N datos"** (C5, 5.14). Espera `textoBarraDeEnvio` con los errores del último intento.
+18. **Barra "Revise N datos"** (C5, 5.14). Espera `barraDeEnvio(...).texto` con los errores del último intento.
     `BarraEnvio.svelte` muestra ese estado en `--c-texto-2`, sin `i-check`.
 19. **Resumen de errores agrupado** (D1, 5.15). Espera el armado del resumen (un elemento de grupo con su destino: el
     primer punto sin responder). `ResumenErrores.svelte` lo pinta como un enlace más, que lleva el foco al primer radio

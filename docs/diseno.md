@@ -736,7 +736,7 @@ M1, M3 y M4 el 18/11/2026.
 | B4 | `sumarDias` exige un entero. |
 | B7 | C10 a las 00:00 de Argentina; `datos.motivo` del evento de A3 guarda el motivo abreviado, igual que el estado. |
 | B8 | Los textos de validación, de kilometraje, del checklist, de aptitud y de las alertas pasaron a `textos.ts`. Quedan afuera solo los mensajes del contexto mal armado (error de programación). |
-| B10 | `textoEmpresa` rotula siempre el CUIT como «ficticio»; el README ya no afirma que la serie de patentes «no se emitió». |
+| B10 | El CUIT de la empresa de ejemplo se rotula siempre como «ficticio» (la función `textoEmpresa` se retiró el 26/11/2026: ninguna pantalla muestra el CUIT); el README ya no afirma que la serie de patentes «no se emitió». |
 | B11 | `CLAUDE.md` habla de «material de terceros». No se reescribió el historial. |
 
 **Pendiente o de diseño (no se tocó):** B4 (tipos con marca para `FechaCivil`/`Instante`, uniones discriminadas de eventos y
@@ -1081,7 +1081,7 @@ Los nombres son orientativos (los fija el programador sin cambiar el significado
 | `parte.ts` | `documentacionVencidaEn({ fecha, unidad, proyecto, documentos })` | Sin `conductor`: ya no devuelve `'licencia'` (L1 la cubre). |
 | `parte.ts` | `advertenciasDeRevision`, `advertenciasDeCierre` | K6 + P9, y K7. Reemplazan a `advertenciasDeEnvio`. |
 | `parte.ts` | `conductorParaParte(perfil, unidad, documentos, fecha)` | P13: perfil Conductor → el del perfil (siempre: el bloqueo se muestra aparte). Perfil Encargado → el asignado solo si su licencia ampara `fecha`; si no, `null`. |
-| `parte.ts` | `nuevoBorrador` | Con `revisado: null` y `sinSalida: false`. |
+| `parte.ts` | ~~`nuevoBorrador`~~ (retirada el 26/11/2026: el borrador lo arma el comando `guardarBorrador`) | Con `revisado: null` y `sinSalida: false`. |
 | `parte.ts` | `partePendienteDeCierre(partes, unidadId, fecha?)` | P18: el parte `en-uso` más antiguo de la unidad con fecha anterior a `fecha` (sin `fecha`, el más antiguo de todos); `undefined` si no hay. Lo usan `enviarRevision` (con la fecha del parte), `darDeBaja` (sin fecha), el inicio del conductor y la pantalla del parte. |
 | `parte.ts` | `parteEnUsoDelConductor(estado, conductorId, exceptoUnidadId)` | P20: el parte `en-uso` más antiguo del conductor en otra unidad que no esté de baja; `undefined` si no hay. Lo usan `enviarRevision`, el inicio del conductor y la pantalla del parte (perfil Conductor). |
 | `parte.ts` | `parteLegible` | Acepta `estado` `'en-uso'`; `revisado` = instante legible o `null`; `sinSalida` = `=== true`. Un parte en uso sin `revisado` legible se sigue leyendo como en uso (no se inventa la hora). |
@@ -1262,7 +1262,7 @@ Cada nombre lleva el identificador de la regla. Archivos probables entre parént
 1. Tipos y textos: `Parte` (`en-uso`, `revisado`, `sinSalida`), `TipoEvento` (`revision-enviada`), `Comando` (`enviarRevision`, `guardarCierre`, `enviarCierre`) y los textos de `diseno-ui.md`, sección 7 — `src/lib/dominio/tipos.ts`, `src/lib/dominio/textos.ts`.
 2. `estadoDeLicencia` con sus tests (1 a 8) — `src/lib/dominio/vencimientos.ts`.
 3. Kilometraje con salidas (40, 41 y los de K de la revisión y del cierre) — `src/lib/dominio/kilometraje.ts`.
-4. `parte.ts`: faltantes y advertencias por paso, `documentacionVencidaEn` sin licencia, `conductorParaParte`, `nuevoBorrador`, `parteLegible` (10, 20, 53, 58) — `src/lib/dominio/parte.ts`.
+4. `parte.ts`: faltantes y advertencias por paso, `documentacionVencidaEn` sin licencia, `conductorParaParte`, `parteLegible` (10, 20, 53, 58) — `src/lib/dominio/parte.ts`.
 5. Comandos `enviarRevision`, `guardarCierre`, `enviarCierre` y los rechazos nuevos (9 a 39) — `src/lib/dominio/comandos.ts`; reescribir los tests de `enviarParte` con el comando que corresponda.
 6. Alertas P5, P6, P17 y `conductoresSinLicencia` (42 a 45) — `src/lib/dominio/alertas.ts`; historial — `src/lib/dominio/historial.ts`.
 7. Generador (C11, C21, revisiones y eventos), `versionEsquema` 2 y forma de los partes en el arranque (46 a 53) — `src/lib/datos/generador.ts`, `src/lib/persistencia/arranque.ts`.
@@ -1360,3 +1360,13 @@ Decisiones de Matías (22/11/2026, segunda sesión) y lo que el diseño no decí
 - **B1 y B2.** El diálogo de renovación dice «Actual: póliza …» (antes «Vigente: …, venció el …»). El nombre de un punto del checklist va en minúscula dentro de una frase («novedad crítica en frenos»), también
   en el motivo guardado de la unidad fuera de servicio y en el historial.
 - **M7.** La habilitación de manejo del proyecto sigue opcional y queda como límite conocido (D11).
+
+### 17.14 Crítica de reclutador y revisión de código del 26/11/2026 (programador, parte de lógica)
+
+Lo que el diseño no decía, resuelto con lo más simple:
+
+- **Kilometraje al salir vacío (P13).** Ver la regla P13 y 16 (Paso 4.5, 2). `esBorradorVacio(parte)` ya no compara contra el último registro: un borrador está vacío si no tiene ningún dato. Un borrador viejo guardado con el kilometraje precargado (de antes del cambio) deja de contar como vacío: abrirlo y descartarlo marca la demo como modificada. Es un caso de una demo ya usada, sin consecuencia.
+- **Entrada al recorrido en Inicio.** La franja «Pruebe la demo: vea cómo un seguro vencido impide cargar el parte.» con «Probar como conductor» sale de `conductorConParteBloqueadoPorDocumento` (`estado/parte.ts`): el primer conductor activo cuyo parte de hoy está bloqueado por un seguro **vencido** de su unidad (P21), derivado del estado y no del nombre de nadie. Un bloqueo por otro documento (revisión técnica, habilitación) o por un seguro que falta no cuenta, porque el texto promete un seguro vencido; sin ninguno (por ejemplo, tras renovarlo) la franja no se muestra. El botón abre «Ver como» con Conductor y ese conductor elegidos (no aplica el perfil hasta «Aplicar»: WCAG 3.2.2). Con el ejemplo, c-07 (ZK 214 BD). Marcado: `div.entrada-recorrido` con `p.entrada-recorrido-texto` y un `Boton`, bajo el encabezado de `PantallaInicio`.
+- **«Volver a Hoy».** Con el perfil Conductor el botón de los paneles C1 a C3 dice «Volver a Hoy» (su pantalla de entrada se llama así) y el párrafo de C2 «Si tiene que salir, elija otra unidad en Hoy.». Con el perfil Encargado, que no tiene «Hoy», siguen «Volver al inicio» y «…elija otra unidad desde el inicio.».
+- **«Vence» vacío.** `validarVencimiento` dice «Escriba la fecha de vencimiento.» solo con el campo vacío (o con espacios); mantiene el código `fecha-invalida` y el campo `vence`. Vale para cargar, renovar y corregir. Una fecha mal escrita, «Emitido» y «Desde» (corrección de kilometraje) conservan «Escriba una fecha válida.».
+- **Poda.** Salen `textoLineaParteEnviado`, `textoYMasDelDia`, `textoInsigniaAlertas`, `textoEmpresa`, `SeccionActiva`, `textoBarraDeEnvio` (la barra sigue en `barraDeEnvio(...).texto`), `unidadesEnServicioConNovedadCritica` y `nuevoBorrador`. La de A3 pasó a `tests/ayuda.ts`: sigue siendo el testigo del invariante «ninguna unidad en servicio con una novedad crítica abierta».

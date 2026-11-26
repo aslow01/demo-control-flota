@@ -70,6 +70,12 @@ export function novedad(parcial: Partial<Novedad> = {}): Novedad {
   };
 }
 
+/** A3 (invariante, solo para las pruebas): unidades en servicio con una novedad crítica abierta. Tiene que ser siempre una lista vacía. */
+export function unidadesEnServicioConNovedadCritica(estado: Estado): Unidad[] {
+  const conCritica = new Set(estado.novedades.filter((n) => n.estado === "abierta" && n.gravedad === "critica").map((n) => n.unidadId));
+  return estado.unidades.filter((u) => u.estado.tipo === "en-servicio" && conCritica.has(u.id));
+}
+
 /** Los valores de un formulario de parte con el inicio ya escrito (lo que la persona escribiría): el formulario nuevo arranca con el inicio vacío. */
 export function valoresConKm(entrada: { conductorId: string | null; kmInicio: number | null }): ValoresParte {
   return { ...valoresIniciales({ conductorId: entrada.conductorId }), kmInicio: entrada.kmInicio === null ? "" : formatearKm(entrada.kmInicio) };

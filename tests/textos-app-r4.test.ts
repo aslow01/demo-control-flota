@@ -13,7 +13,6 @@ import {
   textoPuntoDeLaRegla,
   textoUltimosPartes,
   textoVencimiento,
-  textoYMasDelDia,
 } from "../src/lib/dominio/textos.ts";
 import { sumarDias } from "../src/lib/dominio/fechas.ts";
 import { clasificar } from "../src/lib/dominio/vencimientos.ts";
@@ -151,11 +150,5 @@ describe("regla de vencimientos", () => {
         expect(dicho).toBe(`ZK 214 BD, ${NOMBRES_DOCUMENTO[tipo].toLowerCase()}: ${estado.toLowerCase()}`);
       }
     }
-  });
-
-  it("«y N más»: cero, uno y varios", () => {
-    expect(textoYMasDelDia(0)).toBe("");
-    expect(textoYMasDelDia(1)).toBe("y 1 vencimiento más ese día");
-    expect(textoYMasDelDia(3)).toBe("y 3 vencimientos más ese día");
   });
 });

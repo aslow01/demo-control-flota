@@ -16,7 +16,10 @@ export const SEMILLA_POR_DEFECTO = 20261118;
 /** D4: "Preparando la flota de ejemplo…" solo si el arranque tarda más que esto. */
 export const UMBRAL_PREPARANDO_MS = 300;
 
-/** Si abrir el almacenamiento, o después leerlo o escribir el ejemplo, no responde en este plazo (cada paso), se lo da por no disponible y se sigue en memoria (D8). */
+/**
+ * Si abrir el almacenamiento no responde en este plazo, o si después leerlo y escribir el ejemplo no termina en este mismo plazo (uno solo, en total, para leer y escribir:
+ * no se renueva en cada paso), se lo da por no disponible y se sigue en memoria (D8).
+ */
 export const PLAZO_ABRIR_MS = 8000;
 
 /** Avisos globales que el arranque deja para la interfaz (los textos están en `textos.ts`). */
@@ -36,7 +39,7 @@ export interface OpcionesArranque {
   /** Abre el almacenamiento real (en el navegador, `abrirIndexedDB`). Puede rechazar: entonces se usa la memoria (D8). */
   abrirAlmacenamiento: () => Promise<Repositorio>;
   semilla?: number;
-  /** Cuánto se espera a que abra, lea y escriba el almacenamiento (cada paso) antes de seguir en memoria (D8). Por defecto, `PLAZO_ABRIR_MS`. */
+  /** Cuánto se espera a que abra el almacenamiento y, aparte, a que lo lea y escriba el ejemplo (un solo plazo, en total, para esos dos pasos) antes de seguir en memoria (D8). Por defecto, `PLAZO_ABRIR_MS`. */
   plazoAbrirMs?: number;
   /** Se llama una vez si el arranque tarda más de `umbralPreparandoMs` (D4). */
   alTardar?: () => void;

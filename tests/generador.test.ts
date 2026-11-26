@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import { aptitud } from "../src/lib/dominio/aptitud.ts";
 import { ejecutar } from "../src/lib/dominio/comandos.ts";
-import { unidadesEnServicioConNovedadCritica } from "../src/lib/dominio/estado.ts";
 import { diasEntre, fechaEnArgentina, formatearFecha, parsearFechaCivil, sumarDias } from "../src/lib/dominio/fechas.ts";
 import { kmActual, validarKmDeCierre, validarKmDeSalida } from "../src/lib/dominio/kilometraje.ts";
 import { documentacionVencidaEn } from "../src/lib/dominio/parte.ts";
@@ -11,7 +10,7 @@ import type { Documento, Estado, Parte, TipoDocumento, Unidad } from "../src/lib
 import { clasificar, documentoVigente, hayDocumentoQueAmpare } from "../src/lib/dominio/vencimientos.ts";
 import { cuitValido } from "../src/lib/datos/cuit.ts";
 import { APELLIDOS, EMPRESA, ENCARGADA, NOMBRES, SEMILLA_POR_DEFECTO, VERSION_ESQUEMA, generar } from "../src/lib/datos/generador.ts";
-import { contexto } from "./ayuda.ts";
+import { contexto, unidadesEnServicioConNovedadCritica } from "./ayuda.ts";
 
 const H = "2026-11-18";
 const e: Estado = generar(SEMILLA_POR_DEFECTO, H);
