@@ -526,6 +526,25 @@ export function conductoresParaProbar(estado: Estado, alertas: ResultadoAlertas,
   return CASOS_PARA_PROBAR.flatMap((caso) => hallados.get(caso)?.sugerido ?? []);
 }
 
+/**
+ * Entrada al recorrido en Inicio: el primer conductor activo cuyo parte de hoy está bloqueado por el seguro vencido de su unidad (P21; lo dice el mismo cálculo que arma su inicio,
+ * así que nunca contradice lo que se ve al elegirlo). La franja promete «un seguro vencido»: una unidad que se traba por otro documento (revisión técnica, habilitación) o por un
+ * seguro que falta, y no que venció, no cuenta. `null` si el estado no tiene ninguno (por ejemplo, después de renovar el seguro): la franja no se muestra.
+ */
+export function conductorConParteBloqueadoPorDocumento(estado: Estado, alertas: ResultadoAlertas, hoy: FechaCivil): { conductorId: string } | null {
+  for (const c of estado.conductores) {
+    if (!c.activo) continue;
+    const unidad = estado.unidades.find((u) => u.conductorId === c.id && u.estado.tipo !== "baja");
+    const proyecto = unidad === undefined ? undefined : estado.proyectos.find((p) => p.id === unidad.proyectoId);
+    if (unidad === undefined || proyecto === undefined) continue;
+    const bloqueo = documentacionQueBloquea({ fecha: hoy, unidad, proyecto, documentos: estado.documentos });
+    if (bloqueo === null || bloqueo.contexto.venceron.seguro == null) continue;
+    const inicio = inicioDelConductor(estado, alertas, hoy, { tipo: "conductor", conductorId: c.id });
+    if (inicio?.hoyEstado.tipo === "no-puede-salir") return { conductorId: c.id };
+  }
+  return null;
+}
+
 function casoParaProbar(inicio: InicioDelConductor): CasoParaProbar | null {
   switch (inicio.hoyEstado.tipo) {
     case "sin-parte":

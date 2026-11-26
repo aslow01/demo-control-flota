@@ -25,9 +25,12 @@
 
   let {
     alAbrirParte,
+    alProbarComoConductor,
   }: {
     /** «Abrir el parte diario»: el marco abre «Ver como» con Conductor ya elegido. */
     alAbrirParte: () => void;
+    /** «Probar como conductor» (franja bajo el subtítulo): el marco abre «Ver como» con Conductor y este conductor ya elegidos. */
+    alProbarComoConductor: (conductorId: string) => void;
   } = $props();
 
   const ID_NODISPONIBLES = "titulo-no-disponibles";
@@ -35,6 +38,8 @@
   const ID_OPERACION = "titulo-operacion";
 
   const c = $derived(app.centroDeAlertas);
+  /** El conductor con el parte bloqueado por un documento vencido: de él sale la franja del recorrido (sin ninguno, no se muestra). */
+  const recorrido = $derived(app.entradaAlRecorrido());
 
   // ---------- Diálogos ----------
   /** En qué panel se abrió el último diálogo: ahí se dice lo que pasó y a ese título va el foco (los dos paneles comparten el origen «inicio»). */
@@ -70,6 +75,14 @@
       <h1 tabindex="-1">{c.titulo}</h1>
       <p class="linea">{c.encabezado.linea}</p>
     </div>
+
+    <!-- Entrada al recorrido: lo mejor de la demo (el parte que se traba por un seguro vencido) a un clic. El estilo es del maquetador (`.entrada-recorrido`). -->
+    {#if recorrido !== null}
+      <div class="entrada-recorrido">
+        <p class="entrada-recorrido-texto">{TEXTO_INICIO.recorrido.texto}</p>
+        <Boton variante="secundario" aria-haspopup="dialog" onclick={() => alProbarComoConductor(recorrido.conductorId)}>{TEXTO_INICIO.recorrido.boton}</Boton>
+      </div>
+    {/if}
 
     <!-- 1: las cifras. La cobre (principal) lleva al filtro «No disponibles hoy» de Movilidades; cada una de las otras, a su lista. -->
     <div class="cifras">

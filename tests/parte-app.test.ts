@@ -107,6 +107,21 @@ describe("las vistas según la ruta y el perfil", () => {
     expect(r.primerCampo).toBe("kmInicio");
   });
 
+  it("la entrada al recorrido de Inicio es el conductor con el parte bloqueado por el seguro vencido de ZK 214 BD (c-07); antes de iniciar no hay ninguno", async () => {
+    const antes = new EstadoApp({
+      reloj: crearReloj(() => new Date(Date.parse(MEDIODIA))),
+      abrirAlmacenamiento: async () => new RepositorioMemoria(),
+      ubicacion: ubicacionEnMemoria("#/"),
+      crearAvisoPestanas: () => ({ avisarCambio: () => {}, cerrar: () => {} }),
+      nuevoId: () => "x",
+    });
+    expect(antes.entradaAlRecorrido()).toBeNull();
+    const { app } = await iniciada();
+    expect(app.entradaAlRecorrido()).toEqual({ conductorId: "c-07" });
+    // la sugerencia coincide con la marca «Para probar» del diálogo «Ver como»
+    expect(app.opcionesDeConductor().find((o) => o.id === "c-07")?.paraProbar?.etiqueta).toBe("Para probar: la unidad tiene la documentación vencida");
+  });
+
   it("perfil Encargado: el conductor se elige y arranca con el asignado", async () => {
     const { app } = await iniciada({ patente: "ZYN469" });
     const v = edicion(app);

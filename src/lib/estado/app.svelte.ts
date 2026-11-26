@@ -118,6 +118,7 @@ import { fichaDeUnidad as armarFicha, type FichaDeUnidad, type FichaNoEncontrada
 import { panelDeFlota, type PanelFlota } from "./flota.ts";
 import { generarId } from "./ids.ts";
 import {
+  conductorConParteBloqueadoPorDocumento,
   conductoresParaProbar,
   inicioDelConductor as armarInicio,
   misPartes as armarMisPartes,
@@ -776,6 +777,12 @@ export class EstadoApp {
       const s = sugeridos.get(o.id);
       return { ...o, paraProbar: s === undefined ? null : { etiqueta: s.etiqueta, sinLicencia: s.caso === "sin-licencia" } };
     });
+  }
+
+  /** La entrada al recorrido de Inicio: el conductor cuyo parte está bloqueado por el seguro vencido de su unidad, o `null` (la franja no se muestra). */
+  entradaAlRecorrido(): { conductorId: string } | null {
+    if (this.estado === null || this.alertas === null) return null;
+    return conductorConParteBloqueadoPorDocumento(this.estado, this.alertas, this.hoy);
   }
 
   /**

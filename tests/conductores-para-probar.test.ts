@@ -5,7 +5,7 @@ import { SEMILLA_POR_DEFECTO, generar } from "../src/lib/datos/generador.ts";
 import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import { formatearPatente } from "../src/lib/dominio/patente.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
-import { conductoresParaProbar, inicioDelConductor } from "../src/lib/estado/parte.ts";
+import { conductorConParteBloqueadoPorDocumento, conductoresParaProbar, inicioDelConductor } from "../src/lib/estado/parte.ts";
 import { flotaDePrueba } from "./ayuda.ts";
 
 const H = "2026-11-18";
@@ -75,5 +75,32 @@ describe("conductoresParaProbar (M1)", () => {
     const sinUnidad = new Set(e.conductores.filter((c) => !e.unidades.some((u) => u.conductorId === c.id)).map((c) => c.id));
     expect(sinUnidad.size).toBe(8);
     for (const s of sugeridos) expect(sinUnidad.has(s.conductorId)).toBe(false);
+  });
+});
+
+describe("conductorConParteBloqueadoPorDocumento (entrada al recorrido en Inicio)", () => {
+  it("con el ejemplo es el conductor cuyo inicio dice que la unidad no puede salir por un documento vencido, sin nombrarlo en el código", () => {
+    const c = conductorConParteBloqueadoPorDocumento(e, alertas, H);
+    expect(c).not.toBeNull();
+    expect(inicioDe(c!.conductorId)?.hoyEstado.tipo).toBe("no-puede-salir");
+    expect(c).toEqual({ conductorId: sugeridos.find((s) => s.caso === "documentacion-vencida")!.conductorId });
+  });
+
+  it("si se renueva lo que vencía no hay ninguno: la franja no se muestra", () => {
+    const renovada: Estado = { ...e, documentos: e.documentos.map((d) => (d.vence < H ? { ...d, vence: "2027-12-31" } : d)) };
+    expect(conductorConParteBloqueadoPorDocumento(renovada, calcularAlertas(renovada, H), H)).toBeNull();
+  });
+
+  it("la franja promete un seguro VENCIDO: un seguro que falta, o un bloqueo por otro documento (la habilitación de c-10), no la muestra", () => {
+    const sinSeguros: Estado = { ...e, documentos: e.documentos.filter((d) => d.tipo !== "seguro") };
+    expect(conductoresParaProbar(sinSeguros, calcularAlertas(sinSeguros, H), H).some((s) => s.caso === "documentacion-vencida")).toBe(true);
+    expect(conductorConParteBloqueadoPorDocumento(sinSeguros, calcularAlertas(sinSeguros, H), H)).toBeNull();
+  });
+
+  it("una flota sana y una sin conductores tampoco tienen ninguno", () => {
+    const sana = flotaDePrueba();
+    expect(conductorConParteBloqueadoPorDocumento(sana, calcularAlertas(sana, H), H)).toBeNull();
+    const vacio: Estado = { ...e, conductores: [] };
+    expect(conductorConParteBloqueadoPorDocumento(vacio, calcularAlertas(vacio, H), H)).toBeNull();
   });
 });

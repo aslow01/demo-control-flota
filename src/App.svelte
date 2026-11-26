@@ -111,15 +111,18 @@
   let cambiandoPerfil = $state(false);
   let errorAlCambiarPerfil = $state("");
   let perfilInicialDelDialogo = $state<"encargado" | "conductor">("encargado");
+  /** El conductor que el diálogo trae elegido al abrirse desde «Probar como conductor» (Inicio); `null` = el del perfil actual. */
+  let conductorInicialDelDialogo = $state<string | null>(null);
   const conductores = $derived<OpcionConductor[]>(app.opcionesDeConductor());
   const conductorActual = $derived(app.perfil.tipo === "conductor" ? app.perfil.conductorId : null);
   const opcionActual = $derived(conductores.find((c) => c.id === conductorActual));
   const esConductor = $derived(app.perfil.tipo === "conductor");
   const perfilTexto = $derived(esConductor ? TEXTO_MARCO.perfilConductor : TEXTO_MARCO.perfilEncargado);
 
-  function pedirVerComo(inicial: "encargado" | "conductor" = app.perfil.tipo): void {
+  function pedirVerComo(inicial: "encargado" | "conductor" = app.perfil.tipo, conductorId: string | null = null): void {
     errorAlCambiarPerfil = "";
     perfilInicialDelDialogo = inicial;
+    conductorInicialDelDialogo = conductorId;
     dialogoVerComoAbierto = true;
   }
   async function confirmarPerfil(perfil: { tipo: "encargado" } | { tipo: "conductor"; conductorId: string }): Promise<void> {
@@ -449,7 +452,7 @@
             <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
           </div>
         {:else if app.ruta.tipo === "inicio"}
-          <PantallaInicio alAbrirParte={() => pedirVerComo("conductor")} />
+          <PantallaInicio alAbrirParte={() => pedirVerComo("conductor")} alProbarComoConductor={(conductorId) => pedirVerComo("conductor", conductorId)} />
         {:else if app.ruta.tipo === "vencimientos"}
           <PantallaVencimientos />
         {:else if app.ruta.tipo === "operacion"}
@@ -533,7 +536,7 @@
   bind:abierto={dialogoVerComoAbierto}
   perfilInicial={perfilInicialDelDialogo}
   {conductores}
-  elegidoInicial={conductorActual}
+  elegidoInicial={conductorInicialDelDialogo ?? conductorActual}
   cargando={cambiandoPerfil}
   error={errorAlCambiarPerfil}
   focoDestino={destinoDelFoco}

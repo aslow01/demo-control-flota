@@ -164,6 +164,10 @@ describe("R3: textos de Inicio, Vencimientos y Operación diaria", () => {
     expect(TEXTO_INICIO.noDisponiblesVacio.ayuda).toBe("Ninguna está bloqueada por documentos ni fuera de servicio.");
     expect(TEXTO_GRUPO_OPERACION["sin-parte"]).toBe("Unidades sin parte de ayer");
   });
+
+  it("la entrada al recorrido de Inicio: la invitación y el botón, en español neutro", () => {
+    expect(TEXTO_INICIO.recorrido).toEqual({ texto: "Pruebe la demo: vea cómo un seguro vencido impide cargar el parte.", boton: "Probar como conductor" });
+  });
 });
 
 describe("otros textos de la interfaz", () => {

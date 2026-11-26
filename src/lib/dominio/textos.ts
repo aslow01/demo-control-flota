@@ -674,6 +674,8 @@ export const TEXTO_INICIO = {
   verTodosVencimientos: { visible: "Ver todos", nombre: "Ver todos los vencimientos" },
   /** Segunda línea del panel «Operación diaria» sin pendientes (la primera es `TEXTO_CENTRO.operacionVacia`). */
   operacionVaciaAyuda: "Aquí aparecerán los partes sin enviar o sin cerrar, las unidades sin parte y las novedades abiertas.",
+  /** Franja bajo el subtítulo: invita al recorrido (el parte que se traba por un seguro vencido). El botón abre «Ver como» con ese conductor ya elegido. */
+  recorrido: { texto: "Pruebe la demo: vea cómo un seguro vencido impide cargar el parte.", boton: "Probar como conductor" },
 } as const;
 
 /** Leyenda del horizonte: una forma, su período y cuántos documentos hay. Los rótulos son los de los filtros de Vencimientos. */
