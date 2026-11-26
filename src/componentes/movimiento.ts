@@ -19,6 +19,23 @@ export function quiereMenosMovimiento(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/**
+ * ¿Es un WebKit que no es Chromium (Safari, o cualquier navegador de iPhone, que por dentro es Safari)? Ahí NO se usa `startViewTransition`: en el WebKit 26.5 de Playwright
+ * esta página tira abajo el renderizador al navegar con la transición (QA E5, A1), y no se pudo mirar en un Safari real. Se prefiere la animación CSS de respaldo, que anda en todos lados.
+ * El agente de usuario se mira por cómo se dice cada motor: Chrome, Edge y Opera dicen «Chrome/»; los de iPhone dicen «CriOS/», «FxiOS/», «EdgiOS/» o «OPiOS/»; Safari dice
+ * «AppleWebKit» sin «Chrome/». Firefox no dice «AppleWebKit». Si el agente no dice nada, el fabricante «Apple» lo delata.
+ */
+export function esWebKitSinChromium(navegador: { userAgent: string; vendor?: string }): boolean {
+  const ua = navegador.userAgent;
+  if (/\b(CriOS|FxiOS|EdgiOS|OPiOS)\//.test(ua)) return true;
+  if (/\b(Chrome|Chromium)\//.test(ua)) return false;
+  return /AppleWebKit/.test(ua) || (navegador.vendor ?? "").startsWith("Apple");
+}
+
+function puedeUsarTransiciones(): boolean {
+  return "startViewTransition" in document && !esWebKitSinChromium(navigator);
+}
+
 function clavePorHash(hash: string): string {
   const ruta = parsearHash(hash);
   return ruta.tipo === "sin-ruta" ? "sin-ruta" : clavePantalla(ruta);
@@ -62,16 +79,15 @@ function entradaConCss(aplicar: () => void): void {
   void tick().then(() => {
     const principal = document.getElementById("principal");
     if (principal === null) return;
+    // Un solo oyente para todas las entradas (el mismo, agregarlo otra vez no hace nada): al terminar la animación se saca la clase.
+    principal.addEventListener("animationend", alTerminarLaEntrada);
     principal.classList.remove(CLASE_DE_ENTRADA);
     void principal.offsetWidth; // reinicia la animación si todavía estaba en curso
     principal.classList.add(CLASE_DE_ENTRADA);
-    const alTerminar = (e: AnimationEvent): void => {
-      if (e.target !== principal) return;
-      principal.classList.remove(CLASE_DE_ENTRADA);
-      principal.removeEventListener("animationend", alTerminar);
-    };
-    principal.addEventListener("animationend", alTerminar);
   });
+}
+function alTerminarLaEntrada(e: AnimationEvent): void {
+  if (e.target === e.currentTarget && e.currentTarget instanceof HTMLElement) e.currentTarget.classList.remove(CLASE_DE_ENTRADA);
 }
 
 function conTransicion(aplicar: () => void, antes: string, despues: string): void {
@@ -92,16 +108,16 @@ function conTransicion(aplicar: () => void, antes: string, despues: string): voi
       poner(nuevo);
     }
   });
-  // Una transición saltada (pestaña oculta, otra que llega encima) rechaza estas promesas: no es un error de la aplicación.
+  // Una transición saltada (pestaña oculta, otra que llega encima) rechaza `ready`: no es un error de la aplicación. En cambio, si `updateCallbackDone` rechaza es porque
+  // falló `aplicar` (el cambio de estado): eso sí se informa, no se traga. `finished` repite ese rechazo, así que acá solo se limpia.
   transicion.ready.catch(() => {});
-  transicion.updateCallbackDone.catch(() => {});
-  void transicion.finished
-    .catch(() => {})
-    .finally(() => {
-      document.documentElement.classList.remove(CLASE_EN_TRANSICION);
-      sacar(viejo);
-      sacar(nuevo);
-    });
+  transicion.updateCallbackDone.catch((error: unknown) => console.error(error));
+  const limpiar = (): void => {
+    document.documentElement.classList.remove(CLASE_EN_TRANSICION);
+    sacar(viejo);
+    sacar(nuevo);
+  };
+  void transicion.finished.then(limpiar, limpiar);
 }
 
 // ---------- La cifra cobre de Inicio cuenta de 0 a N (al abrir la demo y al reiniciarla) ----------
@@ -130,7 +146,8 @@ export function alPedirseLaCuenta(oyente: () => void): () => void {
 
 /** Cuenta de 0 a `fin` frenando al final (curva cúbica). Devuelve cómo cortarla; `alPaso` recibe cada número y termina siempre en `fin`. */
 export function contarHasta(fin: number, alPaso: (n: number) => void, alTerminar: () => void): () => void {
-  if (fin <= 0) {
+  // Sin nada que contar, o con «menos movimiento» (que puede cambiar entre que se pidió la cuenta y que arranca): el valor final de una vez.
+  if (fin <= 0 || quiereMenosMovimiento()) {
     alPaso(fin);
     alTerminar();
     return () => {};
@@ -162,9 +179,9 @@ export function conMovimiento(base: Ubicacion): Ubicacion {
         const antes = mostrado;
         const despues = base.leerHash();
         const otraPantalla = clavePorHash(antes) !== clavePorHash(despues);
-        // Un diálogo abierto se cierra solo al cambiar de pantalla: no se le agrega una transición encima.
+        // Un diálogo abierto no lleva transición encima (los de `App.svelte` se cierran solos al cambiar de pantalla, los de cada pantalla se van con ella).
         if (!otraPantalla || quiereMenosMovimiento() || document.querySelector("dialog[open]") !== null) return oyente();
-        if (!("startViewTransition" in document)) return entradaConCss(oyente);
+        if (!puedeUsarTransiciones()) return entradaConCss(oyente);
         conTransicion(oyente, antes, despues);
       });
     },
