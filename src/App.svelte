@@ -179,6 +179,7 @@
     if (seccion !== id) return undefined;
     return app.ruta.tipo === "unidad" || app.ruta.tipo === "parte" ? "true" : "page";
   }
+  // La insignia de Inicio avisa desde las otras pantallas que hay unidades que no pueden salir; estando en Inicio repite la cifra grande de al lado, así que ahí no se muestra.
   const conInsignia = (cantidad: number, texto: string, critica: boolean): ItemNavegacion["insignia"] => (cantidad > 0 ? { cantidad, texto, critica } : undefined);
 
   const destinos = $derived.by(() => {
@@ -186,7 +187,7 @@
     const solapa = app.ruta.tipo === "operacion" ? app.ruta.solapa : null;
     const pendientes = cuentas.checklists + cuentas.novedades;
     return {
-      inicio: { id: "inicio", href: aHash({ tipo: "inicio" }), texto: NOMBRES_DE_PANTALLA.inicio, icono: "inicio", actual: actual("inicio"), insignia: conInsignia(cuentas.noDisponibles, t.insignias.noDisponibles(cuentas.noDisponibles), true) },
+      inicio: { id: "inicio", href: aHash({ tipo: "inicio" }), texto: NOMBRES_DE_PANTALLA.inicio, icono: "inicio", actual: actual("inicio"), insignia: app.ruta.tipo === "inicio" ? undefined : conInsignia(cuentas.noDisponibles, t.insignias.noDisponibles(cuentas.noDisponibles), true) },
       movilidades: { id: "movilidades", href: aHash({ tipo: "movilidades" }), texto: NOMBRES_DE_PANTALLA.movilidades, icono: "unidad", actual: actual("movilidades") },
       vencimientos: { id: "vencimientos", href: aHash({ tipo: "vencimientos" }), texto: NOMBRES_DE_PANTALLA.vencimientos, icono: "calendario", actual: actual("vencimientos"), insignia: conInsignia(cuentas.vencidos, t.insignias.vencidosOFaltantes(cuentas.vencidos), true) },
       operacion: {
