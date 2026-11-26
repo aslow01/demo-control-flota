@@ -154,7 +154,7 @@
   <div class="pantalla">
     <div class="encabezado">
       <h1 tabindex="-1">{app.nombrePantalla}</h1>
-      <div class="agregar"><Boton onclick={abrirAgregar}>{T.agregarUnidad}</Boton></div>
+      <div class="agregar"><Boton variante="secundario" onclick={abrirAgregar}>{T.agregarUnidad}</Boton></div>
       <p class="linea">{panel.resumen}</p>
     </div>
 
@@ -302,42 +302,26 @@
     min-width: 0;
   }
   /* Teléfono: título, «Agregar unidad» a todo el ancho y el resumen. Desde 40 rem: título y botón en una fila, el resumen debajo. */
+  /* El título y «Agregar unidad» (secundario: lo principal es la lista, no agregar) comparten renglón y el botón baja solo si no entra; la línea de resumen, debajo. */
   .encabezado {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "titulo"
-      "agregar"
-      "linea";
-    gap: var(--e-2);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e-2) var(--e-3);
   }
   .encabezado h1 {
-    grid-area: titulo;
+    flex: 1 1 auto;
+    min-width: 0;
   }
   .agregar {
-    grid-area: agregar;
+    flex: none;
     display: flex;
   }
-  .agregar :global(.boton) {
-    flex: 1;
-  }
   .linea {
-    grid-area: linea;
+    flex: 1 1 100%;
     color: var(--c-texto-2);
   }
-  @media (min-width: 40rem) {
-    .encabezado {
-      grid-template-columns: minmax(0, 1fr) auto;
-      grid-template-areas:
-        "titulo agregar"
-        "linea linea";
-      align-items: center;
-    }
-    .agregar :global(.boton) {
-      flex: none;
-    }
-  }
-
   /* ---------- Herramientas: búsqueda, proyecto, orden y filtros ---------- */
   .busqueda {
     display: flex;
