@@ -23,6 +23,7 @@
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import Campo from "./Campo.svelte";
   import Casilla from "./Casilla.svelte";
+  import { clicEnCurso, despuesDelClic } from "./despues-del-clic.ts";
   import Detalles from "./Detalles.svelte";
   import DialogoAntesDeEnviar from "./DialogoAntesDeEnviar.svelte";
   import ItemRevision from "./ItemRevision.svelte";
@@ -136,10 +137,13 @@
     const destino = siguiente instanceof HTMLInputElement && siguiente.type === "radio" ? (controles.find((c) => c instanceof HTMLInputElement && c.type === "radio" && c.name === siguiente.name && c.checked) ?? siguiente) : siguiente;
     destino?.focus();
   }
+  let ultimoToque = Number.NEGATIVE_INFINITY;
   async function alSalirDelCampo(): Promise<void> {
     recorrido = recorridoDe(valores.kmInicio, valores.kmFin);
     const r = await auto.alSalirDelCampo(instantanea());
     if (r === null) return;
+    // Si el foco salió porque se tocó otro control (un punto de la revisión), el mensaje de error empuja todo hacia abajo y el clic caería afuera del botón: se espera al clic.
+    if (clicEnCurso(performance.now(), ultimoToque)) await despuesDelClic();
     erroresCampo = r.ok ? {} : r.tipo === "campos" ? r.errores.porCampo : erroresCampo;
   }
   function alOcultarse(): void {
@@ -191,6 +195,7 @@
     }
     erroresEnvio = r.errores;
     valoresAlEnviar = copia;
+    app.pedirVerElAviso(); // si el error es «hay cambios en otra pestaña», el aviso con «Actualizar» tiene que verse
     irAlResumen = dialogoAbierto; // el diálogo, al cerrarse, no se lleva el foco: va al resumen
     dialogoAbierto = false;
     await tick();
@@ -231,7 +236,7 @@
 
 </script>
 
-<svelte:document onvisibilitychange={alOcultarse} />
+<svelte:document onvisibilitychange={alOcultarse} onpointerdown={() => (ultimoToque = performance.now())} />
 
 <div class="parte">
   <ParteEncabezado

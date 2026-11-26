@@ -236,6 +236,8 @@ export class EstadoApp {
   preparando = $state(false);
   /** D9: otra pestaña escribió. Los datos de esta no cambian hasta `actualizar()`. */
   hayCambiosEnOtraPestana = $state(false);
+  /** Cuántas veces se frenó una escritura por lo de arriba. La pantalla lo usa para llevar la vista al aviso («Actualizar»), que puede estar fuera de la vista (QA E5, M5). */
+  bloqueosPorOtraPestana = $state(0);
   errorDeArranque = $state<string | null>(null);
   /**
    * Sube cada vez que se llega a otra pantalla (`clavePantalla`: tipo, patente, fecha o solapa): la vista mueve el foco al h1 y sube la página.
@@ -478,6 +480,14 @@ export class EstadoApp {
   }
 
   /**
+   * La pantalla lo llama cuando una acción de la persona (enviar el parte, que primero guarda el borrador) se frenó por los cambios de otra pestaña: cuenta como un bloqueo
+   * y lleva la vista al aviso. Sin cambios de otra pestaña no hace nada.
+   */
+  pedirVerElAviso(): void {
+    if (this.hayCambiosEnOtraPestana) this.bloqueosPorOtraPestana++;
+  }
+
+  /**
    * Ejecuta un comando del dominio: lo valida, lo escribe (cambios y eventos juntos) y recién entonces actualiza el
    * estado. Devuelve el error de negocio con su mensaje, o `escritura-fallida` (D10) sin haber cambiado nada.
    */
@@ -493,7 +503,11 @@ export class EstadoApp {
     if (perfil.tipo === "conductor" && !COMANDOS_DEL_CONDUCTOR.has(comando.tipo)) return fallo("sin-permiso", ERRORES.sinPermiso);
     // D12: los comandos se evalúan contra el estado de esta pestaña; si otra ya escribió y esta no se actualizó, se pisarían sus
     // cambios (una baja desaparecería, una renovación se duplicaría). Hasta que se pulse «Actualizar» no se escribe nada.
-    if (this.hayCambiosEnOtraPestana) return fallo("cambios-en-otra-pestana", ERRORES_PESTANAS.escrituraConCambiosEnOtraPestana);
+    if (this.hayCambiosEnOtraPestana) {
+      // El autoguardado no cuenta: corre solo mientras se escribe y no tiene que llevar la vista a ningún lado.
+      if (comando.tipo !== "guardarBorrador" && comando.tipo !== "guardarCierre") this.bloqueosPorOtraPestana++;
+      return fallo("cambios-en-otra-pestana", ERRORES_PESTANAS.escrituraConCambiosEnOtraPestana);
+    }
 
     const momento = this.deps.reloj.momento();
     const resultado = ejecutarComando(estado, comando, {
@@ -1016,7 +1030,10 @@ export class EstadoApp {
       const repositorio = this.repositorio;
       if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
       // D6: se guarda el `meta` de esta pestaña; si otra escribió después, se pisarían sus datos. Primero hay que `actualizar()`.
-      if (this.hayCambiosEnOtraPestana) return fallo("cambios-en-otra-pestana", ERRORES.cambiosEnOtraPestana);
+      if (this.hayCambiosEnOtraPestana) {
+        this.bloqueosPorOtraPestana++;
+        return fallo("cambios-en-otra-pestana", ERRORES.cambiosEnOtraPestana);
+      }
       if (perfil.tipo === "conductor" && !estado.conductores.some((c) => c.id === perfil.conductorId)) {
         return fallo("conductor-inexistente", ERRORES.conductorInexistente);
       }

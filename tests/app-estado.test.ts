@@ -600,6 +600,46 @@ describe("D9: cambios en otra pestaña", () => {
     expect(app.perfil).toEqual({ tipo: "conductor", conductorId });
   });
 
+  it("QA E5 M5: cada intento de escribir que se frena por los cambios de otra pestaña sube un contador, para que la pantalla lleve la vista al aviso", async () => {
+    const { app, pestanas } = await iniciada();
+    expect(app.bloqueosPorOtraPestana).toBe(0);
+    const conductorId = estadoDe(app).conductores[0]!.id;
+    await app.cambiarPerfil({ tipo: "conductor", conductorId }); // sin cambios de otra pestaña: no es un bloqueo
+    await app.cambiarPerfil({ tipo: "encargado" });
+    expect(app.bloqueosPorOtraPestana).toBe(0);
+    pestanas.alRecibir();
+    await app.cambiarPerfil({ tipo: "conductor", conductorId });
+    expect(app.bloqueosPorOtraPestana).toBe(1);
+    const r = await app.ejecutar(renovarSeguroDeC01(estadoDe(app)));
+    expect(r.ok).toBe(false);
+    expect(app.bloqueosPorOtraPestana).toBe(2);
+    // Enviar el parte guarda primero el borrador (que no cuenta solo): la pantalla pide ver el aviso a mano.
+    app.pedirVerElAviso();
+    expect(app.bloqueosPorOtraPestana).toBe(3);
+    await app.actualizar();
+    app.pedirVerElAviso(); // ya no hay cambios de otra pestaña: no cuenta
+    expect(app.bloqueosPorOtraPestana).toBe(3);
+    pestanas.alRecibir();
+    // El autoguardado del parte corre solo mientras se escribe: frenarlo no tiene que mover la vista.
+    const unidad = estadoDe(app).unidades[0]!;
+    const borrador: Comando = {
+      tipo: "guardarBorrador",
+      parteId: null,
+      unidadId: unidad.id,
+      fecha: HOY,
+      conductorId: null,
+      kmInicio: null,
+      kmFin: null,
+      combustible: null,
+      litrosCargados: null,
+      checklist: checklistEnOrden(),
+      otraNovedad: { descripcion: "", impideUso: false },
+    };
+    const frenado = await app.ejecutar(borrador);
+    expect(frenado.ok).toBe(false);
+    expect(app.bloqueosPorOtraPestana).toBe(3);
+  });
+
   it("si 'Actualizar' no puede leer, el aviso sigue y el error se informa", async () => {
     const { app, repo, pestanas } = await iniciada();
     pestanas.alRecibir();
