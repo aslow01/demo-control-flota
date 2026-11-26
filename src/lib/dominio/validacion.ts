@@ -92,7 +92,12 @@ export function validarKmNumero(valor: number, campo: string): Resultado<number>
 /** T4: fecha civil validada a mano. */
 export function validarFecha(texto: string, campo: string): Resultado<FechaCivil> {
   const fecha = parsearFechaCivil(texto);
-  if (fecha === null) return fallo("fecha-invalida", ERRORES.fechaInvalida, { campo });
+  if (fecha === null) {
+    // Un `AAAA-MM-DD` bien armado pero de otro siglo (9999-12-31) no es «inválido» a secas: se dice cuál es el rango.
+    const anio = /^(\d{4})-\d{2}-\d{2}$/.exec(texto)?.[1];
+    const fueraDeAnios = anio !== undefined && (Number(anio) < 2000 || Number(anio) > 2100);
+    return fallo("fecha-invalida", fueraDeAnios ? ERRORES.fechaFueraDeAnios : ERRORES.fechaInvalida, { campo });
+  }
   return ok(fecha);
 }
 

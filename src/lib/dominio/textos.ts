@@ -72,6 +72,8 @@ export const ERRORES = {
   otraNovedadInvalida: "Revise el texto de «Otra novedad».",
   parteOtraUnidad: "No se puede cambiar la unidad de un parte.",
   fechaInvalida: "Escriba una fecha válida.",
+  /** Una fecha bien escrita pero de un año que la demo no acepta (T4: 2000 a 2100). */
+  fechaFueraDeAnios: "Escriba una fecha entre los años 2000 y 2100.",
   parteFechaAntigua: "Solo se pueden cargar partes de los últimos 7 días.",
   kmVacio: "Escriba el kilometraje.",
   kmNegativo: "El kilometraje no puede ser negativo.",

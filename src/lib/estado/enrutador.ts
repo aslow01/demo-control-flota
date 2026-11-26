@@ -76,9 +76,9 @@ function patenteDeRuta(texto: string): string | null {
   return formatoDePatente(patente) === null ? null : patente;
 }
 
-/** El texto de `q` acotado: sin caracteres de control ni de reemplazo, hasta `LARGO_MAXIMO_BUSQUEDA` caracteres y codificable en `LARGO_MAXIMO_BUSQUEDA_CODIFICADA`. */
+/** El texto de `q` acotado: sin caracteres de control (`Cc`), de formato (`Cf`: U+202E, U+200B…) ni de reemplazo (U+FFFD), hasta `LARGO_MAXIMO_BUSQUEDA` caracteres y codificable en `LARGO_MAXIMO_BUSQUEDA_CODIFICADA`. */
 function acotarBusqueda(texto: string): string {
-  const letras = Array.from(texto.replace(/[\p{Cc}�]/gu, "")).slice(0, LARGO_MAXIMO_BUSQUEDA);
+  const letras = Array.from(texto.replace(/[\p{Cc}\p{Cf}\uFFFD]/gu, "")).slice(0, LARGO_MAXIMO_BUSQUEDA);
   while (letras.length > 0 && encodeURIComponent(letras.join("")).length > LARGO_MAXIMO_BUSQUEDA_CODIFICADA) letras.pop();
   return letras.join("");
 }

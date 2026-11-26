@@ -79,6 +79,18 @@ describe("cargarDocumento", () => {
     expect(ejecutarOk(e, { ...carga, vence: "2000-01-01", emitido: null }).estado.documentos.length).toBeGreaterThan(0);
   });
 
+  it("QA E5: un año fuera de 2000 a 2100 dice el rango; una fecha imposible o mal escrita sigue diciendo «válida»", () => {
+    const e = conSeguroVencido();
+    for (const vence of ["9999-12-31", "1999-12-31", "0001-01-01", "2101-01-01"]) {
+      const err = ejecutarError(e, { ...carga, vence });
+      expect(err.codigo, vence).toBe("fecha-invalida");
+      expect(err.mensaje, vence).toBe("Escriba una fecha entre los años 2000 y 2100.");
+    }
+    for (const vence of ["2027-02-29", "18/11/2027", "", "mañana", "2027-13-01"]) {
+      expect(ejecutarError(e, { ...carga, vence }).mensaje, vence).toBe("Escriba una fecha válida.");
+    }
+  });
+
   it("T4: fechas inválidas o con otro formato", () => {
     const e = conSeguroVencido();
     for (const vence of ["2027-02-29", "18/11/2027", "", "mañana"]) {

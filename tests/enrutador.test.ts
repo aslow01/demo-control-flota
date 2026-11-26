@@ -374,6 +374,12 @@ describe("enrutador: búsqueda de Movilidades en la ruta (&q=)", () => {
     expect(parsearHash("#/movilidades?q=%E0%A4%A")).toEqual({ tipo: "movilidades", q: "%A" });
   });
 
+  it("QA E5: los caracteres de formato (U+202E, que invierte el orden, y U+200B, de ancho cero) y el de reemplazo tampoco pasan", () => {
+    expect(parsearHash("#/movilidades?q=zk%E2%80%AE214")).toEqual({ tipo: "movilidades", q: "zk214" });
+    expect(parsearHash("#/movilidades?q=z%E2%80%8Bk%EF%BF%BD")).toEqual({ tipo: "movilidades", q: "zk" });
+    expect(aHash({ tipo: "movilidades", q: "zk\u202E214\u200B" })).toBe("#/movilidades?q=zk214");
+  });
+
   it("se acota: más de LARGO_MAXIMO_BUSQUEDA caracteres se cortan, y la dirección nunca pasa del límite del hash", () => {
     const larga = "a".repeat(LARGO_MAXIMO_BUSQUEDA + 20);
     const r = parsearHash(`#/movilidades?q=${larga}`);
