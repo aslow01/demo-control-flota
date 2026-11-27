@@ -70,8 +70,9 @@ npm install
 npm run dev          # servidor de desarrollo
 npm run build        # compilación en dist/
 npm run servir       # sirve dist/ con las mismas cabeceras de seguridad que se usarán al publicar
-npm run peso         # mide el JavaScript con gzip y falla si la carga inicial pasa 95 KB
+npm run peso         # mide el JavaScript con gzip y falla si la carga inicial pasa 95 KB o la primera visita 100 KB
 npm run e2e          # pruebas de punta a punta (Playwright y axe) contra dist/ servido con las cabeceras reales
+                     # (la primera vez: npx playwright install chromium; con otro puerto: E2E_PUERTO=4290 npm run e2e)
 ```
 
 `npm run buscar` revisa que el repositorio no contenga lo prohibido (por ejemplo `{@html}`, el reloj del sistema fuera de `src/lib/estado/reloj.ts` o correos que no sean de ejemplo). La regla de nombres de terceros lee su lista de `scripts/prohibidos.local.json` (`{ "palabras": [...] }`), un archivo que no se versiona; si no existe, esa regla se omite con un aviso y las demás corren igual.
@@ -92,7 +93,7 @@ Las dependencias van en un solo sentido: `componentes` → `lib/estado` → `lib
 - **Todo en el navegador:** datos en IndexedDB; si no se puede guardar, la demo sigue en memoria y avisa.
 - **Reglas en TypeScript puro** (`src/lib/dominio`), probadas en tres zonas horarias.
 - **Seguridad:** política de contenido estricta (`public/_headers`) con `connect-src 'none'`: la página no puede conectarse a ningún servidor ni cargar fuentes de otro sitio.
-- **Tamaño:** 92,9 KB de JavaScript de carga inicial comprimido con gzip (tope fijado: 95 KB) y 164,8 KB en total: en la carga inicial viajan solo el marco y Inicio; las demás pantallas, el código para escribir y el generador de datos se descargan al abrir esa pantalla o al usarlos (carga diferida con `import()`; `npm run peso`, 27/11/2026). Las fuentes, aparte: unos 200 KB, que no cuentan como JavaScript.
+- **Tamaño:** en la carga inicial viajan solo el marco y Inicio: 93,9 KB de JavaScript comprimido con gzip (tope fijado: 95 KB), que es lo que baja quien vuelve el mismo día. Un visitante nuevo baja además el generador de la flota ficticia: 99,3 KB en la primera visita (tope fijado: 100 KB). Antes de dividir la carga eran 116,5 KB para todos; la mejora es mayor para quien vuelve (−19 %) que para quien entra por primera vez (−15 %, con un pedido más, en serie). En total, 165,8 KB repartidos en 19 trozos. Las demás pantallas y el código para escribir se descargan al abrir esa pantalla o al usarlo (carga diferida con `import()`; el parte, que escribe sin parar, baja los trozos de escritura al abrirse, y la ficha, al guardar; `npm run peso`, 27/11/2026). Las fuentes, aparte: unos 200 KB, que no cuentan como JavaScript.
 - **Tipografías:** Bricolage Grotesque (títulos y cifras), Schibsted Grotesk (texto) y Red Hat Mono (patentes y números), alojadas en el repositorio, solo el subconjunto latino. Las tres son de código abierto con licencia SIL Open Font License 1.1; las licencias están en `src/estilos/fuentes/`.
 - **Movimiento:** una transición corta entre pantallas (View Transitions), la patente que viaja de la lista a su ficha y una cifra que cuenta al abrir. Con «reducir movimiento» activado en el sistema no hay ninguna de las tres; en los navegadores sin View Transitions, y en Safari y los navegadores de iPhone, entra una animación CSS equivalente. Por qué no se usa View Transitions en WebKit: [`docs/limites.md`](docs/limites.md), sección 3.
 - **Accesibilidad:** teclado, foco visible, modo claro y oscuro, desde 320 px; el color nunca va solo (cada estado lleva forma y texto). Los controles miden al menos 24 px, el mínimo de WCAG 2.2 (criterio 2.5.8): casi todos los botones y enlaces del celular, 44 px; en escritorio los botones chicos y las filas de las listas, 40 px, y los puntos de la regla de vencimientos, 26 px.
@@ -106,29 +107,29 @@ Las dependencias van en un solo sentido: `componentes` → `lib/estado` → `lib
 
 ## Cómo se verificó
 
-Cifras medidas el 26/11/2026 en una computadora local:
+Cifras medidas el 27/11/2026 en una computadora local:
 
 | Comprobación | Comando | Resultado |
 | --- | --- | --- |
-| Pruebas automáticas | `npm test` | 1.959 pruebas en 79 archivos, todas pasan |
-| Las mismas en tres zonas horarias | `npm run test:tz` | 1.959 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
-| Pruebas de punta a punta | `npm run e2e` | 14 pruebas (Chromium, contra `dist/` con la CSP real): cada pantalla sin errores de consola, sin violaciones de la CSP, sin violaciones de axe y sin desborde a 360 px; todas pasan |
-| Tipos | `npm run check` | 0 errores y 0 avisos en 406 archivos |
+| Pruebas automáticas | `npm test` | 2.031 pruebas en 81 archivos, todas pasan |
+| Las mismas en tres zonas horarias | `npm run test:tz` | 2.031 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
+| Pruebas de punta a punta | `npm run e2e` | 24 pruebas (Chromium, modo claro, contra `dist/` con la CSP real): cada pantalla sin errores de consola, sin violaciones de la CSP, sin violaciones de axe y sin desborde a 360 px; el generador de datos y los trozos (caído, colgado, lento, versión nueva); la escritura; y el servidor de las pruebas. Todas pasan |
+| Tipos | `npm run check` | 0 errores y 0 avisos en 413 archivos |
 | Contraste de la paleta | `npm run contraste` | 244 mediciones, 0 fallan |
-| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 271 archivos con el archivo local de términos; 8 reglas sin él) |
-| Tamaño del JavaScript | `npm run peso` | 92.907 B de carga inicial (tope 95.000 B) y 164.805 B en total, con gzip |
+| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 278 archivos con el archivo local de términos; 8 reglas sin él) |
+| Tamaño del JavaScript | `npm run peso` | Carga inicial 93.886 B (tope 95.000 B), primera visita 99.276 B (tope 100.000 B) y 165.809 B en total, con gzip |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
-**Qué son esas 1.959 pruebas.** Unas 90 (89, en los 6 archivos `tests/textos*.test.ts`) fijan textos de la interfaz: mensajes de error, nombres de pantallas y frases con cifras; existen para que un cambio de redacción o de umbral no deje a la pantalla diciendo otra cosa que las reglas. Las otras 1.870 prueban reglas de dominio, comandos, estado, persistencia, el generador de datos y las vistas derivadas; algunas de ellas también comprueban una frase que se muestra, y esas no se separaron de las demás.
+**Qué son esas 2.031 pruebas.** Unas 90 (89, en los 6 archivos `tests/textos*.test.ts`) fijan textos de la interfaz: mensajes de error, nombres de pantallas y frases con cifras; existen para que un cambio de redacción o de umbral no deje a la pantalla diciendo otra cosa que las reglas. Las otras 1.942 prueban reglas de dominio, comandos, estado, persistencia, el generador de datos y las vistas derivadas; algunas de ellas también comprueban una frase que se muestra, y esas no se separaron de las demás.
 
-También se miró la demo en un navegador (Chromium con Playwright, contra la compilación servida con la política de contenido real), en claro y oscuro, a 360 y 1280 px: sin desbordes horizontales y sin mensajes en la consola. Eso no se puede reproducir con un comando. La interfaz actual tuvo el 25/11/2026 una revisión de código, pruebas destructivas en Chromium y una auditoría de accesibilidad con mediciones propias (agentes de IA), y lo que encontraron se corrigió y se volvió a mirar. Desde el 27/11/2026 `npm run e2e` además corre axe-core en cada pantalla (1280 y 360 px). No se probó en un Safari real, ni en Firefox, ni con un lector de pantalla (detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3). La integración continua ([GitHub Actions](https://github.com/aslow01/demo-control-flota/actions/workflows/ci.yml), `.github/workflows/ci.yml`) corre en cada `push` y en cada solicitud de cambios del repositorio público: tipos, pruebas en tres zonas horarias, compilación, peso, pruebas de punta a punta, búsqueda de lo prohibido y `npm audit`. Las últimas ejecuciones sobre `main` que se consultaron el 26/11/2026 pasaron; las cifras de esta sección salen de la computadora local, no de ella.
+También se miró la demo en un navegador (Chromium con Playwright, contra la compilación servida con la política de contenido real), en claro y oscuro, a 360 y 1280 px: sin desbordes horizontales y sin mensajes en la consola. Eso, en claro y oscuro, no se puede reproducir con un comando; `npm run e2e` repite la parte automática, solo en modo claro. La interfaz actual tuvo el 25/11/2026 una revisión de código, pruebas destructivas en Chromium y una auditoría de accesibilidad con mediciones propias (agentes de IA), y lo que encontraron se corrigió y se volvió a mirar. Desde el 27/11/2026 `npm run e2e` además corre axe-core en cada pantalla (1280 y 360 px) y comprueba qué se descarga y qué se ve cuando un trozo no baja. No se probó en un Safari real, ni en Firefox, ni con un lector de pantalla (detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3). La integración continua ([GitHub Actions](https://github.com/aslow01/demo-control-flota/actions/workflows/ci.yml), `.github/workflows/ci.yml`) corre en cada `push` y en cada solicitud de cambios del repositorio público: tipos, pruebas en tres zonas horarias, compilación, peso, pruebas de punta a punta (si fallan, sube el informe y las trazas), búsqueda de lo prohibido y `npm audit`. Las últimas ejecuciones sobre `main` que se consultaron el 26/11/2026 pasaron; las cifras de esta sección salen de la computadora local, no de ella.
 
 ## Límites conocidos
 
 - **Sin login:** el perfil es una perspectiva; cualquiera puede «ser» el encargado.
 - **Los datos viven en un solo navegador:** no se comparten y se pierden si se borran los datos del sitio.
 - **Escribir y recargar en menos de 500 ms puede perder lo último:** el parte se guarda 500 ms después de la última tecla (y al salir del campo, al enviar o al irse de la pantalla).
-- **Sin pruebas automáticas de las pantallas:** las pruebas cubren reglas, generador, persistencia, estado y la cuenta de la cifra; las pantallas y las transiciones se verificaron a mano.
+- **Las pantallas se prueban de punta a punta solo en Chromium y en modo claro** (carga, consola, política de contenido, axe y desborde a 360 px): el aspecto, el modo oscuro, Firefox, Safari y las transiciones se verificaron a mano. El resto de las pruebas cubre reglas, generador, persistencia, estado y la cuenta de la cifra.
 - **La habilitación de manejo interna del proyecto es opcional:** si un proyecto la pide, la demo no la exige para enviar la revisión. Se puede sumar después.
 - **Las transiciones entre pantallas** solo se probaron en Chromium; en otros navegadores entra la animación CSS de reemplazo.
 

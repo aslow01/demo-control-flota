@@ -13,7 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
 
-/** Tope de la carga inicial, en bytes con gzip nivel 9 (kB = 1.000 B). Era de 120 kB (docs/stack.md, sección 5); la etapa 1 del rediseño lo bajó a 95 kB. */
+/** Tope de la carga inicial, en bytes con gzip nivel 9 (kB = 1.000 B). Era de 120 kB (docs/stack.md, sección 7); la etapa 1 del rediseño lo bajó a 95 kB. */
 export const TOPE_INICIAL = 95_000;
 /** Tope de la primera visita (carga inicial + generador de datos), en bytes con gzip nivel 9. La etapa 1 sacó el generador de la carga inicial: sin este tope volvería a crecer sin que nadie lo vea. */
 export const TOPE_PRIMERA_VISITA = 100_000;
@@ -21,7 +21,7 @@ export const TOPE_PRIMERA_VISITA = 100_000;
 export const PRIMERA_VISITA = [/^assets\/generador-[^/]+\.js$/];
 /** Aviso (no falla) de cada trozo que se baja después de la carga inicial: una pantalla que pasa de acá conviene partirla. */
 export const AVISO_TROZO = 30_000;
-/** Aviso (no falla) del total. Medido al cerrar la etapa 1: 165.809 B; el aviso queda unos 14 kB (8 %) arriba para que avise antes de que el total se duplique sin que nadie lo note. Se sube con una decisión escrita (docs/stack.md, sección 5), no por costumbre. */
+/** Aviso (no falla) del total. Medido al cerrar la etapa 1: 165.809 B; el aviso queda unos 14 kB (8 %) arriba para que avise antes de que el total se duplique sin que nadie lo note. Se sube con una decisión escrita (docs/stack.md, sección 7), no por costumbre. */
 export const TOPE_TOTAL_AVISO = 180_000;
 
 /** Tamaño con gzip, siempre nivel 9. */
