@@ -2,7 +2,7 @@
 
 import { formatearFecha, parsearInstante } from "./fechas.ts";
 import { formatearPatente } from "./patente.ts";
-import { ERRORES, errKmExcedido, errKmFinMenor, errKmRetrocede, errKmSuperaSiguiente, formatearKm } from "./textos.ts";
+import { ERRORES, errKmExcedido, errKmFinMenor, errKmRetrocede, errKmSuperaSiguiente, formatearKm } from "./textos-base.ts";
 import {
   fallo,
   ok,

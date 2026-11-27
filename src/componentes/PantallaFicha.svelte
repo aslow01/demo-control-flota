@@ -17,7 +17,7 @@
   import type { AccionDeDocumentoEnFicha, FichaDeUnidad, IdAccionDeFicha, NumeroDeSolapa, SolapaDeFicha } from "../lib/estado/ficha.ts";
   import { app } from "../lib/estado/instancia.ts";
   import { indiceTrasTecla } from "../lib/estado/teclado-lista.ts";
-  import { TEXTO_FICHA } from "../lib/dominio/textos.ts";
+  import { TEXTO_FICHA } from "../lib/dominio/textos-ficha.ts";
   import DialogoAsignacion from "./DialogoAsignacion.svelte";
   import DialogoBaja from "./DialogoBaja.svelte";
   import DialogoCargarOtro from "./DialogoCargarOtro.svelte";

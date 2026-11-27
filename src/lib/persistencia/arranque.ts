@@ -1,7 +1,7 @@
 // Arranque de la aplicación (docs/diseno.md, reglas D4 a D8 y D11): abre el almacenamiento, carga o genera el ejemplo y
 // decide qué avisos hay que mostrar. No toca la interfaz ni el reloj: recibe `hoy` ya calculado y devuelve datos.
 
-import { generar, VERSION_ESQUEMA } from "../datos/generador.ts";
+import { VERSION_ESQUEMA } from "../datos/constantes.ts";
 import { calcularAlertas } from "../dominio/alertas.ts";
 import { sinCambios } from "../dominio/estado.ts";
 import { parsearFechaCivil } from "../dominio/fechas.ts";
@@ -12,6 +12,14 @@ import type { Repositorio } from "./repositorio.ts";
 
 /** La semilla de la demo (docs/diseno.md 9.3): con ella el ejemplo es siempre el mismo. */
 export const SEMILLA_POR_DEFECTO = 20261118;
+
+/**
+ * Trae el generador de datos. Es un trozo aparte (`import()`): quien ya tiene la demo guardada de hoy no lo baja; solo se pide cuando hay que armar el ejemplo
+ * (primera visita, ejemplo de otro día, formato viejo o dañado, sin almacenamiento y «Reiniciar demo»). Los tests pasan uno propio para contar los pedidos.
+ */
+export type CargarGenerador = () => Promise<Pick<typeof import("../datos/generador.ts"), "generar">>;
+
+const CARGAR_GENERADOR: CargarGenerador = () => import("../datos/generador.ts");
 
 /** D4: "Preparando la flota de ejemplo…" solo si el arranque tarda más que esto. */
 export const UMBRAL_PREPARANDO_MS = 300;
@@ -44,6 +52,8 @@ export interface OpcionesArranque {
   /** Se llama una vez si el arranque tarda más de `umbralPreparandoMs` (D4). */
   alTardar?: () => void;
   umbralPreparandoMs?: number;
+  /** Por defecto, el `import()` del generador. */
+  cargarGenerador?: CargarGenerador;
 }
 
 export interface ResultadoArranque {
@@ -219,8 +229,8 @@ function datosUtilizables(guardado: Estado, hoy: FechaCivil): Estado | null {
 }
 
 /** El ejemplo de `hoy`, con el perfil que había si todavía existe (D6: el perfil es de la persona, no de los datos). */
-function ejemploDeHoy(hoy: FechaCivil, semilla: number, perfilAnterior: Perfil | null): Estado {
-  const nuevo = generar(semilla, hoy);
+async function ejemploDeHoy(hoy: FechaCivil, semilla: number, perfilAnterior: Perfil | null, cargar: CargarGenerador): Promise<Estado> {
+  const nuevo = (await cargar()).generar(semilla, hoy);
   if (perfilAnterior?.tipo === "conductor" && nuevo.conductores.some((c) => c.id === perfilAnterior.conductorId)) {
     nuevo.meta.perfil = { tipo: "conductor", conductorId: perfilAnterior.conductorId };
   }
@@ -308,10 +318,11 @@ async function arrancarConAlmacenamiento(opciones: OpcionesArranque, semilla: nu
 async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesArranque, semilla: number): Promise<ResultadoArranque> {
   const cargado = await repositorio.cargar();
   const { hoy } = opciones;
+  const cargar = opciones.cargarGenerador ?? CARGAR_GENERADOR;
 
   if (cargado === null) {
     // D4: primera visita.
-    const estado = generar(semilla, hoy);
+    const estado = (await cargar()).generar(semilla, hoy);
     await repositorio.reemplazarTodo(estado);
     return { repositorio, estado, avisos: [], enMemoria: false };
   }
@@ -319,7 +330,7 @@ async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesAr
   const guardado = metaUtilizable(cargado.meta) ? datosUtilizables(cargado, hoy) : null;
   if (guardado === null) {
     // D7: otro formato (o un registro dañado): se vuelve al ejemplo y se avisa. El perfil no se arrastra: no se sabe leer.
-    const estado = generar(semilla, hoy);
+    const estado = (await cargar()).generar(semilla, hoy);
     await repositorio.reemplazarTodo(estado);
     return { repositorio, estado, avisos: [{ tipo: "esquema-actualizado" }], enMemoria: false };
   }
@@ -327,7 +338,7 @@ async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesAr
   if (guardado.meta.fechaBase < hoy) {
     if (!guardado.meta.modificada) {
       // D5, primer camino: el ejemplo intacto se corre al día de hoy, en silencio.
-      const estado = ejemploDeHoy(hoy, guardado.meta.semilla, perfilDe(guardado.meta));
+      const estado = await ejemploDeHoy(hoy, guardado.meta.semilla, perfilDe(guardado.meta), cargar);
       await repositorio.reemplazarTodo(estado);
       return { repositorio, estado, avisos: [], enMemoria: false };
     }
@@ -340,9 +351,9 @@ async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesAr
 }
 
 /** D8: sin almacenamiento la demo igual funciona, con un repositorio en memoria y un aviso fijo. */
-async function arrancarEnMemoria(hoy: FechaCivil, semilla: number): Promise<ResultadoArranque> {
+async function arrancarEnMemoria(hoy: FechaCivil, semilla: number, cargar: CargarGenerador): Promise<ResultadoArranque> {
   const repositorio = new RepositorioMemoria();
-  const estado = generar(semilla, hoy);
+  const estado = (await cargar()).generar(semilla, hoy);
   await repositorio.reemplazarTodo(estado);
   return { repositorio, estado, avisos: [{ tipo: "sin-almacenamiento" }], enMemoria: true };
 }
@@ -355,7 +366,7 @@ export async function arrancar(opciones: OpcionesArranque): Promise<ResultadoArr
     try {
       return await arrancarConAlmacenamiento(opciones, semilla);
     } catch {
-      return await arrancarEnMemoria(opciones.hoy, semilla);
+      return await arrancarEnMemoria(opciones.hoy, semilla, opciones.cargarGenerador ?? CARGAR_GENERADOR);
     }
   } finally {
     if (temporizador !== null) clearTimeout(temporizador);
@@ -366,9 +377,9 @@ export async function arrancar(opciones: OpcionesArranque): Promise<ResultadoArr
  * D6: "Reiniciar demo". Una sola escritura que reemplaza todo (incluido el historial): si falla, queda lo de antes y el
  * error sube para que la interfaz lo muestre (D10). Conserva el perfil elegido y la semilla.
  */
-export async function reiniciarDemo(repositorio: Repositorio, actual: Estado, hoy: FechaCivil): Promise<Estado> {
+export async function reiniciarDemo(repositorio: Repositorio, actual: Estado, hoy: FechaCivil, cargar: CargarGenerador = CARGAR_GENERADOR): Promise<Estado> {
   const semilla = semillaValida(actual.meta.semilla) ? actual.meta.semilla : SEMILLA_POR_DEFECTO;
-  const nuevo = ejemploDeHoy(hoy, semilla, actual.meta.perfil);
+  const nuevo = await ejemploDeHoy(hoy, semilla, actual.meta.perfil, cargar);
   await repositorio.reemplazarTodo(nuevo);
   return nuevo;
 }

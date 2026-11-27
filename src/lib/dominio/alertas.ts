@@ -3,7 +3,7 @@
 import { resumenDeAptitud, type ResumenAptitud } from "./aptitud.ts";
 import { diasEntre, fechaEnArgentina, sumarDias } from "./fechas.ts";
 import { rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
-import { TEXTO_ALERTA, pluralizar } from "./textos.ts";
+import { TEXTO_ALERTA, pluralizar } from "./textos-base.ts";
 import type { Conductor, Documento, Estado, FechaCivil, Novedad, Parte, Titular, TipoDocumento, Unidad } from "./tipos.ts";
 import {
   NOMBRES_DOCUMENTO,

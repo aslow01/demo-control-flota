@@ -10,7 +10,7 @@
   //  - El primer radio lleva el id del ítem (`idBase`): el resumen de errores enlaza ahí; la descripción, `idBase-descripcion`.
   //  - El campo de la descripción aparece con el radio, sin animación de alto, y no roba el foco (se llega con Tab).
   import type { ValoresItem } from "../lib/dominio/formulario-parte.ts";
-  import { TEXTO_DIALOGOS_FICHA } from "../lib/dominio/textos.ts";
+  import { TEXTO_DIALOGOS_FICHA } from "../lib/dominio/textos-base.ts";
   import Campo from "./Campo.svelte";
   import Casilla from "./Casilla.svelte";
   import Etiqueta from "./Etiqueta.svelte";

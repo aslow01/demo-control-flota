@@ -35,7 +35,7 @@
   //  - Sin `primario` (Volver a servicio con novedades críticas abiertas) no hay botón de guardar: solo el que cierra.
   import { tick, untrack, type Snippet } from "svelte";
   import { errorGeneralEn, type ErroresDeFormularioDe } from "../lib/dominio/formulario.ts";
-  import { ERRORES } from "../lib/dominio/textos.ts";
+  import { ERRORES } from "../lib/dominio/textos-base.ts";
   import type { ResultadoGuardado } from "../lib/estado/app.svelte.ts";
   import { guardarConIndicador } from "../lib/estado/guardado.ts";
   import Boton from "./Boton.svelte";

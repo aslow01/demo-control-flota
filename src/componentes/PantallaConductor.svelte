@@ -10,7 +10,7 @@
   //  - «Descartar borrador» no deja otro botón en su lugar: el foco va al título del panel y la barra de estado dice «Borrador descartado.».
   //  - Los paneles «Pendientes» y «Su licencia» existen solo si hay algo que decir.
   import { tick } from "svelte";
-  import { TEXTO_INICIO_CONDUCTOR, textoAvisoDeDocumento, textoFraseDelAviso } from "../lib/dominio/textos.ts";
+  import { TEXTO_INICIO_CONDUCTOR, textoAvisoDeDocumento, textoFraseDelAviso } from "../lib/dominio/textos-parte.ts";
   import { app } from "../lib/estado/instancia.ts";
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import Boton from "./Boton.svelte";

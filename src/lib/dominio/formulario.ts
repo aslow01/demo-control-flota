@@ -2,7 +2,7 @@
 // arman las opciones de los `select` de proyecto y conductor. Sin DOM.
 
 import { formatearPatente } from "./patente.ts";
-import { TEXTO_AGREGAR, TEXTO_DIALOGOS_FICHA } from "./textos.ts";
+import { TEXTO_AGREGAR, TEXTO_DIALOGOS_FICHA } from "./textos-base.ts";
 import type { Documento, ErrorDeNegocio, Estado, FechaCivil } from "./tipos.ts";
 import { estadoDeLicencia } from "./vencimientos.ts";
 

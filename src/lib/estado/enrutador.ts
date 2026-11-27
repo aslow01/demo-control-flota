@@ -9,7 +9,7 @@
 
 import { formatearPatente, formatoDePatente, normalizarPatente } from "../dominio/patente.ts";
 import { formatearFechaConDia, parsearFechaCivil } from "../dominio/fechas.ts";
-import { NOMBRES_DE_PANTALLA as NOMBRES } from "../dominio/textos.ts";
+import { NOMBRES_DE_PANTALLA as NOMBRES } from "../dominio/textos-base.ts";
 import type { FechaCivil, Perfil } from "../dominio/tipos.ts";
 
 /**

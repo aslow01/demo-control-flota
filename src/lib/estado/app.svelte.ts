@@ -9,7 +9,7 @@
 // - Los comandos se hacen de a uno (cola de promesas): un doble clic no puede aplicar dos veces sobre el mismo estado viejo.
 // - Todo lo que toca el navegador entra por `DependenciasApp`, así esto se prueba en Node con dobles.
 
-import { EMPRESA, ENCARGADA } from "../datos/generador.ts";
+import { EMPRESA, ENCARGADA } from "../datos/constantes.ts";
 import { calcularAlertas, type ResultadoAlertas } from "../dominio/alertas.ts";
 import { aptitud } from "../dominio/aptitud.ts";
 import { aplicar as aplicarComando, ejecutar as ejecutarComando, type Comando, type Contexto, type Ejecucion } from "../dominio/comandos.ts";
@@ -85,26 +85,11 @@ import {
   type ErroresDeFormularioUnidad,
   type ValoresUnidad,
 } from "../dominio/formulario-unidad.ts";
-import {
-  ERRORES,
-  ERRORES_PESTANAS,
-  TEXTO_ERROR_ARRANQUE,
-  TEXTO_FORMULARIO_PARTE,
-  textoAdvertencia,
-  textoAsignacionCambiada,
-  textoDocumentoCargado,
-  textoDocumentoCorregido,
-  textoDocumentoRenovado,
-  textoDocumentoRenovadoEnFicha,
-  textoFueraDeServicio,
-  textoKmCorregido,
-  textoNovedadCargada,
-  textoNovedadResuelta,
-  textoQuedanVencimientos,
-  textoUnidadAgregada,
-  textoUnidadDadaDeBaja,
-  textoVueltaAServicio,
-} from "../dominio/textos.ts";
+import { ERRORES, ERRORES_PESTANAS, TEXTO_ERROR_ARRANQUE, textoAdvertencia } from "../dominio/textos-base.ts";
+import { TEXTO_FORMULARIO_PARTE } from "../dominio/textos-parte.ts";
+import { textoAsignacionCambiada, textoDocumentoCorregido, textoDocumentoRenovadoEnFicha, textoFueraDeServicio, textoKmCorregido, textoNovedadCargada, textoNovedadResuelta, textoUnidadDadaDeBaja, textoVueltaAServicio } from "../dominio/textos-ficha.ts";
+import { textoDocumentoCargado, textoDocumentoRenovado, textoQuedanVencimientos } from "../dominio/textos-inicio.ts";
+import { textoUnidadAgregada } from "../dominio/textos-flota.ts";
 import { fallo, ok, type Advertencia, type ErrorDeNegocio, type Estado, type FechaCivil, type Parte, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
 import { esTipoDocumento } from "../dominio/vencimientos.ts";
 import { arrancar, cambiarPerfil as guardarPerfil, partesLegibles, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";

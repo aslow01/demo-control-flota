@@ -2,7 +2,7 @@
 // Los textos que produce el dominio (avisos del arranque, errores, alertas) siguen en `src/lib/dominio/textos.ts` y se usan desde ahí.
 // Esta lista nace en el paso 3.3 y es la que revisa `redactor-ux`. Es solo de presentación: no hay reglas de negocio.
 
-import { EMPRESA } from "../lib/datos/generador.ts";
+import { EMPRESA } from "../lib/datos/constantes.ts";
 
 /** Dónde vive el portafolio (docs: CLAUDE.md del proyecto). El enlace "Volver al portafolio" del marco apunta acá. */
 export const URL_PORTAFOLIO = "https://matiasormeno.com.ar/";

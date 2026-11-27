@@ -8,7 +8,7 @@
   //  - La barra de estado del panel dice «Mostrando 30 de 128 eventos.» y es la región viva: se actualiza al elegir un filtro y al pedir más.
   import { tick } from "svelte";
   import { PASO_HISTORIAL_ANCHO, PASO_HISTORIAL_ANGOSTO, vistaDeHistorial, type IdFiltroHistorial, type PanelHistorial } from "../lib/estado/ficha.ts";
-  import { TEXTO_FICHA } from "../lib/dominio/textos.ts";
+  import { TEXTO_FICHA } from "../lib/dominio/textos-ficha.ts";
   import { textoAnunciado } from "./anuncio.svelte.ts";
   import Boton from "./Boton.svelte";
   import Detalles from "./Detalles.svelte";

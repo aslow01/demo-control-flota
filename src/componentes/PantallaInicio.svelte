@@ -6,7 +6,7 @@
   //    del panel que abrió el diálogo, y a ese panel va el foco al guardar (la fila o el punto que lo abrió ya no existe), 5.17. Al cancelar, el foco vuelve al botón.
   //  - «Abrir el parte diario» cambia la vista a Conductor con el diálogo «Ver como» (`alAbrirParte`, que lo abre el marco).
   import { formatearFecha } from "../lib/dominio/fechas.ts";
-  import { textoVerTodasEnLaFlota, TEXTO_INICIO } from "../lib/dominio/textos.ts";
+  import { textoVerTodasEnLaFlota, TEXTO_INICIO } from "../lib/dominio/textos-inicio.ts";
   import type { AccionDeDocumento, CifraDeInicio, FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
   import { aHash } from "../lib/estado/enrutador.ts";
   import { app } from "../lib/estado/instancia.ts";

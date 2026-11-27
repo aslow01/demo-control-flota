@@ -21,7 +21,7 @@ import { describirRegistro, kmActual, parsearKm, registrosDeKm } from "./kilomet
 import { criticasAbiertasDeUnidad, type CriticaAbierta } from "./novedades.ts";
 import { unidadSinSalidaHoy } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
-import { TEXTO_AGREGAR, TEXTO_DIALOGOS_FICHA, errNovedadesCriticasAbiertas, textoUltimoRegistro, NOMBRES_DOCUMENTO } from "./textos.ts";
+import { TEXTO_AGREGAR, TEXTO_DIALOGOS_FICHA, errNovedadesCriticasAbiertas, textoUltimoRegistro, NOMBRES_DOCUMENTO } from "./textos-base.ts";
 import type { ErrorDeNegocio, Estado, FechaCivil, Unidad } from "./tipos.ts";
 import { REGLAS, validarFechaNoFutura, validarTexto } from "./validacion.ts";
 import { documentoVigente } from "./vencimientos.ts";

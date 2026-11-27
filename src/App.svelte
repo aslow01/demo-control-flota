@@ -3,7 +3,7 @@
   // lateral oscuro (escritorio), barra superior con «Atrás» y chip de perfil (celular y tableta), migas y fecha (escritorio), avisos globales,
   // `main` (estado de arranque, error o la pantalla) y barra inferior (celular y tableta). Lee todo del estado (`app`); no tiene reglas de negocio.
   // Pantallas: Inicio, Vencimientos, Operación diaria, Movilidades y «Más» (las del encargado); Hoy, Mis partes y el parte (las del conductor); y la ficha de una unidad.
-  // La ficha, el parte, Hoy y Mis partes se bajan al entrar (trozos aparte). Una dirección que no corresponde a ninguna pantalla muestra «Página no encontrada».
+  // Solo Inicio viaja con el marco; las demás pantallas (Vencimientos, Operación diaria, Movilidades, «Más», la ficha, el parte, Hoy y Mis partes) se bajan al entrar (trozos aparte). Una dirección que no corresponde a ninguna pantalla muestra «Página no encontrada».
   import { tick, untrack } from "svelte";
   import Aviso from "./componentes/Aviso.svelte";
   import BarraInferior, { type ItemNavegacion } from "./componentes/BarraInferior.svelte";
@@ -15,18 +15,14 @@
   import EnlaceAccion from "./componentes/EnlaceAccion.svelte";
   import Lateral from "./componentes/Lateral.svelte";
   import Migas from "./componentes/Migas.svelte";
-  import PantallaFlota from "./componentes/PantallaFlota.svelte";
   import PantallaInicio from "./componentes/PantallaInicio.svelte";
-  import PantallaMas from "./componentes/PantallaMas.svelte";
-  import PantallaOperacion from "./componentes/PantallaOperacion.svelte";
-  import PantallaVencimientos from "./componentes/PantallaVencimientos.svelte";
   import { cuentasDeNavegacion } from "./componentes/insignias.ts";
   import { pedirCuenta } from "./componentes/movimiento.ts";
   import { TEXTO_MARCO, TEXTO_MAS, TEXTO_NAVEGACION, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { OpcionConductor } from "./componentes/tipos.ts";
   import { aHash, migasDe, nombreDePantalla, rutaPorDefecto, type Ruta } from "./lib/estado/enrutador.ts";
   import { formatearFechaConDia } from "./lib/dominio/fechas.ts";
-  import { NOMBRES_DE_PANTALLA, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_DESCARGA, TEXTO_ERROR_PANTALLA, textoDatosDeOtraFecha } from "./lib/dominio/textos.ts";
+  import { NOMBRES_DE_PANTALLA, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_DESCARGA, TEXTO_ERROR_PANTALLA, textoDatosDeOtraFecha } from "./lib/dominio/textos-base.ts";
   import { app } from "./lib/estado/instancia.ts";
 
   const TITULO_BASE = `${TEXTO_MARCO.nombreApp} (demo)`;
@@ -450,13 +446,37 @@
         {:else if app.ruta.tipo === "inicio"}
           <PantallaInicio alAbrirParte={() => pedirVerComo("conductor")} alProbarComoConductor={(conductorId) => pedirVerComo("conductor", conductorId)} />
         {:else if app.ruta.tipo === "vencimientos"}
-          <PantallaVencimientos />
+          {#await import("./componentes/PantallaVencimientos.svelte")}
+            {@render cargandoPantalla()}
+          {:then { default: PantallaVencimientos }}
+            <PantallaVencimientos />
+          {:catch}
+            {@render errorDeCarga()}
+          {/await}
         {:else if app.ruta.tipo === "operacion"}
-          <PantallaOperacion alAbrirParte={() => pedirVerComo("conductor")} />
+          {#await import("./componentes/PantallaOperacion.svelte")}
+            {@render cargandoPantalla()}
+          {:then { default: PantallaOperacion }}
+            <PantallaOperacion alAbrirParte={() => pedirVerComo("conductor")} />
+          {:catch}
+            {@render errorDeCarga()}
+          {/await}
         {:else if app.ruta.tipo === "movilidades"}
-          <PantallaFlota />
+          {#await import("./componentes/PantallaFlota.svelte")}
+            {@render cargandoPantalla()}
+          {:then { default: PantallaFlota }}
+            <PantallaFlota />
+          {:catch}
+            {@render errorDeCarga()}
+          {/await}
         {:else if app.ruta.tipo === "mas"}
-          <PantallaMas perfil={perfilTexto} {descripcionDelPerfil} alCambiarPerfil={() => pedirVerComo()} alComoFunciona={abrirComoFunciona} alReiniciar={pedirReinicio} />
+          {#await import("./componentes/PantallaMas.svelte")}
+            {@render cargandoPantalla()}
+          {:then { default: PantallaMas }}
+            <PantallaMas perfil={perfilTexto} {descripcionDelPerfil} alCambiarPerfil={() => pedirVerComo()} alComoFunciona={abrirComoFunciona} alReiniciar={pedirReinicio} />
+          {:catch}
+            {@render errorDeCarga()}
+          {/await}
         {:else if app.ruta.tipo === "unidad"}
           <!-- Una ficha nueva (otra patente, o el alta de una unidad) arranca limpia: filtro del historial, mensajes y diálogos. -->
           {#key app.versionDePantalla}

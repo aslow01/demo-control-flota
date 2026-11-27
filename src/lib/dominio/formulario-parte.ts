@@ -15,7 +15,8 @@ import {
   type CampoDeRevision,
   type CampoFaltante,
 } from "./parte.ts";
-import { TEXTO_FORMULARIO_PARTE as T, formatearKm, textoFaltantes } from "./textos.ts";
+import { TEXTO_FORMULARIO_PARTE as T } from "./textos-parte.ts";
+import { formatearKm, textoFaltantes } from "./textos-base.ts";
 import type { ErrorDeNegocio, ItemChecklist, NivelCombustible, Parte, RespuestaItem } from "./tipos.ts";
 import { validarTextoDeBorrador } from "./validacion.ts";
 

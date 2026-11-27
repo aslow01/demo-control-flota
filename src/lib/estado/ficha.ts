@@ -17,40 +17,9 @@ import { kmActual, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.
 import { rotuloNovedad, criticasAbiertasDeUnidad, type CriticaAbierta } from "../dominio/novedades.ts";
 import { ITEMS_CHECKLIST, novedadesDelParte, parteLegible, partePendienteDeCierre, renglonesDeAvisosAceptados } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
-import {
-  NOMBRES_COMBUSTIBLE,
-  NOMBRES_DOCUMENTO,
-  ROTULO_CAMPO_DOCUMENTO_CORREGIDO,
-  TEXTO_FALTA_CARGAR,
-  TEXTO_FICHA,
-  TEXTO_FLOTA,
-  errNovedadesCriticasAbiertas,
-  formatearKm,
-  textoAccionDocumento,
-  textoAdvertencia,
-  textoCerrarElParteDel,
-  textoAnteriores,
-  textoCorreccionKm,
-  textoDadaDeBaja,
-  textoDescripcionUnidad,
-  textoEventos,
-  textoInterno,
-  textoCierreEnHistorial,
-  textoKmConFecha,
-  textoKmEnUso,
-  textoRevisionEnHistorial,
-  textoLineaAptitud,
-  textoLitros,
-  textoMostrandoEventos,
-  textoPuntosEnOrden,
-  textoRangoKm,
-  textoResumenParteEnviado,
-  textoRotuloDocumentos,
-  textoRotuloNovedades,
-  textoUnidadNoEncontrada,
-  textoVerMasEventos,
-  textoVencimiento,
-} from "../dominio/textos.ts";
+import { NOMBRES_COMBUSTIBLE, NOMBRES_DOCUMENTO, TEXTO_FALTA_CARGAR, TEXTO_FLOTA, errNovedadesCriticasAbiertas, formatearKm, textoAdvertencia, textoCerrarElParteDel, textoDescripcionUnidad, textoInterno, textoLitros, textoRangoKm, textoUnidadNoEncontrada, textoVencimiento } from "../dominio/textos-base.ts";
+import { ROTULO_CAMPO_DOCUMENTO_CORREGIDO, TEXTO_FICHA, textoAnteriores, textoCorreccionKm, textoDadaDeBaja, textoEventos, textoCierreEnHistorial, textoKmConFecha, textoKmEnUso, textoRevisionEnHistorial, textoLineaAptitud, textoMostrandoEventos, textoPuntosEnOrden, textoResumenParteEnviado, textoRotuloDocumentos, textoRotuloNovedades, textoVerMasEventos } from "../dominio/textos-ficha.ts";
+import { textoAccionDocumento } from "../dominio/textos-inicio.ts";
 import type { Documento, Estado, Evento, FechaCivil, ItemChecklist, Novedad, Parte, Perfil, TipoDocumento, TipoEvento, Unidad } from "../dominio/tipos.ts";
 import { REQUISITOS, clasificar, documentoVigente, estadoDeLicencia, tiposObligatoriosDeUnidad, type Grupo } from "../dominio/vencimientos.ts";
 import { aHash } from "./enrutador.ts";

@@ -7,13 +7,12 @@
 import { sumarAnios, sumarDias } from "../dominio/fechas.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import { ITEMS_CHECKLIST } from "../dominio/parte.ts";
-import { MOTIVO_NOVEDAD_CRITICA, NOMBRES_DOCUMENTO, RESUMEN_EVENTO } from "../dominio/textos.ts";
+import { MOTIVO_NOVEDAD_CRITICA, NOMBRES_DOCUMENTO, RESUMEN_EVENTO } from "../dominio/textos-base.ts";
 import type {
   Advertencia,
   Conductor,
   CorreccionKm,
   Documento,
-  Empresa,
   Estado,
   Evento,
   FechaCivil,
@@ -29,15 +28,12 @@ import type {
   Unidad,
 } from "../dominio/tipos.ts";
 import { crearAzar, type Azar } from "./azar.ts";
-import { armarCuit } from "./cuit.ts";
+import { ENCARGADA, VERSION_ESQUEMA } from "./constantes.ts";
+
+// `ENCARGADA`, `EMPRESA` y `VERSION_ESQUEMA` viven en `constantes.ts` (el marco los lee sin bajar este archivo); se reexportan para quien ya los pedía acá.
+export { EMPRESA, ENCARGADA, VERSION_ESQUEMA } from "./constantes.ts";
 
 export const SEMILLA_POR_DEFECTO = 20261118;
-export const ENCARGADA = "Rocío Medina";
-
-const cuit = armarCuit("30", "99000003");
-if (cuit === null) throw new Error("CUIT ficticio inválido");
-/** Empresa inventada; el CUIT es ficticio y tiene dígito verificador válido. */
-export const EMPRESA: Empresa = { nombre: "Logística Andina Demo S.A.", cuit };
 
 export const NOMBRES: readonly string[] = [
   "Andrés", "Bruno", "Camila", "Daniela", "Esteban", "Facundo", "Gabriela", "Hernán", "Ivana", "Joaquín", "Karina", "Lautaro",
@@ -188,9 +184,6 @@ function crearPatente(azar: Azar, anio: number, usadas: Set<string>): string {
     }
   }
 }
-
-/** Versión del formato de los datos guardados (D7): si cambia, la demo se reinicia sola con un aviso. */
-export const VERSION_ESQUEMA = 3;
 
 /** Genera el estado completo de la demo. Las fechas son relativas a `fechaBase` (el "hoy" del ejemplo). */
 export function generar(semilla: number, fechaBase: FechaCivil): Estado {

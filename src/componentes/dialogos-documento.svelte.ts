@@ -12,7 +12,8 @@
 
 import { contextoDeCargar, contextoDeCorregir, contextoDeRenovar, errorGeneral, type CampoDocumento, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
 import { contextoDeResolver, type CampoResolver, type ContextoResolver, type ValoresResolver } from "../lib/dominio/formulario-novedad.ts";
-import { ERRORES, TEXTO_CONDUCTORES_SIN_LICENCIA as TCL } from "../lib/dominio/textos.ts";
+import { ERRORES } from "../lib/dominio/textos-base.ts";
+import { TEXTO_CONDUCTORES_SIN_LICENCIA as TCL } from "../lib/dominio/textos-inicio.ts";
 import type { EstadoApp, ResultadoGuardado } from "../lib/estado/app.svelte.ts";
 import type { AccionDeConductorSinLicencia, AccionDeDocumento, FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
 import { TEXTO_ALERTAS as T } from "./textos-marco.ts";

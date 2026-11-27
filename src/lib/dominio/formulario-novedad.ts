@@ -8,7 +8,8 @@ import { avisoDeVueltaSinPoderSalir, vuelveSinSalirHastaManana } from "./formula
 import { formatearFecha } from "./fechas.ts";
 import { criticasAbiertasDeUnidad, rotuloNovedad } from "./novedades.ts";
 import { formatearPatente } from "./patente.ts";
-import { TEXTO_DIALOGOS_FICHA, TEXTO_FICHA, textoOrigenEnFicha } from "./textos.ts";
+import { TEXTO_DIALOGOS_FICHA } from "./textos-base.ts";
+import { TEXTO_FICHA, textoOrigenEnFicha } from "./textos-ficha.ts";
 import type { ErrorDeNegocio, Estado, FechaCivil, Novedad, Unidad } from "./tipos.ts";
 import { ITEMS_CHECKLIST } from "./parte.ts";
 import { REGLAS, validarTexto } from "./validacion.ts";

@@ -21,30 +21,7 @@ import {
 } from "./parte.ts";
 import { formatearPatente } from "./patente.ts";
 import { limpiarTexto, normalizarTexto } from "./texto.ts";
-import {
-  abreviar,
-  errConductorConParteSinCerrar,
-  errDocumentacionDeLaUnidad,
-  errDocumentoExistente,
-  errKmCorreccionAnterior,
-  errKmCorreccionParteEnUso,
-  errLicenciaNoVigente,
-  errNovedadesCriticasAbiertas,
-  ERRORES,
-  errParteAnteriorSinCerrar,
-  errParteDuplicado,
-  errRenovacionNoPosterior,
-  errTipoDeDocumentoNoCorresponde,
-  errUnidadConParteEnUso,
-  errUnidadDeBaja,
-  errUnidadFueraDeServicio,
-  errVenceAntesQueSuRenovacion,
-  errVenceNoPosteriorAlAnterior,
-  MOTIVO_NOVEDAD_CRITICA,
-  RESUMEN_EVENTO,
-  TEXTO_DIALOGOS_FICHA,
-  textoFaltantes,
-} from "./textos.ts";
+import { abreviar, errConductorConParteSinCerrar, errDocumentacionDeLaUnidad, errDocumentoExistente, errKmCorreccionAnterior, errKmCorreccionParteEnUso, errLicenciaNoVigente, errNovedadesCriticasAbiertas, ERRORES, errParteAnteriorSinCerrar, errParteDuplicado, errRenovacionNoPosterior, errTipoDeDocumentoNoCorresponde, errUnidadConParteEnUso, errUnidadDeBaja, errUnidadFueraDeServicio, errVenceAntesQueSuRenovacion, errVenceNoPosteriorAlAnterior, MOTIVO_NOVEDAD_CRITICA, RESUMEN_EVENTO, TEXTO_DIALOGOS_FICHA, textoFaltantes } from "./textos-base.ts";
 import {
   fallo,
   ok,

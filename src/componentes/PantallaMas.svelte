@@ -1,7 +1,7 @@
 <script lang="ts">
   // Pantalla «Más» (`#/mas`, la ven los dos perfiles): lo que antes colgaba de la barra superior. «Ver como» (el perfil de ahora y cómo cambiarlo), «La demo»
   // («Cómo funciona», «Reiniciar demo», volver al portafolio) y el texto del pie. Los diálogos los abre quien la usa (`App.svelte`).
-  import { NOMBRES_DE_PANTALLA } from "../lib/dominio/textos.ts";
+  import { NOMBRES_DE_PANTALLA } from "../lib/dominio/textos-base.ts";
   import Boton from "./Boton.svelte";
   import Icono from "./Icono.svelte";
   import { TEXTO_MAS, TEXTO_PIE, URL_PORTAFOLIO } from "./textos-marco.ts";

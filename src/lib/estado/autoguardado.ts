@@ -9,7 +9,7 @@
 //   estado, no en cada guardado; sección 10 de diseno-ui.md: «no anunciar cada autoguardado»).
 
 import { errorGeneralParte, mismosValores, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
-import { TEXTO_GUARDADO } from "../dominio/textos.ts";
+import { TEXTO_GUARDADO } from "../dominio/textos-parte.ts";
 
 /**
  * Lo que devuelve guardar el borrador. `sinCambios` es el caso de un borrador que todavía no existe y cuyos valores siguen siendo los iniciales (P13/D11):

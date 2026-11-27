@@ -2,7 +2,7 @@
 // gravedad; acá solo se elige qué forma y qué color le tocan. El color nunca va solo: cada estado tiene su ícono.
 import type { FilaVencimiento } from "../lib/estado/centro-alertas.ts";
 import type { TipoAlertaOperacion } from "../lib/dominio/alertas.ts";
-import { textoVencimiento } from "../lib/dominio/textos.ts";
+import { textoVencimiento } from "../lib/dominio/textos-base.ts";
 import { app } from "../lib/estado/instancia.ts";
 import type { NombreIcono, Tono } from "./tipos.ts";
 

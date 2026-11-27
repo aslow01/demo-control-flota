@@ -10,42 +10,8 @@ import type { Alerta, Gravedad, ResultadoAlertas, TipoAlertaOperacion } from "..
 import { diasEntre, formatearFecha } from "../dominio/fechas.ts";
 import { rotuloNovedad } from "../dominio/novedades.ts";
 import { formatearPatente } from "../dominio/patente.ts";
-import {
-  NOMBRES_DE_PANTALLA,
-  NOMBRES_DOCUMENTO,
-  TEXTO_CENTRO,
-  TEXTO_ESTADO_OPERACION,
-  TEXTO_FALTA_CARGAR,
-  TEXTO_CONDUCTORES_SIN_LICENCIA as TCL,
-  TEXTO_GRUPO_OPERACION,
-  TEXTO_ESTADO_PARTE_INCOMPLETO,
-  TEXTO_FLOTA,
-  TEXTO_GRUPO_VENCIMIENTOS,
-  TEXTO_INICIO,
-  TEXTO_LEYENDA_HORIZONTE,
-  TEXTO_VACIO_PANTALLAS,
-  palabraUnidades,
-  pluralizar,
-  textoAccionDocumento,
-  textoContextoOperacion,
-  textoContextoVencimientos,
-  textoLeyendaConCantidad,
-  textoDesgloseNoDisponibles,
-  textoDisponibles,
-  textoFilaOperacion,
-  textoFilaPartesIncompletos,
-  textoMotivoSinLicencia,
-  tituloGrupoPartesIncompletos,
-  textoGrupoConCantidad,
-  textoHoy,
-  textoInterno,
-  textoMostrando,
-  textoPendientes,
-  textoProtagonista,
-  textoProtagonistaLector,
-  textoVencimiento,
-  textoVerTodasEnLaFlota,
-} from "../dominio/textos.ts";
+import { NOMBRES_DE_PANTALLA, NOMBRES_DOCUMENTO, TEXTO_FALTA_CARGAR, TEXTO_FLOTA, pluralizar, textoDesgloseNoDisponibles, textoInterno, textoVencimiento } from "../dominio/textos-base.ts";
+import { TEXTO_CENTRO, TEXTO_ESTADO_OPERACION, TEXTO_CONDUCTORES_SIN_LICENCIA as TCL, TEXTO_GRUPO_OPERACION, TEXTO_ESTADO_PARTE_INCOMPLETO, TEXTO_GRUPO_VENCIMIENTOS, TEXTO_INICIO, TEXTO_LEYENDA_HORIZONTE, TEXTO_VACIO_PANTALLAS, palabraUnidades, textoAccionDocumento, textoContextoOperacion, textoContextoVencimientos, textoLeyendaConCantidad, textoDisponibles, textoFilaOperacion, textoFilaPartesIncompletos, textoMotivoSinLicencia, tituloGrupoPartesIncompletos, textoGrupoConCantidad, textoHoy, textoMostrando, textoPendientes, textoProtagonista, textoProtagonistaLector, textoVerTodasEnLaFlota } from "../dominio/textos-inicio.ts";
 import type { Conductor, Estado, FechaCivil, Novedad, Parte, TipoDocumento, Titular, Unidad } from "../dominio/tipos.ts";
 import { documentoVigente, type Grupo } from "../dominio/vencimientos.ts";
 import {

@@ -6,7 +6,7 @@
   // Los diálogos son los de `DialogosDeDocumento` (uno solo para Inicio, Vencimientos y Operación): al renovar o cargar bien, la fila desaparece, el foco va al título del
   // primer grupo que quede (o al h1) y la barra de estado de abajo de los filtros dice qué pasó (5.17). Al cancelar, el foco vuelve al botón que abrió el diálogo.
   import { untrack } from "svelte";
-  import { TEXTO_VACIO_PANTALLAS } from "../lib/dominio/textos.ts";
+  import { TEXTO_VACIO_PANTALLAS } from "../lib/dominio/textos-inicio.ts";
   import { vencimientosVisibles, type FilaVencimiento, type IdFiltroVencimientos } from "../lib/estado/centro-alertas.ts";
   import { app } from "../lib/estado/instancia.ts";
   import { textoAnunciado } from "./anuncio.svelte.ts";

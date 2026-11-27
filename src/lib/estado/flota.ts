@@ -12,27 +12,9 @@ import { aptitud, type Aptitud } from "../dominio/aptitud.ts";
 import { diasEntre, formatearFecha } from "../dominio/fechas.ts";
 import { kmActual } from "../dominio/kilometraje.ts";
 import { formatearPatente } from "../dominio/patente.ts";
-import {
-  NOMBRES_DOCUMENTO,
-  NOMBRES_TIPO_UNIDAD,
-  TEXTO_ESTADO_OPERACION,
-  TEXTO_ESTADO_PARTE_EN_USO,
-  TEXTO_ESTADO_PARTE_INCOMPLETO,
-  TEXTO_FALTA_CARGAR,
-  TEXTO_FLOTA,
-  abreviar,
-  formatearKm,
-  textoDescripcionUnidad,
-  textoFichaDe,
-  textoInterno,
-  textoMostrandoUnidades,
-  textoMotivosMas,
-  textoNovedadesDeUnidad,
-  textoPlazoCorto,
-  textoResumenFlota,
-  textoSinCoincidencias,
-  textoVencimiento,
-} from "../dominio/textos.ts";
+import { NOMBRES_DOCUMENTO, NOMBRES_TIPO_UNIDAD, TEXTO_FALTA_CARGAR, TEXTO_FLOTA, abreviar, formatearKm, textoDescripcionUnidad, textoInterno, textoVencimiento } from "../dominio/textos-base.ts";
+import { TEXTO_ESTADO_OPERACION, TEXTO_ESTADO_PARTE_EN_USO, TEXTO_ESTADO_PARTE_INCOMPLETO } from "../dominio/textos-inicio.ts";
+import { textoFichaDe, textoMostrandoUnidades, textoMotivosMas, textoNovedadesDeUnidad, textoPlazoCorto, textoResumenFlota, textoSinCoincidencias } from "../dominio/textos-flota.ts";
 import type { Estado, FechaCivil, Unidad } from "../dominio/tipos.ts";
 import { REQUISITOS, documentoVigente, estadoDeLicencia } from "../dominio/vencimientos.ts";
 import { horizonteMinimo, type FormaDeMarca, type Horizonte } from "../dominio/horizonte.ts";

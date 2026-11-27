@@ -6,7 +6,7 @@
 // `horizonteMinimo(app.alertas, unidad.id)` (columna "Próximo vencimiento" de la flota).
 
 import type { Alerta, Gravedad, ResultadoAlertas } from "./alertas.ts";
-import { TEXTO_HORIZONTE, textoHorizonte } from "./textos.ts";
+import { TEXTO_HORIZONTE, textoHorizonte } from "./textos-base.ts";
 import type { Grupo } from "./vencimientos.ts";
 
 export type VarianteHorizonte = "completa" | "mediana" | "minima";

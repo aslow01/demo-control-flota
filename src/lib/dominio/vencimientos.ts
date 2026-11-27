@@ -1,7 +1,7 @@
 // Clasificación de vencimientos (V1 a V8) y, más abajo, documento vigente y requisitos (V9 a V17).
 
 import { diasEntre, fechaEnArgentina } from "./fechas.ts";
-import { NOMBRES_DOCUMENTO, TEXTO_FALTA_CARGAR, textoVencimiento } from "./textos.ts";
+import { NOMBRES_DOCUMENTO, TEXTO_FALTA_CARGAR, textoVencimiento } from "./textos-base.ts";
 import type { Conductor, Documento, FechaCivil, Proyecto, TipoDocumento, Titular, Unidad } from "./tipos.ts";
 
 export type Grupo = "vencidos" | "7" | "15" | "30";

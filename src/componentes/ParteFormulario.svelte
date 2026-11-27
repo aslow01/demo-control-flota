@@ -13,7 +13,8 @@
   //  - Paso 2: la revisión ya enviada no se toca (P7): va como resumen arriba (con un `details` que muestra los puntos), sin «Descartar borrador» y sin `select` de conductor.
   import { onDestroy, tick, untrack } from "svelte";
   import { agruparResumen, barraDeEnvio, errorGeneralParte, recorridoDe, respondidos, type CampoParte, type ErroresDeParte, type ValoresParte } from "../lib/dominio/formulario-parte.ts";
-  import { ERRORES, TEXTO_DIALOGOS_FICHA, TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos.ts";
+  import { ERRORES, TEXTO_DIALOGOS_FICHA } from "../lib/dominio/textos-base.ts";
+import { TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos-parte.ts";
   import type { Advertencia, ItemChecklist } from "../lib/dominio/tipos.ts";
   import type { AdvertenciaDeEnvio, ResultadoDeEnvio } from "../lib/estado/app.svelte.ts";
   import type { IndicadorDeGuardado } from "../lib/estado/autoguardado.ts";

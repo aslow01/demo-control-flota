@@ -2,7 +2,7 @@
 
 import { novedadesCriticasAbiertas, rotuloNovedad, textoOrigenNovedad } from "./novedades.ts";
 import { unidadSinSalidaHoy } from "./parte.ts";
-import { MOTIVO_APTITUD } from "./textos.ts";
+import { MOTIVO_APTITUD } from "./textos-base.ts";
 import type { Estado, FechaCivil, TipoDocumento, Unidad } from "./tipos.ts";
 import { NOMBRES_DOCUMENTO, documentoVigente, evaluarObligatorio, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 

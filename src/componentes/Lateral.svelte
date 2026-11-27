@@ -5,7 +5,7 @@
   // en oscuro el recorte solo no alcanza contraste. Sin la demo cargada (arranque o error) solo muestra la marca.
   import type { ItemNavegacion } from "./BarraInferior.svelte";
   import Icono from "./Icono.svelte";
-  import { NOMBRES_DE_PANTALLA } from "../lib/dominio/textos.ts";
+  import { NOMBRES_DE_PANTALLA } from "../lib/dominio/textos-base.ts";
   import { TEXTO_MARCO, TEXTO_MAS, TEXTO_NAVEGACION, TEXTO_PIE, URL_PORTAFOLIO } from "./textos-marco.ts";
 
   let {

@@ -4,16 +4,7 @@ import { diasEntre, parsearFechaCivil, sumarAnios } from "./fechas.ts";
 import { KM_MAXIMO } from "./kilometraje.ts";
 import { formatearPatente, validarPatente } from "./patente.ts";
 import { largoDeTexto, largoEnCaracteres, limpiarTexto, normalizarTexto } from "./texto.ts";
-import {
-  ERRORES,
-  TEXTOS_DE_CAMPO,
-  errAnioFueraDeRango,
-  errInternoRepetido,
-  errPatenteRepetida,
-  errTextoCorto,
-  errTextoLargo,
-  errVenceFueraDeRango,
-} from "./textos.ts";
+import { ERRORES, TEXTOS_DE_CAMPO, errAnioFueraDeRango, errInternoRepetido, errPatenteRepetida, errTextoCorto, errTextoLargo, errVenceFueraDeRango } from "./textos-base.ts";
 import { fallo, ok, type FechaCivil, type Resultado, type Unidad } from "./tipos.ts";
 
 export interface ReglaTexto {

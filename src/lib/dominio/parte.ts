@@ -4,15 +4,7 @@ import { diasEntre, parsearFechaCivil, parsearInstante } from "./fechas.ts";
 import { KM_MAXIMO, advertenciasDeSalida } from "./kilometraje.ts";
 import { largoEnCaracteres, normalizarTexto } from "./texto.ts";
 import { formatearPatente } from "./patente.ts";
-import {
-  ERRORES,
-  NOMBRES_ITEM_CHECKLIST,
-  errLitrosExcedidos,
-  errLitrosInvalidos,
-  textoAdvertencia,
-  type ContextoDeDocumentacion,
-  type RenglonDeAviso,
-} from "./textos.ts";
+import { ERRORES, NOMBRES_ITEM_CHECKLIST, errLitrosExcedidos, errLitrosInvalidos, textoAdvertencia, type ContextoDeDocumentacion, type RenglonDeAviso } from "./textos-base.ts";
 import { estadoDeLicencia, hayDocumentoQueAmpare, inicioDeDocumento, tiposObligatoriosDeUnidad } from "./vencimientos.ts";
 import {
   fallo,
