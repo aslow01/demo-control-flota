@@ -122,10 +122,12 @@ import { TEXTO_LEYENDA_HORIZONTE as L, textoPuntoDeLaRegla } from "../lib/domini
   });
 
   // ---------- Textos derivados ----------
+  /** El nombre accesible del punto. Lo que dice el rótulo visible tiene que estar adentro (WCAG 2.5.3, «Etiqueta en el nombre»): el de un conductor es «B. Juárez» y el nombre dice «Bruno Juárez», así que va adelante. */
   function nombreDelPunto(e: Extract<PuntoDeRegla, { tipo: "marca" }>): string {
     const v = e.vencimiento;
     const titular = v.titular.tipo === "unidad" ? { patente: v.titular.patenteTexto } : { conductor: v.titular.nombre };
-    return textoPuntoDeLaRegla(titular, v.accion.tipoDocumento, v.estado);
+    const nombre = textoPuntoDeLaRegla(titular, v.accion.tipoDocumento, v.estado);
+    return nombre.includes(e.etiquetaCorta) ? nombre : `${e.etiquetaCorta}, ${nombre}`;
   }
   const hayPuntos = $derived(regla.elementos.length > 0);
   const quienes = $derived(regla.vencidos.quienes);

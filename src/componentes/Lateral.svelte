@@ -37,8 +37,9 @@
 
 </script>
 
-<!-- Un `div` y no un `aside`: esto no es un complemento del contenido (landmark `complementary`) sino la navegación principal, que ya es su propio `nav`. -->
-<div class="lateral">
+<!-- Un `div` y no un `aside`: esto no es un complemento del contenido (landmark `complementary`) sino la navegación principal, que ya es su propio `nav`. Lleva `role="region"` con nombre para que
+     la marca, «Volver al portafolio» y la autoría no queden fuera de todo landmark (axe, regla `region`). -->
+<div class="lateral" role="region" aria-label={TEXTO_MARCO.nombreApp}>
   <div class="cabecera">
     {#if cargada}
       <a class="marca" href={inicioHref}><Icono nombre="marca" />{TEXTO_MARCO.nombreApp}</a>
@@ -77,7 +78,7 @@
           <li><button type="button" class="item" onclick={alReiniciar}>{TEXTO_MARCO.reiniciarDemo}</button></li>
         </ul>
         <button type="button" class="perfil" aria-haspopup="dialog" aria-label={TEXTO_NAVEGACION.chipPerfil(perfilTexto)} onclick={alVerComo}>
-          <span class="perfil-texto" aria-hidden="true"><small>{TEXTO_MARCO.verComo}</small>{perfilTexto}</span>
+          <span class="perfil-texto" aria-hidden="true"><small>{TEXTO_MARCO.verComo}</small> {perfilTexto}</span>
           <span aria-hidden="true"><Icono nombre="abajo" /></span>
         </button>
         <a class="item portafolio" href={URL_PORTAFOLIO}><Icono nombre="salir" /><span>{TEXTO_MAS.laDemo.portafolio.rotulo}</span></a>
