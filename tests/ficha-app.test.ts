@@ -10,6 +10,8 @@ import { crearReloj } from "../src/lib/estado/reloj.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
 import type { ValoresUnidad } from "../src/lib/dominio/formulario-unidad.ts";
+import { leerFicha } from "../src/lib/estado/ficha.ts";
+import { leerPanelDeFlota } from "../src/lib/estado/flota.ts";
 
 const H = "2026-11-18";
 const MEDIODIA = "2026-11-18T15:00:00.000Z"; // 12:00 en Argentina
@@ -35,7 +37,7 @@ function estadoDe(app: EstadoApp): Estado {
 }
 
 function fichaDe(app: EstadoApp): FichaDeUnidad {
-  const f = app.fichaDeUnidad;
+  const f = leerFicha(app);
   if (f === null || !f.encontrada) throw new Error("no hay ficha de una unidad en esta ruta");
   return f;
 }
@@ -56,22 +58,22 @@ describe("la ficha según la ruta", () => {
       ubicacion: ubicacionEnMemoria("#/unidad/ZK214BD"),
       crearAvisoPestanas: () => ({ avisarCambio: () => {}, cerrar: () => {} }),
     });
-    expect(t.fichaDeUnidad).toBeNull();
+    expect(leerFicha(t)).toBeNull();
     await t.iniciar();
     expect(fichaDe(t)).toMatchObject({ patente: "ZK214BD", patenteTexto: "ZK 214 BD" });
   });
 
   it("fuera de una ficha no hay ficha; una patente que no existe es «No se encontró la unidad»", async () => {
-    expect((await iniciada("#/movilidades")).app.fichaDeUnidad).toBeNull();
+    expect(leerFicha((await iniciada("#/movilidades")).app)).toBeNull();
     const { app } = await iniciada("#/unidad/ZZ999ZZ");
-    expect(app.fichaDeUnidad).toMatchObject({ encontrada: false, titulo: "No se encontró la unidad", mensaje: "No hay ninguna unidad con la patente ZZ 999 ZZ." });
+    expect(leerFicha(app)).toMatchObject({ encontrada: false, titulo: "No se encontró la unidad", mensaje: "No hay ninguna unidad con la patente ZZ 999 ZZ." });
   });
 
   it("el conductor no llega a la ficha (la ruta es del encargado)", async () => {
     const { app } = await iniciada();
     await app.cambiarPerfil({ tipo: "conductor", conductorId: "c-07" });
     expect(app.ruta).toEqual({ tipo: "conductor" });
-    expect(app.fichaDeUnidad).toBeNull();
+    expect(leerFicha(app)).toBeNull();
   });
 });
 
@@ -297,7 +299,7 @@ describe("estado de la unidad: fuera de servicio (A6), volver (A4, A5) y baja (A
     expect(f.acciones).toEqual({ encabezado: [], masAcciones: [] });
     expect(f.documentos.filas.flatMap((x) => x.acciones)).toEqual([]);
     expect(app.centroDeAlertas?.protagonista.cifra).toBe(3);
-    expect(app.panelDeFlota?.cantidad).toBe(22);
+    expect(leerPanelDeFlota(app)?.cantidad).toBe(22);
   });
 
   it("dar de baja sin motivo no baja nada", async () => {

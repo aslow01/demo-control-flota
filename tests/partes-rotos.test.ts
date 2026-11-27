@@ -9,6 +9,7 @@ import { crearReloj } from "../src/lib/estado/reloj.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 import { arrancar } from "../src/lib/persistencia/arranque.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
+import { leerFicha } from "../src/lib/estado/ficha.ts";
 
 const HOY = "2026-11-18";
 const MEDIODIA = "2026-11-18T15:00:00.000Z";
@@ -96,8 +97,8 @@ describe("QA M-1: con un parte roto, la ficha y el resto de las pantallas se dib
       const unidad = estado.unidades.find((u) => u.id === parte.unidadId);
       const app = await iniciarApp(repo, `#/unidad/${unidad?.patente}`);
       expect(app.fase).toBe("lista");
-      expect(() => app.fichaDeUnidad).not.toThrow();
-      expect(app.fichaDeUnidad?.encontrada).toBe(true);
+      expect(() => leerFicha(app)).not.toThrow();
+      expect(leerFicha(app)?.encontrada).toBe(true);
       expect(app.alertas).not.toBeNull();
     });
   }

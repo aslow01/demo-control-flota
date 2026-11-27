@@ -4,7 +4,7 @@
 // qué orden salen las filas.
 //
 // Los enlaces vienen como `href` ya armados (`#/unidad/ZK214BD`): por eso vive junto al enrutador y no en `dominio/`.
-// Uso: `app.panelDeFlota` (todas las filas, una vez por cambio de datos; `null` hasta que termina el arranque) y, en la vista,
+// Uso: `leerPanelDeFlota(app)` (todas las filas, una vez por cambio de datos; `null` hasta que termina el arranque) y, en la vista,
 // `vistaDeFlota(panel, consulta)` con la consulta como estado de la pantalla (`$state`), que empieza en `consultaDeRuta(app.ruta)`.
 
 import type { Alerta, ResultadoAlertas } from "../dominio/alertas.ts";
@@ -19,6 +19,7 @@ import type { Estado, FechaCivil, Unidad } from "../dominio/tipos.ts";
 import { REQUISITOS, documentoVigente, estadoDeLicencia } from "../dominio/vencimientos.ts";
 import { horizonteMinimo, type FormaDeMarca, type Horizonte } from "../dominio/horizonte.ts";
 import { aHash, type FiltroDeFlotaEnRuta, type Ruta } from "./enrutador.ts";
+import type { LecturaDeApp } from "./lectura.ts";
 
 // --- Consulta ------------------------------------------------------------------------------------
 
@@ -298,6 +299,11 @@ function armarFila(
       .map(normalizarBusqueda)
       .join(" "),
   };
+}
+
+/** Todas las filas de la flota (6.2) para el estado de la aplicación; `null` hasta que termina el arranque. Se llama dentro de un `$derived` de la pantalla: se recalcula con cada cambio de datos. */
+export function leerPanelDeFlota(app: LecturaDeApp): PanelFlota | null {
+  return app.estado === null || app.alertas === null ? null : panelDeFlota(app.estado, app.alertas, app.hoy);
 }
 
 /** Arma todas las filas. `r` es `calcularAlertas(estado, hoy)` (en un componente, `app.alertas`). */

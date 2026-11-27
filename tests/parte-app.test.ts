@@ -14,6 +14,8 @@ import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 import type { ParteEnCierre, ParteEnEdicion } from "../src/lib/estado/parte.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
 import { valoresConKm } from "./ayuda.ts";
+import { leerFicha } from "../src/lib/estado/ficha.ts";
+import { leerPanelDeFlota } from "../src/lib/estado/flota.ts";
 
 const H = "2026-11-18";
 const MEDIODIA = "2026-11-18T15:00:00.000Z"; // 12:00 en Argentina
@@ -521,7 +523,8 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(JSON.stringify(app.centroDeAlertas?.vencimientos.regla)).toBe(reglaAntes);
     // Y es la pantalla de la unidad la que dice por qué.
     app.irA({ tipo: "unidad", patente: "ZYN469" });
-    expect(app.fichaDeUnidad && app.fichaDeUnidad.encontrada && app.fichaDeUnidad.aptitud.categoria).toBe("fuera-de-servicio");
+    const fichaFuera = leerFicha(app);
+    expect(fichaFuera && fichaFuera.encontrada && fichaFuera.aptitud.categoria).toBe("fuera-de-servicio");
     app.irA({ tipo: "parte", patente: "ZYN469", fecha: H });
     expect(app.parteDeLaRuta).toMatchObject({ tipo: "lectura", sinSalida: true });
   });
@@ -539,9 +542,9 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
 
     const motivo = "Sin salida hasta mañana (novedad crítica de hoy)";
     app.irA({ tipo: "unidad", patente: "ZYN469" });
-    const ficha = app.fichaDeUnidad;
+    const ficha = leerFicha(app);
     expect(ficha && ficha.encontrada && ficha.aptitud).toMatchObject({ categoria: "no-puede-salir", etiqueta: "Bloqueada", motivos: [motivo] });
-    expect(app.panelDeFlota?.filas.find((f) => f.patente === "ZYN469")?.estado).toMatchObject({ categoria: "no-puede-salir", etiqueta: "Bloqueada" });
+    expect(leerPanelDeFlota(app)?.filas.find((f) => f.patente === "ZYN469")?.estado).toMatchObject({ categoria: "no-puede-salir", etiqueta: "Bloqueada" });
     expect(app.centroDeAlertas?.protagonista.items.find((i) => i.patente === "ZYN469")).toMatchObject({ categoria: "no-puede-salir", motivo });
     await app.cambiarPerfil(C01);
     expect(app.inicioDelConductor()?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: expect.stringContaining("hasta mañana") });

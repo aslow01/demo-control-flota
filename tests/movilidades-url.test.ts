@@ -7,6 +7,7 @@ import { aHash, parsearHash } from "../src/lib/estado/enrutador.ts";
 import { crearReloj } from "../src/lib/estado/reloj.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
+import { leerPanelDeFlota } from "../src/lib/estado/flota.ts";
 
 async function iniciada(hash = "#/movilidades") {
   const ubicacion = ubicacionEnMemoria(hash);
@@ -28,8 +29,9 @@ function irAHref(app: EstadoApp, href: string): void {
 }
 
 const vista = (app: EstadoApp, c: ConsultaFlota) => {
-  if (app.panelDeFlota === null) throw new Error("falta la flota");
-  return vistaDeFlota(app.panelDeFlota, c);
+  const panel = leerPanelDeFlota(app);
+  if (panel === null) throw new Error("falta la flota");
+  return vistaDeFlota(panel, c);
 };
 
 describe("Movilidades en la dirección", () => {
@@ -94,8 +96,9 @@ describe("Movilidades en la dirección", () => {
 
   it("los números de las pastillas son los de la flota entera, con cualquier búsqueda", async () => {
     const { app } = await iniciada("#/movilidades?q=hilux");
-    if (app.panelDeFlota === null) throw new Error("falta la flota");
-    const sin = vistaDeFlota(app.panelDeFlota, CONSULTA_INICIAL).filtros.map((f) => f.cantidad);
+    const panel = leerPanelDeFlota(app);
+    if (panel === null) throw new Error("falta la flota");
+    const sin = vistaDeFlota(panel, CONSULTA_INICIAL).filtros.map((f) => f.cantidad);
     const con = vista(app, consultaDeRuta(app.ruta)).filtros.map((f) => f.cantidad);
     expect(con).toEqual(sin);
 

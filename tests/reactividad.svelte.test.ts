@@ -6,6 +6,7 @@ import { aHash } from "../src/lib/estado/enrutador.ts";
 import { crearReloj } from "../src/lib/estado/reloj.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
+import { leerFicha } from "../src/lib/estado/ficha.ts";
 
 // Este archivo se llama *.svelte.test.ts para que Svelte compile los runes (`$effect.root`): prueba la reactividad
 // de verdad, la que van a usar las pantallas: un efecto que lee el estado se vuelve a correr cuando cambia.
@@ -126,7 +127,7 @@ describe("reactividad del estado de la aplicación", () => {
     const vistas: string[] = [];
     const limpiar = $effect.root(() => {
       $effect(() => {
-        const f = app.fichaDeUnidad;
+        const f = leerFicha(app);
         if (f !== null && f.encontrada) vistas.push(`${f.patente}|${f.aptitud.categoria}|${f.historial.total}|${app.mensajeDeLlegada ?? "-"}`);
       });
     });

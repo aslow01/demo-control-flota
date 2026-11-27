@@ -99,8 +99,6 @@ import { ErrorDeRepositorio, type Repositorio } from "../persistencia/repositori
 import { crearAutoguardado, type Autoguardado, type DependenciasAutoguardado, type IndicadorDeGuardado, type ResultadoDeBorrador } from "./autoguardado.ts";
 import { centroDeAlertas, contarVencimientos, type CentroDeAlertas } from "./centro-alertas.ts";
 import { aHash, claveConsulta, clavePantalla, nombreDePantalla, resolverRuta, rutaPadre, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
-import { fichaDeUnidad as armarFicha, type FichaDeUnidad, type FichaNoEncontrada } from "./ficha.ts";
-import { panelDeFlota, type PanelFlota } from "./flota.ts";
 import { generarId } from "./ids.ts";
 import {
   conductorConParteBloqueadoPorDocumento,
@@ -254,19 +252,7 @@ export class EstadoApp {
   centroDeAlertas = $derived<CentroDeAlertas | null>(
     this.estado === null || this.alertas === null ? null : centroDeAlertas(this.estado, this.alertas, this.hoy, EMPRESA.nombre),
   );
-  /** Todas las filas de la flota (6.2), recalculadas con cada cambio; la búsqueda, los filtros y el orden son de `vistaDeFlota`. `null` hasta que termina el arranque. */
-  panelDeFlota = $derived<PanelFlota | null>(
-    this.estado === null || this.alertas === null ? null : panelDeFlota(this.estado, this.alertas, this.hoy),
-  );
-  /**
-   * La ficha de la unidad de `#/unidad/…` (6.3), recalculada con cada cambio de datos y al cambiar el día. `null` fuera de esa ruta o antes de
-   * terminar el arranque; con una patente que no existe, `{ encontrada: false, … }` (el estado de error de la pantalla).
-   */
-  fichaDeUnidad = $derived.by<FichaDeUnidad | FichaNoEncontrada | null>(() => {
-    const ruta = this.ruta;
-    if (ruta.tipo !== "unidad" || this.estado === null || this.alertas === null) return null;
-    return armarFicha(this.estado, this.alertas, this.hoy, ruta.patente, this.perfil);
-  });
+  // La flota (6.2) y la ficha (6.3) las arman sus propios módulos, que se bajan con su pantalla: `leerPanelDeFlota(app)` (estado/flota.ts) y `leerFicha(app)` (estado/ficha.ts).
   /**
    * El parte de `#/parte/ZK214BD/2026-11-18` (6.5): para completar, ya enviado (lectura) o el motivo por el que no se puede cargar. `null` fuera de esa ruta o antes de
    * terminar el arranque. Se recalcula con cada cambio de datos (cada autoguardado también): `valoresIniciales` es solo para ARRANCAR el formulario, no se vuelve a leer.

@@ -9,6 +9,7 @@ import { CONSULTA_INICIAL, consultaDeRuta, vistaDeFlota, type PanelFlota } from 
 import { crearReloj } from "../src/lib/estado/reloj.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
+import { leerPanelDeFlota } from "../src/lib/estado/flota.ts";
 
 const MEDIODIA = "2026-11-18T15:00:00.000Z"; // 12:00 en Argentina
 const NUEVA: ValoresUnidad = {
@@ -43,8 +44,9 @@ function estadoDe(app: EstadoApp): Estado {
 }
 
 function panelDe(app: EstadoApp): PanelFlota {
-  if (app.panelDeFlota === null) throw new Error("la flota no está calculada");
-  return app.panelDeFlota;
+  const panel = leerPanelDeFlota(app);
+  if (panel === null) throw new Error("la flota no está calculada");
+  return panel;
 }
 
 function centroDe(app: EstadoApp) {
@@ -62,7 +64,7 @@ describe("la flota en la aplicación (aceptación del paso 4.3)", () => {
       ubicacion: ubicacionEnMemoria(),
       crearAvisoPestanas: () => ({ avisarCambio: () => {}, cerrar: () => {} }),
     });
-    expect(t.panelDeFlota).toBeNull();
+    expect(leerPanelDeFlota(t)).toBeNull();
     await t.iniciar();
     const p = panelDe(t);
     expect(p.filas).toHaveLength(24);

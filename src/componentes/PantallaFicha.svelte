@@ -1,6 +1,6 @@
 <script lang="ts">
   // Ficha de unidad (6.3, `#/unidad/ZK214BD`): 1) qué unidad es y si puede salir (y por qué), 2) documentos, 3) novedades abiertas, 4) historial,
-  // y el kilometraje. No tiene reglas de negocio: todo lo que muestra lo arma `app.fichaDeUnidad` (lib/estado/ficha.ts) y los diálogos usan los
+  // y el kilometraje. No tiene reglas de negocio: todo lo que muestra lo arma `leerFicha(app)` (lib/estado/ficha.ts) y los diálogos usan los
   // `contextoDe…` del dominio y un método de `app` por comando.
   //  - Los diálogos de la ficha: Resolver novedad, Cargar novedad, Poner fuera de servicio, Volver a servicio, Dar de baja, Corregir kilometraje,
   //    Cambiar proyecto o conductor y Cargar otro documento (cada uno su componente sobre `DialogoFormulario`), y Renovar / Cargar / Corregir documento
@@ -14,7 +14,7 @@
   import { contextoDeCargarOtro, contextoDeCargar, contextoDeCorregir, contextoDeRenovar, type CampoDocumento, type ValoresDocumento } from "../lib/dominio/formulario-documento.ts";
   import { contextoDeCargarNovedad, contextoDeResolver } from "../lib/dominio/formulario-novedad.ts";
   import type { FocoTrasGuardar, ResultadoGuardado } from "../lib/estado/app.svelte.ts";
-  import type { AccionDeDocumentoEnFicha, FichaDeUnidad, IdAccionDeFicha, NumeroDeSolapa, SolapaDeFicha } from "../lib/estado/ficha.ts";
+  import { leerFicha, type AccionDeDocumentoEnFicha, type FichaDeUnidad, type IdAccionDeFicha, type NumeroDeSolapa, type SolapaDeFicha } from "../lib/estado/ficha.ts";
   import { app } from "../lib/estado/instancia.ts";
   import { indiceTrasTecla } from "../lib/estado/teclado-lista.ts";
   import { TEXTO_FICHA } from "../lib/dominio/textos-ficha.ts";
@@ -35,7 +35,7 @@
   import FichaNovedades from "./FichaNovedades.svelte";
   import { TEXTO_DIALOGO_DOCUMENTO, TEXTO_FICHA_VISTA as T } from "./textos-marco.ts";
 
-  const f = $derived(app.fichaDeUnidad);
+  const f = $derived(leerFicha(app));
 
   // Los títulos de los paneles: destino del foco tras guardar y de «Ver novedades».
   const ID = {

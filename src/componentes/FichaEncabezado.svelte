@@ -1,6 +1,6 @@
 <script lang="ts">
   // Encabezado de la ficha (6.3, rediseño «Turno»): la patente grande como `h1`, la unidad, la banda del estado (si puede salir y por qué), los datos y las acciones.
-  // Sin panel: va directo sobre el escritorio. No tiene reglas: todo lo arma `app.fichaDeUnidad` (lib/estado/ficha.ts). Las acciones avisan con `alAccion`.
+  // Sin panel: va directo sobre el escritorio. No tiene reglas: todo lo arma `leerFicha(app)` (lib/estado/ficha.ts). Las acciones avisan con `alAccion`.
   // Las migas y el rótulo «Demo con datos ficticios» ya no van acá: los pone el marco (migas en escritorio, «Atrás» y franja «Demo» en el celular).
   //  - Banda del estado: fondo y franja izquierda del tono de la aptitud; la etiqueta dice el estado (con su forma) y, debajo, el motivo en negrita. Con más de dos motivos,
   //    «3 motivos» y la lista debajo, dentro de la misma banda.

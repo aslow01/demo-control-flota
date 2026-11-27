@@ -3,7 +3,7 @@
 // puede contradecirlas; solo decide qué paneles hay, qué acciones se ofrecen según el estado y el perfil, y cómo se lee el historial.
 //
 // Los enlaces vienen como `href` ya armados (`#/flota`, `#/parte/ZK214BD/2026-11-18`): por eso vive junto al enrutador y no en `dominio/`.
-// Uso: `app.fichaDeUnidad` (se recalcula con cada comando y al cambiar el día; `null` fuera de `#/unidad/…` o antes de terminar el arranque)
+// Uso: `leerFicha(app)` (se recalcula con cada comando y al cambiar el día; `null` fuera de `#/unidad/…` o antes de terminar el arranque)
 // y, para el historial, `vistaDeHistorial(ficha.historial, filtro, limite)` con el filtro y el límite como estado de la vista (`$state`).
 
 import type { ResultadoAlertas } from "../dominio/alertas.ts";
@@ -23,6 +23,7 @@ import { textoAccionDocumento } from "../dominio/textos-inicio.ts";
 import type { Documento, Estado, Evento, FechaCivil, ItemChecklist, Novedad, Parte, Perfil, TipoDocumento, TipoEvento, Unidad } from "../dominio/tipos.ts";
 import { REQUISITOS, clasificar, documentoVigente, estadoDeLicencia, tiposObligatoriosDeUnidad, type Grupo } from "../dominio/vencimientos.ts";
 import { aHash } from "./enrutador.ts";
+import type { LecturaDeApp } from "./lectura.ts";
 
 // --- Tipos ---------------------------------------------------------------------------------------
 
@@ -339,6 +340,16 @@ export interface FichaDeUnidad {
 }
 
 // --- Armado --------------------------------------------------------------------------------------
+
+/**
+ * La ficha de la unidad de `#/unidad/…` (6.3) para el estado de la aplicación: `null` fuera de esa ruta o antes de terminar el arranque; con una patente que no existe,
+ * `{ encontrada: false, … }` (el estado de error de la pantalla). Se llama dentro de un `$derived` de la pantalla: se recalcula con cada cambio de datos y al cambiar el día.
+ */
+export function leerFicha(app: LecturaDeApp): FichaDeUnidad | FichaNoEncontrada | null {
+  const ruta = app.ruta;
+  if (ruta.tipo !== "unidad" || app.estado === null || app.alertas === null) return null;
+  return fichaDeUnidad(app.estado, app.alertas, app.hoy, ruta.patente, app.perfil);
+}
 
 export function fichaDeUnidad(
   estado: Estado,

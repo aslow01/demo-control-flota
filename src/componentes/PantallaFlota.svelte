@@ -1,7 +1,7 @@
 <script lang="ts">
   // Flota (6.2, `#/flota`): 1) encontrar la unidad (búsqueda, proyecto, orden y filtros por estado), 2) ver su estado de hoy (tabla de 5.10 con el
   // Horizonte mínimo en «Próximo vencimiento»), 3) agregar una unidad (diálogo). No tiene reglas de negocio: todo lo que muestra lo arma
-  // `app.panelDeFlota` y `vistaDeFlota(panel, consulta)` (lib/estado/flota.ts); el diálogo usa `contextoDeAgregarUnidad` y `app.agregarUnidad`.
+  // `leerPanelDeFlota(app)` y `vistaDeFlota(panel, consulta)` (lib/estado/flota.ts); el diálogo usa `contextoDeAgregarUnidad` y `app.agregarUnidad`.
   //  - El filtro y la búsqueda viajan en la dirección (`#/movilidades?filtro=no-disponibles&q=hilux`). Las pastillas son enlaces (`FiltrosEnlace`): elegir una es navegar, y Atrás la deshace.
   //    Cada letra del buscador reescribe la dirección SIN agregar una entrada al historial (`app.ajustarConsulta`). Ninguna de las dos cosas mueve el foco ni el desplazamiento: la pantalla
   //    es la misma (`versionDePantalla` no sube) y solo cambia `versionDeConsulta`. El proyecto y el orden son de esta pantalla y no viajan.
@@ -16,6 +16,7 @@
   import type { ResultadoAgregarUnidad } from "../lib/estado/app.svelte.ts";
   import {
     consultaDeRuta,
+    leerPanelDeFlota,
     quitarFiltros,
     rutaDeConsulta,
     vistaDeFlota,
@@ -48,7 +49,7 @@
   const ID_TITULO = "titulo-flota";
   const PAUSA_AL_ESCRIBIR_MS = 500;
 
-  const panel = $derived(app.panelDeFlota);
+  const panel = $derived(leerPanelDeFlota(app));
   let consulta = $state<ConsultaFlota>(consultaDeRuta(app.ruta));
   const v = $derived(panel === null ? null : vistaDeFlota(panel, consulta));
 
