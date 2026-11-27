@@ -15,4 +15,6 @@ export function resumirPeso(
   iniciales: readonly string[],
   extrasPrimeraVisita?: readonly string[],
 ): { inicial: number; primeraVisita: number; total: number; trozos: ArchivoJs[] };
+export function lineaDeAviso(texto: string, enActions: boolean): string;
+export function resumenEnMarkdown(medida: { inicial: number; primeraVisita: number; total: number }, avisos: readonly string[]): string;
 export function evaluarPeso(medida: { inicial: number; total: number; trozos?: readonly ArchivoJs[]; primeraVisita?: number }): { ok: boolean; avisos: string[] };

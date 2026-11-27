@@ -1,6 +1,6 @@
 // Control del peso del JS (`scripts/peso-js.mjs`): la lógica pura, separada de la lectura de `dist/`.
 import { describe, expect, it } from "vitest";
-import { AVISO_TROZO, TOPE_INICIAL, TOPE_PRIMERA_VISITA, TOPE_TOTAL_AVISO, evaluarPeso, gzipBytes, jsDeLaCargaInicial, jsDeLaPrimeraVisita, resumirPeso } from "../scripts/peso-js.mjs";
+import { AVISO_TROZO, TOPE_INICIAL, TOPE_PRIMERA_VISITA, TOPE_TOTAL_AVISO, evaluarPeso, gzipBytes, jsDeLaCargaInicial, jsDeLaPrimeraVisita, lineaDeAviso, resumenEnMarkdown, resumirPeso } from "../scripts/peso-js.mjs";
 
 const HTML = `<!doctype html><html><head>
 <script type="module" crossorigin src="/assets/index-AAA.js"></script>
@@ -70,11 +70,34 @@ describe("evaluarPeso", () => {
     expect(arriba.avisos).toHaveLength(1);
     expect(arriba.avisos[0]).toContain("PantallaFicha-AAA.js");
   });
-  it("los topes son los de la etapa 1 del rediseño: 95.000 B iniciales, 100.000 B en la primera visita, aviso de 30.000 B por trozo y de 240.000 B en el total", () => {
+  it("los topes son los de la etapa 1 del rediseño: 95.000 B iniciales, 100.000 B en la primera visita, aviso de 30.000 B por trozo y de 180.000 B en el total", () => {
     expect(TOPE_INICIAL).toBe(95_000);
     expect(TOPE_PRIMERA_VISITA).toBe(100_000);
     expect(AVISO_TROZO).toBe(30_000);
-    expect(TOPE_TOTAL_AVISO).toBe(240_000);
+    expect(TOPE_TOTAL_AVISO).toBe(180_000);
+  });
+  it("el aviso del total está cerca de lo que mide hoy (165.809 B): menos de 20 kB de margen, para que avise de verdad", () => {
+    expect(TOPE_TOTAL_AVISO - 165_809).toBeGreaterThan(0);
+    expect(TOPE_TOTAL_AVISO - 165_809).toBeLessThan(20_000);
+  });
+});
+
+describe("lineaDeAviso", () => {
+  it("en local es texto plano con «AVISO:»", () => {
+    expect(lineaDeAviso("el total crece", false)).toBe("AVISO: el total crece");
+  });
+  it("en GitHub Actions es una anotación de una sola línea, con los saltos y el % escapados", () => {
+    expect(lineaDeAviso("sube 5 %\nrevisar", true)).toBe("::warning title=Peso del JS::sube 5 %25%0Arevisar");
+  });
+});
+
+describe("resumenEnMarkdown", () => {
+  it("arma una tabla con las tres medidas y sus topes, y lista los avisos", () => {
+    const md = resumenEnMarkdown({ inicial: 93_886, primeraVisita: 99_276, total: 165_809 }, ["un aviso"]);
+    expect(md).toContain("| Carga inicial |");
+    expect(md).toContain("| Primera visita |");
+    expect(md).toContain("| Total |");
+    expect(md).toContain("- AVISO: un aviso");
   });
 });
 

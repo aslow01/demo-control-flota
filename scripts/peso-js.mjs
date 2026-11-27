@@ -6,8 +6,9 @@
 //   - Primera visita = la carga inicial más lo que una visita sin datos guardados pide enseguida: el generador de datos y lo que este importa de forma estática (`PRIMERA_VISITA`). Es lo que baja
 //     un visitante nuevo (un reclutador): falla (código 1) si pasa TOPE_PRIMERA_VISITA. La carga inicial sola es lo que baja quien vuelve el mismo día.
 //   - Total = todo `dist/assets/*.js` (la inicial y los trozos). Solo avisa si pasa TOPE_TOTAL_AVISO.
+//   - En GitHub Actions los avisos salen como anotaciones `::warning::` y la medición se agrega al resumen de la corrida.
 // Topes fijados al terminar la etapa 1 del rediseño de la flota («partir por rutas»): el de la carga inicial bajó de 120 kB a 95 kB con lo ganado (docs/registro.md, 27/11/2026).
-import { readFileSync, readdirSync } from "node:fs";
+import { appendFileSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
@@ -20,8 +21,8 @@ export const TOPE_PRIMERA_VISITA = 100_000;
 export const PRIMERA_VISITA = [/^assets\/generador-[^/]+\.js$/];
 /** Aviso (no falla) de cada trozo que se baja después de la carga inicial: una pantalla que pasa de acá conviene partirla. */
 export const AVISO_TROZO = 30_000;
-/** Aviso (no falla) del total: lugar para los ocho módulos del rediseño, con sus gráficos. */
-export const TOPE_TOTAL_AVISO = 240_000;
+/** Aviso (no falla) del total. Medido al cerrar la etapa 1: 165.809 B; el aviso queda unos 14 kB (8 %) arriba para que avise antes de que el total se duplique sin que nadie lo note. Se sube con una decisión escrita (docs/stack.md, sección 5), no por costumbre. */
+export const TOPE_TOTAL_AVISO = 180_000;
 
 /** Tamaño con gzip, siempre nivel 9. */
 export function gzipBytes(contenido) {
@@ -88,6 +89,30 @@ export function evaluarPeso({ inicial, total, trozos = [], primeraVisita = inici
   return { ok: inicial <= TOPE_INICIAL && primeraVisita <= TOPE_PRIMERA_VISITA, avisos };
 }
 
+/** Cómo se muestra un aviso: en GitHub Actions, como anotación `::warning::` (aparece arriba del resumen de la corrida y no queda enterrada en el registro); en local, como texto. */
+export function lineaDeAviso(texto, enActions) {
+  // Una anotación es una sola línea: los saltos y el `%` se escapan como pide GitHub.
+  if (enActions) return `::warning title=Peso del JS::${texto.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A")}`;
+  return `AVISO: ${texto}`;
+}
+
+/** Tabla en Markdown para el resumen de la corrida (`$GITHUB_STEP_SUMMARY`). */
+export function resumenEnMarkdown(medida, avisos) {
+  const fila = (nombre, bytes, tope) => `| ${nombre} | ${bytes.toLocaleString("es-AR")} B | ${tope} |`;
+  return [
+    "### Peso del JS (gzip nivel 9)",
+    "",
+    "| Medida | Pesa | Tope |",
+    "| --- | ---: | --- |",
+    fila("Carga inicial", medida.inicial, `${TOPE_INICIAL.toLocaleString("es-AR")} B (falla)`),
+    fila("Primera visita", medida.primeraVisita, `${TOPE_PRIMERA_VISITA.toLocaleString("es-AR")} B (falla)`),
+    fila("Total", medida.total, `${TOPE_TOTAL_AVISO.toLocaleString("es-AR")} B (aviso)`),
+    "",
+    ...(avisos.length === 0 ? ["Sin avisos."] : avisos.map((a) => `- AVISO: ${a}`)),
+    "",
+  ].join("\n");
+}
+
 function main() {
   const dist = join(dirname(fileURLToPath(import.meta.url)), "..", "dist");
   const carpeta = join(dist, "assets");
@@ -104,7 +129,10 @@ function main() {
   const mayor = medida.trozos.reduce((m, t) => (t.gzip > m.gzip ? t : m), { ruta: "(ninguno)", gzip: 0 });
   console.log(`Trozos:     ${medida.trozos.length}, el mayor ${mayor.ruta} con ${mayor.gzip} B (aviso desde ${AVISO_TROZO} B)`);
   console.log(`JS total:   ${medida.total} B con gzip (aviso desde ${TOPE_TOTAL_AVISO} B)`);
-  for (const a of avisos) console.warn(`AVISO: ${a}`);
+  const enActions = process.env.GITHUB_ACTIONS === "true";
+  for (const a of avisos) console.warn(lineaDeAviso(a, enActions));
+  const resumen = process.env.GITHUB_STEP_SUMMARY;
+  if (enActions && resumen !== undefined && resumen !== "") appendFileSync(resumen, resumenEnMarkdown(medida, avisos));
   if (medida.inicial > TOPE_INICIAL) console.error(`FALLA: la carga inicial (${medida.inicial} B) pasa el tope de ${TOPE_INICIAL} B.`);
   if (medida.primeraVisita > TOPE_PRIMERA_VISITA) console.error(`FALLA: la primera visita (${medida.primeraVisita} B) pasa el tope de ${TOPE_PRIMERA_VISITA} B.`);
   if (!ok) process.exitCode = 1;
