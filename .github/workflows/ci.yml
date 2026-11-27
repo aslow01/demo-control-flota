@@ -1,5 +1,6 @@
 # Integración continua (paso 0.4): check, pruebas (también en tres zonas horarias), build, peso, pruebas de punta a punta, búsqueda de prohibidos y audit.
 # Acá no existe `scripts/prohibidos.local.json` (no se versiona): la regla de nombres de terceros se omite con un aviso.
+# Las acciones van fijadas por su commit (el comentario dice a qué versión corresponde) y los permisos son solo de lectura: no hay secretos.
 name: CI
 
 on:
@@ -12,9 +13,10 @@ permissions:
 jobs:
   verificar:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: npm
@@ -27,11 +29,29 @@ jobs:
       # La matriz completa de zonas horarias: UTC, Asia/Tokyo y America/Los_Angeles.
       - run: npm run test:tz
       - run: npm run build
-      # Peso del JS con gzip nivel 9: falla si la carga inicial pasa 95.000 B; cada trozo (30.000 B) y el total (240.000 B) solo avisan (docs/stack.md, sección 5; topes de la etapa 1 del rediseño).
+      # Peso del JS con gzip nivel 9: falla si la carga inicial pasa 95.000 B o la primera visita 100.000 B; cada trozo (30.000 B) y el total (180.000 B) solo avisan (docs/stack.md, sección 5).
+      # Los avisos salen como anotaciones ::warning:: y la medición queda en el resumen de la corrida (scripts/peso-js.mjs).
       - run: npm run peso
-      # Pruebas de punta a punta (Playwright + axe) contra dist/ servido con la CSP real. El navegador se baja acá porque `npm ci --ignore-scripts` no instala nada por su cuenta.
+      # El navegador de las pruebas de punta a punta se guarda entre corridas: la clave lleva el lockfile, así que cambia cuando cambia la versión de Playwright.
+      # Lo que baja `playwright install` es solo un navegador y sus dependencias del sistema; con la caché en su lugar no vuelve a descargarlo.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # `npm ci --ignore-scripts` no instala navegadores por su cuenta: se bajan acá (las dependencias del sistema se instalan siempre; el navegador, solo si la caché no lo tenía).
       - run: npx playwright install --with-deps chromium
+      # Pruebas de punta a punta (Playwright + axe) contra dist/ servido con la CSP real. En CI (`CI=true`) dejan el informe en playwright-report/ y las trazas en test-results/.
       - run: npx playwright test
+      # Si una prueba falla se sube el informe y las trazas (datos ficticios: el repositorio es público, pero nada de lo que se sube es sensible). Se ven en la corrida, sección «Artifacts».
+      - if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: informe-e2e
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
       # Sin {@html}, sin Math.random en src/lib, sin reloj fuera de estado/reloj.ts, sin correos que no sean de ejemplo (los nombres de terceros solo se buscan en local).
       - run: npm run buscar
       # Sin altas ni críticas (el 18/11/2026 el aviso de `picomatch`, GHSA-fc5q-39xc-vjpf, dejó de alcanzar a la 4.0.7).
