@@ -96,6 +96,16 @@ export const ERRORES = {
   sinDatos: "La demo todavía no terminó de cargar. Espere un momento e intente de nuevo.",
   noPudoActualizar: "No se pudieron leer los cambios de la otra pestaña. Intente de nuevo; si sigue fallando, recargue la página.",
   noPudoGuardarElParte: "No se pudo guardar el parte. Lo escrito sigue en pantalla; no cierre la pestaña e intente de nuevo.",
+  /** El código que sirve para guardar ya no está en el servidor (hay otra versión de la demo): reintentar no sirve hasta recargar, y al recargar se pierde lo escrito. */
+  noPudoGuardarPorVersionNueva: "No se pudo guardar porque hay una versión nueva de la demo. Recargue la página para actualizarla; lo escrito en pantalla no se conservará.",
+  /** Lo mismo para «Reiniciar demo»: ahí no hay nada escrito que perder. */
+  noPudoReiniciarPorVersionNueva: "No se pudo reiniciar la demo porque hay una versión nueva. Recargue la página para actualizarla; se conservaron los datos que tenía.",
+} as const;
+
+/** Los títulos del resumen de errores del parte cuando no se pudo enviar. Viven acá y no en `textos-parte.ts` para que `EstadoApp` los use sin arrastrar los demás textos del parte. */
+export const TITULOS_DE_ERROR_DEL_PARTE = {
+  revision: "No se pudo enviar la revisión",
+  cierre: "No se pudo cerrar el parte",
 } as const;
 
 export function errKmExcedido(maximo: number): string {
@@ -696,4 +706,6 @@ export const TEXTO_ERROR_PANTALLA = {
 export const TEXTO_ERROR_DESCARGA = {
   titulo: "No se pudo descargar esta pantalla",
   mensaje: "Compruebe la conexión y recargue la página.",
+  /** El trozo ya no existe en el servidor (404, o llega el `index.html` en su lugar): se desplegó otra versión mientras la página estaba abierta. */
+  versionNueva: "Hay una versión nueva de la demo. Recargue la página para verla.",
 } as const;

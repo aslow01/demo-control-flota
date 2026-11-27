@@ -10,6 +10,7 @@
 // - Todo lo que toca el navegador entra por `DependenciasApp`, así esto se prueba en Node con dobles.
 
 import { EMPRESA, ENCARGADA } from "../datos/constantes.ts";
+import { bajar, ErrorDeDescarga, esVersionNueva, PLAZO_DE_DESCARGA_MS } from "../descarga.ts";
 import { calcularAlertas, type ResultadoAlertas } from "../dominio/alertas.ts";
 import type { Comando, Contexto, Ejecucion } from "../dominio/comandos.ts";
 import { comandoDeCargar, comandoDeRenovar, errorGeneral, erroresDeNegocio, etiquetaDeTitular, validarValores, type CampoCargarOtro, type CampoDocumento, type ValoresCargarOtro, type ValoresDocumento } from "../dominio/formulario-documento.ts";
@@ -28,11 +29,11 @@ import {
   type ErroresDeFormularioUnidad,
   type ValoresUnidad,
 } from "../dominio/formulario-unidad.ts";
-import { ERRORES, ERRORES_PESTANAS, TEXTO_ERROR_ARRANQUE } from "../dominio/textos-base.ts";
+import { ERRORES, ERRORES_PESTANAS, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_DESCARGA, TITULOS_DE_ERROR_DEL_PARTE } from "../dominio/textos-base.ts";
 import { textoDocumentoCargado, textoDocumentoRenovado, textoDocumentoRenovadoEnFicha, textoNovedadResuelta, textoQuedanVencimientos } from "../dominio/textos-inicio.ts";
 import { textoUnidadAgregada } from "../dominio/textos-flota.ts";
 import { fallo, ok, type Advertencia, type ErrorDeNegocio, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
-import { arrancar, cambiarPerfil as guardarPerfil, partesLegibles, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
+import { arrancar, cambiarPerfil as guardarPerfil, partesLegibles, reiniciarDemo, type Aviso, type CargarGenerador } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
 import { RepositorioMemoria } from "../persistencia/memoria.ts";
 import { ErrorDeRepositorio, type Repositorio } from "../persistencia/repositorio.ts";
@@ -60,6 +61,10 @@ export interface DependenciasApp {
   plazoAbrirMs?: number;
   /** De dónde se bajan los trozos de escritura. Por defecto, `import()`; las pruebas pasan los suyos (por ejemplo, uno que falla como si no hubiera red). */
   trozos?: Partial<TrozosDeEscritura>;
+  /** De dónde se baja el generador de datos (arranque y «Reiniciar demo»). Por defecto, su `import()`. */
+  cargarGenerador?: CargarGenerador;
+  /** Cuánto se espera a que baje el generador o un trozo de escritura antes de darlo por perdido. Por defecto, `PLAZO_DE_DESCARGA_MS`. */
+  plazoDescargaMs?: number;
 }
 
 export type FaseApp = "arrancando" | "lista" | "error";
@@ -126,22 +131,34 @@ const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBo
 /** Si no se pueden escribir, el mensaje habla del parte ("lo escrito sigue en pantalla; no cierre la pestaña"). */
 const COMANDOS_DEL_PARTE_A_GUARDAR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarRevision", "guardarCierre", "enviarCierre"]);
 
-/** La escritura del parte es un trozo aparte (`parte-escritura.ts`): se pide la primera vez que se la necesita. */
 /**
- * Lo que sirve para escribir no viaja con el marco: se baja la primera vez que se escribe (los comandos del dominio) o la primera vez que se guarda desde la ficha o el parte. Cada trozo
- * se pide con `import()`; si no baja (sin red), la escritura contesta «No se pudo guardar» como cualquier otra que falla (D10).
+ * Lo que sirve para escribir no viaja con el marco: se baja la primera vez que se escribe (los comandos del dominio) o la primera vez que se guarda desde la ficha o el parte
+ * (`ficha-escritura.ts`, `parte-escritura.ts`). Cada trozo se pide con `import()`; si no baja (sin red, sin respuesta o ya inexistente), la escritura contesta «No se pudo guardar»
+ * como cualquier otra que falla (D10), sin rechazar y con lo escrito en su lugar.
  */
-export interface TrozosDeEscritura {
-  comandos: () => Promise<typeof import("../dominio/comandos.ts")>;
-  ficha: () => Promise<typeof import("./ficha-escritura.ts")>;
-  parte: () => Promise<typeof import("./parte-escritura.ts")>;
+export interface ModulosDeEscritura {
+  comandos: typeof import("../dominio/comandos.ts");
+  ficha: typeof import("./ficha-escritura.ts");
+  parte: typeof import("./parte-escritura.ts");
 }
+
+export type TrozosDeEscritura = { [K in keyof ModulosDeEscritura]: () => Promise<ModulosDeEscritura[K]> };
 
 const TROZOS: TrozosDeEscritura = {
   comandos: () => import("../dominio/comandos.ts"),
   ficha: () => import("./ficha-escritura.ts"),
   parte: () => import("./parte-escritura.ts"),
 };
+
+/** El texto de una escritura que no pudo bajar su trozo: el de siempre (sin red, sin respuesta) o, si el trozo ya no existe en el servidor, el de la versión nueva. */
+function textoDeEscrituraSinTrozo(error: unknown, siempre: string): string {
+  return esVersionNueva(error) ? ERRORES.noPudoGuardarPorVersionNueva : siempre;
+}
+
+/** Lo que contestan las escrituras del parte cuando no se pudo bajar su trozo (el resumen de errores con el foco, sin ningún campo señalado). */
+function errorDeParteSinTrozo(error: unknown, titulo: string): ErroresDeParte {
+  return { ...errorGeneralEn<CampoParte>(textoDeEscrituraSinTrozo(error, ERRORES.noPudoGuardarElParte)), titulo };
+}
 
 export class EstadoApp {
   fase = $state<FaseApp>("arrancando");
@@ -236,6 +253,8 @@ export class EstadoApp {
         ...(this.deps.semilla === undefined ? {} : { semilla: this.deps.semilla }),
         ...(this.deps.umbralPreparandoMs === undefined ? {} : { umbralPreparandoMs: this.deps.umbralPreparandoMs }),
         ...(this.deps.plazoAbrirMs === undefined ? {} : { plazoAbrirMs: this.deps.plazoAbrirMs }),
+        ...(this.deps.cargarGenerador === undefined ? {} : { cargarGenerador: this.deps.cargarGenerador }),
+        ...(this.deps.plazoDescargaMs === undefined ? {} : { plazoGeneradorMs: this.deps.plazoDescargaMs }),
       };
       const r = await arrancar(opciones);
       this.repositorio = r.repositorio;
@@ -253,9 +272,11 @@ export class EstadoApp {
       this.dejarDeEscucharUbicacion = this.deps.ubicacion.alCambiar(() => this.leerUbicacion());
       this.leerUbicacion();
       this.fase = "lista";
-    } catch {
+    } catch (error) {
       this.fase = "error";
-      this.errorDeArranque = TEXTO_ERROR_ARRANQUE.mensaje;
+      // Un generador que no bajó (sin red, vencido el plazo o ya inexistente) se dice como lo que es; cualquier otra falla, el mensaje de siempre. En los dos casos, «Recargar».
+      this.errorDeArranque =
+        error instanceof ErrorDeDescarga ? (esVersionNueva(error) ? TEXTO_ERROR_DESCARGA.versionNueva : TEXTO_ERROR_DESCARGA.mensaje) : TEXTO_ERROR_ARRANQUE.mensaje;
     } finally {
       this.preparando = false;
     }
@@ -395,31 +416,48 @@ export class EstadoApp {
     return this.encolar(() => this.ejecutarAhora(comando));
   }
 
-  /** Un trozo de escritura (ver `TrozosDeEscritura`): el de la dependencia, o el `import()` de siempre. */
-  private trozo<K extends keyof TrozosDeEscritura>(cual: K): ReturnType<TrozosDeEscritura[K]> {
-    return (this.deps.trozos?.[cual] ?? TROZOS[cual])() as ReturnType<TrozosDeEscritura[K]>;
+  /**
+   * Un trozo de escritura (ver `TrozosDeEscritura`): el de la dependencia, o el `import()` de siempre. Si no baja, o no responde en `plazoDescargaMs`, rechaza con `ErrorDeDescarga`
+   * (que dice si fue la red, el plazo o una versión nueva) y no deja la cola colgada: el pedido de la próxima escritura es nuevo.
+   */
+  private trozo<K extends keyof ModulosDeEscritura>(cual: K): Promise<ModulosDeEscritura[K]> {
+    const cargar: TrozosDeEscritura[K] = this.deps.trozos?.[cual] ?? TROZOS[cual];
+    return bajar<ModulosDeEscritura[K]>(cargar, { plazoMs: this.deps.plazoDescargaMs ?? PLAZO_DE_DESCARGA_MS });
   }
 
-  /** `ejecutar` sin pasar por la cola: para los métodos que ya están dentro de ella y encadenan más de un comando (guardar y enviar el parte). */
-  async ejecutarAhora(comando: Comando, perfil: Perfil = this.perfil): Promise<Resultado<Ejecucion>> {
-    const estado = this.estado;
-    const repositorio = this.repositorio;
-    if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
+  /**
+   * Lo que frena un comando antes de escribirlo, o `null` si puede seguir: la demo todavía no cargó, el perfil no puede, o hay cambios de otra pestaña (D12): los comandos se evalúan
+   * contra el estado de esta pestaña; si otra ya escribió y esta no se actualizó, se pisarían sus cambios (una baja desaparecería, una renovación se duplicaría). Hasta que se pulse
+   * «Actualizar» no se escribe nada.
+   */
+  private frenarComando(comando: Comando, perfil: Perfil): Resultado<Ejecucion> | null {
+    if (this.estado === null || this.repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
     if (perfil.tipo === "conductor" && !COMANDOS_DEL_CONDUCTOR.has(comando.tipo)) return fallo("sin-permiso", ERRORES.sinPermiso);
-    // D12: los comandos se evalúan contra el estado de esta pestaña; si otra ya escribió y esta no se actualizó, se pisarían sus
-    // cambios (una baja desaparecería, una renovación se duplicaría). Hasta que se pulse «Actualizar» no se escribe nada.
     if (this.hayCambiosEnOtraPestana) {
       // El autoguardado no cuenta: corre solo mientras se escribe y no tiene que llevar la vista a ningún lado.
       if (comando.tipo !== "guardarBorrador" && comando.tipo !== "guardarCierre") this.bloqueosPorOtraPestana++;
       return fallo("cambios-en-otra-pestana", ERRORES_PESTANAS.escrituraConCambiosEnOtraPestana);
     }
+    return null;
+  }
 
-    let comandos: Awaited<ReturnType<TrozosDeEscritura["comandos"]>>;
+  /** `ejecutar` sin pasar por la cola: para los métodos que ya están dentro de ella y encadenan más de un comando (guardar y enviar el parte). */
+  async ejecutarAhora(comando: Comando, perfil: Perfil = this.perfil): Promise<Resultado<Ejecucion>> {
+    // Lo que ya se sabe frena antes de esperar nada: sin bajar el trozo de comandos para una escritura que no se va a hacer.
+    const antes = this.frenarComando(comando, perfil);
+    if (antes !== null) return antes;
+
+    let comandos: ModulosDeEscritura["comandos"];
     try {
       comandos = await this.trozo("comandos");
-    } catch {
-      return fallo("escritura-fallida", COMANDOS_DEL_PARTE_A_GUARDAR.has(comando.tipo) ? ERRORES.noPudoGuardarElParte : ERRORES.noPudoGuardar);
+    } catch (error) {
+      return fallo("escritura-fallida", textoDeEscrituraSinTrozo(error, COMANDOS_DEL_PARTE_A_GUARDAR.has(comando.tipo) ? ERRORES.noPudoGuardarElParte : ERRORES.noPudoGuardar));
     }
+    // La espera pudo ser larga (la red, solo la primera escritura) y en ese rato pudo llegar el aviso de otra pestaña (D12): se vuelve a mirar y recién ahora se toma el estado
+    // contra el que se evalúa el comando, para no pisar lo que la otra pestaña escribió.
+    const despues = this.frenarComando(comando, perfil);
+    const estado = this.estado;
+    if (despues !== null || estado === null) return despues ?? fallo("sin-datos", ERRORES.sinDatos);
     const momento = this.deps.reloj.momento();
     const resultado = comandos.ejecutar(estado, comando, {
       hoy: momento.hoy,
@@ -525,8 +563,8 @@ export class EstadoApp {
     let modulo: typeof import("./ficha-escritura.ts");
     try {
       modulo = await this.trozo("ficha");
-    } catch {
-      return { ok: false, errores: errorGeneralEn(ERRORES.noPudoGuardar) };
+    } catch (error) {
+      return { ok: false, errores: errorGeneralEn(textoDeEscrituraSinTrozo(error, ERRORES.noPudoGuardar)) };
     }
     return usar(modulo);
   }
@@ -653,7 +691,12 @@ export class EstadoApp {
    * borrador nace con el primer cambio. No cambia el kilometraje de la unidad ni abre novedades (K9, P3).
    */
   guardarBorradorDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil = this.perfil): Promise<ResultadoDeBorrador> {
-    return this.encolar(async () => (await this.trozo("parte")).guardarBorradorAhora(this, unidadId, fecha, valores, perfil));
+    return this.encolar(() =>
+      this.conEscrituraDeParte(
+        (m) => m.guardarBorradorAhora(this, unidadId, fecha, valores, perfil),
+        (error) => ({ ok: false, tipo: "escritura", errores: errorDeParteSinTrozo(error, TITULOS_DE_ERROR_DEL_PARTE.revision) }),
+      ),
+    );
   }
 
   /**
@@ -661,7 +704,12 @@ export class EstadoApp {
    * para el kilometraje hasta cerrar (K9); lo ya guardado no se vuelve a escribir (`sinCambios`).
    */
   guardarCierreDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil = this.perfil): Promise<ResultadoDeBorrador> {
-    return this.encolar(async () => (await this.trozo("parte")).guardarCierreAhora(this, unidadId, fecha, valores, perfil));
+    return this.encolar(() =>
+      this.conEscrituraDeParte(
+        (m) => m.guardarCierreAhora(this, unidadId, fecha, valores, perfil),
+        (error) => ({ ok: false, tipo: "escritura", errores: errorDeParteSinTrozo(error, TITULOS_DE_ERROR_DEL_PARTE.cierre) }),
+      ),
+    );
   }
 
   /**
@@ -671,7 +719,12 @@ export class EstadoApp {
    * en uso) o C2 (una novedad crítica: la unidad no sale y el parte se cerró sin uso).
    */
   enviarRevisionDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio> {
-    return this.encolar(async () => (await this.trozo("parte")).enviarRevisionAhora(this, unidadId, fecha, valores, aceptadas));
+    return this.encolar(() =>
+      this.conEscrituraDeParte(
+        (m) => m.enviarRevisionAhora(this, unidadId, fecha, valores, aceptadas),
+        (error) => ({ tipo: "errores", errores: errorDeParteSinTrozo(error, TITULOS_DE_ERROR_DEL_PARTE.revision), foco: "resumen-de-errores", primerCampo: null }),
+      ),
+    );
   }
 
   /**
@@ -679,18 +732,38 @@ export class EstadoApp {
    * advertencias que la persona aceptó en «Antes de enviar» (el cierre solo puede avisar del recorrido largo, K7). El resultado es C3.
    */
   enviarCierreDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio> {
-    return this.encolar(async () => (await this.trozo("parte")).enviarCierreAhora(this, unidadId, fecha, valores, aceptadas));
+    return this.encolar(() =>
+      this.conEscrituraDeParte(
+        (m) => m.enviarCierreAhora(this, unidadId, fecha, valores, aceptadas),
+        (error) => ({ tipo: "errores", errores: errorDeParteSinTrozo(error, TITULOS_DE_ERROR_DEL_PARTE.cierre), foco: "resumen-de-errores", primerCampo: null }),
+      ),
+    );
   }
 
   /** «Descartar borrador» (el botón-texto de dos pasos del parte y del inicio del conductor). No deja eventos (sección 8); un parte enviado no se descarta (P7). */
   async descartarBorradorDeParte(parteId: string): Promise<ResultadoDeDescarte> {
-    let modulo: Awaited<ReturnType<TrozosDeEscritura["parte"]>>;
+    let modulo: ModulosDeEscritura["parte"];
     try {
       modulo = await this.trozo("parte");
-    } catch {
-      return { ok: false, mensaje: ERRORES.noPudoGuardar, errores: { ...errorGeneralEn<CampoParte>(ERRORES.noPudoGuardar), titulo: ERRORES.noPudoGuardar } };
+    } catch (error) {
+      const mensaje = textoDeEscrituraSinTrozo(error, ERRORES.noPudoGuardar);
+      return { ok: false, mensaje, errores: { ...errorGeneralEn<CampoParte>(mensaje), titulo: mensaje } };
     }
     return modulo.descartarBorradorDeParte(this, parteId);
+  }
+
+  /**
+   * Corre `usar` con la escritura del parte, que es un trozo aparte (`parte-escritura.ts`): se baja la primera vez que se la necesita. Si no baja, no rechaza: `sinTrozo` arma la
+   * respuesta de error de esa escritura («No se pudo guardar el parte», con lo escrito en su lugar), como en la ficha. Va dentro de la cola, así que la espera del trozo no deja pasar a otra.
+   */
+  private async conEscrituraDeParte<R>(usar: (modulo: ModulosDeEscritura["parte"]) => Promise<R>, sinTrozo: (error: unknown) => R): Promise<R> {
+    let modulo: ModulosDeEscritura["parte"];
+    try {
+      modulo = await this.trozo("parte");
+    } catch (error) {
+      return sinTrozo(error);
+    }
+    return usar(modulo);
   }
 
   // --- Diálogo «Agregar unidad» (paso 4.3) ----------------------------------------------------------
@@ -754,10 +827,11 @@ export class EstadoApp {
       if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
       try {
         const momento = this.deps.reloj.momento();
-        this.estado = await this.conAlmacenamiento(estado, (r) => reiniciarDemo(r, estado, momento.hoy));
+        this.estado = await this.conAlmacenamiento(estado, (r) => reiniciarDemo(r, estado, momento.hoy, this.deps.cargarGenerador, this.deps.plazoDescargaMs));
         this.hoy = momento.hoy;
-      } catch {
-        return fallo("escritura-fallida", ERRORES.noPudoReiniciar);
+      } catch (error) {
+        // El generador que ya no existe (versión nueva) manda a recargar; cualquier otra falla (sin red, sin respuesta, el almacenamiento) es el «Intente de nuevo» de siempre.
+        return fallo("escritura-fallida", esVersionNueva(error) ? ERRORES.noPudoReiniciarPorVersionNueva : ERRORES.noPudoReiniciar);
       }
       this.avisos = this.avisos.filter((a) => a.tipo === "sin-almacenamiento" || a.tipo === "almacenamiento-perdido");
       this.hayCambiosEnOtraPestana = false;

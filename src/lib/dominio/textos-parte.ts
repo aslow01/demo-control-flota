@@ -2,7 +2,7 @@
 
 import { formatearFecha } from "./fechas.ts";
 import type { FechaCivil } from "./tipos.ts";
-import { formatearKm, pluralizar, textoFaltantes } from "./textos-base.ts";
+import { formatearKm, pluralizar, textoFaltantes, TITULOS_DE_ERROR_DEL_PARTE } from "./textos-base.ts";
 
 /**
  * Pantalla del parte (diseno-ui.md 5.x y sección 10). Una unidad fuera de servicio por una novedad crítica vuelve cuando el
@@ -36,8 +36,8 @@ export const TEXTO_FORMULARIO_PARTE = {
     `Revise ${pluralizar(n, "dato", "datos")} para ${paso === "revision" ? "enviar la revisión" : "cerrar el parte"}`,
   /** C5: la barra de envío con un error de reglas a la vista (el mismo número que el título del resumen). */
   barraRevise: (n: number) => `Revise ${pluralizar(n, "dato", "datos")}`,
-  tituloGeneral: "No se pudo enviar la revisión",
-  tituloGeneralCierre: "No se pudo cerrar el parte",
+  tituloGeneral: TITULOS_DE_ERROR_DEL_PARTE.revision,
+  tituloGeneralCierre: TITULOS_DE_ERROR_DEL_PARTE.cierre,
   /** El resumen cuando falla «Descartar borrador» (QA B2): no es un envío. */
   tituloNoSePudoDescartar: "No se pudo descartar el borrador",
   /** Barra de envío (5.14). */
