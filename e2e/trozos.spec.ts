@@ -1,8 +1,10 @@
 // Cómo se bajan los trozos: el generador de datos solo cuando hace falta, el estado de carga de una pantalla que tarda y el error de una que no baja.
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Route } from "@playwright/test";
+import type { Route } from "@playwright/test";
+import { PLAZO_DE_DESCARGA_MS } from "../src/lib/descarga.ts";
 import { TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_DESCARGA } from "../src/lib/dominio/textos-base.ts";
 import { esperarPantalla } from "./ayuda.ts";
+import { expect, test } from "./base.ts";
 
 test("el generador de datos se baja en la primera visita y no cuando ya hay datos guardados", async ({ page }) => {
   const pedidos: string[] = [];
@@ -84,7 +86,20 @@ test("si el generador de datos no baja en la primera visita, la demo lo dice y o
   await expect(page.getByText(TEXTO_AVISO.sinAlmacenamiento)).toHaveCount(0);
 });
 
-test("un generador de datos que llega tarde (más que el plazo del almacenamiento) igual arranca la demo y guarda", async ({ page }) => {
+test("si el generador de datos se cuelga (el pedido nunca responde), a los 15 s la demo lo dice y ofrece recargar; no queda «Preparando…» para siempre", async ({ page }) => {
+  // El pedido queda abierto sin contestar nunca: es lo que pasa con una conexión que se corta a medio camino.
+  await page.route(/\/assets\/generador-[^/]*\.js$/, () => new Promise<void>(() => {}));
+  await page.goto("/#/inicio");
+  await expect(page.getByText("Preparando la flota de ejemplo…")).toBeVisible();
+
+  await expect(page.locator("main h1")).toHaveText(TEXTO_ERROR_ARRANQUE.titulo, { timeout: PLAZO_DE_DESCARGA_MS + 10_000 });
+  await expect(page.getByText(TEXTO_ERROR_DESCARGA.mensaje)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Recargar la página" })).toBeVisible();
+  await expect(page.getByText("Preparando la flota de ejemplo…")).toHaveCount(0);
+  await expect(page.getByText(TEXTO_AVISO.sinAlmacenamiento)).toHaveCount(0);
+});
+
+test("un generador de datos que llega tarde (más que el plazo del almacenamiento, 8 s) pero antes del plazo de descarga igual arranca la demo y guarda", async ({ page }) => {
   const pedidos: string[] = [];
   page.on("request", (r) => {
     if (/\/assets\/generador-[^/]*\.js$/.test(r.url())) pedidos.push(r.url());
@@ -93,10 +108,9 @@ test("un generador de datos que llega tarde (más que el plazo del almacenamient
     await new Promise((resolver) => setTimeout(resolver, 9000));
     await ruta.continue();
   });
-  test.setTimeout(45_000);
   await page.goto("/#/inicio");
   // El generador tarda 9 s y la espera de siempre por el título es de 10 s: se alarga para que no dependa de unos milisegundos.
-  await expect(page.locator("main h1")).toHaveText("Inicio", { timeout: 25_000 });
+  await expect(page.locator("main h1")).toHaveText("Inicio", { timeout: 30_000 });
   await esperarPantalla(page, "Inicio");
   await expect(page.getByText(TEXTO_AVISO.sinAlmacenamiento)).toHaveCount(0);
 

@@ -1,6 +1,7 @@
 // Ayudas de las pruebas de punta a punta: vigilar la consola y la CSP, medir el desborde y pasar axe.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
+import { CONDUCTOR } from "./ejemplo.ts";
 
 declare global {
   interface Window {
@@ -75,12 +76,12 @@ export async function comprobarLimpia(page: Page, vigilancia: Vigilancia, titulo
   expect(await violacionesDeCsp(page), "violaciones de la CSP (después de achicar)").toEqual([]);
 }
 
-/** Cambia el perfil a «Conductor» (el primero de la lista, con una unidad apta) como lo haría la persona: «Ver como», elegir y «Aplicar». Termina en Hoy. */
+/** Cambia el perfil a «Conductor» (el de `e2e/ejemplo.ts`, con una unidad apta) como lo haría la persona: «Ver como», elegir y «Aplicar». Termina en Hoy. */
 export async function verComoConductor(page: Page): Promise<void> {
   await page.getByRole("button", { name: /^Ver como: Encargado/ }).click();
   const dialogo = page.getByRole("dialog", { name: "Ver como" });
   await dialogo.getByRole("radio", { name: /^Conductor/ }).check();
-  await dialogo.getByRole("radio", { name: /^Andrés Echegaray/ }).check();
+  await dialogo.getByRole("radio", { name: new RegExp(`^${CONDUCTOR}`) }).check();
   await dialogo.getByRole("button", { name: "Aplicar" }).click();
   await expect(dialogo).toBeHidden();
   await esperarPantalla(page, "Hoy");
