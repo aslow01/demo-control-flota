@@ -11,71 +11,13 @@
 
 import { EMPRESA, ENCARGADA } from "../datos/constantes.ts";
 import { calcularAlertas, type ResultadoAlertas } from "../dominio/alertas.ts";
-import { aptitud } from "../dominio/aptitud.ts";
-import { aplicar as aplicarComando, ejecutar as ejecutarComando, type Comando, type Contexto, type Ejecucion } from "../dominio/comandos.ts";
-import {
-  comandoDeCargar,
-  comandoDeCargarOtro,
-  comandoDeCorregir,
-  comandoDeRenovar,
-  errorGeneral,
-  errorGeneralCargarOtro,
-  erroresDeNegocio,
-  erroresDeNegocioCargarOtro,
-  etiquetaDeTitular,
-  validarCargarOtro,
-  validarValores,
-  type CampoCargarOtro,
-  type CampoDocumento,
-  type ValoresCargarOtro,
-  type ValoresDocumento,
-} from "../dominio/formulario-documento.ts";
-import { formatearHora } from "../dominio/fechas.ts";
+import { ejecutar as ejecutarComando, type Comando, type Contexto, type Ejecucion } from "../dominio/comandos.ts";
+import { comandoDeCargar, comandoDeRenovar, errorGeneral, erroresDeNegocio, etiquetaDeTitular, validarValores, type CampoCargarOtro, type CampoDocumento, type ValoresCargarOtro, type ValoresDocumento } from "../dominio/formulario-documento.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
-import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, sumarErrorDeRegla, validarParaEnviar, type CampoParte, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
-import { validarKmDeSalida } from "../dominio/kilometraje.ts";
-import { advertenciasLegibles, esBorradorVacio, unidadSinSalidaHoy } from "../dominio/parte.ts";
-import {
-  comandoDeAsignacion,
-  comandoDeBaja,
-  comandoDeFueraDeServicio,
-  comandoDeKilometraje,
-  comandoDeVolverAServicio,
-  erroresDeNegocioAsignacion,
-  erroresDeNegocioBaja,
-  erroresDeNegocioFueraDeServicio,
-  erroresDeNegocioKilometraje,
-  errorGeneralAsignacion,
-  errorGeneralBaja,
-  errorGeneralFueraDeServicio,
-  errorGeneralKilometraje,
-  validarAsignacion,
-  validarBaja,
-  validarFueraDeServicio,
-  validarKilometraje,
-  type CampoAsignacion,
-  type CampoBaja,
-  type CampoFueraDeServicio,
-  type CampoKilometraje,
-  type ValoresAsignacion,
-  type ValoresBaja,
-  type ValoresFueraDeServicio,
-  type ValoresKilometraje,
-} from "../dominio/formulario-ficha.ts";
-import {
-  comandoDeCargarNovedad,
-  comandoDeResolver,
-  erroresDeNegocioCargarNovedad,
-  erroresDeNegocioResolver,
-  errorGeneralCargarNovedad,
-  errorGeneralResolver,
-  validarCargarNovedad,
-  validarResolver,
-  type CampoCargarNovedad,
-  type CampoResolver,
-  type ValoresCargarNovedad,
-  type ValoresResolver,
-} from "../dominio/formulario-novedad.ts";
+import type { CampoAsignacion, CampoBaja, CampoFueraDeServicio, CampoKilometraje, ValoresAsignacion, ValoresBaja, ValoresFueraDeServicio, ValoresKilometraje } from "../dominio/formulario-ficha.ts";
+import type { CampoParte, ErroresDeParte, ValoresParte } from "../dominio/formulario-parte.ts";
+import { unidadSinSalidaHoy } from "../dominio/parte.ts";
+import { comandoDeResolver, erroresDeNegocioResolver, errorGeneralResolver, validarResolver, type CampoCargarNovedad, type CampoResolver, type ValoresCargarNovedad, type ValoresResolver } from "../dominio/formulario-novedad.ts";
 import { rotuloNovedad } from "../dominio/novedades.ts";
 import {
   comandoDeAgregarUnidad,
@@ -85,39 +27,20 @@ import {
   type ErroresDeFormularioUnidad,
   type ValoresUnidad,
 } from "../dominio/formulario-unidad.ts";
-import { ERRORES, ERRORES_PESTANAS, TEXTO_ERROR_ARRANQUE, textoAdvertencia } from "../dominio/textos-base.ts";
-import { TEXTO_FORMULARIO_PARTE } from "../dominio/textos-parte.ts";
-import { textoAsignacionCambiada, textoDocumentoCorregido, textoDocumentoRenovadoEnFicha, textoFueraDeServicio, textoKmCorregido, textoNovedadCargada, textoNovedadResuelta, textoUnidadDadaDeBaja, textoVueltaAServicio } from "../dominio/textos-ficha.ts";
-import { textoDocumentoCargado, textoDocumentoRenovado, textoQuedanVencimientos } from "../dominio/textos-inicio.ts";
+import { ERRORES, ERRORES_PESTANAS, TEXTO_ERROR_ARRANQUE } from "../dominio/textos-base.ts";
+import { textoDocumentoCargado, textoDocumentoRenovado, textoDocumentoRenovadoEnFicha, textoNovedadResuelta, textoQuedanVencimientos } from "../dominio/textos-inicio.ts";
 import { textoUnidadAgregada } from "../dominio/textos-flota.ts";
-import { fallo, ok, type Advertencia, type ErrorDeNegocio, type Estado, type FechaCivil, type Parte, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
-import { esTipoDocumento } from "../dominio/vencimientos.ts";
+import { fallo, ok, type Advertencia, type ErrorDeNegocio, type Estado, type FechaCivil, type Perfil, type Resultado, type TipoDocumento, type Titular } from "../dominio/tipos.ts";
 import { arrancar, cambiarPerfil as guardarPerfil, partesLegibles, reiniciarDemo, type Aviso } from "../persistencia/arranque.ts";
 import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pestanas.ts";
 import { RepositorioMemoria } from "../persistencia/memoria.ts";
 import { ErrorDeRepositorio, type Repositorio } from "../persistencia/repositorio.ts";
-import { crearAutoguardado, type Autoguardado, type DependenciasAutoguardado, type IndicadorDeGuardado, type ResultadoDeBorrador } from "./autoguardado.ts";
+import type { ResultadoDeBorrador } from "./autoguardado.ts";
+import { conductorConParteBloqueadoPorDocumento, conductoresParaProbar, inicioDelConductor as armarInicio, misPartes as armarMisPartes, opcionesParaElegirConductor as armarOpcionesDeConductor, type InicioDelConductor, type MisPartes, type OpcionParaElegirConductor } from "./conductor.ts";
 import { centroDeAlertas, contarVencimientos, type CentroDeAlertas } from "./centro-alertas.ts";
 import { aHash, claveConsulta, clavePantalla, nombreDePantalla, resolverRuta, rutaPadre, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
 import { generarId } from "./ids.ts";
-import {
-  conductorConParteBloqueadoPorDocumento,
-  conductoresParaProbar,
-  inicioDelConductor as armarInicio,
-  misPartes as armarMisPartes,
-  opcionesParaElegirConductor as armarOpcionesDeConductor,
-  panelDeParteEnviado,
-  panelDeRevisionEnviada,
-  panelDeSinSalida,
-  vistaDeParte,
-  type InicioDelConductor,
-  type MisPartes,
-  type OpcionParaElegirConductor,
-  type PanelParteEnviado,
-  type ParteEnCierre,
-  type ParteEnEdicion,
-  type VistaDeParte,
-} from "./parte.ts";
+import type { PanelParteEnviado } from "./parte.ts";
 import type { Reloj } from "./reloj.ts";
 import type { Ubicacion } from "./ubicacion.ts";
 
@@ -199,13 +122,9 @@ const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBo
 
 /** Si no se pueden escribir, el mensaje habla del parte ("lo escrito sigue en pantalla; no cierre la pestaña"). */
 const COMANDOS_DEL_PARTE_A_GUARDAR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarRevision", "guardarCierre", "enviarCierre"]);
-/** Errores del envío de la revisión que se dicen solos: van antes que los faltantes y no se suman a la lista de lo que falta. */
-const ERRORES_QUE_VAN_ANTES_DE_LOS_FALTANTES: ReadonlySet<string> = new Set(["licencia-no-vigente", "documentacion-de-la-unidad-vencida", "parte-anterior-sin-cerrar", "escritura-fallida"]);
 
-/** Dos versiones del mismo borrador son iguales si solo difiere el instante del último guardado. */
-function mismoBorrador(a: Parte, b: Parte): boolean {
-  return JSON.stringify({ ...a, actualizado: "" }) === JSON.stringify({ ...b, actualizado: "" });
-}
+/** La escritura del parte es un trozo aparte (`parte-escritura.ts`): se pide la primera vez que se la necesita. */
+const escrituraDelParte = () => import("./parte-escritura.ts");
 
 export class EstadoApp {
   fase = $state<FaseApp>("arrancando");
@@ -252,16 +171,8 @@ export class EstadoApp {
   centroDeAlertas = $derived<CentroDeAlertas | null>(
     this.estado === null || this.alertas === null ? null : centroDeAlertas(this.estado, this.alertas, this.hoy, EMPRESA.nombre),
   );
-  // La flota (6.2) y la ficha (6.3) las arman sus propios módulos, que se bajan con su pantalla: `leerPanelDeFlota(app)` (estado/flota.ts) y `leerFicha(app)` (estado/ficha.ts).
-  /**
-   * El parte de `#/parte/ZK214BD/2026-11-18` (6.5): para completar, ya enviado (lectura) o el motivo por el que no se puede cargar. `null` fuera de esa ruta o antes de
-   * terminar el arranque. Se recalcula con cada cambio de datos (cada autoguardado también): `valoresIniciales` es solo para ARRANCAR el formulario, no se vuelve a leer.
-   */
-  parteDeLaRuta = $derived.by<VistaDeParte | null>(() => {
-    const ruta = this.ruta;
-    if (ruta.tipo !== "parte" || this.estado === null) return null;
-    return vistaDeParte(this.estado, this.hoy, this.perfil, ruta.patente, ruta.fecha);
-  });
+  // La flota (6.2), la ficha (6.3) y el parte (6.5) las arman sus propios módulos, que se bajan con su pantalla: `leerPanelDeFlota(app)` (estado/flota.ts), `leerFicha(app)` (estado/ficha.ts)
+  // y `leerParte(app)` (estado/parte.ts).
   /** Se llegó a una ficha desde otra pantalla con algo que decir (hoy, «Unidad agregada…»): patente y mensaje. Se va al salir de esa ficha. */
   private llegada = $state<{ patente: string; mensaje: string } | null>(null);
   /** El mensaje de llegada a la ficha que se está mirando (la barra de estado arranca con él); `null` si no hay. La vista lo reemplaza con los suyos. */
@@ -468,7 +379,7 @@ export class EstadoApp {
   }
 
   /** `ejecutar` sin pasar por la cola: para los métodos que ya están dentro de ella y encadenan más de un comando (guardar y enviar el parte). */
-  private async ejecutarAhora(comando: Comando, perfil: Perfil = this.perfil): Promise<Resultado<Ejecucion>> {
+  async ejecutarAhora(comando: Comando, perfil: Perfil = this.perfil): Promise<Resultado<Ejecucion>> {
     const estado = this.estado;
     const repositorio = this.repositorio;
     if (estado === null || repositorio === null) return fallo("sin-datos", ERRORES.sinDatos);
@@ -530,7 +441,8 @@ export class EstadoApp {
     );
   }
 
-  private async guardarDocumento(
+  /** Para `ficha-escritura.ts`: lo que tienen en común los diálogos de documentos. */
+  async guardarDocumento(
     valores: ValoresDocumento,
     comando: Comando,
     texto: (despues: Estado) => string | null,
@@ -555,7 +467,8 @@ export class EstadoApp {
   // perfil Conductor no puede ninguno (error general «sin permiso»).
 
   /** Lo que tienen en común: sin datos, validación previa, ejecutar y repartir el error o armar el mensaje. */
-  private async guardarFormulario<Campo extends string>(a: {
+  /** Para `ficha-escritura.ts`. */
+  async guardarFormulario<Campo extends string>(a: {
     previos: (estado: Estado) => ErroresDeFormularioDe<Campo> | null;
     comando: Comando;
     errores: (error: ErrorDeNegocio) => ErroresDeFormularioDe<Campo>;
@@ -571,38 +484,33 @@ export class EstadoApp {
   }
 
   /** `ZK 214 BD` de la unidad, en el estado que se pasa. */
-  private patenteDe(estado: Estado, unidadId: string): string {
+  /** Para `ficha-escritura.ts`. */
+  patenteDe(estado: Estado, unidadId: string): string {
     return etiquetaDeTitular(estado, { tipo: "unidad", id: unidadId });
+  }
+
+  /**
+   * La escritura de la ficha es un trozo aparte (`ficha-escritura.ts`): se baja la primera vez que se guarda algo desde ella. Si no baja (sin red), se contesta como cualquier otra
+   * escritura que falla: «No se pudo guardar», con el formulario abierto y lo escrito en su lugar (D10).
+   */
+  private async conEscrituraDeFicha<Campo extends string>(usar: (modulo: typeof import("./ficha-escritura.ts")) => Promise<ResultadoGuardado<Campo>>): Promise<ResultadoGuardado<Campo>> {
+    let modulo: typeof import("./ficha-escritura.ts");
+    try {
+      modulo = await import("./ficha-escritura.ts");
+    } catch {
+      return { ok: false, errores: errorGeneralEn(ERRORES.noPudoGuardar) };
+    }
+    return usar(modulo);
   }
 
   /** «Corregir documento»: el vigente de una unidad o de un conductor, con sus cuatro campos. Es de la ficha (foco al título de Documentos). */
   corregirDocumento(documentoId: string, valores: ValoresDocumento): Promise<ResultadoGuardado<CampoDocumento>> {
-    return this.guardarDocumento(
-      valores,
-      comandoDeCorregir(documentoId, valores),
-      (despues) => {
-        const doc = despues.documentos.find((d) => d.id === documentoId);
-        return doc === undefined ? null : textoDocumentoCorregido(doc.tipo, etiquetaDeTitular(despues, doc.titular));
-      },
-      "ficha",
-    );
+    return this.conEscrituraDeFicha((m) => m.corregirDocumento(this, documentoId, valores));
   }
 
   /** «Cargar otro documento»: el `select` Tipo elige cuál (uno de `contextoDeCargarOtro(...).tipos`) y el resto es igual que `cargarDocumento`. */
-  async cargarOtroDocumento(unidadId: string, valores: ValoresCargarOtro): Promise<ResultadoGuardado<CampoCargarOtro>> {
-    const tipo = valores.tipoDocumento;
-    if (!esTipoDocumento(tipo)) {
-      // El `select` no ofrece otra cosa: un valor vacío o inventado se contesta igual que la revisión del formulario (el error va al campo Tipo).
-      const previos = this.estado === null ? null : validarCargarOtro(valores, this.estado, unidadId, this.hoy);
-      return { ok: false, errores: previos ?? errorGeneralCargarOtro(ERRORES.sinDatos) };
-    }
-    return this.guardarFormulario({
-      previos: (estado) => validarCargarOtro(valores, estado, unidadId, this.hoy),
-      comando: comandoDeCargarOtro(unidadId, valores),
-      errores: erroresDeNegocioCargarOtro,
-      general: errorGeneralCargarOtro,
-      exito: (e) => ({ mensaje: textoDocumentoCargado(tipo, this.patenteDe(e.estado, unidadId)), foco: "titulo-de-documentos" }),
-    });
+  cargarOtroDocumento(unidadId: string, valores: ValoresCargarOtro): Promise<ResultadoGuardado<CampoCargarOtro>> {
+    return this.conEscrituraDeFicha((m) => m.cargarOtroDocumento(this, unidadId, valores));
   }
 
   /**
@@ -631,24 +539,12 @@ export class EstadoApp {
 
   /** «Cargar novedad» a mano (N3): con «Impide usar la unidad» la unidad queda fuera de servicio (A3). */
   cargarNovedad(unidadId: string, valores: ValoresCargarNovedad): Promise<ResultadoGuardado<CampoCargarNovedad>> {
-    return this.guardarFormulario({
-      previos: () => validarCargarNovedad(valores),
-      comando: comandoDeCargarNovedad(unidadId, valores),
-      errores: erroresDeNegocioCargarNovedad,
-      general: errorGeneralCargarNovedad,
-      exito: (e) => ({ mensaje: textoNovedadCargada(this.patenteDe(e.estado, unidadId), valores.impideUso), foco: "titulo-de-novedades" }),
-    });
+    return this.conEscrituraDeFicha((m) => m.cargarNovedad(this, unidadId, valores));
   }
 
   /** «Poner fuera de servicio» (A6). */
   ponerFueraDeServicio(unidadId: string, valores: ValoresFueraDeServicio): Promise<ResultadoGuardado<CampoFueraDeServicio>> {
-    return this.guardarFormulario({
-      previos: () => validarFueraDeServicio(valores),
-      comando: comandoDeFueraDeServicio(unidadId, valores),
-      errores: erroresDeNegocioFueraDeServicio,
-      general: errorGeneralFueraDeServicio,
-      exito: (e) => ({ mensaje: textoFueraDeServicio(this.patenteDe(e.estado, unidadId)), foco: "titulo-de-la-ficha" }),
-    });
+    return this.conEscrituraDeFicha((m) => m.ponerFueraDeServicio(this, unidadId, valores));
   }
 
   /**
@@ -656,64 +552,22 @@ export class EstadoApp {
    * Con documentos vencidos o faltantes vuelve igual y el mensaje dice que todavía no puede salir.
    */
   volverAServicio(unidadId: string): Promise<ResultadoGuardado<never>> {
-    return this.guardarFormulario<never>({
-      previos: () => null,
-      comando: comandoDeVolverAServicio(unidadId),
-      errores: (error) => errorGeneralEn(error.mensaje),
-      general: (mensaje) => errorGeneralEn(mensaje),
-      exito: (e) => {
-        const u = e.estado.unidades.find((x) => x.id === unidadId);
-        const a = u === undefined ? null : aptitud(u, e.estado, this.hoy);
-        const pendientes = a === null || a.puedeSalir ? [] : a.motivos.map((m) => m.texto);
-        return { mensaje: textoVueltaAServicio(this.patenteDe(e.estado, unidadId), pendientes), foco: "titulo-de-la-ficha" };
-      },
-    });
+    return this.conEscrituraDeFicha((m) => m.volverAServicio(this, unidadId));
   }
 
   /** «Dar de baja» (A7): irreversible en la demo; conserva documentos, partes e historial. */
   darDeBaja(unidadId: string, valores: ValoresBaja): Promise<ResultadoGuardado<CampoBaja>> {
-    return this.guardarFormulario({
-      previos: () => validarBaja(valores),
-      comando: comandoDeBaja(unidadId, valores),
-      errores: erroresDeNegocioBaja,
-      general: errorGeneralBaja,
-      exito: (e) => ({ mensaje: textoUnidadDadaDeBaja(this.patenteDe(e.estado, unidadId)), foco: "titulo-de-la-ficha" }),
-    });
+    return this.conEscrituraDeFicha((m) => m.darDeBaja(this, unidadId, valores));
   }
 
   /** «Corregir kilometraje» (K5, M3). */
   corregirKilometraje(unidadId: string, valores: ValoresKilometraje): Promise<ResultadoGuardado<CampoKilometraje>> {
-    return this.guardarFormulario({
-      previos: () => validarKilometraje(valores, this.hoy),
-      comando: comandoDeKilometraje(unidadId, valores),
-      errores: erroresDeNegocioKilometraje,
-      general: errorGeneralKilometraje,
-      exito: (e) => ({
-        mensaje: textoKmCorregido(this.patenteDe(e.estado, unidadId), e.cambios.correccionesKm?.[0]?.kmBase ?? 0),
-        foco: "titulo-de-kilometraje",
-      }),
-    });
+    return this.conEscrituraDeFicha((m) => m.corregirKilometraje(this, unidadId, valores));
   }
 
   /** «Cambiar proyecto o conductor» (U6): si el proyecto nuevo exige la habilitación y no la tiene, el mensaje lo dice y la alerta ya existe. */
   cambiarAsignacion(unidadId: string, valores: ValoresAsignacion): Promise<ResultadoGuardado<CampoAsignacion>> {
-    const antes = this.estado?.unidades.find((u) => u.id === unidadId);
-    return this.guardarFormulario({
-      previos: () => validarAsignacion(valores),
-      comando: comandoDeAsignacion(unidadId, valores),
-      errores: erroresDeNegocioAsignacion,
-      general: errorGeneralAsignacion,
-      exito: () => {
-        const cambio = {
-          proyecto: antes === undefined || antes.proyectoId !== valores.proyectoId,
-          conductor: antes === undefined || (antes.conductorId ?? "") !== valores.conductorId,
-        };
-        const falta =
-          cambio.proyecto &&
-          (this.alertas?.alertas.some((x) => x.tipo === "documento-faltante" && x.unidadId === unidadId && x.tipoDocumento === "habilitacion-proyecto") ?? false);
-        return { mensaje: textoAsignacionCambiada(cambio, falta), foco: "titulo-de-la-ficha" };
-      },
-    });
+    return this.conEscrituraDeFicha((m) => m.cambiarAsignacion(this, unidadId, valores));
   }
 
   // --- Inicio del conductor y parte diario (paso 4.5) --------------------------------------------------
@@ -756,28 +610,14 @@ export class EstadoApp {
     return conductorConParteBloqueadoPorDocumento(this.estado, this.alertas, this.hoy);
   }
 
-  /**
-   * El autoguardado (P3) de la pantalla de un parte, ya conectado: `app.autoguardadoDeParte(vista, (i) => (indicador = i))`. Hay que `cerrar()` al salir de la pantalla y
-   * `reiniciar(valores)` después de descartar el borrador. `opciones` es para los tests (reloj inyectado).
-   */
-  autoguardadoDeParte(vista: ParteEnEdicion, alCambiar: (indicador: IndicadorDeGuardado) => void, opciones: Pick<DependenciasAutoguardado, "esperaMs" | "programar" | "cancelar"> = {}): Autoguardado {
-    // El perfil se toma ahora, al abrir el formulario: si se cambia de perfil, el formulario se destruye y guarda lo pendiente ya con el perfil nuevo, y ese guardado
-    // tiene que seguir firmado por quien escribió (código B9).
-    const perfil = this.perfil;
-    return crearAutoguardado({ ...opciones, valores: vista.valoresIniciales, alCambiar, guardar: (valores) => this.guardarBorradorDeParte(vista.unidadId, vista.fecha, valores, perfil) });
-  }
-
-  /** El autoguardado (P3) del cierre de la jornada (paso 2), con las mismas reglas que el de la revisión: `app.autoguardadoDeCierre(vista, (i) => (indicador = i))`. */
-  autoguardadoDeCierre(vista: ParteEnCierre, alCambiar: (indicador: IndicadorDeGuardado) => void, opciones: Pick<DependenciasAutoguardado, "esperaMs" | "programar" | "cancelar"> = {}): Autoguardado {
-    const perfil = this.perfil;
-    return crearAutoguardado({ ...opciones, valores: vista.valoresIniciales, alCambiar, guardar: (valores) => this.guardarCierreDeParte(vista.unidadId, vista.fecha, valores, perfil) });
-  }
-
-  /** El contexto de un ensayo (comando que no se escribe): no gasta ids del generador. */
-  private contextoDeEnsayo(perfil: Perfil): Contexto {
+  /** El contexto de un ensayo (comando que no se escribe): no gasta ids del generador. Lo usa `parte-escritura.ts`. */
+  contextoDeEnsayo(perfil: Perfil): Contexto {
     const momento = this.deps.reloj.momento();
     return { hoy: momento.hoy, ahora: momento.ahora, autor: this.autorDe(perfil), nuevoId: () => "ensayo" };
   }
+
+  // La escritura del parte vive en `parte-escritura.ts`, que se baja con la pantalla del parte (y acá, la primera vez que se la necesita): estos métodos son la puerta de siempre
+  // y la cola de comandos sigue siendo una sola.
 
   /**
    * P3: guarda el borrador del parte de `unidadId` y `fecha` con lo que hay en el formulario (`valores`, todo texto). Solo se controla el formato de cada campo: con un
@@ -785,43 +625,7 @@ export class EstadoApp {
    * borrador nace con el primer cambio. No cambia el kilometraje de la unidad ni abre novedades (K9, P3).
    */
   guardarBorradorDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil = this.perfil): Promise<ResultadoDeBorrador> {
-    return this.encolar(() => this.guardarBorradorAhora(unidadId, fecha, valores, perfil));
-  }
-
-  private erroresDeBorrador(error: ErrorDeNegocio): ResultadoDeBorrador {
-    if (error.codigo === "escritura-fallida") return { ok: false, tipo: "escritura", errores: errorGeneralParte(error.mensaje) };
-    const errores = erroresDeNegocioParte(error);
-    return { ok: false, tipo: errores.lista.length > 0 ? "campos" : "regla", errores };
-  }
-
-  private async guardarBorradorAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil): Promise<ResultadoDeBorrador> {
-    const estado = this.estado;
-    if (estado === null) return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.sinDatos) };
-    const v = perfil.tipo === "conductor" ? { ...valores, conductorId: perfil.conductorId } : valores;
-    const existente = estado.partes.find((p) => p.unidadId === unidadId && p.fecha === fecha);
-    if (existente?.estado === "enviado") return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.parteEnviadoInmutable) };
-    if (existente?.estado === "en-uso") return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.revisionYaEnviada) };
-
-    const c = comandoDeBorrador(unidadId, fecha, existente?.id ?? null, v);
-    if (!c.ok) return { ok: false, tipo: "campos", errores: c.errores };
-
-    // Ensayo: qué parte quedaría guardado (no se escribe nada ni se gastan ids).
-    const ensayo = aplicarComando(estado, c.comando, this.contextoDeEnsayo(perfil));
-    if (existente === undefined) {
-      // Un parte nuevo se crea con el primer cambio: abrirlo y no escribir nada no deja un borrador (ni marca la demo como modificada, D11).
-      if (!ensayo.ok) return this.erroresDeBorrador(ensayo.error);
-      const nuevo = ensayo.valor.cambios.partes[0];
-      if (nuevo !== undefined && esBorradorVacio(nuevo)) return { ok: true, parteId: null, hora: null, sinCambios: true };
-    } else if (ensayo.ok) {
-      // Código B8: lo que ya está guardado no se vuelve a escribir (por ejemplo, «Enviar parte» guarda de nuevo lo que el autoguardado acababa de guardar).
-      const nuevo = ensayo.valor.cambios.partes[0];
-      if (nuevo !== undefined && mismoBorrador(existente, nuevo)) return { ok: true, parteId: existente.id, hora: formatearHora(existente.actualizado), sinCambios: false };
-    }
-
-    const r = await this.ejecutarAhora(c.comando, perfil);
-    if (!r.ok) return this.erroresDeBorrador(r.error);
-    const guardado = r.valor.cambios.partes[0];
-    return { ok: true, parteId: guardado?.id ?? null, hora: guardado === undefined ? null : formatearHora(guardado.actualizado), sinCambios: false };
+    return this.encolar(async () => (await escrituraDelParte()).guardarBorradorAhora(this, unidadId, fecha, valores, perfil));
   }
 
   /**
@@ -829,55 +633,7 @@ export class EstadoApp {
    * para el kilometraje hasta cerrar (K9); lo ya guardado no se vuelve a escribir (`sinCambios`).
    */
   guardarCierreDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil = this.perfil): Promise<ResultadoDeBorrador> {
-    return this.encolar(() => this.guardarCierreAhora(unidadId, fecha, valores, perfil));
-  }
-
-  private erroresDeCierre(error: ErrorDeNegocio): ResultadoDeBorrador {
-    if (error.codigo === "escritura-fallida") return { ok: false, tipo: "escritura", errores: errorGeneralParte(error.mensaje, TEXTO_FORMULARIO_PARTE.tituloGeneralCierre) };
-    const errores = erroresDeNegocioParte(error, "cierre");
-    return { ok: false, tipo: errores.lista.length > 0 ? "campos" : "regla", errores };
-  }
-
-  private async guardarCierreAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil): Promise<ResultadoDeBorrador> {
-    const estado = this.estado;
-    if (estado === null) return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.sinDatos, TEXTO_FORMULARIO_PARTE.tituloGeneralCierre) };
-    const existente = estado.partes.find((p) => p.unidadId === unidadId && p.fecha === fecha);
-    if (existente === undefined) return { ok: false, tipo: "regla", errores: errorGeneralParte(ERRORES.parteInexistente, TEXTO_FORMULARIO_PARTE.tituloGeneralCierre) };
-
-    const c = comandoDeCierre(existente.id, valores);
-    if (!c.ok) return { ok: false, tipo: "campos", errores: c.errores };
-    // Ensayo: si no cambia nada, no se escribe (ni se marca la demo como modificada).
-    const ensayo = aplicarComando(estado, c.comando, this.contextoDeEnsayo(perfil));
-    if (!ensayo.ok) return this.erroresDeCierre(ensayo.error);
-    if (ensayo.valor.cambios.partes.length === 0) return { ok: true, parteId: existente.id, hora: formatearHora(existente.actualizado), sinCambios: false };
-
-    const r = await this.ejecutarAhora(c.comando, perfil);
-    if (!r.ok) return this.erroresDeCierre(r.error);
-    const guardado = r.valor.cambios.partes[0];
-    return { ok: true, parteId: guardado?.id ?? existente.id, hora: guardado === undefined ? null : formatearHora(guardado.actualizado), sinCambios: false };
-  }
-
-  /** Los errores de un envío, con el foco en el resumen de errores. */
-  private erroresDeEnvio(e: ErroresDeParte): ResultadoDeEnvio {
-    return { tipo: "errores", errores: e, foco: "resumen-de-errores", primerCampo: e.lista[0]?.campo ?? null };
-  }
-
-  /** Las advertencias que hay que aceptar (K6, K7), listas para el diálogo «Antes de enviar». */
-  private advertenciasPendientes(error: ErrorDeNegocio): ResultadoDeEnvio {
-    const pendientes = advertenciasLegibles(error.detalle?.["advertencias"]);
-    return {
-      tipo: "advertencias",
-      advertencias: pendientes.map((a) => ({ tipo: a.tipo, texto: textoAdvertencia(a), tono: "semana" })),
-      aceptables: pendientes.map((a) => a.tipo),
-      foco: "dialogo-antes-de-enviar",
-    };
-  }
-
-  /** El resultado de un parte que ya estaba enviado cuando se pidió enviar (doble clic, otra pestaña): se devuelve el mismo panel sin hacer nada. */
-  private resultadoYaHecho(estado: Estado, p: Parte, perfil: Perfil): ResultadoDeEnvio {
-    if (p.estado === "en-uso") return { tipo: "enviado", paso: "revision-enviada", yaEnviado: true, panel: panelDeRevisionEnviada(estado, p, perfil, this.hoy), foco: "titulo-del-parte-enviado" };
-    if (p.sinSalida) return { tipo: "enviado", paso: "sin-salida", yaEnviado: true, panel: panelDeSinSalida(estado, p, perfil), foco: "titulo-del-parte-enviado" };
-    return { tipo: "enviado", paso: "cerrado", yaEnviado: true, panel: panelDeParteEnviado(estado, p, perfil), foco: "titulo-del-parte-enviado" };
+    return this.encolar(async () => (await escrituraDelParte()).guardarCierreAhora(this, unidadId, fecha, valores, perfil));
   }
 
   /**
@@ -887,50 +643,7 @@ export class EstadoApp {
    * en uso) o C2 (una novedad crítica: la unidad no sale y el parte se cerró sin uso).
    */
   enviarRevisionDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio> {
-    return this.encolar(() => this.enviarRevisionAhora(unidadId, fecha, valores, aceptadas));
-  }
-
-  private async enviarRevisionAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][]): Promise<ResultadoDeEnvio> {
-    const estado = this.estado;
-    if (estado === null) return this.erroresDeEnvio(errorGeneralParte(ERRORES.sinDatos));
-    const perfil = this.perfil;
-    const donde = (p: { unidadId: string; fecha: FechaCivil }) => p.unidadId === unidadId && p.fecha === fecha;
-
-    // Un doble clic, o una revisión que otra pestaña ya envió: no se hace nada y se devuelve el mismo resultado.
-    const yaHecho = estado.partes.find((p) => donde(p) && p.estado !== "borrador");
-    if (yaHecho !== undefined) return this.resultadoYaHecho(estado, yaHecho, perfil);
-
-    const v = perfil.tipo === "conductor" ? { ...valores, conductorId: perfil.conductorId } : valores;
-    // Todo lo que impide enviar (faltantes y errores de formato) se lista junto, en el orden del formulario. Lo escrito se guarda igual, salvo que tenga un error de formato.
-    const previos = validarParaEnviar(v, "revision");
-    const guardado = await this.guardarBorradorAhora(unidadId, fecha, v, perfil);
-    if (!guardado.ok && guardado.tipo !== "campos") return this.erroresDeEnvio(guardado.errores);
-    if (!guardado.ok) return this.erroresDeEnvio(previos ?? guardado.errores);
-
-    const borrador = this.estado?.partes.find((p) => donde(p));
-    // Abrir el formulario y enviarlo vacío no crea un borrador (D11): lo que falta se dice igual.
-    if (borrador === undefined) return this.erroresDeEnvio(previos ?? errorGeneralParte(ERRORES.parteInexistente));
-    // L1, P21, P18 y P20 van antes que los faltantes (como en el comando): a quien no puede manejar, o la unidad no puede salir, o tiene un parte anterior sin cerrar, no se le piden los diez puntos.
-    const r = await this.ejecutarAhora({ tipo: "enviarRevision", parteId: borrador.id, advertenciasAceptadas: aceptadas }, perfil);
-    if (!r.ok) {
-      if (ERRORES_QUE_VAN_ANTES_DE_LOS_FALTANTES.has(r.error.codigo)) return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
-      if (previos !== null) return this.erroresDeEnvio(this.conErrorDeKilometraje(previos, v, borrador));
-      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error);
-      return this.erroresDeEnvio(erroresDeNegocioParte(r.error));
-    }
-    const enviado = r.valor.estado.partes.find((p) => p.id === borrador.id);
-    if (enviado === undefined) return this.erroresDeEnvio(errorGeneralParte(ERRORES.parteInexistente)); // no pasa: el comando acaba de escribirlo
-    const hecho = this.resultadoYaHecho(r.valor.estado, enviado, perfil);
-    return hecho.tipo === "enviado" ? { ...hecho, yaEnviado: false } : hecho;
-  }
-
-  /** m3: lo que impide enviar más el kilometraje de salida si retrocede o pasa al parte siguiente (K3, K4), que el comando no llega a decir mientras falten datos. */
-  private conErrorDeKilometraje(previos: ErroresDeParte, valores: ValoresParte, borrador: Parte): ErroresDeParte {
-    const estado = this.estado;
-    const unidad = estado?.unidades.find((u) => u.id === borrador.unidadId);
-    if (estado === null || unidad === undefined || borrador.kmInicio === null) return previos;
-    const km = validarKmDeSalida({ unidad, fecha: borrador.fecha, kmInicio: borrador.kmInicio, partes: estado.partes, correcciones: estado.correccionesKm });
-    return km.ok ? previos : sumarErrorDeRegla(valores, previos, km.error);
+    return this.encolar(async () => (await escrituraDelParte()).enviarRevisionAhora(this, unidadId, fecha, valores, aceptadas));
   }
 
   /**
@@ -938,42 +651,12 @@ export class EstadoApp {
    * advertencias que la persona aceptó en «Antes de enviar» (el cierre solo puede avisar del recorrido largo, K7). El resultado es C3.
    */
   enviarCierreDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio> {
-    return this.encolar(() => this.enviarCierreAhora(unidadId, fecha, valores, aceptadas));
-  }
-
-  private async enviarCierreAhora(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][]): Promise<ResultadoDeEnvio> {
-    const titulo = TEXTO_FORMULARIO_PARTE.tituloGeneralCierre;
-    const estado = this.estado;
-    if (estado === null) return this.erroresDeEnvio(errorGeneralParte(ERRORES.sinDatos, titulo));
-    const perfil = this.perfil;
-    const parte = estado.partes.find((p) => p.unidadId === unidadId && p.fecha === fecha);
-    if (parte === undefined) return this.erroresDeEnvio(errorGeneralParte(ERRORES.parteInexistente, titulo));
-    // Un doble clic, o un cierre que otra pestaña ya hizo: no se hace nada y se devuelve el mismo parte.
-    if (parte.estado === "enviado") return this.resultadoYaHecho(estado, parte, perfil);
-    if (parte.estado === "borrador") return this.erroresDeEnvio(errorGeneralParte(ERRORES.parteSinRevision, titulo));
-
-    const previos = validarParaEnviar(valores, "cierre");
-    const guardado = await this.guardarCierreAhora(unidadId, fecha, valores, perfil);
-    if (!guardado.ok && guardado.tipo !== "campos") return this.erroresDeEnvio(guardado.errores);
-    if (previos !== null) return this.erroresDeEnvio(previos);
-    if (!guardado.ok) return this.erroresDeEnvio(guardado.errores);
-
-    const r = await this.ejecutarAhora({ tipo: "enviarCierre", parteId: parte.id, advertenciasAceptadas: aceptadas }, perfil);
-    if (!r.ok) {
-      if (r.error.codigo === "advertencias-sin-aceptar") return this.advertenciasPendientes(r.error);
-      return this.erroresDeEnvio(erroresDeNegocioParte(r.error, "cierre"));
-    }
-    const cerrado = r.valor.estado.partes.find((p) => p.id === parte.id);
-    if (cerrado === undefined) return this.erroresDeEnvio(errorGeneralParte(ERRORES.parteInexistente, titulo)); // no pasa: el comando acaba de escribirlo
-    return { tipo: "enviado", paso: "cerrado", yaEnviado: false, panel: panelDeParteEnviado(r.valor.estado, cerrado, perfil), foco: "titulo-del-parte-enviado" };
+    return this.encolar(async () => (await escrituraDelParte()).enviarCierreAhora(this, unidadId, fecha, valores, aceptadas));
   }
 
   /** «Descartar borrador» (el botón-texto de dos pasos del parte y del inicio del conductor). No deja eventos (sección 8); un parte enviado no se descarta (P7). */
   async descartarBorradorDeParte(parteId: string): Promise<ResultadoDeDescarte> {
-    const r = await this.ejecutar({ tipo: "descartarBorrador", parteId });
-    return r.ok
-      ? { ok: true, mensaje: TEXTO_FORMULARIO_PARTE.borradorDescartado }
-      : { ok: false, mensaje: r.error.mensaje, errores: errorGeneralParte(r.error.mensaje, TEXTO_FORMULARIO_PARTE.tituloNoSePudoDescartar) };
+    return (await escrituraDelParte()).descartarBorradorDeParte(this, parteId);
   }
 
   // --- Diálogo «Agregar unidad» (paso 4.3) ----------------------------------------------------------

@@ -1,7 +1,7 @@
 <script lang="ts">
   // Parte diario para completar, en sus dos pasos (6.5, A y B): la revisión antes de salir (`vista.tipo === "edicion"`: kilometraje al salir, los 10 puntos y «Otra novedad») y el cierre de
   // la jornada (`vista.tipo === "cierre"`: kilometraje al terminar y combustible). Jerarquía: 1) qué paso es, de qué unidad y qué día; 2) lo que falta; 3) enviar la revisión o cerrar.
-  // No tiene reglas de negocio: los valores son texto (`dominio/formulario-parte.ts`), el borrador se guarda solo (`app.autoguardadoDeParte` / `app.autoguardadoDeCierre`, P3) y el envío lo
+  // No tiene reglas de negocio: los valores son texto (`dominio/formulario-parte.ts`), el borrador se guarda solo (`autoguardadoDeParte(app, …)` / `autoguardadoDeCierre(app, …)`, P3) y el envío lo
   // deciden `app.enviarRevisionDeParte` y `app.enviarCierreDeParte`. El paso no cambia mientras el formulario está en pantalla (`PantallaParte` lo monta con una clave que incluye el tipo).
   //  - Autoguardado: cada tecla (`input`) y cada cambio de un radio o un `select` (`change`) lo programan 500 ms después; al salir de un campo guarda ya. El texto escrito nunca
   //    se pisa: la vista nueva (`valoresIniciales`) solo se lee al arrancar y después de «Descartar borrador». Antes de enviar, de descartar o de irse, se guarda lo pendiente.
@@ -20,6 +20,8 @@ import { TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos-parte.ts";
   import type { IndicadorDeGuardado } from "../lib/estado/autoguardado.ts";
   import { guardarConIndicador } from "../lib/estado/guardado.ts";
   import { app } from "../lib/estado/instancia.ts";
+  import { leerParte } from "../lib/estado/parte.ts";
+  import { autoguardadoDeCierre, autoguardadoDeParte } from "../lib/estado/parte-escritura.ts";
   import BarraEnvio from "./BarraEnvio.svelte";
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import Campo from "./Campo.svelte";
@@ -52,7 +54,7 @@ import { TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos-parte.ts";
     indicador = i;
     if (i.estado !== "inicial") descartado = "";
   };
-  const auto = arranque.tipo === "edicion" ? app.autoguardadoDeParte(arranque, alCambiarIndicador) : app.autoguardadoDeCierre(arranque, alCambiarIndicador);
+  const auto = arranque.tipo === "edicion" ? autoguardadoDeParte(app, arranque, alCambiarIndicador) : autoguardadoDeCierre(app, arranque, alCambiarIndicador);
 
   // «Recorrido» se actualiza al salir de cada campo (5.11): es un `output`, que se lee solo, y no hay que dictarlo en cada tecla.
   let recorrido = $state(untrack(() => recorridoDe(valores.kmInicio, valores.kmFin)));
@@ -220,7 +222,7 @@ import { TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos-parte.ts";
       resumen?.enfocar();
       return;
     }
-    const nueva = app.parteDeLaRuta;
+    const nueva = leerParte(app);
     if (nueva !== null && nueva.tipo === "edicion") {
       valores = structuredClone(nueva.valoresIniciales);
       auto.reiniciar(structuredClone(nueva.valoresIniciales));

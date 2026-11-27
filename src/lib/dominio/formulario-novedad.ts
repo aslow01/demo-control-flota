@@ -4,15 +4,42 @@
 
 import type { Comando } from "./comandos.ts";
 import { armarErrores, erroresDeNegocioEn, errorGeneralEn, type ErroresDeFormularioDe } from "./formulario.ts";
-import { avisoDeVueltaSinPoderSalir, vuelveSinSalirHastaManana } from "./formulario-ficha.ts";
+import { aptitud } from "./aptitud.ts";
 import { formatearFecha } from "./fechas.ts";
 import { criticasAbiertasDeUnidad, rotuloNovedad } from "./novedades.ts";
 import { formatearPatente } from "./patente.ts";
-import { TEXTO_DIALOGOS_FICHA } from "./textos-base.ts";
-import { TEXTO_FICHA, textoOrigenEnFicha } from "./textos-ficha.ts";
+import { NOMBRES_DOCUMENTO, TEXTO_DIALOGOS_FICHA } from "./textos-base.ts";
+import { TEXTO_NOVEDADES_DE_FICHA, textoOrigenEnFicha } from "./textos-inicio.ts";
 import type { ErrorDeNegocio, Estado, FechaCivil, Novedad, Unidad } from "./tipos.ts";
-import { ITEMS_CHECKLIST } from "./parte.ts";
+import { ITEMS_CHECKLIST, unidadSinSalidaHoy } from "./parte.ts";
 import { REGLAS, validarTexto } from "./validacion.ts";
+
+// --- Avisos de «Volver a servicio» (A5 y P19) -------------------------------------------------------
+
+/**
+ * A5: documentos obligatorios que hoy dejarían a la unidad sin poder salir (vencidos o faltantes), como nombres. Se evalúa como si ya
+ * estuviera en servicio y sin novedades críticas: es lo que va a pasar apenas vuelva. `aRenovar` (vencidos) y `aCargar` (faltantes).
+ */
+export function documentosPendientes(estado: Estado, unidad: Unidad, hoy: FechaCivil): { aRenovar: string[]; aCargar: string[] } {
+  const a = aptitud({ ...unidad, estado: { tipo: "en-servicio" } }, { ...estado, novedades: [] }, hoy);
+  const nombres = (tipo: "documento-vencido" | "documento-faltante") =>
+    a.motivos.flatMap((m) => (m.tipo === tipo && m.documento !== undefined ? [NOMBRES_DOCUMENTO[m.documento]] : []));
+  return { aRenovar: nombres("documento-vencido"), aCargar: nombres("documento-faltante") };
+}
+
+/**
+ * El aviso de A5 («vuelve a servicio, pero no puede salir hasta renovar: Seguro.») o `null` si no hay nada pendiente. Solo los documentos: lo de P19 lo dice
+ * `avisoDeVuelta`.
+ */
+export function avisoDeVueltaSinPoderSalir(estado: Estado, unidad: Unidad, hoy: FechaCivil): string | null {
+  const { aRenovar, aCargar } = documentosPendientes(estado, unidad, hoy);
+  return aRenovar.length + aCargar.length === 0 ? null : TEXTO_DIALOGOS_FICHA.volver.sinPoderSalir(aRenovar, aCargar);
+}
+
+/** P19: hoy la unidad tuvo una novedad crítica (parte sin salida o cargada a mano), así que aunque vuelva a servicio no sale hasta mañana. */
+export function vuelveSinSalirHastaManana(estado: Estado, unidad: Unidad, hoy: FechaCivil): boolean {
+  return unidadSinSalidaHoy(estado, unidad.id, hoy);
+}
 
 /** Cómo se dice de dónde salió una novedad: «Parte del 16/11/2026, punto Frenos» o «Cargada por el encargado» (una sola fuente con la ficha). */
 export function origenDeNovedad(n: Novedad): string {
@@ -90,7 +117,7 @@ export function contextoDeResolver(estado: Estado, novedadId: string, hoy: Fecha
       origen: origenDeNovedad(n),
       fecha: formatearFecha(n.fecha),
       gravedad: n.gravedad,
-      etiqueta: n.gravedad === "critica" ? TEXTO_FICHA.novedades.etiquetaCritica : TEXTO_FICHA.novedades.etiquetaAbierta,
+      etiqueta: n.gravedad === "critica" ? TEXTO_NOVEDADES_DE_FICHA.etiquetaCritica : TEXTO_NOVEDADES_DE_FICHA.etiquetaAbierta,
     },
     ofreceVolverAServicio: ofrece,
     etiquetaVolverAServicio: hastaManana ? t.volverEtiquetaHastaManana : t.volverEtiqueta,

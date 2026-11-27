@@ -5,7 +5,7 @@ import { SEMILLA_POR_DEFECTO, generar } from "../src/lib/datos/generador.ts";
 import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import { formatearPatente } from "../src/lib/dominio/patente.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
-import { conductorConParteBloqueadoPorDocumento, conductoresParaProbar, inicioDelConductor } from "../src/lib/estado/parte.ts";
+import { conductorConParteBloqueadoPorDocumento, conductoresParaProbar, inicioDelConductor } from "../src/lib/estado/conductor.ts";
 import { flotaDePrueba } from "./ayuda.ts";
 
 const H = "2026-11-18";

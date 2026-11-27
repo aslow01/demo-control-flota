@@ -16,6 +16,8 @@ import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
 import { valoresConKm } from "./ayuda.ts";
 import { leerFicha } from "../src/lib/estado/ficha.ts";
 import { leerPanelDeFlota } from "../src/lib/estado/flota.ts";
+import { leerParte } from "../src/lib/estado/parte.ts";
+import { autoguardadoDeParte, autoguardadoDeCierre } from "../src/lib/estado/parte-escritura.ts";
 
 const H = "2026-11-18";
 const MEDIODIA = "2026-11-18T15:00:00.000Z"; // 12:00 en Argentina
@@ -46,7 +48,7 @@ function estadoDe(app: EstadoApp): Estado {
 }
 
 function edicion(app: EstadoApp): ParteEnEdicion {
-  const v = app.parteDeLaRuta;
+  const v = leerParte(app);
   if (v === null || v.tipo !== "edicion") throw new Error(`no hay un parte para editar (hay ${v?.tipo ?? "nada"})`);
   return v;
 }
@@ -81,12 +83,12 @@ describe("las vistas según la ruta y el perfil", () => {
       ubicacion: ubicacionEnMemoria("#/parte/ZYN469/2026-11-18"),
       crearAvisoPestanas: () => ({ avisarCambio: () => {}, cerrar: () => {} }),
     });
-    expect(t.parteDeLaRuta).toBeNull();
+    expect(leerParte(t)).toBeNull();
     expect(t.inicioDelConductor()).toBeNull();
     await t.iniciar();
-    expect(t.parteDeLaRuta?.tipo).toBe("edicion");
+    expect(leerParte(t)?.tipo).toBe("edicion");
     const { app } = await iniciada();
-    expect(app.parteDeLaRuta).toBeNull(); // #/inicio
+    expect(leerParte(app)).toBeNull(); // #/inicio
   });
 
   it("perfil Conductor en #/parte/ZYN469/…: el parte nuevo con el conductor fijo y el kilometraje al salir vacío, con la ayuda del último registro (P13)", async () => {
@@ -302,7 +304,7 @@ describe("autoguardado del borrador (P3) y recarga", () => {
     const v = edicion(app);
     const indicadores: IndicadorDeGuardado[] = [];
     let accion: (() => void) | null = null;
-    const auto = app.autoguardadoDeParte(v, (i) => indicadores.push(i), { programar: (f) => (accion = f), cancelar: () => (accion = null) });
+    const auto = autoguardadoDeParte(app, v, (i) => indicadores.push(i), { programar: (f) => (accion = f), cancelar: () => (accion = null) });
     auto.cambio({ ...v.valoresIniciales, kmFin: "141.800" });
     expect(estadoDe(app).partes.some((p) => p.id === "nuevo-1")).toBe(false);
     (accion as (() => void) | null)?.();
@@ -318,7 +320,7 @@ describe("código B9: un guardado pendiente no cambia de dueño si cambia el per
   it("el formulario del Encargado se destruye al pasar a Conductor y guarda lo pendiente: queda con el conductor y el autor del Encargado", async () => {
     const { app } = await iniciada({ patente: "ZYN469" });
     const v = edicion(app);
-    const auto = app.autoguardadoDeParte(v, () => {});
+    const auto = autoguardadoDeParte(app, v, () => {});
     const valores = { ...v.valoresIniciales, conductorId: "c-02", kmFin: "141.800" };
     auto.cambio(valores);
     await app.cambiarPerfil(C07); // el `{#key}` de la pantalla destruye el formulario, que guarda lo pendiente ya con el perfil nuevo
@@ -331,7 +333,7 @@ describe("código B9: un guardado pendiente no cambia de dueño si cambia el per
   it("al revés: el formulario del Conductor guarda como ese conductor aunque ya se haya pasado a Encargado", async () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469" });
     const v = edicion(app);
-    const auto = app.autoguardadoDeParte(v, () => {});
+    const auto = autoguardadoDeParte(app, v, () => {});
     const valores = { ...v.valoresIniciales, kmFin: "141.800" };
     auto.cambio(valores);
     await app.cambiarPerfil({ tipo: "encargado" });
@@ -351,7 +353,7 @@ describe("código B8: guardar dos veces lo mismo no escribe dos veces", () => {
       return escribir(...args);
     };
     const v = edicion(app);
-    const auto = app.autoguardadoDeParte(v, () => {});
+    const auto = autoguardadoDeParte(app, v, () => {});
     const valores = completo(v.valoresIniciales);
     await auto.vaciar(valores);
     expect(escrituras).toBe(1);
@@ -393,7 +395,7 @@ async function repoCon(cambiar: (e: Estado) => Estado): Promise<RepositorioMemor
 }
 
 function cierre(app: EstadoApp): ParteEnCierre {
-  const v = app.parteDeLaRuta;
+  const v = leerParte(app);
   if (v === null || v.tipo !== "cierre") throw new Error(`no hay un cierre (hay ${v?.tipo ?? "nada"})`);
   return v;
 }
@@ -450,7 +452,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     });
     expect(eventos(app).at(-1)).toBe("revision-enviada");
     expect(parteDeHoy(app, "ZYN469")).toMatchObject({ estado: "en-uso", autor: "Andrés Echegaray", conductorId: "c-01", revisado: MEDIODIA, enviado: null });
-    expect(app.parteDeLaRuta?.tipo).toBe("cierre");
+    expect(leerParte(app)?.tipo).toBe("cierre");
     expect(app.inicioDelConductor()?.hoyEstado).toEqual({
       tipo: "en-uso",
       etiqueta: "En uso desde las 12:00",
@@ -526,7 +528,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const fichaFuera = leerFicha(app);
     expect(fichaFuera && fichaFuera.encontrada && fichaFuera.aptitud.categoria).toBe("fuera-de-servicio");
     app.irA({ tipo: "parte", patente: "ZYN469", fecha: H });
-    expect(app.parteDeLaRuta).toMatchObject({ tipo: "lectura", sinSalida: true });
+    expect(leerParte(app)).toMatchObject({ tipo: "lectura", sinSalida: true });
   });
 
   it("P19 en todas las vistas: el encargado resuelve la novedad y devuelve la unidad el mismo día, y la ficha, la flota y el centro de alertas siguen diciendo que no sale hoy", async () => {
@@ -681,7 +683,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
   it("L1, perfil Conductor: sin licencia vigente para la fecha, la pantalla del parte es «No se puede cargar» con el texto en segunda persona y se puede descartar el borrador", async () => {
     const repo = await repoCon((e) => ({ ...e, documentos: e.documentos.map((d) => (d.tipo === "licencia" && d.titular.id === "c-01" ? { ...d, vence: "2026-11-15" } : d)) }));
     const { app } = await iniciada({ repo, perfil: C01, patente: "ZYN469" });
-    const v = app.parteDeLaRuta;
+    const v = leerParte(app);
     expect(v).toMatchObject({
       tipo: "no-disponible",
       mensaje: "Para el 18/11/2026 no tiene licencia de conducir vigente (venció el 15/11/2026). Sin licencia vigente no se puede enviar la revisión ni salir con la unidad.",
@@ -691,7 +693,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     // con un borrador de hoy: se conserva y se puede descartar (L4); el guardado del borrador no mira la licencia
     const g = await app.guardarBorradorDeParte(idDe(app, "ZYN469"), H, { ...valoresConKm({ conductorId: "c-01", kmInicio: 141711 }), checklist: completo(valoresConKm({ conductorId: "c-01", kmInicio: 141711 })).checklist });
     expect(g).toMatchObject({ ok: true });
-    expect(app.parteDeLaRuta).toMatchObject({ tipo: "no-disponible", nota: "El borrador se conserva: cuando el encargado cargue una licencia vigente, podrá enviarlo.", borrador: { descartar: "Descartar borrador" } });
+    expect(leerParte(app)).toMatchObject({ tipo: "no-disponible", nota: "El borrador se conserva: cuando el encargado cargue una licencia vigente, podrá enviarlo.", borrador: { descartar: "Descartar borrador" } });
     expect(app.inicioDelConductor()?.hoyEstado).toMatchObject({ tipo: "licencia-no-vigente", borrador: { texto: "Tiene una revisión empezada: se conserva." } });
   });
 
@@ -811,7 +813,7 @@ describe("cerrar el parte (P3, P4, P12, P15, K2, K4, K7)", () => {
     const { app, repo, uid } = await enUso();
     const indicadores: IndicadorDeGuardado[] = [];
     let accion: (() => void) | null = null;
-    const auto = app.autoguardadoDeCierre(cierre(app), (i) => indicadores.push(i), { programar: (f) => (accion = f), cancelar: () => (accion = null) });
+    const auto = autoguardadoDeCierre(app, cierre(app), (i) => indicadores.push(i), { programar: (f) => (accion = f), cancelar: () => (accion = null) });
     const antes = eventos(app).length;
     auto.cambio(valoresDeCierre(app, { litros: "45,5" }));
     (accion as (() => void) | null)?.();
@@ -881,7 +883,7 @@ describe("cerrar el parte (P3, P4, P12, P15, K2, K4, K7)", () => {
     });
     expect(eventos(app).at(-1)).toBe("parte-enviado");
     expect(parteDeHoy(app, "ZYN469")).toMatchObject({ estado: "enviado", autor: "Andrés Echegaray", conductorId: "c-01", enviado: MEDIODIA });
-    expect(app.parteDeLaRuta?.tipo).toBe("lectura");
+    expect(leerParte(app)?.tipo).toBe("lectura");
     expect(app.inicioDelConductor()?.hoyEstado).toEqual({ tipo: "enviado", etiqueta: "Cerrado a las 12:00", sinSalida: null, hastaManana: null, enlace: { texto: "Ver el parte", href: "#/parte/ZYN469/2026-11-18" } });
     expect(app.inicioDelConductor()?.ultimosPartes.filas[0]).toMatchObject({ fecha: "18/11/2026", recorrido: "100 km" });
     expect(app.inicioDelConductor()?.unidad?.ultimoRegistro).toBe("Último registro: 141.811 km (parte del 18/11/2026).");
@@ -937,7 +939,7 @@ describe("cerrar el parte (P3, P4, P12, P15, K2, K4, K7)", () => {
     const estado = estadoDe(app);
     await repo.reemplazarTodo({ ...estado, documentos: estado.documentos.map((d) => (d.tipo === "licencia" && d.titular.id === "c-01" ? { ...d, vence: H } : d)) });
     const otra = await iniciada({ repo, perfil: C01, patente: "ZYN469", reloj: "2026-11-19T09:00:00.000Z" });
-    expect(otra.app.parteDeLaRuta?.tipo).toBe("cierre");
+    expect(leerParte(otra.app)?.tipo).toBe("cierre");
     const r = await otra.app.enviarCierreDeParte(uid, H, valoresDeCierre(otra.app));
     expect(r.tipo).toBe("enviado");
   });
@@ -1007,16 +1009,16 @@ describe("descartar el borrador", () => {
     const repo = new RepositorioMemoria();
     await repo.reemplazarTodo({ ...estado, partes: [...estado.partes, viejo] });
     const otra = await iniciada({ repo, patente: "ZYN469", fecha: "2026-09-01" });
-    expect(otra.app.parteDeLaRuta).toMatchObject({ tipo: "no-disponible", mensaje: "Solo se pueden cargar partes de los últimos 7 días.", borrador: { parteId: "viejo" } });
+    expect(leerParte(otra.app)).toMatchObject({ tipo: "no-disponible", mensaje: "Solo se pueden cargar partes de los últimos 7 días.", borrador: { parteId: "viejo" } });
     expect(await otra.app.descartarBorradorDeParte("viejo")).toEqual({ ok: true, mensaje: "Borrador descartado." });
-    expect(otra.app.parteDeLaRuta).toMatchObject({ tipo: "no-disponible", borrador: null });
+    expect(leerParte(otra.app)).toMatchObject({ tipo: "no-disponible", borrador: null });
   });
 });
 
 describe("el ejemplo completo: ningún otro caso se rompe", () => {
   it("el parte de ayer ya enviado de una unidad se ve en lectura, con la hora y el recorrido", async () => {
     const { app } = await iniciada({ perfil: C01, patente: "ZYN469", fecha: "2026-11-17" });
-    const v = app.parteDeLaRuta;
+    const v = leerParte(app);
     expect(v?.tipo).toBe("lectura");
     if (v?.tipo !== "lectura") return;
     expect(v.titulo).toBe("Parte del martes 17/11/2026");

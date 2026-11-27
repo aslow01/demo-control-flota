@@ -5,13 +5,15 @@ import { describe, expect, it } from "vitest";
 import { advertenciasLegibles, esBorradorVacio, parteLegible } from "../src/lib/dominio/parte.ts";
 import type { Estado, Parte } from "../src/lib/dominio/tipos.ts";
 import { valoresDeParte } from "../src/lib/dominio/formulario-parte.ts";
-import { inicioDelConductor, panelDeParteEnviado, vistaDeParte } from "../src/lib/estado/parte.ts";
+import { inicioDelConductor } from "../src/lib/estado/conductor.ts";
+import { panelDeParteEnviado, vistaDeParte } from "../src/lib/estado/parte.ts";
 import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import { EstadoApp } from "../src/lib/estado/app.svelte.ts";
 import { crearReloj } from "../src/lib/estado/reloj.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
 import { checklistEnOrden, flotaDePrueba, parte } from "./ayuda.ts";
+import { leerParte } from "../src/lib/estado/parte.ts";
 
 const H = "2026-11-18";
 
@@ -169,19 +171,19 @@ describe("la aplicación con un borrador roto en el almacenamiento", () => {
     const app = await iniciada(estado({ checklist: "basura" }));
     expect(app.avisos.map((a) => a.tipo)).toEqual(["esquema-actualizado"]);
     expect(app.estado?.partes.some((p) => p.id === "pr")).toBe(false);
-    expect(app.parteDeLaRuta?.tipo).toBe("no-disponible") // la unidad de la ruta es la C01: con el seguro vencido no se puede cargar (P21);
+    expect(leerParte(app)?.tipo).toBe("no-disponible") // la unidad de la ruta es la C01: con el seguro vencido no se puede cargar (P21);
   });
 
   it("se puede descartar", async () => {
     const app = await iniciada(estado({ checklist: { frenos: 7, direccion: null } }));
-    expect(app.parteDeLaRuta?.tipo).toBe("edicion");
+    expect(leerParte(app)?.tipo).toBe("edicion");
     expect(await app.descartarBorradorDeParte("pr")).toEqual({ ok: true, mensaje: "Borrador descartado." });
     expect(app.estado?.partes.some((p) => p.id === "pr")).toBe(false);
   });
 
   it("se puede completar y enviar: lo que se manda desde el formulario reemplaza lo roto", async () => {
     const app = await iniciada(estado({ checklist: { frenos: "basura", luces: { estado: 3 } }, kmInicio: "x", combustible: 9 }));
-    const v = app.parteDeLaRuta;
+    const v = leerParte(app);
     if (v?.tipo !== "edicion") throw new Error("tenía que abrirse para editar");
     const valores = structuredClone(v.valoresIniciales);
     for (const k of Object.keys(valores.checklist) as (keyof typeof valores.checklist)[]) valores.checklist[k] = { respuesta: "en-orden", descripcion: "", impideUso: false };
@@ -194,7 +196,7 @@ describe("la aplicación con un borrador roto en el almacenamiento", () => {
 
   it("guardar sobre el borrador roto lo deja con la forma sana", async () => {
     const app = await iniciada(estado({ checklist: { frenos: "basura" }, kmInicio: "x" }));
-    const v = app.parteDeLaRuta;
+    const v = leerParte(app);
     if (v?.tipo !== "edicion") throw new Error("tenía que abrirse para editar");
     const r = await app.guardarBorradorDeParte(v.unidadId, H, { ...v.valoresIniciales, kmInicio: "84.320", kmFin: "84.400" });
     expect(r).toMatchObject({ ok: true, parteId: "pr" });

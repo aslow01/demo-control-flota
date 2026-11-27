@@ -281,3 +281,40 @@ export const TEXTO_CARGAR = {
   titulo: (nombre: string, titular: string) => `Cargar: ${nombre} de ${titular}`,
   primario: "Guardar documento",
 } as const;
+
+/** Textos de las novedades de la ficha que también usa «Resolver novedad» (Inicio y Operación diaria): `TEXTO_FICHA.novedades`. */
+export const TEXTO_NOVEDADES_DE_FICHA = {
+  titulo: "Novedades",
+  abiertas: "Abiertas",
+  resueltas: "Resueltas",
+  vacioAbiertas: "Sin novedades abiertas.",
+  vacioResueltas: "Sin novedades resueltas.",
+  resolver: "Resolver",
+  cargar: "Cargar novedad",
+  etiquetaCritica: "Crítica",
+  etiquetaAbierta: "Abierta",
+  etiquetaResuelta: "Resuelta",
+  manual: "Cargada por el encargado",
+} as const;
+
+/**
+ * De dónde salió la novedad: «Parte del 16/11/2026, punto Frenos» o «Cargada por el encargado». `item` es el rótulo del punto, o `null` para «Otra novedad».
+ */
+export function textoOrigenEnFicha(origen: { tipo: "parte"; item: string | null } | { tipo: "manual" }, fecha: FechaCivil): string {
+  if (origen.tipo === "manual") return TEXTO_NOVEDADES_DE_FICHA.manual;
+  return origen.item === null ? `Parte del ${formatearFecha(fecha)}, otra novedad` : `Parte del ${formatearFecha(fecha)}, punto ${origen.item}`;
+}
+
+/** Barra de estado de la ficha después de renovar: «Seguro de ZK 214 BD renovado: vence el 15/11/2027.» */
+export function textoDocumentoRenovadoEnFicha(tipo: TipoDocumento, titular: string, vence: FechaCivil): string {
+  return `${NOMBRES_DOCUMENTO[tipo]} de ${titular} ${concordar(tipo, "renovado", "renovada")}: vence el ${formatearFecha(vence)}.`;
+}
+
+/**
+ * Después de resolver una novedad: «Novedad resuelta: Frenos.», y si la unidad volvió, lo dice. Desde el centro de alertas (donde hay
+ * muchas unidades) también nombra la unidad: «Novedad resuelta: Frenos (ZU 899 QE).»
+ */
+export function textoNovedadResuelta(rotulo: string, patente: string, volvio: boolean, nombraLaUnidad = false, hastaManana = false): string {
+  const vuelta = volvio ? ` ${patente} vuelve a servicio${hastaManana ? ", pero no sale hasta mañana" : ""}.` : "";
+  return `Novedad resuelta: ${rotulo}${nombraLaUnidad ? ` (${patente})` : ""}.${vuelta}`;
+}

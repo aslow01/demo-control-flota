@@ -1,9 +1,9 @@
 <script lang="ts">
-  // Parte diario (6.5, `#/parte/ZK214BD/2026-11-18`): según `app.parteDeLaRuta` muestra la revisión antes de salir (A) o el cierre de la jornada (B), ambos con `ParteFormulario`; el parte
+  // Parte diario (6.5, `#/parte/ZK214BD/2026-11-18`): según `leerParte(app)` muestra la revisión antes de salir (A) o el cierre de la jornada (B), ambos con `ParteFormulario`; el parte
   // ya cerrado en lectura (D); el motivo por el que no se puede cargar (E: «No se puede cargar este parte»); o «No se encontró la unidad». No tiene reglas de negocio: todo lo arma `vistaDeParte`
   // (lib/estado/parte.ts).
   //  - El formulario vive dentro de un `{#key}` (unidad, fecha, perfil y paso): al cambiar de parte, de perfil o de paso arranca limpio y su autoguardado se cierra.
-  //  - Al enviar, `app.parteDeLaRuta` cambia sola (la revisión deja el parte en uso; el cierre lo deja cerrado); esta pantalla se queda en el resultado (C1, C2 o C3, con el `h1` enfocado)
+  //  - Al enviar, `leerParte(app)` cambia sola (la revisión deja el parte en uso; el cierre lo deja cerrado); esta pantalla se queda en el resultado (C1, C2 o C3, con el `h1` enfocado)
   //    hasta que la persona elige una acción: la vista del resultado es estado de esta pantalla (`recienEnviado`), no de la ruta.
   //  - «Completar el cierre» (C1) lleva a la misma ruta: la dirección no cambia, así que la pantalla suelta el resultado y muestra el cierre (B) con el foco en su `h1`.
   //  - «Descartar borrador» (de dos pasos, botón-texto) en E es la salida (P5). Después el foco va al título y un `role="status"` dice «Borrador descartado.».
@@ -12,6 +12,7 @@
   import { tick } from "svelte";
   import { aHash } from "../lib/estado/enrutador.ts";
   import { app } from "../lib/estado/instancia.ts";
+  import { leerParte } from "../lib/estado/parte.ts";
   import Aviso from "./Aviso.svelte";
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import EnlaceAccion from "./EnlaceAccion.svelte";
@@ -27,7 +28,7 @@
   // («Revisión enviada»…), «No se puede cargar este parte» y «No se encontró la unidad». `App.svelte` lo lee con `bind:titulo`; vacío = el de la ruta.
   let { titulo = $bindable("") }: { titulo?: string } = $props();
 
-  const vista = $derived(app.parteDeLaRuta);
+  const vista = $derived(leerParte(app));
   /** m4 de la etapa 7: el `h1` de la pantalla E «Cerrar antes» lleva la razón en `aria-describedby`, como los resultados C1 y C2. */
   const ID_AVISO_CERRAR_ANTES = "aviso-cerrar-antes";
 

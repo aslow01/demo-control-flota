@@ -84,18 +84,7 @@ export const ETIQUETAS_DE_PARTE: Record<EtiquetaDeParte, { texto: string; tono: 
 };
 
 /** Lo que el estado entrega para el parte, el inicio del conductor y el centro de alertas (todo con tipos de `lib/estado`). */
-export type {
-  EstadoDelDia,
-  InicioDelConductor,
-  OpcionParaElegirConductor,
-  PanelParteEnviado,
-  ParteEnCierre,
-  ParteEnEdicion,
-  ParteEnLectura,
-  ParteNoDisponible,
-  PendienteDelConductor,
-  RevisionEnLectura,
-  VistaDeParte,
-} from "../lib/estado/parte.ts";
+export type { EstadoDelDia, InicioDelConductor, OpcionParaElegirConductor, PendienteDelConductor } from "../lib/estado/conductor.ts";
+export type { PanelParteEnviado, ParteEnCierre, ParteEnEdicion, ParteEnLectura, ParteNoDisponible, RevisionEnLectura, VistaDeParte } from "../lib/estado/parte.ts";
 export type { AccionDeConductorSinLicencia, FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
 export type { PasoDelParte } from "../lib/dominio/formulario-parte.ts";

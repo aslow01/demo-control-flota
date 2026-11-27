@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { calcularAlertas } from "../src/lib/dominio/alertas.ts";
 import { sumarDias } from "../src/lib/dominio/fechas.ts";
 import type { Estado, Perfil, TipoDocumento } from "../src/lib/dominio/tipos.ts";
-import { DIAS_DE_AVISO_DE_VENCIMIENTO, PARTES_EN_HOY, inicioDelConductor, misPartes } from "../src/lib/estado/parte.ts";
+import { DIAS_DE_AVISO_DE_VENCIMIENTO, PARTES_EN_HOY, inicioDelConductor, misPartes } from "../src/lib/estado/conductor.ts";
 import { flotaDePrueba, parte } from "./ayuda.ts";
 
 const H = "2026-11-18";

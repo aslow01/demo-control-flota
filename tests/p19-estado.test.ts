@@ -13,7 +13,7 @@ import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
 import { centroDeAlertas } from "../src/lib/estado/centro-alertas.ts";
 import { fichaDeUnidad } from "../src/lib/estado/ficha.ts";
 import { panelDeFlota } from "../src/lib/estado/flota.ts";
-import { inicioDelConductor } from "../src/lib/estado/parte.ts";
+import { inicioDelConductor } from "../src/lib/estado/conductor.ts";
 import { checklistEnOrden, ejecutarOk, flotaDePrueba, parte } from "./ayuda.ts";
 
 const H = "2026-11-18";
