@@ -39,10 +39,10 @@ import {
   type Resultado,
   type TipoDocumento,
   type TipoEvento,
-  type TipoUnidad,
   type Titular,
   type Unidad,
 } from "./tipos.ts";
+import { esTipoDeUnidad } from "./tipos.ts";
 import {
   REGLAS,
   validarAnioDeAlta,
@@ -151,12 +151,6 @@ interface Parcial {
   modifica: boolean;
 }
 
-export const TIPOS_DE_UNIDAD: readonly TipoUnidad[] = ["camioneta", "utilitario", "camion-liviano", "minibus"];
-
-/** Guarda de tipo: `true` si el texto es uno de los tipos de unidad del dominio. */
-export function esTipoDeUnidad(valor: string): valor is TipoUnidad {
-  return TIPOS_DE_UNIDAD.some((t) => t === valor);
-}
 const NIVELES_COMBUSTIBLE: readonly NivelCombustible[] = ["reserva", "cuarto", "medio", "tres-cuartos", "lleno"];
 const LARGO_MAXIMO_MOTIVO = 200;
 

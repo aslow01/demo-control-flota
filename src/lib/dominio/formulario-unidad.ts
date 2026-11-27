@@ -4,10 +4,10 @@
 //
 // Los valores del formulario son siempre texto (lo que dan los `input` y los `select`). `conductorId` vacío = «Sin conductor asignado».
 
-import { TIPOS_DE_UNIDAD, esTipoDeUnidad, type Comando } from "./comandos.ts";
+import type { Comando } from "./comandos.ts";
 import { armarErrores, opcionesDeConductor, opcionesDeProyecto, type ErroresDeFormularioDe, type OpcionDeConductor, type OpcionDeLista } from "./formulario.ts";
 import { ERRORES, NOMBRES_TIPO_UNIDAD, TEXTO_AGREGAR } from "./textos-base.ts";
-import type { ErrorDeNegocio, Estado, FechaCivil } from "./tipos.ts";
+import { TIPOS_DE_UNIDAD, esTipoDeUnidad, type ErrorDeNegocio, type Estado, type FechaCivil } from "./tipos.ts";
 import { REGLAS, rangoDeAnios, validarAnioDeAlta, validarInternoDeAlta, validarPatenteDeAlta, validarTexto } from "./validacion.ts";
 
 export type CampoUnidad = "patente" | "interno" | "tipo" | "marca" | "modelo" | "anio" | "proyectoId" | "conductorId";

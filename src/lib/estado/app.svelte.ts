@@ -11,7 +11,7 @@
 
 import { EMPRESA, ENCARGADA } from "../datos/constantes.ts";
 import { calcularAlertas, type ResultadoAlertas } from "../dominio/alertas.ts";
-import { ejecutar as ejecutarComando, type Comando, type Contexto, type Ejecucion } from "../dominio/comandos.ts";
+import type { Comando, Contexto, Ejecucion } from "../dominio/comandos.ts";
 import { comandoDeCargar, comandoDeRenovar, errorGeneral, erroresDeNegocio, etiquetaDeTitular, validarValores, type CampoCargarOtro, type CampoDocumento, type ValoresCargarOtro, type ValoresDocumento } from "../dominio/formulario-documento.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
 import type { CampoAsignacion, CampoBaja, CampoFueraDeServicio, CampoKilometraje, ValoresAsignacion, ValoresBaja, ValoresFueraDeServicio, ValoresKilometraje } from "../dominio/formulario-ficha.ts";
@@ -58,6 +58,8 @@ export interface DependenciasApp {
   umbralPreparandoMs?: number;
   /** Cuánto se espera a que abra el almacenamiento antes de seguir en memoria (D8). Por defecto, 8 s. */
   plazoAbrirMs?: number;
+  /** De dónde se bajan los trozos de escritura. Por defecto, `import()`; las pruebas pasan los suyos (por ejemplo, uno que falla como si no hubiera red). */
+  trozos?: Partial<TrozosDeEscritura>;
 }
 
 export type FaseApp = "arrancando" | "lista" | "error";
@@ -125,7 +127,21 @@ const COMANDOS_DEL_CONDUCTOR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBo
 const COMANDOS_DEL_PARTE_A_GUARDAR: ReadonlySet<Comando["tipo"]> = new Set(["guardarBorrador", "enviarRevision", "guardarCierre", "enviarCierre"]);
 
 /** La escritura del parte es un trozo aparte (`parte-escritura.ts`): se pide la primera vez que se la necesita. */
-const escrituraDelParte = () => import("./parte-escritura.ts");
+/**
+ * Lo que sirve para escribir no viaja con el marco: se baja la primera vez que se escribe (los comandos del dominio) o la primera vez que se guarda desde la ficha o el parte. Cada trozo
+ * se pide con `import()`; si no baja (sin red), la escritura contesta «No se pudo guardar» como cualquier otra que falla (D10).
+ */
+export interface TrozosDeEscritura {
+  comandos: () => Promise<typeof import("../dominio/comandos.ts")>;
+  ficha: () => Promise<typeof import("./ficha-escritura.ts")>;
+  parte: () => Promise<typeof import("./parte-escritura.ts")>;
+}
+
+const TROZOS: TrozosDeEscritura = {
+  comandos: () => import("../dominio/comandos.ts"),
+  ficha: () => import("./ficha-escritura.ts"),
+  parte: () => import("./parte-escritura.ts"),
+};
 
 export class EstadoApp {
   fase = $state<FaseApp>("arrancando");
@@ -379,6 +395,11 @@ export class EstadoApp {
     return this.encolar(() => this.ejecutarAhora(comando));
   }
 
+  /** Un trozo de escritura (ver `TrozosDeEscritura`): el de la dependencia, o el `import()` de siempre. */
+  private trozo<K extends keyof TrozosDeEscritura>(cual: K): ReturnType<TrozosDeEscritura[K]> {
+    return (this.deps.trozos?.[cual] ?? TROZOS[cual])() as ReturnType<TrozosDeEscritura[K]>;
+  }
+
   /** `ejecutar` sin pasar por la cola: para los métodos que ya están dentro de ella y encadenan más de un comando (guardar y enviar el parte). */
   async ejecutarAhora(comando: Comando, perfil: Perfil = this.perfil): Promise<Resultado<Ejecucion>> {
     const estado = this.estado;
@@ -393,8 +414,14 @@ export class EstadoApp {
       return fallo("cambios-en-otra-pestana", ERRORES_PESTANAS.escrituraConCambiosEnOtraPestana);
     }
 
+    let comandos: Awaited<ReturnType<TrozosDeEscritura["comandos"]>>;
+    try {
+      comandos = await this.trozo("comandos");
+    } catch {
+      return fallo("escritura-fallida", COMANDOS_DEL_PARTE_A_GUARDAR.has(comando.tipo) ? ERRORES.noPudoGuardarElParte : ERRORES.noPudoGuardar);
+    }
     const momento = this.deps.reloj.momento();
-    const resultado = ejecutarComando(estado, comando, {
+    const resultado = comandos.ejecutar(estado, comando, {
       hoy: momento.hoy,
       ahora: momento.ahora,
       autor: this.autorDe(perfil),
@@ -497,7 +524,7 @@ export class EstadoApp {
   private async conEscrituraDeFicha<Campo extends string>(usar: (modulo: typeof import("./ficha-escritura.ts")) => Promise<ResultadoGuardado<Campo>>): Promise<ResultadoGuardado<Campo>> {
     let modulo: typeof import("./ficha-escritura.ts");
     try {
-      modulo = await import("./ficha-escritura.ts");
+      modulo = await this.trozo("ficha");
     } catch {
       return { ok: false, errores: errorGeneralEn(ERRORES.noPudoGuardar) };
     }
@@ -626,7 +653,7 @@ export class EstadoApp {
    * borrador nace con el primer cambio. No cambia el kilometraje de la unidad ni abre novedades (K9, P3).
    */
   guardarBorradorDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil = this.perfil): Promise<ResultadoDeBorrador> {
-    return this.encolar(async () => (await escrituraDelParte()).guardarBorradorAhora(this, unidadId, fecha, valores, perfil));
+    return this.encolar(async () => (await this.trozo("parte")).guardarBorradorAhora(this, unidadId, fecha, valores, perfil));
   }
 
   /**
@@ -634,7 +661,7 @@ export class EstadoApp {
    * para el kilometraje hasta cerrar (K9); lo ya guardado no se vuelve a escribir (`sinCambios`).
    */
   guardarCierreDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, perfil: Perfil = this.perfil): Promise<ResultadoDeBorrador> {
-    return this.encolar(async () => (await escrituraDelParte()).guardarCierreAhora(this, unidadId, fecha, valores, perfil));
+    return this.encolar(async () => (await this.trozo("parte")).guardarCierreAhora(this, unidadId, fecha, valores, perfil));
   }
 
   /**
@@ -644,7 +671,7 @@ export class EstadoApp {
    * en uso) o C2 (una novedad crítica: la unidad no sale y el parte se cerró sin uso).
    */
   enviarRevisionDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio> {
-    return this.encolar(async () => (await escrituraDelParte()).enviarRevisionAhora(this, unidadId, fecha, valores, aceptadas));
+    return this.encolar(async () => (await this.trozo("parte")).enviarRevisionAhora(this, unidadId, fecha, valores, aceptadas));
   }
 
   /**
@@ -652,12 +679,18 @@ export class EstadoApp {
    * advertencias que la persona aceptó en «Antes de enviar» (el cierre solo puede avisar del recorrido largo, K7). El resultado es C3.
    */
   enviarCierreDeParte(unidadId: string, fecha: FechaCivil, valores: ValoresParte, aceptadas: Advertencia["tipo"][] = []): Promise<ResultadoDeEnvio> {
-    return this.encolar(async () => (await escrituraDelParte()).enviarCierreAhora(this, unidadId, fecha, valores, aceptadas));
+    return this.encolar(async () => (await this.trozo("parte")).enviarCierreAhora(this, unidadId, fecha, valores, aceptadas));
   }
 
   /** «Descartar borrador» (el botón-texto de dos pasos del parte y del inicio del conductor). No deja eventos (sección 8); un parte enviado no se descarta (P7). */
   async descartarBorradorDeParte(parteId: string): Promise<ResultadoDeDescarte> {
-    return (await escrituraDelParte()).descartarBorradorDeParte(this, parteId);
+    let modulo: Awaited<ReturnType<TrozosDeEscritura["parte"]>>;
+    try {
+      modulo = await this.trozo("parte");
+    } catch {
+      return { ok: false, mensaje: ERRORES.noPudoGuardar, errores: { ...errorGeneralEn<CampoParte>(ERRORES.noPudoGuardar), titulo: ERRORES.noPudoGuardar } };
+    }
+    return modulo.descartarBorradorDeParte(this, parteId);
   }
 
   // --- Diálogo «Agregar unidad» (paso 4.3) ----------------------------------------------------------

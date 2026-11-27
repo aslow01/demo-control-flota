@@ -25,6 +25,13 @@ export interface Conductor {
 
 export type TipoUnidad = "camioneta" | "utilitario" | "camion-liviano" | "minibus";
 
+export const TIPOS_DE_UNIDAD: readonly TipoUnidad[] = ["camioneta", "utilitario", "camion-liviano", "minibus"];
+
+/** Guarda de tipo: `true` si el texto es uno de los tipos de unidad del dominio. */
+export function esTipoDeUnidad(valor: string): valor is TipoUnidad {
+  return TIPOS_DE_UNIDAD.some((t) => t === valor);
+}
+
 export type EstadoOperativo =
   | { tipo: "en-servicio" }
   | {
