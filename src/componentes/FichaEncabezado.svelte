@@ -19,7 +19,7 @@
   import EtiquetaParte from "./EtiquetaParte.svelte";
   import MenuMas from "./MenuMas.svelte";
   import Patente from "./Patente.svelte";
-  import { TEXTO_FICHA_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_FICHA_VISTA as T } from "./textos-marco-ficha.ts";
   import { TEXTO_FICHA } from "../lib/dominio/textos-ficha.ts";
   import type { ItemMenu } from "./tipos.ts";
 

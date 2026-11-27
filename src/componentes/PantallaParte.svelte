@@ -21,7 +21,7 @@
   import ParteFormulario from "./ParteFormulario.svelte";
   import Patente from "./Patente.svelte";
   import RevisionLeida from "./RevisionLeida.svelte";
-  import { TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_PARTE_VISTA as T } from "./textos-marco-parte.ts";
   import type { PanelParteEnviado } from "./tipos.ts";
 
   // `titulo` es el de la pestaña (`document.title`) cuando el `h1` no es el nombre de la ruta: el de cada paso («Revisión antes de salir», «Cierre de la jornada»), el de los resultados

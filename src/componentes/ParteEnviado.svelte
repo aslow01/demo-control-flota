@@ -14,7 +14,7 @@
   import Dato from "./Dato.svelte";
   import EtiquetaParte from "./EtiquetaParte.svelte";
   import Icono from "./Icono.svelte";
-  import { TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_PARTE_VISTA as T } from "./textos-marco-parte.ts";
 
   let {
     panel,

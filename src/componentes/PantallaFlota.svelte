@@ -37,7 +37,7 @@
   import { CELDA, ENCABEZADO_DE_FILA } from "./lista-roles.ts";
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
-  import { TEXTO_FLOTA_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_FLOTA_VISTA as T } from "./textos-marco-flota.ts";
   import type { EtiquetaDeParte } from "./tipos.ts";
 
   // «Último parte» (5.10): la etiqueta que arma `panelDeFlota` («En uso», «Sin enviar», «Sin cerrar», «Sin parte») y la de tabla 5.7 que le toca. «Sin parte» no es una etiqueta de parte

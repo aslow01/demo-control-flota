@@ -18,7 +18,7 @@
   import { calcularAlertas, type Alerta } from "../lib/dominio/alertas.ts";
   import { horizonteCompleto, horizonteDeUnidad, horizonteMinimo } from "../lib/dominio/horizonte.ts";
   import { formatearPatente } from "../lib/dominio/patente.ts";
-  import { textoUnidadNoPuedeSalir } from "../lib/dominio/textos-parte.ts";
+  import { textoUnidadNoPuedeSalir } from "../lib/dominio/textos-conductor.ts";
   import type { Grupo } from "../lib/dominio/vencimientos.ts";
 
   const colores: { grupo: string; nombres: string[] }[] = [

@@ -34,7 +34,8 @@ import { TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos-parte.ts";
   import ResumenErrores from "./ResumenErrores.svelte";
   import RevisionLeida from "./RevisionLeida.svelte";
   import SelectorCombustible from "./SelectorCombustible.svelte";
-  import { TEXTO_DIALOGO, TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_DIALOGO } from "./textos-marco.ts";
+import { TEXTO_PARTE_VISTA as T } from "./textos-marco-parte.ts";
   import type { PanelParteEnviado, ParteEnCierre, ParteEnEdicion } from "./tipos.ts";
 
   let { vista, alEnviado }: { vista: ParteEnEdicion | ParteEnCierre; alEnviado: (panel: PanelParteEnviado) => void } = $props();

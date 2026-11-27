@@ -33,7 +33,8 @@
   import FichaHistorial from "./FichaHistorial.svelte";
   import FichaKilometraje from "./FichaKilometraje.svelte";
   import FichaNovedades from "./FichaNovedades.svelte";
-  import { TEXTO_DIALOGO_DOCUMENTO, TEXTO_FICHA_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_DIALOGO_DOCUMENTO } from "./textos-marco.ts";
+import { TEXTO_FICHA_VISTA as T } from "./textos-marco-ficha.ts";
 
   const f = $derived(leerFicha(app));
 

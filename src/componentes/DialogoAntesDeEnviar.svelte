@@ -8,7 +8,7 @@
   import Boton from "./Boton.svelte";
   import Dialogo from "./Dialogo.svelte";
   import Icono from "./Icono.svelte";
-  import { TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_PARTE_VISTA as T } from "./textos-marco-parte.ts";
 
   let {
     abierto = $bindable(false),

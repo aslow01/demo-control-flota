@@ -6,7 +6,7 @@
   import type { ResultadoGuardado } from "../lib/estado/app.svelte.ts";
   import Campo from "./Campo.svelte";
   import DialogoFormulario, { type DestinoDelFoco } from "./DialogoFormulario.svelte";
-  import { TEXTO_DIALOGO_UNIDAD as T } from "./textos-marco.ts";
+  import { TEXTO_DIALOGO_UNIDAD as T } from "./textos-marco-flota.ts";
 
   let {
     abierto = $bindable(false),

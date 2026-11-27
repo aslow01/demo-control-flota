@@ -14,7 +14,7 @@
   import ListaTabla, { type GrupoDeLista } from "./ListaTabla.svelte";
   import { CELDA, ENCABEZADO_DE_FILA } from "./lista-roles.ts";
   import Panel from "./Panel.svelte";
-  import { TEXTO_FICHA_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_FICHA_VISTA as T } from "./textos-marco-ficha.ts";
   import type { NombreIcono, Tono } from "./tipos.ts";
 
   let {

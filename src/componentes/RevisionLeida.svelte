@@ -3,7 +3,7 @@
   // (6.5, D; y el `details` «Ver la revisión» del resumen del paso 2). No tiene reglas: todo lo arma `revisionEnLectura` (lib/estado/parte.ts, por `tipos.ts`). Sin puntos ni novedades no muestra nada.
   import type { RevisionEnLectura } from "./tipos.ts";
   import Icono from "./Icono.svelte";
-  import { TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_PARTE_VISTA as T } from "./textos-marco-parte.ts";
 
   let { revision }: { revision: RevisionEnLectura } = $props();
 </script>

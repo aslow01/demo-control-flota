@@ -5,7 +5,7 @@
   // 6) el indicador de guardado (5.15). La región `role="status"` oculta dice SOLO el texto de `anuncio`, que cambia al cambiar de estado (no en cada guardado).
   // Vive dentro del contenedor `parte` de `ParteFormulario` (las reglas `@container parte` miden ese ancho).
   import Aviso from "./Aviso.svelte";
-  import type { AvisoDeAptitud } from "../lib/dominio/textos-parte.ts";
+  import type { AvisoDeAptitud } from "../lib/dominio/textos-conductor.ts";
   import { aHash } from "../lib/estado/enrutador.ts";
   import { app } from "../lib/estado/instancia.ts";
   import Icono from "./Icono.svelte";

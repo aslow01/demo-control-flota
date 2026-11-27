@@ -15,7 +15,7 @@
   import Casilla from "./Casilla.svelte";
   import Etiqueta from "./Etiqueta.svelte";
   import Forma from "./Forma.svelte";
-  import { TEXTO_PARTE_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_PARTE_VISTA as T } from "./textos-marco-parte.ts";
 
   let {
     texto,

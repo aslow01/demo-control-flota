@@ -11,7 +11,7 @@ import { describirRegistro, kmDeRegistro, registrosDeKm, textoRecorrido } from "
 import { documentacionQueBloquea, ITEMS_CHECKLIST, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, parteSinSalidaDeHoy } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";
 import { AVISE_AL_ENCARGADO, NOMBRES_DOCUMENTO, textoDescripcionUnidad, textoDocumentacionDeLaUnidad, textoInterno, textoParteSinCerrarDeLaUnidad, textoUltimoRegistro, textoVencimiento } from "../dominio/textos-base.ts";
-import { type AvisoDeAptitud, TEXTO_CERRAR_ANTES, TEXTO_CONDUCTOR_PARA_PROBAR, textoBorradorDelConductor, textoEnUsoDesde, textoEnviadoALas, textoHoyDelConductor, textoNoPuedeManejarHoy, textoPendienteBorrador, textoPendienteSinCerrar, textoPendienteSinParte, textoSinParteFueraDeServicio, textoSinSalidaDelConductor, textoSuLicencia, textoUnidadNoPuedeSalir, TEXTO_INICIO_CONDUCTOR as TI } from "../dominio/textos-parte.ts";
+import { type AvisoDeAptitud, TEXTO_CERRAR_ANTES, TEXTO_CONDUCTOR_PARA_PROBAR, textoBorradorDelConductor, textoEnUsoDesde, textoEnviadoALas, textoHoyDelConductor, textoNoPuedeManejarHoy, textoPendienteBorrador, textoPendienteSinCerrar, textoPendienteSinParte, textoSinParteFueraDeServicio, textoSinSalidaDelConductor, textoSuLicencia, textoUnidadNoPuedeSalir, TEXTO_INICIO_CONDUCTOR as TI } from "../dominio/textos-conductor.ts";
 import type { Conductor, Documento, Estado, FechaCivil, ItemChecklist, Parte, Perfil, TipoDocumento, Unidad } from "../dominio/tipos.ts";
 import { documentoVigente, estadoDeLicencia, evaluarObligatorio } from "../dominio/vencimientos.ts";
 import { aHash, nombreDePantalla } from "./enrutador.ts";

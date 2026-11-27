@@ -4,13 +4,14 @@
   //  - La línea de contexto dice de quién son y cuántos hay: «Tamara Olivera (persona ficticia) · los últimos cinco» (los dos textos salen de `textos.ts` y `textos-marco.ts`).
   //  - Sin partes cerrados no hay lista: el panel dice por qué (`partes.vacio`).
   //  - Se carga bajo demanda como `PantallaConductor` (ver `App.svelte`); el foco va al `h1` al llegar (lo hace `App.svelte`).
-  import { TEXTO_INICIO_CONDUCTOR, textoUltimosPartes } from "../lib/dominio/textos-parte.ts";
+  import { TEXTO_INICIO_CONDUCTOR, textoUltimosPartes } from "../lib/dominio/textos-conductor.ts";
   import { app } from "../lib/estado/instancia.ts";
   import EtiquetaParte from "./EtiquetaParte.svelte";
   import Icono from "./Icono.svelte";
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
-  import { TEXTO_ALERTAS, TEXTO_CONDUCTOR_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_ALERTAS } from "./textos-marco.ts";
+import { TEXTO_CONDUCTOR_VISTA as T } from "./textos-marco-parte.ts";
 
   const partes = $derived(app.misPartes());
 </script>

@@ -11,7 +11,7 @@
   import FiltrosConteo from "./FiltrosConteo.svelte";
   import Icono from "./Icono.svelte";
   import Panel from "./Panel.svelte";
-  import { TEXTO_FICHA_VISTA as T } from "./textos-marco.ts";
+  import { TEXTO_FICHA_VISTA as T } from "./textos-marco-ficha.ts";
   import type { NombreIcono, Tono } from "./tipos.ts";
 
   type IdFiltro = PanelNovedades["filtros"][number]["id"];
