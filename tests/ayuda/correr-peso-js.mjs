@@ -1,5 +1,5 @@
 // Ayuda de `tests/peso-js-proceso.test.ts`: usa módulos de Node, que el proyecto no tipa (no hay @types/node).
-// Arma `<tmp>/scripts/peso-js.mjs` y `<tmp>/dist/` con un JS inicial casi incompresible de `bytes` bytes, ejecuta el script
+// Arma `<tmp>/scripts/peso-js.mjs` y `<tmp>/dist/` con un JS inicial casi incompresible de `bytes` bytes (y, si se pide, un generador de datos de `bytesDelGenerador` bytes), ejecuta el script
 // como proceso (el script busca `dist/` al lado de su carpeta `scripts/`) y borra lo temporal.
 import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export function correrPesoJsConDist(bytes) {
+export function correrPesoJsConDist(bytes, bytesDelGenerador = 0) {
   const original = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "scripts", "peso-js.mjs");
   const raiz = mkdtempSync(join(tmpdir(), "peso-js-proceso-"));
   try {
@@ -17,6 +17,7 @@ export function correrPesoJsConDist(bytes) {
     copyFileSync(original, join(raiz, "scripts", "peso-js.mjs"));
     writeFileSync(join(raiz, "dist", "index.html"), '<!doctype html><script type="module" src="/assets/index-PRUEBA.js"></script>');
     writeFileSync(join(raiz, "dist", "assets", "index-PRUEBA.js"), randomBytes(bytes));
+    if (bytesDelGenerador > 0) writeFileSync(join(raiz, "dist", "assets", "generador-PRUEBA.js"), randomBytes(bytesDelGenerador));
     const r = spawnSync(process.execPath, [join(raiz, "scripts", "peso-js.mjs")], { encoding: "utf8" });
     return { status: r.status, stdout: r.stdout, stderr: r.stderr };
   } finally {
