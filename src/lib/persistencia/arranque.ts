@@ -2,6 +2,7 @@
 // decide qué avisos hay que mostrar. No toca la interfaz ni el reloj: recibe `hoy` ya calculado y devuelve datos.
 
 import { VERSION_ESQUEMA } from "../datos/constantes.ts";
+import { bajar, ErrorDeDescarga, PLAZO_DE_DESCARGA_MS } from "../descarga.ts";
 import { calcularAlertas } from "../dominio/alertas.ts";
 import { sinCambios } from "../dominio/estado.ts";
 import { parsearFechaCivil } from "../dominio/fechas.ts";
@@ -21,12 +22,23 @@ export type CargarGenerador = () => Promise<Pick<typeof import("../datos/generad
 
 const CARGAR_GENERADOR: CargarGenerador = () => import("../datos/generador.ts");
 
+type Generador = Awaited<ReturnType<CargarGenerador>>;
+
+/**
+ * El generador, pedido una sola vez por arranque (o por «Reiniciar demo»): si no baja, no se lo vuelve a pedir (un pedido colgado se repite colgado) y todos los que lo
+ * esperen reciben el mismo error. No espera más de `plazoMs`. Rechaza siempre con `ErrorDeDescarga`: una descarga que falla no es un problema del almacenamiento.
+ */
+function generadorUnico(cargar: CargarGenerador, plazoMs: number): () => Promise<Generador> {
+  let pedido: Promise<Generador> | null = null;
+  return () => (pedido ??= bajar(cargar, { plazoMs }));
+}
+
 /** D4: "Preparando la flota de ejemplo…" solo si el arranque tarda más que esto. */
 export const UMBRAL_PREPARANDO_MS = 300;
 
 /**
  * Si abrir el almacenamiento no responde en este plazo, o si después leerlo y escribir el ejemplo no termina en este mismo plazo (uno solo, en total, para leer y escribir:
- * no se renueva en cada paso), se lo da por no disponible y se sigue en memoria (D8).
+ * no se renueva en cada paso), se lo da por no disponible y se sigue en memoria (D8). La descarga del generador no cuenta: es aparte (`PLAZO_DE_DESCARGA_MS`) y mientras se espera el plazo se detiene.
  */
 export const PLAZO_ABRIR_MS = 8000;
 
@@ -54,6 +66,8 @@ export interface OpcionesArranque {
   umbralPreparandoMs?: number;
   /** Por defecto, el `import()` del generador. */
   cargarGenerador?: CargarGenerador;
+  /** Cuánto se espera a que baje el generador antes de darlo por perdido. Por defecto, `PLAZO_DE_DESCARGA_MS`. Es aparte del plazo del almacenamiento: no se descuenta de él. */
+  plazoGeneradorMs?: number;
 }
 
 export interface ResultadoArranque {
@@ -229,8 +243,8 @@ function datosUtilizables(guardado: Estado, hoy: FechaCivil): Estado | null {
 }
 
 /** El ejemplo de `hoy`, con el perfil que había si todavía existe (D6: el perfil es de la persona, no de los datos). */
-async function ejemploDeHoy(hoy: FechaCivil, semilla: number, perfilAnterior: Perfil | null, cargar: CargarGenerador): Promise<Estado> {
-  const nuevo = (await cargar()).generar(semilla, hoy);
+async function ejemploDeHoy(hoy: FechaCivil, semilla: number, perfilAnterior: Perfil | null, generador: () => Promise<Generador>): Promise<Estado> {
+  const nuevo = (await generador()).generar(semilla, hoy);
   if (perfilAnterior?.tipo === "conductor" && nuevo.conductores.some((c) => c.id === perfilAnterior.conductorId)) {
     nuevo.meta.perfil = { tipo: "conductor", conductorId: perfilAnterior.conductorId };
   }
@@ -279,19 +293,38 @@ function conPerfilValido(guardado: Estado): Estado {
   return igual ? guardado : { ...guardado, meta: { ...guardado.meta, perfil: valido } };
 }
 
+/** Espera `pedido` sin que corra el plazo del almacenamiento (ver `usarAlmacenamientoConPlazo`). */
+type SinContarElPlazo = <T>(pedido: Promise<T>) => Promise<T>;
+
 /**
  * Lo mismo que `usarAlmacenamiento`, pero con plazo: abrir puede andar y aun así leer o escribir el ejemplo no terminar nunca (una transacción grande en el WebKit de
  * Windows no completó en 8 s; en Chromium tarda 160 ms). Sin esto, la pantalla se quedaba en «Preparando la flota de ejemplo…» para siempre. Pasado el plazo rechaza.
+ * El plazo es uno solo para leer y escribir y se detiene mientras se espera el generador (`sinContar`): bajar el trozo no es del almacenamiento y tiene el suyo.
  */
-function usarAlmacenamientoConPlazo(repositorio: Repositorio, opciones: OpcionesArranque, semilla: number): Promise<ResultadoArranque> {
-  const plazo = opciones.plazoAbrirMs ?? PLAZO_ABRIR_MS;
+function usarAlmacenamientoConPlazo(repositorio: Repositorio, opciones: OpcionesArranque, semilla: number, generador: () => Promise<Generador>): Promise<ResultadoArranque> {
   return new Promise<ResultadoArranque>((resolver, rechazar) => {
     let vencido = false;
-    const temporizador = setTimeout(() => {
-      vencido = true;
-      rechazar(new Error("El almacenamiento no respondió a tiempo."));
-    }, plazo);
-    usarAlmacenamiento(repositorio, opciones, semilla).then(
+    let restante = opciones.plazoAbrirMs ?? PLAZO_ABRIR_MS;
+    let corriendoDesde = Date.now();
+    let temporizador: ReturnType<typeof setTimeout> | undefined;
+    const correr = (): void => {
+      corriendoDesde = Date.now();
+      temporizador = setTimeout(() => {
+        vencido = true;
+        rechazar(new Error("El almacenamiento no respondió a tiempo."));
+      }, Math.max(restante, 0));
+    };
+    const sinContar: SinContarElPlazo = async (pedido) => {
+      clearTimeout(temporizador);
+      restante -= Date.now() - corriendoDesde;
+      try {
+        return await pedido;
+      } finally {
+        if (!vencido) correr();
+      }
+    };
+    correr();
+    usarAlmacenamiento(repositorio, opciones, semilla, () => sinContar(generador())).then(
       (resultado) => {
         clearTimeout(temporizador);
         if (!vencido) resolver(resultado);
@@ -304,25 +337,24 @@ function usarAlmacenamientoConPlazo(repositorio: Repositorio, opciones: Opciones
   });
 }
 
-/** Todo el camino feliz sobre un almacenamiento que anda. Cualquier falla sube y `arrancar` pasa a la memoria. */
-async function arrancarConAlmacenamiento(opciones: OpcionesArranque, semilla: number): Promise<ResultadoArranque> {
+/** Todo el camino feliz sobre un almacenamiento que anda. Cualquier falla del almacenamiento sube y `arrancar` pasa a la memoria; una del generador, no. */
+async function arrancarConAlmacenamiento(opciones: OpcionesArranque, semilla: number, generador: () => Promise<Generador>): Promise<ResultadoArranque> {
   const repositorio = await abrirConPlazo(opciones);
   try {
-    return await usarAlmacenamientoConPlazo(repositorio, opciones, semilla);
+    return await usarAlmacenamientoConPlazo(repositorio, opciones, semilla, generador);
   } catch (error) {
-    repositorio.cerrar?.(); // se sigue en memoria: no dejar la conexión abierta
+    repositorio.cerrar?.(); // se sigue en memoria (o se muestra el error): no dejar la conexión abierta
     throw error;
   }
 }
 
-async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesArranque, semilla: number): Promise<ResultadoArranque> {
+async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesArranque, semilla: number, generador: () => Promise<Generador>): Promise<ResultadoArranque> {
   const cargado = await repositorio.cargar();
   const { hoy } = opciones;
-  const cargar = opciones.cargarGenerador ?? CARGAR_GENERADOR;
 
   if (cargado === null) {
     // D4: primera visita.
-    const estado = (await cargar()).generar(semilla, hoy);
+    const estado = (await generador()).generar(semilla, hoy);
     await repositorio.reemplazarTodo(estado);
     return { repositorio, estado, avisos: [], enMemoria: false };
   }
@@ -330,7 +362,7 @@ async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesAr
   const guardado = metaUtilizable(cargado.meta) ? datosUtilizables(cargado, hoy) : null;
   if (guardado === null) {
     // D7: otro formato (o un registro dañado): se vuelve al ejemplo y se avisa. El perfil no se arrastra: no se sabe leer.
-    const estado = (await cargar()).generar(semilla, hoy);
+    const estado = (await generador()).generar(semilla, hoy);
     await repositorio.reemplazarTodo(estado);
     return { repositorio, estado, avisos: [{ tipo: "esquema-actualizado" }], enMemoria: false };
   }
@@ -338,11 +370,16 @@ async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesAr
   if (guardado.meta.fechaBase < hoy) {
     if (!guardado.meta.modificada) {
       // D5, primer camino: el ejemplo intacto se corre al día de hoy, en silencio.
-      const estado = await ejemploDeHoy(hoy, guardado.meta.semilla, perfilDe(guardado.meta), cargar);
-      await repositorio.reemplazarTodo(estado);
-      return { repositorio, estado, avisos: [], enMemoria: false };
+      try {
+        const estado = await ejemploDeHoy(hoy, guardado.meta.semilla, perfilDe(guardado.meta), generador);
+        await repositorio.reemplazarTodo(estado);
+        return { repositorio, estado, avisos: [], enMemoria: false };
+      } catch (error) {
+        // Sin el generador no se puede correr el ejemplo a hoy, pero lo guardado sirve: se sigue con él y el aviso de abajo (que ofrece «Reiniciar demo») en vez de dejar a la persona afuera.
+        if (!(error instanceof ErrorDeDescarga)) throw error;
+      }
     }
-    // D5, segundo camino: hay cambios del visitante, se conservan y se avisa.
+    // D5, segundo camino: hay cambios del visitante (o no se pudo correr el ejemplo a hoy), se conservan y se avisa.
     const estado = conPerfilValido(guardado);
     return { repositorio, estado, avisos: [{ tipo: "datos-de-otra-fecha", fechaBase: guardado.meta.fechaBase }], enMemoria: false };
   }
@@ -351,9 +388,9 @@ async function usarAlmacenamiento(repositorio: Repositorio, opciones: OpcionesAr
 }
 
 /** D8: sin almacenamiento la demo igual funciona, con un repositorio en memoria y un aviso fijo. */
-async function arrancarEnMemoria(hoy: FechaCivil, semilla: number, cargar: CargarGenerador): Promise<ResultadoArranque> {
+async function arrancarEnMemoria(hoy: FechaCivil, semilla: number, generador: () => Promise<Generador>): Promise<ResultadoArranque> {
   const repositorio = new RepositorioMemoria();
-  const estado = (await cargar()).generar(semilla, hoy);
+  const estado = (await generador()).generar(semilla, hoy);
   await repositorio.reemplazarTodo(estado);
   return { repositorio, estado, avisos: [{ tipo: "sin-almacenamiento" }], enMemoria: true };
 }
@@ -362,11 +399,14 @@ export async function arrancar(opciones: OpcionesArranque): Promise<ResultadoArr
   const semilla = opciones.semilla ?? SEMILLA_POR_DEFECTO;
   const umbral = opciones.umbralPreparandoMs ?? UMBRAL_PREPARANDO_MS;
   const temporizador = opciones.alTardar === undefined ? null : setTimeout(opciones.alTardar, umbral);
+  const generador = generadorUnico(opciones.cargarGenerador ?? CARGAR_GENERADOR, opciones.plazoGeneradorMs ?? PLAZO_DE_DESCARGA_MS);
   try {
     try {
-      return await arrancarConAlmacenamiento(opciones, semilla);
-    } catch {
-      return await arrancarEnMemoria(opciones.hoy, semilla, opciones.cargarGenerador ?? CARGAR_GENERADOR);
+      return await arrancarConAlmacenamiento(opciones, semilla, generador);
+    } catch (error) {
+      // Un generador que no baja no es un almacenamiento que no anda: seguir en memoria pediría el mismo trozo y dejaría la demo sin guardar por un problema de red.
+      if (error instanceof ErrorDeDescarga) throw error;
+      return await arrancarEnMemoria(opciones.hoy, semilla, generador);
     }
   } finally {
     if (temporizador !== null) clearTimeout(temporizador);
@@ -377,9 +417,15 @@ export async function arrancar(opciones: OpcionesArranque): Promise<ResultadoArr
  * D6: "Reiniciar demo". Una sola escritura que reemplaza todo (incluido el historial): si falla, queda lo de antes y el
  * error sube para que la interfaz lo muestre (D10). Conserva el perfil elegido y la semilla.
  */
-export async function reiniciarDemo(repositorio: Repositorio, actual: Estado, hoy: FechaCivil, cargar: CargarGenerador = CARGAR_GENERADOR): Promise<Estado> {
+export async function reiniciarDemo(
+  repositorio: Repositorio,
+  actual: Estado,
+  hoy: FechaCivil,
+  cargar: CargarGenerador = CARGAR_GENERADOR,
+  plazoGeneradorMs: number = PLAZO_DE_DESCARGA_MS,
+): Promise<Estado> {
   const semilla = semillaValida(actual.meta.semilla) ? actual.meta.semilla : SEMILLA_POR_DEFECTO;
-  const nuevo = await ejemploDeHoy(hoy, semilla, actual.meta.perfil, cargar);
+  const nuevo = await ejemploDeHoy(hoy, semilla, actual.meta.perfil, generadorUnico(cargar, plazoGeneradorMs));
   await repositorio.reemplazarTodo(nuevo);
   return nuevo;
 }
