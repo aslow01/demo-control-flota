@@ -20,6 +20,7 @@
   import { pedirCuenta } from "./componentes/movimiento.ts";
   import { TEXTO_MARCO, TEXTO_MAS, TEXTO_NAVEGACION, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { OpcionConductor } from "./componentes/tipos.ts";
+  import { bajar, esVersionNueva } from "./lib/descarga.ts";
   import { aHash, migasDe, nombreDePantalla, rutaPorDefecto, type Ruta } from "./lib/estado/enrutador.ts";
   import { formatearFechaConDia } from "./lib/dominio/fechas.ts";
   import { NOMBRES_DE_PANTALLA, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_DESCARGA, TEXTO_ERROR_PANTALLA, textoDatosDeOtraFecha } from "./lib/dominio/textos-base.ts";
@@ -272,15 +273,25 @@
   // pendiente hasta que llegan (`alLlegarLaPantalla`). Sin esto, la primera apertura con red lenta dejaría el foco en el `body`.
   let versionVista: number | null = null;
   let tituloPendiente = false;
+  // Dónde estaba el foco cuando el cambio de pantalla lo dejó pendiente (el enlace que se pulsó, o el cuerpo): si al llegar la pantalla sigue ahí, nadie lo movió.
+  let focoAlCambiar: Element | null = null;
   function enfocarTitulo(): void {
     const titulo = document.querySelector<HTMLElement>("main h1");
     tituloPendiente = titulo === null;
+    if (titulo === null) focoAlCambiar = document.activeElement;
     titulo?.focus();
   }
   function alLlegarLaPantalla(): void {
-    if (tituloPendiente) void tick().then(enfocarTitulo);
+    if (!tituloPendiente) return;
+    // Si la persona movió el foco mientras la pantalla bajaba (siguió con Tab, abrió un diálogo), no se lo quitamos (2.4.3).
+    const activo = document.activeElement;
+    if (activo !== null && activo !== document.body && activo !== focoAlCambiar) {
+      tituloPendiente = false;
+      return;
+    }
+    void tick().then(enfocarTitulo);
   }
-  // Un trozo que no se pudo bajar (sin red, o un trozo de una versión anterior): título y «Recargar»; el foco va a ese título.
+  // Un trozo que no se pudo bajar (sin red, o un trozo de una versión anterior que ya no está): título y «Recargar»; el foco va a ese título.
   function alMostrarseElErrorDeCarga(): void {
     void tick().then(enfocarTitulo);
   }
@@ -359,9 +370,9 @@
   </div>
 {/snippet}
 
-{#snippet errorDeCarga()}
+{#snippet errorDeCarga(error: unknown)}
   <h1 tabindex="-1" {@attach () => alMostrarseElErrorDeCarga()}>{TEXTO_ERROR_DESCARGA.titulo}</h1>
-  <p class="parrafo">{TEXTO_ERROR_DESCARGA.mensaje}</p>
+  <p class="parrafo">{esVersionNueva(error) ? TEXTO_ERROR_DESCARGA.versionNueva : TEXTO_ERROR_DESCARGA.mensaje}</p>
   <div class="acciones-error">
     <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
   </div>
@@ -446,73 +457,73 @@
         {:else if app.ruta.tipo === "inicio"}
           <PantallaInicio alAbrirParte={() => pedirVerComo("conductor")} alProbarComoConductor={(conductorId) => pedirVerComo("conductor", conductorId)} />
         {:else if app.ruta.tipo === "vencimientos"}
-          {#await import("./componentes/PantallaVencimientos.svelte")}
+          {#await bajar(() => import("./componentes/PantallaVencimientos.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaVencimientos }}
             <PantallaVencimientos />
-          {:catch}
-            {@render errorDeCarga()}
+          {:catch error}
+            {@render errorDeCarga(error)}
           {/await}
         {:else if app.ruta.tipo === "operacion"}
-          {#await import("./componentes/PantallaOperacion.svelte")}
+          {#await bajar(() => import("./componentes/PantallaOperacion.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaOperacion }}
             <PantallaOperacion alAbrirParte={() => pedirVerComo("conductor")} />
-          {:catch}
-            {@render errorDeCarga()}
+          {:catch error}
+            {@render errorDeCarga(error)}
           {/await}
         {:else if app.ruta.tipo === "movilidades"}
-          {#await import("./componentes/PantallaFlota.svelte")}
+          {#await bajar(() => import("./componentes/PantallaFlota.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaFlota }}
             <PantallaFlota />
-          {:catch}
-            {@render errorDeCarga()}
+          {:catch error}
+            {@render errorDeCarga(error)}
           {/await}
         {:else if app.ruta.tipo === "mas"}
-          {#await import("./componentes/PantallaMas.svelte")}
+          {#await bajar(() => import("./componentes/PantallaMas.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaMas }}
             <PantallaMas perfil={perfilTexto} {descripcionDelPerfil} alCambiarPerfil={() => pedirVerComo()} alComoFunciona={abrirComoFunciona} alReiniciar={pedirReinicio} />
-          {:catch}
-            {@render errorDeCarga()}
+          {:catch error}
+            {@render errorDeCarga(error)}
           {/await}
         {:else if app.ruta.tipo === "unidad"}
           <!-- Una ficha nueva (otra patente, o el alta de una unidad) arranca limpia: filtro del historial, mensajes y diálogos. -->
           {#key app.versionDePantalla}
-            {#await import("./componentes/PantallaFicha.svelte")}
+            {#await bajar(() => import("./componentes/PantallaFicha.svelte"))}
               {@render cargandoPantalla()}
             {:then { default: PantallaFicha }}
               <PantallaFicha />
-            {:catch}
-              {@render errorDeCarga()}
+            {:catch error}
+              {@render errorDeCarga(error)}
             {/await}
           {/key}
         {:else if app.ruta.tipo === "conductor"}
-          {#await import("./componentes/PantallaConductor.svelte")}
+          {#await bajar(() => import("./componentes/PantallaConductor.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaConductor }}
             <PantallaConductor />
-          {:catch}
-            {@render errorDeCarga()}
+          {:catch error}
+            {@render errorDeCarga(error)}
           {/await}
         {:else if app.ruta.tipo === "mis-partes"}
-          {#await import("./componentes/PantallaMisPartes.svelte")}
+          {#await bajar(() => import("./componentes/PantallaMisPartes.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaMisPartes }}
             <PantallaMisPartes />
-          {:catch}
-            {@render errorDeCarga()}
+          {:catch error}
+            {@render errorDeCarga(error)}
           {/await}
         {:else if app.ruta.tipo === "parte"}
           <!-- Un parte nuevo (otra unidad u otra fecha) arranca limpio: formulario, errores y el panel de «Parte enviado». -->
           {#key app.versionDePantalla}
-            {#await import("./componentes/PantallaParte.svelte")}
+            {#await bajar(() => import("./componentes/PantallaParte.svelte"))}
               {@render cargandoPantalla()}
             {:then { default: PantallaParte }}
               <PantallaParte bind:titulo={tituloDelParte} />
-            {:catch}
-              {@render errorDeCarga()}
+            {:catch error}
+              {@render errorDeCarga(error)}
             {/await}
           {/key}
         {:else}
