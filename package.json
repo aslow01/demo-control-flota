@@ -16,12 +16,15 @@
     "buscar": "node scripts/buscar-prohibidos.mjs",
     "peso": "node scripts/peso-js.mjs",
     "contraste": "node scripts/contraste.mjs",
-    "servir": "node scripts/servir-dist.mjs"
+    "servir": "node scripts/servir-dist.mjs",
+    "e2e": "vite build && playwright test"
   },
   "dependencies": {
     "svelte": "5.57.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.1",
+    "@playwright/test": "1.65.1",
     "@sveltejs/vite-plugin-svelte": "7.3.1",
     "fake-indexeddb": "6.2.7",
     "svelte-check": "4.7.8",
