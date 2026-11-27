@@ -1,6 +1,6 @@
 // Control del peso del JS (`scripts/peso-js.mjs`): la lógica pura, separada de la lectura de `dist/`.
 import { describe, expect, it } from "vitest";
-import { TOPE_INICIAL, TOPE_TOTAL_AVISO, evaluarPeso, gzipBytes, jsDeLaCargaInicial, resumirPeso } from "../scripts/peso-js.mjs";
+import { AVISO_TROZO, TOPE_INICIAL, TOPE_TOTAL_AVISO, evaluarPeso, gzipBytes, jsDeLaCargaInicial, resumirPeso } from "../scripts/peso-js.mjs";
 
 const HTML = `<!doctype html><html><head>
 <script type="module" crossorigin src="/assets/index-AAA.js"></script>
@@ -37,8 +37,8 @@ describe("resumirPeso", () => {
     { ruta: "assets/comun-BBB.js", gzip: 20 },
     { ruta: "assets/ficha-DDD.js", gzip: 7 },
   ];
-  it("suma la inicial con los archivos del HTML y el total con todos", () => {
-    expect(resumirPeso(archivos, ["assets/index-AAA.js", "assets/comun-BBB.js"])).toEqual({ inicial: 120, total: 127 });
+  it("suma la inicial con los archivos del HTML y el total con todos, y deja aparte los trozos que se bajan después", () => {
+    expect(resumirPeso(archivos, ["assets/index-AAA.js", "assets/comun-BBB.js"])).toEqual({ inicial: 120, total: 127, trozos: [{ ruta: "assets/ficha-DDD.js", gzip: 7 }] });
   });
   it("falla si la carga inicial nombra un archivo que no existe", () => {
     expect(() => resumirPeso(archivos, ["assets/falta.js"])).toThrow(/falta\.js/);
@@ -62,8 +62,17 @@ describe("evaluarPeso", () => {
     expect(r.ok).toBe(true);
     expect(r.avisos).toHaveLength(1);
   });
-  it("los topes son los acordados: 120.000 B iniciales y 136.000 B totales (aviso)", () => {
-    expect(TOPE_INICIAL).toBe(120_000);
-    expect(TOPE_TOTAL_AVISO).toBe(136_000);
+  it("un trozo de módulo en el aviso no avisa; un byte arriba avisa y nombra el trozo, sin hacer fallar", () => {
+    const igual = evaluarPeso({ inicial: 1, total: 1, trozos: [{ ruta: "assets/PantallaFicha-AAA.js", gzip: AVISO_TROZO }] });
+    expect(igual).toEqual({ ok: true, avisos: [] });
+    const arriba = evaluarPeso({ inicial: 1, total: 1, trozos: [{ ruta: "assets/PantallaFicha-AAA.js", gzip: AVISO_TROZO + 1 }, { ruta: "assets/chico-BBB.js", gzip: 10 }] });
+    expect(arriba.ok).toBe(true);
+    expect(arriba.avisos).toHaveLength(1);
+    expect(arriba.avisos[0]).toContain("PantallaFicha-AAA.js");
+  });
+  it("los topes son los de la etapa 1 del rediseño: 95.000 B iniciales, aviso de 30.000 B por trozo y de 240.000 B en el total", () => {
+    expect(TOPE_INICIAL).toBe(95_000);
+    expect(AVISO_TROZO).toBe(30_000);
+    expect(TOPE_TOTAL_AVISO).toBe(240_000);
   });
 });
