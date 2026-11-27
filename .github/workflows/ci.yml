@@ -1,4 +1,4 @@
-# Integración continua (paso 0.4): check, pruebas (también en tres zonas horarias), build, búsqueda de prohibidos y audit.
+# Integración continua (paso 0.4): check, pruebas (también en tres zonas horarias), build, peso, pruebas de punta a punta, búsqueda de prohibidos y audit.
 # Acá no existe `scripts/prohibidos.local.json` (no se versiona): la regla de nombres de terceros se omite con un aviso.
 name: CI
 
@@ -27,8 +27,11 @@ jobs:
       # La matriz completa de zonas horarias: UTC, Asia/Tokyo y America/Los_Angeles.
       - run: npm run test:tz
       - run: npm run build
-      # Peso del JS con gzip nivel 9: falla si la carga inicial pasa 120.000 B; el total solo avisa (docs/stack.md, sección 5).
+      # Peso del JS con gzip nivel 9: falla si la carga inicial pasa 95.000 B; cada trozo (30.000 B) y el total (240.000 B) solo avisan (docs/stack.md, sección 5; topes de la etapa 1 del rediseño).
       - run: npm run peso
+      # Pruebas de punta a punta (Playwright + axe) contra dist/ servido con la CSP real. El navegador se baja acá porque `npm ci --ignore-scripts` no instala nada por su cuenta.
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
       # Sin {@html}, sin Math.random en src/lib, sin reloj fuera de estado/reloj.ts, sin correos que no sean de ejemplo (los nombres de terceros solo se buscan en local).
       - run: npm run buscar
       # Sin altas ni críticas (el 18/11/2026 el aviso de `picomatch`, GHSA-fc5q-39xc-vjpf, dejó de alcanzar a la 4.0.7).

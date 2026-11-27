@@ -4,7 +4,7 @@
 //   - Carga inicial = el script de entrada y los `modulepreload` locales de `dist/index.html` (el marco y la pantalla de Inicio). Falla (código 1) si pasa TOPE_INICIAL.
 //   - Trozos = el resto de `dist/assets/*.js`: una pantalla (o el código de escribir, o el generador de datos) se baja al entrar o al usarla. Cada uno solo avisa si pasa AVISO_TROZO.
 //   - Total = todo `dist/assets/*.js` (la inicial y los trozos). Solo avisa si pasa TOPE_TOTAL_AVISO.
-// Topes fijados al terminar la etapa 1 del rediseño de la flota (docs/diseno-ui.md, sección 11): se bajaron de 120 kB a 95 kB lo ganado al partir por rutas.
+// Topes fijados al terminar la etapa 1 del rediseño de la flota («partir por rutas»): el de la carga inicial bajó de 120 kB a 95 kB con lo ganado (docs/registro.md, 27/11/2026).
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
