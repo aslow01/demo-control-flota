@@ -11,7 +11,7 @@
   // - CSP: la posición sale de `style:--dia` (se asigna por CSSOM); nunca un atributo `style`.
   // - Colores forzados: formas y línea de hoy en `CanvasText`; los tres tramos se distinguen por el borde (sólido, discontinuo, punteado).
   import { TEXTO_HORIZONTE } from "../lib/dominio/textos-base.ts";
-import { TEXTO_LEYENDA_HORIZONTE as L, textoPuntoDeLaRegla } from "../lib/dominio/textos-inicio.ts";
+  import { TEXTO_LEYENDA_HORIZONTE as L, textoPuntoDeLaRegla } from "../lib/dominio/textos-inicio.ts";
   import type { FormaDeMarca } from "../lib/dominio/horizonte.ts";
   import type { AccionDeDocumento, PuntoDeRegla, ReglaDeVencimientos } from "../lib/estado/centro-alertas.ts";
   import { indiceTrasTecla } from "../lib/estado/teclado-lista.ts";

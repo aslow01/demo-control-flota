@@ -1,5 +1,5 @@
 // Textos del marco de la aplicación (barras, selector de perfil, menú, avisos, pie y estados de arranque), en español neutro.
-// Los textos que produce el dominio (avisos del arranque, errores, alertas) siguen en `src/lib/dominio/textos.ts` y se usan desde ahí.
+// Los textos que produce el dominio (avisos del arranque, errores, alertas) están en `src/lib/dominio/textos-base.ts` y en los módulos de cada pantalla (`textos-inicio.ts`, `textos-flota.ts`, …) y se usan desde ahí.
 // Esta lista nace en el paso 3.3 y es la que revisa `redactor-ux`. Es solo de presentación: no hay reglas de negocio.
 
 import { EMPRESA } from "../lib/datos/constantes.ts";
@@ -108,7 +108,7 @@ export const TEXTO_PIE = {
   volverAlPortafolio: "Volver al portafolio",
 } as const;
 
-/** Inicio, antes «Centro de alertas» (6.1): lo que dice la pantalla y no sale del dominio. Los textos de las alertas y de los diálogos vienen de `textos.ts`. */
+/** Inicio, antes «Centro de alertas» (6.1): lo que dice la pantalla y no sale del dominio. Los textos de las alertas y de los diálogos vienen de `textos-inicio.ts` y `textos-base.ts`. */
 export const TEXTO_ALERTAS = {
   /** M6: bajo el título, lo que cuenta la insignia de la pestaña «Inicio» (alertas críticas: documentos vencidos o faltantes y novedades críticas abiertas). Con 0 no se muestra. */
   criticas: (n: number) => `${n} ${n === 1 ? "alerta crítica" : "alertas críticas"}: documentos vencidos o faltantes y novedades críticas abiertas.`,
@@ -147,7 +147,7 @@ export const TEXTO_ALERTAS = {
   yMasLector: ": otros vencimientos de ese día",
 } as const;
 
-/** Diálogos «Renovar» y «Cargar documento» (5.11, 5.15 y 5.17). Los títulos y los botones primarios salen de `textos.ts`. */
+/** Diálogos «Renovar» y «Cargar documento» (5.11, 5.15 y 5.17). Los títulos y los botones primarios salen de `textos-base.ts`. */
 export const TEXTO_DIALOGO_DOCUMENTO = {
   numero: "Número",
   emisor: "Emisor",
@@ -160,7 +160,7 @@ export const TEXTO_DIALOGO_DOCUMENTO = {
   guardando: "Guardando…",
 } as const;
 
-/** Diálogos de la ficha (5.11 y 5.17): rótulos de los campos y ayudas. Los títulos, los primarios, las notas y los errores vienen de `textos.ts`. */
+/** Diálogos de la ficha (5.11 y 5.17): rótulos de los campos y ayudas. Los títulos, los primarios, las notas y los errores vienen de `textos-base.ts` y `textos-ficha.ts`. */
 export const TEXTO_DIALOGOS_FICHA_VISTA = {
   guardando: "Guardando…",
   cerrar: "Cerrar",
@@ -208,7 +208,7 @@ export const TEXTO_DIALOGOS_FICHA_VISTA = {
 
 /**
  * Marco nuevo «tipo app» (etapa E1, `maquetador`): barra inferior, lateral, barra superior móvil, migas. Todavía no lo usa ninguna pantalla.
- * Los nombres de las pantallas salen de `NOMBRES_DE_PANTALLA` (dominio/textos.ts): acá no se repiten.
+ * Los nombres de las pantallas salen de `NOMBRES_DE_PANTALLA` (dominio/textos-base.ts): acá no se repiten.
  */
 export const TEXTO_NAVEGACION = {
   /** Nombre accesible de la barra inferior y del lateral. */

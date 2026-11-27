@@ -22,7 +22,7 @@ export const TEXTO_CONDUCTOR_VISTA = {
 
 /**
  * Parte diario (6.5): rótulos de los dos pasos (la revisión antes de salir y el cierre de la jornada), de la barra de envío, del diálogo «Antes de enviar» y de la lectura. Los `h1`, el renglón de
- * contexto, los textos de los resultados (C1 a C3), de la lectura y de «No se puede cargar este parte», las ayudas y los errores vienen de `textos.ts`.
+ * contexto, los textos de los resultados (C1 a C3), de la lectura y de «No se puede cargar este parte», las ayudas y los errores vienen de `textos-parte.ts`.
  */
 export const TEXTO_PARTE_VISTA = {
   conductorLinea: (nombre: string) => `Conductor: ${nombre}`,

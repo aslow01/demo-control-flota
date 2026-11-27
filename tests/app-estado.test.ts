@@ -7,7 +7,7 @@ import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { EstadoApp, type DependenciasApp } from "../src/lib/estado/app.svelte.ts";
 import { crearReloj } from "../src/lib/estado/reloj.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
-import { SEMILLA_POR_DEFECTO } from "../src/lib/persistencia/arranque.ts";
+import { SEMILLA_POR_DEFECTO } from "../src/lib/datos/constantes.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
 import type { AvisoEntrePestanas } from "../src/lib/persistencia/pestanas.ts";
 import { checklistEnOrden } from "./ayuda.ts";

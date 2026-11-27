@@ -532,8 +532,7 @@ export class EstadoApp {
   // validadores del dominio, ejecutan el comando (cambios y evento en una escritura, D10) y devuelven `ResultadoGuardado`: nunca rechazan. El
   // perfil Conductor no puede ninguno (error general «sin permiso»).
 
-  /** Lo que tienen en común: sin datos, validación previa, ejecutar y repartir el error o armar el mensaje. */
-  /** Para `ficha-escritura.ts`. */
+  /** Para `ficha-escritura.ts`. Lo que tienen en común: sin datos, validación previa, ejecutar y repartir el error o armar el mensaje. */
   async guardarFormulario<Campo extends string>(a: {
     previos: (estado: Estado) => ErroresDeFormularioDe<Campo> | null;
     comando: Comando;
@@ -549,8 +548,7 @@ export class EstadoApp {
     return { ok: true, ...a.exito(r.valor) };
   }
 
-  /** `ZK 214 BD` de la unidad, en el estado que se pasa. */
-  /** Para `ficha-escritura.ts`. */
+  /** Para `ficha-escritura.ts`. `ZK 214 BD` de la unidad, en el estado que se pasa. */
   patenteDe(estado: Estado, unidadId: string): string {
     return etiquetaDeTitular(estado, { tipo: "unidad", id: unidadId });
   }

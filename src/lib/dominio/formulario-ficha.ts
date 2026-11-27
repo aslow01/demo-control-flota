@@ -6,7 +6,8 @@
 // Los valores del formulario son siempre texto (lo que dan los `input` y los `select`). `conductorId` vacío = «Sin conductor asignado».
 
 import type { Comando } from "./comandos.ts";
-import { avisoDeVueltaSinPoderSalir, documentosPendientes, vuelveSinSalirHastaManana } from "./formulario-novedad.ts";
+// A5 y P19 (los avisos de «Volver a servicio») viven en `formulario-novedad.ts`: «Resolver novedad» también los ofrece y viaja con el marco; esta ficha se baja con su pantalla.
+import { avisoDeVueltaSinPoderSalir, vuelveSinSalirHastaManana } from "./formulario-novedad.ts";
 import {
   erroresDeNegocioEn,
   errorGeneralEn,
@@ -24,9 +25,6 @@ import { TEXTO_AGREGAR, TEXTO_DIALOGOS_FICHA, errNovedadesCriticasAbiertas, text
 import type { ErrorDeNegocio, Estado, FechaCivil, Unidad } from "./tipos.ts";
 import { REGLAS, validarFechaNoFutura, validarTexto } from "./validacion.ts";
 import { documentoVigente } from "./vencimientos.ts";
-
-// A5 y P19 (los avisos de «Volver a servicio») viven en `formulario-novedad.ts`: «Resolver novedad» también los ofrece y viaja con el marco; esta ficha se baja con su pantalla.
-export { avisoDeVueltaSinPoderSalir, documentosPendientes, vuelveSinSalirHastaManana };
 
 // --- Comunes -------------------------------------------------------------------------------------
 

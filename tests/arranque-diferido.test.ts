@@ -5,7 +5,8 @@ import { describe, expect, it } from "vitest";
 import { generar } from "../src/lib/datos/generador.ts";
 import type { Estado } from "../src/lib/dominio/tipos.ts";
 import { ErrorDeDescarga, PLAZO_DE_DESCARGA_MS } from "../src/lib/descarga.ts";
-import { arrancar, reiniciarDemo, SEMILLA_POR_DEFECTO } from "../src/lib/persistencia/arranque.ts";
+import { SEMILLA_POR_DEFECTO } from "../src/lib/datos/constantes.ts";
+import { arrancar, reiniciarDemo } from "../src/lib/persistencia/arranque.ts";
 import { RepositorioMemoria } from "../src/lib/persistencia/memoria.ts";
 import type { Repositorio } from "../src/lib/persistencia/repositorio.ts";
 

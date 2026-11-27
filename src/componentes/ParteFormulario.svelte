@@ -13,9 +13,9 @@
   //  - Paso 2: la revisión ya enviada no se toca (P7): va como resumen arriba (con un `details` que muestra los puntos), sin «Descartar borrador» y sin `select` de conductor.
   import { onDestroy, tick, untrack } from "svelte";
   import { agruparResumen, barraDeEnvio, errorGeneralParte, recorridoDe, respondidos, type ErroresDeParte } from "../lib/dominio/formulario-parte.ts";
-import type { CampoParte, ValoresParte } from "../lib/dominio/formulario-parte-valores.ts";
+  import type { CampoParte, ValoresParte } from "../lib/dominio/formulario-parte-valores.ts";
   import { ERRORES, TEXTO_DIALOGOS_FICHA } from "../lib/dominio/textos-base.ts";
-import { TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos-parte.ts";
+  import { TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos-parte.ts";
   import type { Advertencia, ItemChecklist } from "../lib/dominio/tipos.ts";
   import type { AdvertenciaDeEnvio, ResultadoDeEnvio } from "../lib/estado/app.svelte.ts";
   import type { IndicadorDeGuardado } from "../lib/estado/autoguardado.ts";
@@ -36,7 +36,7 @@ import { TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos-parte.ts";
   import RevisionLeida from "./RevisionLeida.svelte";
   import SelectorCombustible from "./SelectorCombustible.svelte";
   import { TEXTO_DIALOGO } from "./textos-marco.ts";
-import { TEXTO_PARTE_VISTA as T } from "./textos-marco-parte.ts";
+  import { TEXTO_PARTE_VISTA as T } from "./textos-marco-parte.ts";
   import type { PanelParteEnviado, ParteEnCierre, ParteEnEdicion } from "./tipos.ts";
 
   let { vista, alEnviado }: { vista: ParteEnEdicion | ParteEnCierre; alEnviado: (panel: PanelParteEnviado) => void } = $props();

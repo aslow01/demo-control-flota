@@ -1,6 +1,6 @@
 // Textos de la pantalla Movilidades y del diálogo «Agregar unidad» (presentación; los de la lógica están en `lib/dominio/textos-flota.ts`). Se bajan con la pantalla, no con el marco.
 
-/** Movilidades, antes «Flota» (6.2): rótulos de la pantalla que no salen del dominio. Los filtros, los órdenes, los estados y los textos de cada fila vienen de `textos.ts`. */
+/** Movilidades, antes «Flota» (6.2): rótulos de la pantalla que no salen del dominio. Los filtros, los órdenes, los estados y los textos de cada fila vienen de `textos-flota.ts`. */
 export const TEXTO_FLOTA_VISTA = {
   agregarUnidad: "Agregar unidad",
   /** Rótulo del campo de búsqueda (visible con poco ancho; el marcador, más corto, dice qué se puede buscar y no se corta a 360 px). */
@@ -30,7 +30,7 @@ export const TEXTO_FLOTA_VISTA = {
   nuevaOculta: "La unidad nueva no se ve con los filtros actuales.",
 } as const;
 
-/** Diálogo «Agregar unidad» (5.11, 5.15 y 5.17). El título, el botón primario, la opción «Sin conductor asignado» y los errores vienen de `textos.ts`. */
+/** Diálogo «Agregar unidad» (5.11, 5.15 y 5.17). El título, el botón primario, la opción «Sin conductor asignado» y los errores vienen de `textos-flota.ts` y `textos-base.ts`. */
 export const TEXTO_DIALOGO_UNIDAD = {
   patente: "Patente",
   ayudaPatente: "Formato AA 123 BB o ABC 123.",

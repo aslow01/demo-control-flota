@@ -1,7 +1,7 @@
 <script lang="ts">
   // Mis partes (`#/conductor/partes`), la pantalla del perfil Conductor a la que lleva «Ver todos» de «Mis últimos partes»: los últimos cinco partes cerrados, el más nuevo primero. No tiene reglas de
   // negocio: todo lo arma `app.misPartes()` (`titulo`, `conductor`, `filas`, `vacio`; lib/estado/parte.ts). Cada fila es un enlace al parte (en lectura): fecha, patente, recorrido y la etiqueta «Cerrado».
-  //  - La línea de contexto dice de quién son y cuántos hay: «Tamara Olivera (persona ficticia) · los últimos cinco» (los dos textos salen de `textos.ts` y `textos-marco.ts`).
+  //  - La línea de contexto dice de quién son y cuántos hay: «Tamara Olivera (persona ficticia) · los últimos cinco» (los dos textos salen de `textos-conductor.ts` y `textos-marco.ts`).
   //  - Sin partes cerrados no hay lista: el panel dice por qué (`partes.vacio`).
   //  - Se carga bajo demanda como `PantallaConductor` (ver `App.svelte`); el foco va al `h1` al llegar (lo hace `App.svelte`).
   import { TEXTO_INICIO_CONDUCTOR, textoUltimosPartes } from "../lib/dominio/textos-conductor.ts";
@@ -11,7 +11,7 @@
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
   import { TEXTO_ALERTAS } from "./textos-marco.ts";
-import { TEXTO_CONDUCTOR_VISTA as T } from "./textos-marco-parte.ts";
+  import { TEXTO_CONDUCTOR_VISTA as T } from "./textos-marco-parte.ts";
 
   const partes = $derived(app.misPartes());
 </script>

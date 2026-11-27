@@ -1,7 +1,7 @@
 // Arranque de la aplicación (docs/diseno.md, reglas D4 a D8 y D11): abre el almacenamiento, carga o genera el ejemplo y
 // decide qué avisos hay que mostrar. No toca la interfaz ni el reloj: recibe `hoy` ya calculado y devuelve datos.
 
-import { VERSION_ESQUEMA } from "../datos/constantes.ts";
+import { SEMILLA_POR_DEFECTO, VERSION_ESQUEMA } from "../datos/constantes.ts";
 import { bajar, ErrorDeDescarga, PLAZO_DE_DESCARGA_MS } from "../descarga.ts";
 import { calcularAlertas } from "../dominio/alertas.ts";
 import { sinCambios } from "../dominio/estado.ts";
@@ -10,9 +10,6 @@ import { parteLegible } from "../dominio/parte.ts";
 import type { Estado, FechaCivil, ItemChecklist, Meta, Parte, Perfil, TipoEvento, TipoUnidad } from "../dominio/tipos.ts";
 import { RepositorioMemoria } from "./memoria.ts";
 import type { Repositorio } from "./repositorio.ts";
-
-/** La semilla de la demo (docs/diseno.md 9.3): con ella el ejemplo es siempre el mismo. */
-export const SEMILLA_POR_DEFECTO = 20261118;
 
 /**
  * Trae el generador de datos. Es un trozo aparte (`import()`): quien ya tiene la demo guardada de hoy no lo baja; solo se pide cuando hay que armar el ejemplo
@@ -42,7 +39,7 @@ export const UMBRAL_PREPARANDO_MS = 300;
  */
 export const PLAZO_ABRIR_MS = 8000;
 
-/** Avisos globales que el arranque deja para la interfaz (los textos están en `textos.ts`). */
+/** Avisos globales que el arranque deja para la interfaz (los textos están en `textos-base.ts`). */
 export type Aviso =
   /** D7: cambió la versión del formato y se volvió a cargar el ejemplo. */
   | { tipo: "esquema-actualizado" }

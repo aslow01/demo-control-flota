@@ -30,10 +30,8 @@ import type {
 import { crearAzar, type Azar } from "./azar.ts";
 import { ENCARGADA, VERSION_ESQUEMA } from "./constantes.ts";
 
-// `ENCARGADA`, `EMPRESA` y `VERSION_ESQUEMA` viven en `constantes.ts` (el marco los lee sin bajar este archivo); se reexportan para quien ya los pedía acá.
-export { EMPRESA, ENCARGADA, VERSION_ESQUEMA } from "./constantes.ts";
-
-export const SEMILLA_POR_DEFECTO = 20261118;
+// `ENCARGADA`, `EMPRESA`, `SEMILLA_POR_DEFECTO` y `VERSION_ESQUEMA` viven en `constantes.ts` (el marco los lee sin bajar este archivo); se reexportan para quien ya los pedía acá.
+export { EMPRESA, ENCARGADA, SEMILLA_POR_DEFECTO, VERSION_ESQUEMA } from "./constantes.ts";
 
 export const NOMBRES: readonly string[] = [
   "Andrés", "Bruno", "Camila", "Daniela", "Esteban", "Facundo", "Gabriela", "Hernán", "Ivana", "Joaquín", "Karina", "Lautaro",

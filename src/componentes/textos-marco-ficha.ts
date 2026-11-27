@@ -1,6 +1,6 @@
 // Textos de la ficha de unidad (presentación; los de la lógica están en `lib/dominio/textos-ficha.ts`). Se bajan con la ficha, no con el marco.
 
-/** Ficha de unidad (6.3): rótulos de la pantalla que no salen del dominio. Los títulos de los paneles, las acciones, los estados y los textos de cada fila vienen de `textos.ts`. */
+/** Ficha de unidad (6.3): rótulos de la pantalla que no salen del dominio. Los títulos de los paneles, las acciones, los estados y los textos de cada fila vienen de `textos-ficha.ts`. */
 export const TEXTO_FICHA_VISTA = {
   rutaEtiqueta: "Ruta",
   motivosDe: "Motivos por los que no está disponible",
