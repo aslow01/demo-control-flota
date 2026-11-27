@@ -6,7 +6,7 @@
 import type { Alerta, ResultadoAlertas } from "../dominio/alertas.ts";
 import { aptitud } from "../dominio/aptitud.ts";
 import { formatearFecha, formatearHora, parsearInstante } from "../dominio/fechas.ts";
-import { faltantesDeValores, valoresDeParte } from "../dominio/formulario-parte.ts";
+import { faltantesDeValores, valoresDeParte } from "../dominio/formulario-parte-valores.ts";
 import { describirRegistro, kmDeRegistro, registrosDeKm, textoRecorrido } from "../dominio/kilometraje.ts";
 import { documentacionQueBloquea, ITEMS_CHECKLIST, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, parteSinSalidaDeHoy } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";

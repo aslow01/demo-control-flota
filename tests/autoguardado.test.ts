@@ -2,7 +2,8 @@
 // que no se anuncia en cada guardado). El reloj y el guardado se inyectan: acá no pasa tiempo de verdad ni se escribe nada.
 import { describe, expect, it } from "vitest";
 import { crearAutoguardado, type DependenciasAutoguardado, type IndicadorDeGuardado, type ResultadoDeBorrador } from "../src/lib/estado/autoguardado.ts";
-import { errorGeneralParte, type ValoresParte } from "../src/lib/dominio/formulario-parte.ts";
+import { errorGeneralParte } from "../src/lib/dominio/formulario-parte.ts";
+import type { ValoresParte } from "../src/lib/dominio/formulario-parte-valores.ts";
 import { ERRORES } from "../src/lib/dominio/textos.ts";
 import { valoresConKm } from "./ayuda.ts";
 

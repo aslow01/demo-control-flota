@@ -4,7 +4,7 @@
 // con su último parte del 17/11 terminado en 141.711 km; ZK 214 BD (Int. 07) es de Tamara Olivera (c-07) y tiene el seguro vencido (C01).
 import { describe, expect, it } from "vitest";
 import { ENCARGADA, generar } from "../src/lib/datos/generador.ts";
-import { valoresDeParte, type ValoresParte } from "../src/lib/dominio/formulario-parte.ts";
+import { valoresDeParte, type ValoresParte } from "../src/lib/dominio/formulario-parte-valores.ts";
 import { ERRORES } from "../src/lib/dominio/textos.ts";
 import type { Estado, Perfil } from "../src/lib/dominio/tipos.ts";
 import { EstadoApp, type DependenciasApp } from "../src/lib/estado/app.svelte.ts";

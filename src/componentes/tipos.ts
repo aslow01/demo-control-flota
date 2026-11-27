@@ -87,4 +87,4 @@ export const ETIQUETAS_DE_PARTE: Record<EtiquetaDeParte, { texto: string; tono: 
 export type { EstadoDelDia, InicioDelConductor, OpcionParaElegirConductor, PendienteDelConductor } from "../lib/estado/conductor.ts";
 export type { PanelParteEnviado, ParteEnCierre, ParteEnEdicion, ParteEnLectura, ParteNoDisponible, RevisionEnLectura, VistaDeParte } from "../lib/estado/parte.ts";
 export type { AccionDeConductorSinLicencia, FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
-export type { PasoDelParte } from "../lib/dominio/formulario-parte.ts";
+export type { PasoDelParte } from "../lib/dominio/formulario-parte-valores.ts";

@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { advertenciasLegibles, esBorradorVacio, parteLegible } from "../src/lib/dominio/parte.ts";
 import type { Estado, Parte } from "../src/lib/dominio/tipos.ts";
-import { valoresDeParte } from "../src/lib/dominio/formulario-parte.ts";
+import { valoresDeParte } from "../src/lib/dominio/formulario-parte-valores.ts";
 import { inicioDelConductor } from "../src/lib/estado/conductor.ts";
 import { panelDeParteEnviado, vistaDeParte } from "../src/lib/estado/parte.ts";
 import { calcularAlertas } from "../src/lib/dominio/alertas.ts";

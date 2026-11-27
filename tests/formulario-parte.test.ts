@@ -1,25 +1,8 @@
 // Paso 4.5 (lógica): el formulario del parte (docs/diseno-ui.md 5.12 a 5.15 y 6.5; reglas P3, P4, P10, P11, K1, K2). Los valores del formulario son siempre
 // texto; acá se prueba cómo se convierten en un comando, qué falta para enviar, en qué orden se listan los errores y qué mensajes salen.
 import { describe, expect, it } from "vitest";
-import {
-  CAMPOS_PARTE,
-  agruparResumen,
-  barraDeEnvio,
-  OPCIONES_COMBUSTIBLE,
-  comandoDeBorrador,
-  comandoDeCierre,
-  erroresDeNegocioParte,
-  errorGeneralParte,
-  faltantesDeValores,
-  mismosValores,
-  recorridoDe,
-  reformatearKm,
-  respondidos,
-  validarParaEnviar,
-  valoresDeParte,
-  valoresIniciales,
-  type ValoresParte,
-} from "../src/lib/dominio/formulario-parte.ts";
+import { CAMPOS_PARTE, agruparResumen, barraDeEnvio, OPCIONES_COMBUSTIBLE, comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, mismosValores, recorridoDe, reformatearKm, respondidos, validarParaEnviar, valoresIniciales } from "../src/lib/dominio/formulario-parte.ts";
+import { faltantesDeValores, valoresDeParte, type ValoresParte } from "../src/lib/dominio/formulario-parte-valores.ts";
 import { ERRORES } from "../src/lib/dominio/textos.ts";
 import { parte, valoresConKm } from "./ayuda.ts";
 

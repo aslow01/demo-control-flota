@@ -9,7 +9,8 @@
 
 import { aplicar as aplicarComando, type Comando, type Contexto, type Ejecucion } from "../dominio/comandos.ts";
 import { formatearHora } from "../dominio/fechas.ts";
-import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, sumarErrorDeRegla, validarParaEnviar, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
+import { comandoDeBorrador, comandoDeCierre, erroresDeNegocioParte, errorGeneralParte, sumarErrorDeRegla, validarParaEnviar, type ErroresDeParte } from "../dominio/formulario-parte.ts";
+import type { ValoresParte } from "../dominio/formulario-parte-valores.ts";
 import { validarKmDeSalida } from "../dominio/kilometraje.ts";
 import { advertenciasLegibles, esBorradorVacio } from "../dominio/parte.ts";
 import { ERRORES, textoAdvertencia } from "../dominio/textos-base.ts";

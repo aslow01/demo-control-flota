@@ -6,7 +6,8 @@
 
 import { diaDeLaSemana, diasEntre, fechaEnArgentina, formatearFecha, parsearInstante } from "../dominio/fechas.ts";
 import { type OpcionDeConductor, opcionesDeConductor } from "../dominio/formulario.ts";
-import { OPCIONES_COMBUSTIBLE, valoresDeParte, valoresIniciales, type ValoresParte } from "../dominio/formulario-parte.ts";
+import { OPCIONES_COMBUSTIBLE, valoresIniciales } from "../dominio/formulario-parte.ts";
+import { valoresDeParte, type ValoresParte } from "../dominio/formulario-parte-valores.ts";
 import { describirRegistro, kmDeRegistro, registroAnterior, textoRecorrido } from "../dominio/kilometraje.ts";
 import { conductorParaParte, documentacionQueBloquea, ITEMS_CHECKLIST, novedadesDelParte, parteEnUsoDelConductor, parteLegible, partePendienteDeCierre, renglonesDeAvisosAceptados, validarFechaParte } from "../dominio/parte.ts";
 import { formatearPatente } from "../dominio/patente.ts";

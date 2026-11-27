@@ -1,4 +1,5 @@
-// Los valores del formulario del parte y lo que falta cargar (docs/diseno-ui.md, 5.12 a 5.15): lo único de formulario-parte.ts que necesita el inicio del conductor (cuántos puntos le faltan a un borrador). Viaja con el marco; el resto del formulario se baja con el parte.
+// Los valores del formulario del parte y lo que falta cargar (docs/diseno-ui.md, 5.12 a 5.15): lo único de formulario-parte.ts que necesita el inicio del conductor (cuántos puntos le faltan a un borrador).
+// Viaja con el marco; el resto del formulario se baja con el parte.
 
 import { parsearKm } from "./kilometraje.ts";
 import { type CampoDeCierre, type CampoDeRevision, type CampoFaltante, faltantesDeCierre, faltantesDeRevision, ITEMS_CHECKLIST, parsearLitros } from "./parte.ts";

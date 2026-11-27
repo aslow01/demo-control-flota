@@ -12,7 +12,8 @@
   //  - Los errores de formato de un campo (km con letras…) llegan al salir del campo y bloquean el guardado hasta corregirlos (indicador «Sin guardar: corrija…»).
   //  - Paso 2: la revisión ya enviada no se toca (P7): va como resumen arriba (con un `details` que muestra los puntos), sin «Descartar borrador» y sin `select` de conductor.
   import { onDestroy, tick, untrack } from "svelte";
-  import { agruparResumen, barraDeEnvio, errorGeneralParte, recorridoDe, respondidos, type CampoParte, type ErroresDeParte, type ValoresParte } from "../lib/dominio/formulario-parte.ts";
+  import { agruparResumen, barraDeEnvio, errorGeneralParte, recorridoDe, respondidos, type ErroresDeParte } from "../lib/dominio/formulario-parte.ts";
+import type { CampoParte, ValoresParte } from "../lib/dominio/formulario-parte-valores.ts";
   import { ERRORES, TEXTO_DIALOGOS_FICHA } from "../lib/dominio/textos-base.ts";
 import { TEXTO_FORMULARIO_PARTE } from "../lib/dominio/textos-parte.ts";
   import type { Advertencia, ItemChecklist } from "../lib/dominio/tipos.ts";

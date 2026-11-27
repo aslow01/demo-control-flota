@@ -8,7 +8,8 @@
 // - El indicador tiene dos textos: `visible` (cambia en cada guardado: la hora) y `anuncio` (para la región `role="status"`: cambia solo al cambiar de
 //   estado, no en cada guardado; sección 10 de diseno-ui.md: «no anunciar cada autoguardado»).
 
-import { errorGeneralParte, mismosValores, type ErroresDeParte, type ValoresParte } from "../dominio/formulario-parte.ts";
+import { errorGeneralParte, mismosValores, type ErroresDeParte } from "../dominio/formulario-parte.ts";
+import type { ValoresParte } from "../dominio/formulario-parte-valores.ts";
 import { TEXTO_GUARDADO } from "../dominio/textos-parte.ts";
 
 /**

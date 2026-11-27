@@ -15,7 +15,8 @@ import { ejecutar as ejecutarComando, type Comando, type Contexto, type Ejecucio
 import { comandoDeCargar, comandoDeRenovar, errorGeneral, erroresDeNegocio, etiquetaDeTitular, validarValores, type CampoCargarOtro, type CampoDocumento, type ValoresCargarOtro, type ValoresDocumento } from "../dominio/formulario-documento.ts";
 import { errorGeneralEn, type ErroresDeFormularioDe } from "../dominio/formulario.ts";
 import type { CampoAsignacion, CampoBaja, CampoFueraDeServicio, CampoKilometraje, ValoresAsignacion, ValoresBaja, ValoresFueraDeServicio, ValoresKilometraje } from "../dominio/formulario-ficha.ts";
-import type { CampoParte, ErroresDeParte, ValoresParte } from "../dominio/formulario-parte.ts";
+import type { CampoParte, ValoresParte } from "../dominio/formulario-parte-valores.ts";
+import type { ErroresDeParte } from "../dominio/formulario-parte.ts";
 import { unidadSinSalidaHoy } from "../dominio/parte.ts";
 import { comandoDeResolver, erroresDeNegocioResolver, errorGeneralResolver, validarResolver, type CampoCargarNovedad, type CampoResolver, type ValoresCargarNovedad, type ValoresResolver } from "../dominio/formulario-novedad.ts";
 import { rotuloNovedad } from "../dominio/novedades.ts";
