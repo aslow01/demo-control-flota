@@ -302,10 +302,10 @@ function usarAlmacenamientoConPlazo(repositorio: Repositorio, opciones: Opciones
   return new Promise<ResultadoArranque>((resolver, rechazar) => {
     let vencido = false;
     let restante = opciones.plazoAbrirMs ?? PLAZO_ABRIR_MS;
-    let corriendoDesde = Date.now();
+    let corriendoDesde = performance.now();
     let temporizador: ReturnType<typeof setTimeout> | undefined;
     const correr = (): void => {
-      corriendoDesde = Date.now();
+      corriendoDesde = performance.now();
       temporizador = setTimeout(() => {
         vencido = true;
         rechazar(new Error("El almacenamiento no respondió a tiempo."));
@@ -313,7 +313,7 @@ function usarAlmacenamientoConPlazo(repositorio: Repositorio, opciones: Opciones
     };
     const sinContar: SinContarElPlazo = async (pedido) => {
       clearTimeout(temporizador);
-      restante -= Date.now() - corriendoDesde;
+      restante -= performance.now() - corriendoDesde;
       try {
         return await pedido;
       } finally {
