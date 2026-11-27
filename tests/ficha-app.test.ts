@@ -69,6 +69,17 @@ describe("la ficha según la ruta", () => {
     expect(leerFicha(app)).toMatchObject({ encontrada: false, titulo: "No se encontró la unidad", mensaje: "No hay ninguna unidad con la patente ZZ 999 ZZ." });
   });
 
+  it("leerFicha arma la ficha con el perfil de la aplicación: con Conductor no ofrece ninguna acción (el cableado que `fichaDeUnidad` por sí sola no prueba)", async () => {
+    const { app } = await iniciada();
+    expect(fichaDe(app).puedeEditar).toBe(true);
+    // Una lectura con otro perfil: el conductor no llega a `#/unidad/…` en la aplicación, así que se arma a mano el mismo contexto con el perfil cambiado.
+    const comoConductor = { estado: app.estado, alertas: app.alertas, hoy: app.hoy, ruta: app.ruta, perfil: { tipo: "conductor", conductorId: "c-07" } } as const;
+    const f = leerFicha(comoConductor);
+    if (f === null || !f.encontrada) throw new Error("no hay ficha");
+    expect(f.puedeEditar).toBe(false);
+    expect(f.acciones).toEqual({ encabezado: [], masAcciones: [] });
+  });
+
   it("el conductor no llega a la ficha (la ruta es del encargado)", async () => {
     const { app } = await iniciada();
     await app.cambiarPerfil({ tipo: "conductor", conductorId: "c-07" });
