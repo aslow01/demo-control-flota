@@ -1691,3 +1691,15 @@ El crítico T17 dio 8/10 sobre `f2e4067` y pidió ocho cambios. Esta vuelta apli
 - **Muestra.** Carpeta `D:/wt/flota-etapa2-vista`: las 7 rutas del encargado más Hoy y Mis partes del conductor a 390 y 1440 px, en claro y oscuro, más el diálogo «Cómo funciona» y el parte con errores. Quedaron sin hacer los videos de la entrada y de «Renovar seguro», el «antes» de las rutas y los pares «prototipo | real».
 
 **Verificación.** `npm test` y `npm run test:tz`: 2.344 pruebas en las tres zonas. `npm run check`: 0 errores y 0 avisos en 441 archivos. `npm run contraste`: 439 mediciones, 0 fallan, 24 justas. `npm run e2e`: 84 de 84. `npm audit`: 0. Pruebas que cambiaron: solo la constante de referencia de `peso-js.test.ts`.
+
+## 28/11/2026 (rama `main`) — Publicación de la etapa 2 del rediseño (programador, IA)
+
+**Qué se hizo.** La etapa 2 («Pie de rey»: Inicio con la regla de salida, ficha de la unidad, vencimientos, operación diaria, partes y movilidades) se publicó en `https://flota.matiasormeno.com.ar` con el visto bueno de Matías («sí tienes mi ok a la vista previa de la flota»).
+
+**Cómo.** Un solo commit encima de lo público (`5aaf59f`) con el árbol final de `9e61ee4`: quedó `d5b8ba5` en `origin/main`, subido sin `--force`. No se subió el historial de la etapa (85 commits): un commit intermedio (`088b80d`) contiene en este archivo un término de la lista local de prohibidos; el árbol final está limpio (lista local aplicada al árbol, al diff y al mensaje del commit, cadenas de 64 hexadecimales y patrones de secretos: 0 hallazgos).
+
+**Ramas.** `main` local = `origin/main` = `d5b8ba5`: el desarrollo futuro sale de lo publicado. **La rama local `rediseno-etapa2` conserva el historial completo y no se sube nunca** (tampoco sus ramas `rediseno-etapa2-*`, que comparten esos commits).
+
+**Verificación.** Antes de subir: `npm ci`, `npm test` (2344 pruebas, 91 archivos) y `npm run build` desde un árbol limpio del commit. Después del despliegue: mismos archivos que la vista previa, `/arranque.js` cargado, 390 y 1440 px en claro y oscuro (Inicio, ficha, vencimientos, operación diaria y perfil Conductor) sin desborde horizontal, consola ni CSP con errores, cabeceras de seguridad presentes y sin `noindex`.
+
+**Para volver atrás.** El `dist` anterior (`5aaf59f`) está guardado fuera del repo; el proyecto de Pages publica la producción desde la rama `main` (no `master`).
