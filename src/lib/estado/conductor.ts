@@ -1,7 +1,8 @@
 // Inicio del conductor (docs/diseno-ui.md, 6.4), «Mis partes» y las opciones de «Ver como»: todo lo que dibujan, listo, sin DOM y sin reglas nuevas. Parte del estado, de las alertas y de la fecha de hoy
 // (las mismas que usa el resto de la aplicación), así lo que se ve acá nunca contradice al centro de alertas ni a la ficha. Los enlaces vienen como `href` ya armados (`#/parte/ZK214BD/2026-11-18`):
-// por eso vive junto al enrutador y no en `dominio/`. Viaja con el marco porque «Ver como» (sugerencias de a quién elegir) e Inicio (la franja del recorrido) lo usan desde el primer cuadro.
-// Uso: `leerInicioDelConductor(app, unidadElegidaId)` y `leerMisPartes(app)`.
+// por eso vive junto al enrutador y no en `dominio/`. No viaja con el marco: lo traen las pantallas del conductor (Hoy y Mis partes, que se bajan al entrar) y «Ver como», que lo baja al
+// abrirse para sumar las sugerencias de a quién elegir. Lo liviano que el marco sí necesita está en `conductor-opciones.ts` (las opciones del diálogo) y `recorrido.ts` (la entrada de Inicio).
+// Uso: `leerInicioDelConductor(app, unidadElegidaId)`, `leerMisPartes(app)` y `leerSugerenciasDeVerComo(app)`, dentro de un `$derived` de la vista.
 
 import type { Alerta, ResultadoAlertas } from "../dominio/alertas.ts";
 import { aptitud } from "../dominio/aptitud.ts";
@@ -14,7 +15,9 @@ import { AVISE_AL_ENCARGADO, NOMBRES_DOCUMENTO, textoDescripcionUnidad, textoDoc
 import { type AvisoDeAptitud, TEXTO_CERRAR_ANTES, TEXTO_CONDUCTOR_PARA_PROBAR, textoBorradorDelConductor, textoEnUsoDesde, textoEnviadoALas, textoHoyDelConductor, textoNoPuedeManejarHoy, textoPendienteBorrador, textoPendienteSinCerrar, textoPendienteSinParte, textoSinParteFueraDeServicio, textoSinSalidaDelConductor, textoSuLicencia, textoUnidadNoPuedeSalir, TEXTO_INICIO_CONDUCTOR as TI } from "../dominio/textos-conductor.ts";
 import type { Conductor, Documento, Estado, FechaCivil, ItemChecklist, Parte, Perfil, TipoDocumento, Unidad } from "../dominio/tipos.ts";
 import { documentoVigente, estadoDeLicencia, evaluarObligatorio } from "../dominio/vencimientos.ts";
+import { type MarcaParaProbar, type SugerenciasDeVerComo, unidadDeHoy } from "./conductor-opciones.ts";
 import { aHash, nombreDePantalla } from "./enrutador.ts";
+import type { LecturaDeApp } from "./lectura.ts";
 
 export interface EnlaceDeParte {
   texto: string;
@@ -232,9 +235,9 @@ export function inicioDelConductor(
   if (conductor === undefined) return null;
 
   const enServicio = estado.unidades.filter((u) => u.estado.tipo === "en-servicio").sort(porInterno);
-  const asignadas = estado.unidades.filter((u) => u.conductorId === conductor.id && u.estado.tipo !== "baja").sort(porInterno);
   const elegida = unidadElegidaId === null ? undefined : enServicio.find((u) => u.id === unidadElegidaId);
-  const unidad = elegida ?? asignadas[0] ?? null;
+  // Sin una elegida, la suya: con dos asignadas, la de menor interno (`unidadDeHoy`, la misma que nombran «Ver como» y la entrada al recorrido).
+  const unidad = elegida ?? unidadDeHoy(estado, conductor.id) ?? null;
 
   // Estado del día (en este orden: 17.5).
   const licencia = estadoDeLicencia(estado.documentos, conductor.id, hoy);
@@ -306,7 +309,7 @@ export function inicioDelConductor(
   const ultimo = unidad === null ? undefined : registrosDeKm(unidad.id, estado.partes, estado.correccionesKm).at(-1);
 
   // Pendientes: partes de días anteriores sin enviar (borrador) o sin cerrar (en uso) de las unidades asignadas o empezados por este conductor, y los días sin parte.
-  const idsAsignadas = new Set(asignadas.map((u) => u.id));
+  const idsAsignadas = new Set(estado.unidades.filter((u) => u.conductorId === conductor.id && u.estado.tipo !== "baja").map((u) => u.id));
   const pendientes: (PendienteDelConductor & { fecha: FechaCivil })[] = [];
   const agregar = (p: Omit<PendienteDelConductor, "nombreAccesible"> & { fecha: FechaCivil }): void => {
     pendientes.push({ ...p, nombreAccesible: `${p.accion.texto}. ${p.texto}` });
@@ -409,27 +412,18 @@ export function misPartes(estado: Estado, perfil: Perfil): MisPartes | null {
   return { titulo: nombreDePantalla({ tipo: "mis-partes" }), conductor: conductor.nombre, filas, vacio: filas.length === 0 ? TI.ultimosVacio : null };
 }
 
-/** Una opción del diálogo «¿Quién completa el parte?»: todo conductor activo es elegible (es un punto de vista); `licenciaVigente` es la de hoy (L1). */
-export interface OpcionParaElegirConductor {
-  id: string;
-  nombre: string;
-  /** La patente con espacios de su unidad asignada, o `null`. */
-  unidad: string | null;
-  licenciaVigente: boolean;
+/**
+ * La pantalla del perfil Conductor (6.4) con el estado, el día y el perfil de la aplicación. `unidadElegidaId` es lo que eligió con «Usar otra unidad» (estado de la vista).
+ * `null` con el perfil Encargado o antes de terminar el arranque.
+ */
+export function leerInicioDelConductor(app: LecturaDeApp, unidadElegidaId: string | null = null): InicioDelConductor | null {
+  if (app.estado === null || app.alertas === null) return null;
+  return inicioDelConductor(app.estado, app.alertas, app.hoy, app.perfil, unidadElegidaId);
 }
 
-export function opcionesParaElegirConductor(estado: Estado, hoy: FechaCivil): OpcionParaElegirConductor[] {
-  return estado.conductores
-    .filter((c) => c.activo)
-    .map((c) => {
-      const unidad = estado.unidades.find((u) => u.conductorId === c.id && u.estado.tipo !== "baja");
-      return {
-        id: c.id,
-        nombre: c.nombre,
-        unidad: unidad === undefined ? null : formatearPatente(unidad.patente),
-        licenciaVigente: estadoDeLicencia(estado.documentos, c.id, hoy).vigente,
-      };
-    });
+/** La pantalla Mis partes (`#/conductor/partes`) del conductor del perfil. `null` con el perfil Encargado o antes de terminar el arranque. */
+export function leerMisPartes(app: LecturaDeApp): MisPartes | null {
+  return app.estado === null ? null : misPartes(app.estado, app.perfil);
 }
 
 /** Un caso del parte que la demo permite probar eligiendo a un conductor (M1). */
@@ -439,7 +433,7 @@ export type CasoParaProbar = "puede-salir" | "documentacion-vencida" | "fuera-de
 export interface ConductorParaProbar {
   conductorId: string;
   nombre: string;
-  /** La patente con espacios de su unidad asignada. */
+  /** La patente con espacios de su unidad (la que ve en «Hoy»). */
   patente: string;
   caso: CasoParaProbar;
   etiqueta: string;
@@ -458,7 +452,8 @@ export function conductoresParaProbar(estado: Estado, alertas: ResultadoAlertas,
   const hallados = new Map<CasoParaProbar, { sugerido: ConductorParaProbar; porNovedadCritica: boolean }>();
   for (const c of estado.conductores) {
     if (!c.activo) continue;
-    const unidad = estado.unidades.find((u) => u.conductorId === c.id && u.estado.tipo !== "baja");
+    // La unidad que el conductor ve en «Hoy» (la de menor interno): la patente de la sugerencia es la que va a ver al elegirlo.
+    const unidad = unidadDeHoy(estado, c.id);
     if (unidad === undefined) continue;
     const inicio = inicioDelConductor(estado, alertas, hoy, { tipo: "conductor", conductorId: c.id });
     const caso = inicio === null ? null : casoParaProbar(inicio);
@@ -472,22 +467,14 @@ export function conductoresParaProbar(estado: Estado, alertas: ResultadoAlertas,
 }
 
 /**
- * Entrada al recorrido en Inicio: el primer conductor activo cuyo parte de hoy está bloqueado por el seguro vencido de su unidad (P21; lo dice el mismo cálculo que arma su inicio,
- * así que nunca contradice lo que se ve al elegirlo). La franja promete «un seguro vencido»: una unidad que se traba por otro documento (revisión técnica, habilitación) o por un
- * seguro que falta, y no que venció, no cuenta. `null` si el estado no tiene ninguno (por ejemplo, después de renovar el seguro): la franja no se muestra.
+ * M1 para el diálogo «Ver como»: la marca «Para probar: …» de cada conductor sugerido (`conductoresParaProbar`), por su id y en el orden de los casos. Vacío antes de terminar el
+ * arranque. El marco las suma a las opciones con `conSugerencias` (`conductor-opciones.ts`) cuando este módulo termina de bajar.
  */
-export function conductorConParteBloqueadoPorDocumento(estado: Estado, alertas: ResultadoAlertas, hoy: FechaCivil): { conductorId: string } | null {
-  for (const c of estado.conductores) {
-    if (!c.activo) continue;
-    const unidad = estado.unidades.find((u) => u.conductorId === c.id && u.estado.tipo !== "baja");
-    const proyecto = unidad === undefined ? undefined : estado.proyectos.find((p) => p.id === unidad.proyectoId);
-    if (unidad === undefined || proyecto === undefined) continue;
-    const bloqueo = documentacionQueBloquea({ fecha: hoy, unidad, proyecto, documentos: estado.documentos });
-    if (bloqueo === null || bloqueo.contexto.venceron.seguro == null) continue;
-    const inicio = inicioDelConductor(estado, alertas, hoy, { tipo: "conductor", conductorId: c.id });
-    if (inicio?.hoyEstado.tipo === "no-puede-salir") return { conductorId: c.id };
-  }
-  return null;
+export function leerSugerenciasDeVerComo(app: LecturaDeApp): SugerenciasDeVerComo {
+  const marcas = new Map<string, MarcaParaProbar>();
+  if (app.estado === null || app.alertas === null) return marcas;
+  for (const s of conductoresParaProbar(app.estado, app.alertas, app.hoy)) marcas.set(s.conductorId, { etiqueta: s.etiqueta, sinLicencia: s.caso === "sin-licencia" });
+  return marcas;
 }
 
 function casoParaProbar(inicio: InicioDelConductor): CasoParaProbar | null {

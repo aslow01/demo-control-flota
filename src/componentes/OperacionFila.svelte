@@ -63,14 +63,23 @@
 </li>
 
 <style>
+  /* Una fila de Operación diaria (15.9.4): estado, qué pasó, unidad (chapa) y la acción. Hoja lisa: el texto nunca va sobre una trama.
+     Con tono: el renglón crítico lleva el precinto de 6 px (rayado a -45°) en el borde izquierdo; los demás, un filete liso de 2 px del color de su tono (el precinto es para lo que
+     no puede salir o está vencido, no para todo lo pendiente). Las filas no se pintan al pasar el cursor: no son un enlace, tienen sus propios controles. */
   li {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-items: center;
     gap: var(--e-2) var(--e-3);
     padding: var(--e-3) var(--e-3) var(--e-3) var(--e-4);
-    border-bottom: 1px solid var(--c-borde);
-    box-shadow: inset 4px 0 0 var(--tono-r, transparent);
+    border-bottom: 1px solid var(--c-filete);
+    box-shadow: inset 2px 0 0 var(--tono-r, transparent);
+  }
+  li[data-tono="critico"] {
+    box-shadow: none;
+    background-image: repeating-linear-gradient(-45deg, var(--tono-r) 0 1.5px, transparent 1.5px 7px);
+    background-repeat: no-repeat;
+    background-size: 6px 100%;
   }
   li:last-child {
     border-bottom: 0;
@@ -88,13 +97,17 @@
     align-items: center;
     gap: var(--e-1) var(--e-3);
   }
+  /* La fecha, en técnica. */
   .fecha {
-    font-size: var(--t-chico);
-    color: var(--c-texto-2);
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
+    line-height: 1.2;
+    color: var(--c-tinta-2);
   }
   .titulo {
     font-weight: 600;
     line-height: 1.35;
+    color: var(--c-tinta);
     overflow-wrap: anywhere;
   }
   .unidad {
@@ -102,7 +115,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0 var(--e-2);
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
     font-size: var(--t-tabla);
   }
   /* El enlace de la patente mide 44 px de alto (su blanco táctil) y la patente solo 24: el aire que sobra no es espacio entre renglones. */
@@ -110,8 +123,9 @@
     margin-block: -0.625rem;
   }
   .interno {
-    color: var(--c-texto-2);
-    font-size: var(--t-tabla);
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
+    color: var(--c-tinta-2);
   }
   .accion {
     display: flex;
@@ -129,7 +143,8 @@
   @media (forced-colors: active) {
     li[data-tono] {
       box-shadow: none;
-      border-left: 4px solid CanvasText;
+      background-image: none;
+      border-left: 6px solid CanvasText;
     }
   }
 </style>

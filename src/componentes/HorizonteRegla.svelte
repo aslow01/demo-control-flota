@@ -130,7 +130,10 @@
     return nombre.includes(e.etiquetaCorta) ? nombre : `${e.etiquetaCorta}, ${nombre}`;
   }
   const hayPuntos = $derived(regla.elementos.length > 0);
-  const quienes = $derived(regla.vencidos.quienes);
+  // Con muchas unidades la caja ocupaba la pantalla entera: se nombran las primeras y el resto se cuenta («y 57 más»); la lista completa está en el filtro de vencidos (el enlace de la caja).
+  const MAX_QUIENES = 6;
+  const quienes = $derived(regla.vencidos.quienes.slice(0, MAX_QUIENES));
+  const masQuienes = $derived(Math.max(0, regla.vencidos.quienes.length - MAX_QUIENES));
 </script>
 
 {#snippet formaDelPunto(forma: FormaDeMarca)}
@@ -147,7 +150,7 @@
   <div class="marco">
     {#if regla.vencidos.cantidad > 0}
       <a class="vencidos" data-tono="critico" href={regla.vencidos.href}>
-        <span class="v-texto">{TEXTO_HORIZONTE.rotuloCajaCompleta}{#if quienes.length > 0}{" "}<small class="codigo">{#each quienes as q, i (q)}{#if i > 0}<span class="sep">{" · "}</span>{/if}<span class="quien">{q}</span>{/each}</small>{/if}</span>
+        <span class="v-texto">{TEXTO_HORIZONTE.rotuloCajaCompleta}{#if quienes.length > 0}{" "}<small class="codigo">{#each quienes as q, i (q)}{#if i > 0}<span class="sep">{" · "}</span>{/if}<span class="quien">{q}</span>{/each}{#if masQuienes > 0}<span class="sep">{" · "}</span><span class="quien">{T.yMas(masQuienes)}</span>{/if}</small>{/if}</span>
         <span class="v-cifra num">{regla.vencidos.cantidad}</span>
       </a>
     {:else}
@@ -192,7 +195,7 @@
               onfocus={() => (activaClave = id)}
             >
               {@render formaDelPunto(e.forma)}
-              <span class="rotulo codigo" data-rotulo aria-hidden="true">{e.etiquetaCorta}</span>
+              <span class="rotulo codigo objeto" data-rotulo aria-hidden="true">{e.etiquetaCorta}</span>
             </button>
           {:else}
             <a
@@ -300,13 +303,23 @@
     gap: var(--e-2);
     min-height: var(--alto-tactil);
     padding: var(--e-2) var(--e-3);
-    /* El borde fino es transparente: solo se ve en colores forzados, donde el fondo desaparece. */
+    /* Papel y tinta (15.6.6): fondo crítico suave, precinto de 6 px a la izquierda (más abajo) y la cifra de cartel. El borde fino es transparente: solo se ve en colores forzados, donde el fondo desaparece. */
+    position: relative;
+    padding-inline-start: calc(var(--e-3) + 6px);
     border: 1px solid transparent;
-    border-inline-start: 4px solid var(--tono-r);
-    border-radius: 0 var(--r-1) var(--r-1) 0;
+    border-inline-start: 0;
+    border-radius: 0;
     background: var(--tono-f);
     color: var(--tono-t);
     text-decoration: none;
+  }
+  .vencidos::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--tono-r) 0 1.5px, transparent 1.5px 5px);
   }
   a.vencidos:hover {
     background: color-mix(in srgb, var(--tono-f) 80%, var(--tono-r));
@@ -318,8 +331,9 @@
     --tono-r: var(--c-borde-fuerte);
   }
   .v-texto {
+    font-family: var(--t-mono);
     font-size: var(--t-rotulo);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.25;
     letter-spacing: 0.03em;
     text-transform: uppercase;
@@ -340,9 +354,10 @@
   .v-cifra {
     flex: none;
     font-family: var(--t-familia-titulo);
-    font-size: 1.75rem;
-    font-weight: 700;
-    line-height: 1;
+    font-size: 2rem;
+    font-stretch: var(--t-ancho-cifra);
+    font-weight: var(--t-peso-cifra);
+    line-height: 0.9;
   }
 
   /* Va después de las reglas base de la caja: si no, `.vencidos` y `.v-texto small` las pisan (nunca se aplicaban). */
@@ -381,30 +396,31 @@
     padding-top: 1.375rem;
     inline-size: 100%;
   }
+  /* La pista sobre la hoja, con el filete de 1 px y el borde izquierdo de «hoy» en tinta (15.6.6). */
   .pista {
     position: relative;
     display: grid;
     grid-template-columns: 7fr 8fr 15fr;
     height: 70px;
+    background: var(--c-hoja);
+    border: 1px solid var(--c-filete-medio);
+    border-inline-start: 2px solid var(--c-hoy);
   }
-  /* Los tres tramos: 0 a 7, 8 a 15 y 16 a 30 días (7 : 8 : 15 de ancho). */
+  /* Los tres tramos: 0 a 7, 8 a 15 y 16 a 30 días (7 : 8 : 15 de ancho). De 0 a 7, ámbar suave; de 8 a 15, papel; de 16 a 30, sin fondo. */
   .tramo {
     background: var(--tono-f);
     /* Transparente: solo se ve en colores forzados. */
     outline: 1px solid transparent;
     outline-offset: -1px;
   }
-  .tramo:first-child {
-    border-radius: 3px 0 0 3px;
-  }
   .tramo:nth-child(3) {
-    border-radius: 0 3px 3px 0;
+    background: none;
   }
   /* Hoy: 3 px en el borde izquierdo, más alta que la pista. */
   .hoy {
     position: absolute;
     inset-block: -6px;
-    inset-inline-start: 0;
+    inset-inline-start: -2px;
     width: 3px;
     border-radius: 2px;
     background: var(--c-hoy);
@@ -515,7 +531,7 @@
   }
   .punto[aria-pressed="true"] .rotulo {
     border-top-color: var(--c-texto);
-    box-shadow: 0 2px 6px rgb(0 0 0 / 0.12);
+    box-shadow: var(--s-pieza);
   }
 
   /* «y N más»: un aro con el texto siempre a la vista (es el único contenido del enlace; el número exacto está en la lista de Vencimientos). */
@@ -595,11 +611,21 @@
   .tarjeta {
     display: grid;
     gap: var(--e-1);
-    padding: var(--e-3) var(--e-4) var(--e-3) calc(var(--e-4) - 4px);
-    border-inline-start: 4px solid var(--tono-r);
-    border-radius: 0 var(--r-1) var(--r-1) 0;
+    /* Precinto de 6 px del tono a la izquierda, como en las filas de la lista (15.5.5). */
+    position: relative;
+    padding: var(--e-3) var(--e-4) var(--e-3) calc(var(--e-4) + 6px);
+    border: 1px solid var(--c-filete-medio);
+    border-radius: 0;
     background: var(--tono-f);
     animation: entra var(--m-medio) var(--m-curva) both;
+  }
+  .tarjeta::before {
+    content: "";
+    position: absolute;
+    inset-block: -1px;
+    inset-inline-start: -1px;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--tono-r) 0 1.5px, transparent 1.5px 5px);
   }
   .tarjeta-cab {
     display: flex;
@@ -615,9 +641,9 @@
     font-weight: 600;
   }
   .documento {
-    font-size: 1.0625rem;
-    font-weight: 700;
-    color: var(--c-texto);
+    font-size: 1rem;
+    font-weight: 650;
+    color: var(--c-tinta);
   }
   .titular {
     display: flex;
@@ -692,6 +718,12 @@
     }
     .vencidos {
       border-color: CanvasText;
+    }
+    .tarjeta {
+      border-color: CanvasText;
+    }
+    .tarjeta::before {
+      background-image: repeating-linear-gradient(-45deg, CanvasText 0 1.5px, transparent 1.5px 5px);
     }
   }
 </style>

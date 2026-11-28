@@ -61,7 +61,7 @@
   {/snippet}
 
   {#if vista.vacio !== null}
-    <p class="vacio"><Icono nombre="guion" />{vista.vacio}</p>
+    <p class="vacio">{vista.vacio}</p>
   {:else}
     <div class="dias">
       {#each vista.grupos as g (g.dia)}
@@ -161,17 +161,21 @@
     flex-direction: column;
     gap: var(--e-1);
     padding-top: var(--e-3);
-    border-top: 1px solid var(--c-borde);
+    border-top: 1px solid var(--c-filete);
   }
   .dia:first-child {
     padding-top: 0;
     border-top: 0;
   }
+  /* El día: técnica de 12 px en mayúsculas, como los rótulos (15.5.9). */
   h3 {
-    font-size: var(--t-chico);
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
     font-weight: 600;
+    letter-spacing: 0.06em;
     line-height: 1.4;
-    color: var(--c-texto-2);
+    text-transform: uppercase;
+    color: var(--c-tinta-2);
   }
   /* Grilla de 5.16. Con poco ancho: ícono · (hora y autor en un renglón, el resumen debajo); desde 40 rem: hora · ícono · resumen · autor, todo en un renglón (un evento
      cerrado mide unos 60 px). La hora, el ícono y el autor se alinean con el centro del resumen: el de un `details` mide 44 px (su blanco
@@ -185,7 +189,7 @@
     align-items: start;
     column-gap: var(--e-3);
     padding-block: var(--e-2);
-    border-bottom: 1px solid var(--c-borde);
+    border-bottom: 1px solid var(--c-filete);
   }
   .dia li:last-child {
     border-bottom: 0;
@@ -209,9 +213,9 @@
   .hora {
     grid-area: hora;
     font-family: var(--t-mono);
-    font-size: var(--t-chico);
+    font-size: var(--t-rotulo);
     line-height: 1.5rem;
-    color: var(--c-texto-3);
+    color: var(--c-tinta-3);
   }
   .icono-evento {
     grid-area: icono;
@@ -220,7 +224,7 @@
     align-items: center;
     align-self: start;
     height: 1.5rem;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
   .cuerpo {
     grid-area: cuerpo;
@@ -239,7 +243,7 @@
     min-width: 0;
     font-size: var(--t-chico);
     line-height: 1.5rem;
-    color: var(--c-texto-3);
+    color: var(--c-tinta-3);
     overflow-wrap: anywhere;
   }
   @media (min-width: 40rem) {
@@ -267,7 +271,7 @@
   }
   .detalle dt {
     font-weight: 600;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
   .detalle dt::after {
     content: ":";
@@ -313,11 +317,13 @@
     overflow-wrap: anywhere;
   }
   .cambios thead th {
+    border-bottom: 1px solid var(--c-filete-medio);
+    font-family: var(--t-mono);
     font-size: var(--t-rotulo);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-3);
   }
   .cambios tbody th {
     font-weight: 600;
@@ -326,14 +332,15 @@
   .mas {
     display: flex;
   }
+  /* Vacío (15.5.12): caja de 1 px punteada en `--c-control` sobre la hoja y el porqué en letra de texto (un vacío no puede ser lo más fuerte de una ficha tranquila: la cifra de cartel es una sola por pantalla). Sin ilustración ni ícono; la acción que sigue, si hay, es el botón de abajo. */
   .vacio {
-    --icono-tam: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: var(--e-3);
-    padding: var(--e-4);
-    border: 1px dashed var(--c-borde-fuerte);
-    border-radius: var(--r-2);
+    padding: var(--e-5) var(--e-4);
+    border: 1px dashed var(--c-control);
+    background: var(--c-hoja);
     color: var(--c-texto-2);
+    font-size: var(--t-cuerpo);
+    line-height: 1.4;
+    /* El texto puede traer lo que escribió la persona: un texto sin espacios no ensancha la página. */
+    overflow-wrap: anywhere;
   }
 </style>

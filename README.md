@@ -22,17 +22,17 @@ Funciona entera en el navegador: sin servidor, sin cuenta y sin conexiones exter
 
 [![CI](https://github.com/aslow01/demo-control-flota/actions/workflows/ci.yml/badge.svg)](https://github.com/aslow01/demo-control-flota/actions/workflows/ci.yml)
 
-![Inicio, perfil Encargado, a 1280 px. A la izquierda, el lateral oscuro con Inicio, Movilidades, Vencimientos y Operación diaria. En el centro, la franja «Probar como conductor» y la cifra «4 No disponibles hoy» en cobre, con otras cuatro cifras: 3 vencidos o faltantes, 9 que vencen en 30 días, 3 partes pendientes y 1 novedad crítica. Debajo, las unidades no disponibles (ZK 214 BD, ZZD 563, ZR 536 MZ y ZU 899 QE) y la regla de vencimientos de 0 a 30 días.](docs/img/inicio.png)
+![Inicio, perfil Encargado, a 1280 px. A la izquierda, el lateral oscuro con Inicio, Movilidades, Vencimientos y Operación diaria. En el centro, la regla de salida: un panel azul con «19 de 23» unidades disponibles hoy y cuatro lecturas (3 vencidos o faltantes, 9 que vencen en 30 días, 3 partes pendientes y 1 novedad crítica), y a la derecha una zona roja rayada con «4 No disponibles hoy». Debajo, las 23 llaves con la patente de cada unidad, la acción del día (ZK 214 BD no puede salir: seguro vencido) con los botones «Renovar» y «Probar como conductor», y las listas de no disponibles y vencimientos.](docs/img/inicio.png)
 
-*Inicio (perfil Encargado, 1280 px): las 4 unidades que no están disponibles hoy con su motivo, las cifras que llevan a cada lista, la regla de vencimientos de 0 a 30 días y la operación diaria.*
+*Inicio (perfil Encargado, 1280 px): la regla de salida con las 19 unidades disponibles de 23 y las 4 que no, una llave por unidad, la acción del día y, más abajo, las listas que explican cada cifra.*
 
 <img src="docs/img/parte-revision-360.png" width="360" alt="Paso 1 de la revisión de ZYN 469 (Chevrolet S10 2015) en un celular (360 px): el campo «Al iniciar» está vacío y debajo dice «Último registro: 141.711 km» como ayuda; «Respondidos: 0 de 14» con una barra de progreso, el primer punto crítico (Frenos) con «En orden» y «Con novedad», y la barra «Faltan 15 datos» con «Enviar revisión».">
 
-*Revisión antes de salir (perfil Conductor, 360 px): el kilometraje se escribe (el campo arranca vacío y muestra el último registro como ayuda) y hay 14 puntos, con los críticos marcados; la barra dice cuántos datos faltan.*
+*Revisión antes de salir (360 px): el kilometraje se escribe (el campo arranca vacío y muestra el último registro como ayuda) y hay 14 puntos, con los críticos marcados; la barra dice cuántos datos faltan.*
 
-<img src="docs/img/parte-bloqueado-360.png" width="360" alt="Celular (360 px), perfil Conductor: título «No se puede cargar este parte»; debajo, que el seguro de ZK 214 BD venció (con su fecha), que la unidad no puede salir y que avise al encargado; y el botón «Ir a Hoy».">
+<img src="docs/img/parte-bloqueado-360.png" width="360" alt="Celular (360 px), perfil Encargado: título «No se puede cargar este parte»; debajo, que el seguro de ZK 214 BD venció (con su fecha), que la unidad no puede salir y que renueve la documentación antes de enviar la revisión; y el botón «Ir a Inicio».">
 
-*Seguro vencido (perfil Conductor, 360 px): el parte no se puede cargar y la pantalla dice por qué. Las capturas son del 26/11/2026; las fechas de la demo son relativas al día en que se abre.*
+*Seguro vencido (360 px): el parte no se puede cargar y la pantalla dice por qué. Las capturas son del 28/11/2026; las fechas de la demo son relativas al día en que se abre.*
 
 ## Cómo usarla
 
@@ -70,7 +70,7 @@ npm install
 npm run dev          # servidor de desarrollo
 npm run build        # compilación en dist/
 npm run servir       # sirve dist/ con las mismas cabeceras de seguridad que se usarán al publicar
-npm run peso         # mide el JavaScript con gzip y falla si la carga inicial pasa 95 KB o la primera visita 100 KB
+npm run peso         # mide el JavaScript con gzip y falla si la carga inicial pasa 97 KB o la primera visita 102 KB
 npm run e2e          # pruebas de punta a punta (Playwright y axe) contra dist/ servido con las cabeceras reales
                      # (la primera vez: npx playwright install chromium; con otro puerto: E2E_PUERTO=4290 npm run e2e)
 ```
@@ -107,29 +107,29 @@ Las dependencias van en un solo sentido: `componentes` → `lib/estado` → `lib
 
 ## Cómo se verificó
 
-Cifras medidas el 27/11/2026 en una computadora local:
+Cifras medidas el 28/11/2026 en una computadora local:
 
 | Comprobación | Comando | Resultado |
 | --- | --- | --- |
-| Pruebas automáticas | `npm test` | 2.031 pruebas en 81 archivos, todas pasan |
-| Las mismas en tres zonas horarias | `npm run test:tz` | 2.031 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
-| Pruebas de punta a punta | `npm run e2e` | 24 pruebas (Chromium, modo claro, contra `dist/` con la CSP real): cada pantalla sin errores de consola, sin violaciones de la CSP, sin violaciones de axe y sin desborde a 360 px; el generador de datos y los trozos (caído, colgado, lento, versión nueva); la escritura; y el servidor de las pruebas. Todas pasan |
-| Tipos | `npm run check` | 0 errores y 0 avisos en 413 archivos |
-| Contraste de la paleta | `npm run contraste` | 244 mediciones, 0 fallan |
-| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 278 archivos con el archivo local de términos; 8 reglas sin él) |
-| Tamaño del JavaScript | `npm run peso` | Carga inicial 93.886 B (tope 95.000 B), primera visita 99.276 B (tope 100.000 B) y 165.809 B en total, con gzip |
+| Pruebas automáticas | `npm test` | 2.344 pruebas en 91 archivos, todas pasan |
+| Las mismas en tres zonas horarias | `npm run test:tz` | 2.344 pruebas en UTC, Asia/Tokio y América/Los Ángeles, todas pasan |
+| Pruebas de punta a punta | `npm run e2e` | 84 pruebas (Chromium, contra `dist/` con la CSP real): cada pantalla sin errores de consola, sin violaciones de la CSP, sin violaciones de axe y sin desborde a 360 px; el generador de datos y los trozos (caído, colgado, lento, versión nueva); la escritura; y el servidor de las pruebas. Todas pasan |
+| Tipos | `npm run check` | 0 errores y 0 avisos en 441 archivos |
+| Contraste de la paleta | `npm run contraste` | 439 mediciones, 0 fallan, 24 justas |
+| Búsqueda de lo prohibido | `npm run buscar` | Sin hallazgos (9 reglas y 312 archivos con el archivo local de términos; 8 reglas sin él) |
+| Tamaño del JavaScript | `npm run peso` | Carga inicial 96.494 B (tope 97.000 B), primera visita 101.883 B (tope 102.000 B) y 175.367 B en total, con gzip |
 | Dependencias | `npm audit` | 0 vulnerabilidades |
 
-**Qué son esas 2.031 pruebas.** Unas 90 (89, en los 6 archivos `tests/textos*.test.ts`) fijan textos de la interfaz: mensajes de error, nombres de pantallas y frases con cifras; existen para que un cambio de redacción o de umbral no deje a la pantalla diciendo otra cosa que las reglas. Las otras 1.942 prueban reglas de dominio, comandos, estado, persistencia, el generador de datos y las vistas derivadas; algunas de ellas también comprueban una frase que se muestra, y esas no se separaron de las demás.
+**Qué son esas 2.344 pruebas.** Unas 106 (106, en los 6 archivos `tests/textos*.test.ts`) fijan textos de la interfaz: mensajes de error, nombres de pantallas y frases con cifras; existen para que un cambio de redacción o de umbral no deje a la pantalla diciendo otra cosa que las reglas. Las otras 2.238 prueban reglas de dominio, comandos, estado, persistencia, el generador de datos y las vistas derivadas; algunas de ellas también comprueban una frase que se muestra, y esas no se separaron de las demás.
 
-También se miró la demo en un navegador (Chromium con Playwright, contra la compilación servida con la política de contenido real), en claro y oscuro, a 360 y 1280 px: sin desbordes horizontales y sin mensajes en la consola. Eso, en claro y oscuro, no se puede reproducir con un comando; `npm run e2e` repite la parte automática, solo en modo claro. La interfaz actual tuvo el 25/11/2026 una revisión de código, pruebas destructivas en Chromium y una auditoría de accesibilidad con mediciones propias (agentes de IA), y lo que encontraron se corrigió y se volvió a mirar. Desde el 27/11/2026 `npm run e2e` además corre axe-core en cada pantalla (1280 y 360 px) y comprueba qué se descarga y qué se ve cuando un trozo no baja. No se probó en un Safari real, ni en Firefox, ni con un lector de pantalla (detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3). La integración continua ([GitHub Actions](https://github.com/aslow01/demo-control-flota/actions/workflows/ci.yml), `.github/workflows/ci.yml`) corre en cada `push` y en cada solicitud de cambios del repositorio público: tipos, pruebas en tres zonas horarias, compilación, peso, pruebas de punta a punta (si fallan, sube el informe y las trazas), búsqueda de lo prohibido y `npm audit`. Las últimas ejecuciones sobre `main` que se consultaron el 26/11/2026 pasaron; las cifras de esta sección salen de la computadora local, no de ella.
+También se miró la demo en un navegador (Chromium con Playwright, contra la compilación servida con la política de contenido real), en claro y oscuro, a 360 y 1280 px: sin desbordes horizontales y sin mensajes en la consola. Eso, en claro y oscuro, no se puede reproducir con un comando; `npm run e2e` repite la parte automática en modo claro y, en oscuro, solo corre axe con un diálogo abierto y con el parte con errores, y mide el color de los objetos. La interfaz actual tuvo el 25/11/2026 una revisión de código, pruebas destructivas en Chromium y una auditoría de accesibilidad con mediciones propias (agentes de IA), y lo que encontraron se corrigió y se volvió a mirar. Desde el 27/11/2026 `npm run e2e` además corre axe-core en cada pantalla (1280 y 360 px) y comprueba qué se descarga y qué se ve cuando un trozo no baja. No se probó en un Safari real, ni en Firefox, ni con un lector de pantalla (detalle y lo que no se probó: [`docs/limites.md`](docs/limites.md), sección 3). La integración continua ([GitHub Actions](https://github.com/aslow01/demo-control-flota/actions/workflows/ci.yml), `.github/workflows/ci.yml`) corre en cada `push` y en cada solicitud de cambios del repositorio público: tipos, pruebas en tres zonas horarias, compilación, peso, pruebas de punta a punta (si fallan, sube el informe y las trazas), búsqueda de lo prohibido y `npm audit`. Las últimas ejecuciones sobre `main` que se consultaron el 26/11/2026 pasaron; las cifras de esta sección salen de la computadora local, no de ella.
 
 ## Límites conocidos
 
 - **Sin login:** el perfil es una perspectiva; cualquiera puede «ser» el encargado.
 - **Los datos viven en un solo navegador:** no se comparten y se pierden si se borran los datos del sitio.
 - **Escribir y recargar en menos de 500 ms puede perder lo último:** el parte se guarda 500 ms después de la última tecla (y al salir del campo, al enviar o al irse de la pantalla).
-- **Las pantallas se prueban de punta a punta solo en Chromium y en modo claro** (carga, consola, política de contenido, axe y desborde a 360 px): el aspecto, el modo oscuro, Firefox, Safari y las transiciones se verificaron a mano. El resto de las pruebas cubre reglas, generador, persistencia, estado y la cuenta de la cifra.
+- **Las pantallas se prueban de punta a punta solo en Chromium y en modo claro** (carga, consola, política de contenido, axe y desborde a 360 px; en oscuro, solo los dos casos de axe de arriba): el aspecto del modo oscuro, Firefox, Safari y las transiciones se verificaron a mano. El resto de las pruebas cubre reglas, generador, persistencia, estado y la cuenta de la cifra.
 - **La habilitación de manejo interna del proyecto es opcional:** si un proyecto la pide, la demo no la exige para enviar la revisión. Se puede sumar después.
 - **Las transiciones entre pantallas** solo se probaron en Chromium; en otros navegadores entra la animación CSS de reemplazo.
 

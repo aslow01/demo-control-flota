@@ -173,6 +173,8 @@
 </Dialogo>
 
 <style>
+  /* Pie de rey (15.5.11, #13). Los radios de perfil van como segmentado (dos cajas rectas; la elegida, en el campo pleno) y la lista de conductores en filas de 52 px con radio;
+     la fila elegida, en `--c-pleno-suave` con una barra de 4 px en `--c-pleno`. */
   fieldset {
     display: flex;
     flex-direction: column;
@@ -183,29 +185,28 @@
     margin-bottom: var(--e-2);
     font-weight: 600;
   }
-  /* Las opciones forman una lista con borde (como las de «Más»): filas de 56 px, una sobre otra. */
+  /* Las opciones forman una lista con borde (como las de «Más»): filas de 52 px, una sobre otra. */
   .lista {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid var(--c-borde);
-    border-radius: var(--r-2);
+    border: 1px solid var(--c-filete-medio);
+    border-radius: var(--r-0);
   }
   .lista li + li {
-    border-top: 1px solid var(--c-borde);
+    border-top: 1px solid var(--c-filete);
   }
   .opcion {
     display: flex;
     align-items: center;
     gap: var(--e-3);
-    min-height: 3.5rem;
+    min-height: 3.25rem;
     padding: var(--e-2) var(--e-4);
     cursor: pointer;
   }
-  /* La elegida lleva el riel de tinta (la tinta es la acción) y el fondo de la superficie hundida; el color de estado queda para el estado. */
   .opcion:has(input:checked) {
-    background: var(--c-superficie-2);
-    box-shadow: inset 4px 0 0 var(--c-acento);
+    background: var(--c-pleno-suave);
+    box-shadow: inset 4px 0 0 var(--c-pleno);
   }
   .opcion:has(input:focus-visible) {
     outline: 3px solid var(--c-foco);
@@ -213,7 +214,10 @@
   }
   @media (hover: hover) {
     .opcion:hover {
-      background: var(--c-superficie-2);
+      background: var(--c-papel-2);
+    }
+    .opcion:has(input:checked):hover {
+      background: var(--c-pleno-suave);
     }
   }
   input {
@@ -221,7 +225,7 @@
     width: 1.375rem;
     height: 1.375rem;
     margin: 0;
-    accent-color: var(--c-acento);
+    accent-color: var(--c-tinta);
   }
   input:focus-visible {
     outline: none;
@@ -232,7 +236,7 @@
     min-width: 0;
   }
   .nombre {
-    font-weight: 500;
+    font-weight: 600;
   }
   .renglon-2 {
     display: flex;
@@ -245,18 +249,18 @@
     align-items: center;
     gap: var(--e-2);
     font-size: var(--t-chico);
-    font-weight: 650;
-    color: var(--c-critico-t);
+    font-weight: 600;
+    color: var(--c-crit);
   }
   .para-probar {
     font-size: var(--t-chico);
     font-weight: 600;
-    color: var(--c-pendiente-t);
+    color: var(--c-pleno-texto);
   }
   .separador {
     margin-block: var(--e-3) 0;
     padding-top: var(--e-3);
-    border-top: 1px solid var(--c-borde-fuerte);
+    border-top: 1px solid var(--c-filete-medio);
     font-weight: 600;
   }
   .error {
@@ -264,11 +268,68 @@
     align-items: flex-start;
     gap: var(--e-2);
     font-size: var(--t-chico);
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.4;
-    color: var(--c-critico-t);
+    color: var(--c-crit);
   }
   .error :global(.forma) {
     margin-top: 0.3125rem;
+  }
+
+  /* Perfil (el primer grupo): segmentado. El radio ocupa toda la caja y no se ve; la elegida es el campo pleno y su ayuda pasa a `--c-sobre-pleno-2`. */
+  fieldset:first-of-type .lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    gap: 0.375rem;
+    overflow: visible;
+    border: 0;
+  }
+  fieldset:first-of-type .lista li + li {
+    border-top: 0;
+  }
+  fieldset:first-of-type .opcion {
+    position: relative;
+    height: 100%;
+    padding: var(--e-2) var(--e-3);
+    background: var(--c-hoja);
+    border: var(--b-control) solid var(--c-control);
+    border-radius: var(--r-1);
+  }
+  fieldset:first-of-type input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+  fieldset:first-of-type .opcion:has(input:checked),
+  fieldset:first-of-type .opcion:has(input:checked):hover {
+    background: var(--c-pleno);
+    border-color: var(--c-pleno);
+    box-shadow: none;
+    color: var(--c-sobre-pleno);
+  }
+  fieldset:first-of-type .opcion:has(input:checked) .nota {
+    color: var(--c-sobre-pleno-2);
+  }
+  fieldset:first-of-type .opcion:has(input:focus-visible) {
+    outline-offset: 2px;
+  }
+  @media (hover: hover) {
+    fieldset:first-of-type .opcion:hover {
+      border-color: var(--c-tinta);
+    }
+  }
+
+  @media (forced-colors: active) {
+    fieldset:first-of-type .opcion:has(input:checked) {
+      background: Highlight;
+      color: HighlightText;
+      forced-color-adjust: none;
+    }
+    fieldset:first-of-type .opcion:has(input:checked) .nota {
+      color: HighlightText;
+    }
   }
 </style>

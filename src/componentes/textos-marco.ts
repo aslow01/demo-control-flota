@@ -20,6 +20,8 @@ export const TEXTO_MARCO = {
   menuMas: "Más",
   navegacionSecciones: "Secciones",
   verComo: "Ver como",
+  /** Se anuncia a los lectores de pantalla si «Ver como» tarda en abrirse (la primera vez baja las sugerencias de a quién elegir). */
+  abriendoVerComo: "Abriendo «Ver como»…",
   perfilEncargado: "Encargado",
   perfilConductor: "Conductor",
   /** Junto al selector: «Tamara Olivera (persona ficticia)» (D2); el lector de pantalla antepone «Conductor: ». */
@@ -230,8 +232,8 @@ export const TEXTO_NAVEGACION = {
     /** Inicio: unidades que hoy no pueden salir («Inicio, 4 no disponibles hoy»). */
     noDisponibles: (n: number) => (n === 1 ? "1 no disponible hoy" : `${n} no disponibles hoy`),
   },
-  /** Chip del perfil en la barra superior: «Ver como: Encargado. Cambiar perfil». */
-  chipPerfil: (perfil: string) => `Ver como: ${perfil}. Cambiar perfil`,
+  /** Chip del perfil en la barra superior: «Ver como Encargado, cambiar perfil» (sin los dos puntos: el texto visible «Ver como Encargado» del lateral es parte del nombre, WCAG 2.5.3). */
+  chipPerfil: (perfil: string) => `Ver como ${perfil}, cambiar perfil`,
   /** Lateral: «Conductor · Tamara» (solo el nombre de pila). */
   conductorCorto: (nombreDePila: string) => `Conductor · ${nombreDePila}`,
 } as const;
@@ -263,3 +265,61 @@ export const TEXTO_MAS = {
     portafolio: { rotulo: "Volver al portafolio", ayuda: "matiasormeno.com.ar" },
   },
 } as const;
+
+// ---------- Piel «Pie de rey» (etapa 2, docs/diseno-ui.md 15.4, 15.6 y 15.14) ----------
+
+/** Control «Apariencia» (15.4.5): su título no empieza con «Ver como» (una prueba de punta a punta busca ese nombre). */
+export const TEXTO_APARIENCIA = {
+  titulo: "Apariencia",
+  tema: {
+    leyenda: "Tema",
+    claro: "Claro",
+    oscuro: "Oscuro",
+    automatico: "Automático",
+    /** Si «Automático» no entra en el lateral, ahí se ve «Auto»; el nombre accesible sigue siendo «Automático» (lo contiene). En «Más», siempre la palabra entera. */
+    automaticoCorto: "Auto",
+  },
+  /** Solo en «Más»: en el lateral no se muestra. */
+  notaAutomatico: "Automático: sigue el tema del dispositivo.",
+  /** Botón con `aria-pressed`: el texto no cambia al apretarlo. */
+  sinAnimaciones: "Sin animaciones",
+} as const;
+
+/** Rótulos de sección del lateral (15.4.1; DE2, 28/11/2026: el segundo es «Operación»). Son presentación (`aria-hidden`). */
+export const TEXTO_LATERAL = { flota: "Flota", operacion: "Operación" } as const;
+
+/** Sello de la barra (15.4.1): las mayúsculas las pone la hoja de estilos. Oculto a lectores: ellos reciben `TEXTO_MARCO.etiquetaDemo`. */
+export const TEXTO_SELLO_DE_DATOS = "Datos ficticios";
+
+/** Partes de los nombres accesibles de la regla de salida (sello, «y N más» y llaves): se agregan a lo que se ve. Viven acá, y no en `textos-inicio.ts`, junto al «Ver ficha» que usan. */
+export const TEXTO_NOMBRES_DE_LA_REGLA = {
+  verEnMovilidades: ": ver en Movilidades",
+  yMasResto: " no disponibles hoy: ver en Movilidades",
+  /** Número de pieza de la llave (el del globo y el de la lista «No disponibles hoy»): «Número 1.». */
+  numero: (n: number) => `Número ${n}.`,
+} as const;
+
+/**
+ * Nombre accesible del sello de la zona roja: lo que se ve («4 no disponibles hoy») y a dónde lleva. Con `desglose` (el sello lo muestra a la vista desde 11 rem de zona roja) el nombre lo
+ * incluye: si no, el texto visible no sería parte del nombre (WCAG 2.5.3) y axe lo marca. Decisión de T9: la especificación (15.14, fila 5) lo dejaba como descripción.
+ */
+export function textoNombreDelSello(noDisponibles: number, desglose?: string): string {
+  const medida = TEXTO_NAVEGACION.insignias.noDisponibles(noDisponibles);
+  return `${desglose === undefined ? medida : `${medida}: ${desglose}`}${TEXTO_NOMBRES_DE_LA_REGLA.verEnMovilidades}`;
+}
+
+/** Nombre accesible del enlace «y N más» del tablero corto: «y 3 más no disponibles hoy: ver en Movilidades». */
+export function textoNombreDeYMas(n: number): string {
+  return `${TEXTO_ALERTAS.yMas(n)}${TEXTO_NOMBRES_DE_LA_REGLA.yMasResto}`;
+}
+
+/**
+ * Nombre accesible de una llave (o de una chapa del tablero corto): la patente primero, porque es lo que se ve. Disponible: «ZT 301 KA, disponible. Ver ficha.» No disponible:
+ * «ZK 214 BD, bloqueada. Seguro vencido hace 1 día. Número 1. Ver ficha.» `conNumero` es `false` en las chapas del tablero corto, que no tienen globos. El motivo no trae punto final.
+ */
+export function textoNombreDeLlave(llave: { patenteTexto: string; etiqueta: string; motivo: string | null; pieza: number | null }, conNumero = true): string {
+  const estado = `${llave.patenteTexto}, ${llave.etiqueta.toLowerCase()}.`;
+  const motivo = llave.motivo === null ? "" : ` ${llave.motivo}.`;
+  const numero = conNumero && llave.pieza !== null ? ` ${TEXTO_NOMBRES_DE_LA_REGLA.numero(llave.pieza)}` : "";
+  return `${estado}${motivo}${numero} ${TEXTO_ALERTAS.verFicha}.`;
+}

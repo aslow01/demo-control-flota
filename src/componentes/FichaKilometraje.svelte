@@ -28,7 +28,7 @@
 <Panel id={idTitulo} titulo={kilometraje.titulo} icono="km" meta={kilometraje.rotuloKm} {estado} {repetir}>
   <p class="subtitulo">{kilometraje.subtitulo}</p>
   {#if kilometraje.vacio !== null}
-    <p class="vacio"><Icono nombre="guion" />{kilometraje.vacio}</p>
+    <p class="vacio">{kilometraje.vacio}</p>
   {:else}
     <table {...TABLA}>
       <caption class="solo-lectores">{kilometraje.subtitulo}</caption>
@@ -49,7 +49,7 @@
                 {f.fecha}
               {/if}
             </th>
-            <td {...CELDA} class="registro">
+            <td {...CELDA} class="lectura">
               <span class="texto">
                 {#if f.tipo === "correccion"}<Icono nombre="km" />{/if}{f.texto}
               </span>
@@ -74,7 +74,7 @@
 <style>
   .subtitulo {
     font-size: var(--t-chico);
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
   table {
     width: 100%;
@@ -83,7 +83,7 @@
     line-height: 1.4;
   }
   tr {
-    border-bottom: 1px solid var(--c-borde);
+    border-bottom: 1px solid var(--c-filete);
   }
   tbody tr:last-child {
     border-bottom: 0;
@@ -105,23 +105,28 @@
     min-height: var(--alto-tactil);
     margin-block: calc((var(--alto-tactil) - 1.4em) / -2);
   }
-  .registro {
+  /* La columna del medio toma lo que sobra (`width: 100%`): con `overflow-wrap: anywhere` en la celda su ancho mínimo era el de una letra y el registro quedaba apretado en 16 px. */
+  .lectura {
+    width: 100%;
     min-width: 0;
-    /* El motivo de una corrección lo escribe la persona: sin espacios, no tiene que ensanchar la tabla ni la página. */
-    overflow-wrap: anywhere;
   }
+  /* Inicio → fin en técnica (15.5.5: las cifras, en técnica); sólo se parte en los espacios. */
   .texto {
     display: inline-flex;
     align-items: center;
     gap: var(--e-1);
+    font-family: var(--t-mono);
+    font-size: var(--t-tabla);
   }
   .texto :global(.icono) {
     --icono-tam: 1rem;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
   .nota,
   .advertencia {
     display: block;
+    /* El motivo de una corrección lo escribe la persona: sin espacios, no tiene que ensanchar la tabla ni la página. */
+    overflow-wrap: anywhere;
   }
   .advertencia {
     --icono-tam: 1rem;
@@ -139,9 +144,11 @@
   }
   .recorrido {
     padding-right: 0;
+    font-family: var(--t-mono);
+    font-size: var(--t-tabla);
     text-align: right;
     white-space: nowrap;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
   /* Texto agrandado (el interior mide 17 rem o menos): tres columnas no caben; cada fila pasa a dos renglones, la fecha a la izquierda y el recorrido a la derecha, y el registro (inicio → fin)
      a todo el ancho debajo. Con `display: block` los roles escritos en el marcado mantienen la tabla para los lectores de pantalla. */
@@ -173,7 +180,7 @@
     .fecha {
       width: auto;
     }
-    .registro {
+    .lectura {
       order: 3;
       flex: 1 0 100%;
     }
@@ -184,14 +191,15 @@
   .corregir {
     display: flex;
   }
+  /* Vacío (15.5.12): caja de 1 px punteada en `--c-control` sobre la hoja y el porqué en letra de texto (un vacío no puede ser lo más fuerte de una ficha tranquila: la cifra de cartel es una sola por pantalla). Sin ilustración ni ícono; la acción que sigue, si hay, es el botón de abajo. */
   .vacio {
-    --icono-tam: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: var(--e-3);
-    padding: var(--e-4);
-    border: 1px dashed var(--c-borde-fuerte);
-    border-radius: var(--r-2);
+    padding: var(--e-5) var(--e-4);
+    border: 1px dashed var(--c-control);
+    background: var(--c-hoja);
     color: var(--c-texto-2);
+    font-size: var(--t-cuerpo);
+    line-height: 1.4;
+    /* El texto puede traer lo que escribió la persona: un texto sin espacios no ensancha la página. */
+    overflow-wrap: anywhere;
   }
 </style>

@@ -29,9 +29,11 @@ jobs:
       # La matriz completa de zonas horarias: UTC, Asia/Tokyo y America/Los_Angeles.
       - run: npm run test:tz
       - run: npm run build
-      # Peso del JS con gzip nivel 9: falla si la carga inicial pasa 95.000 B o la primera visita 100.000 B; cada trozo (30.000 B) y el total (180.000 B) solo avisan (docs/stack.md, sección 7).
+      # Peso del JS con gzip nivel 9: falla si la carga inicial pasa 97.000 B o la primera visita 102.000 B (también el CSS inicial, 26.000 B, y las fuentes, 205.000 B); cada trozo (30.000 B) y el total (180.000 B) solo avisan (docs/stack.md, sección 7).
       # Los avisos salen como anotaciones ::warning:: y la medición queda en el resumen de la corrida (scripts/peso-js.mjs).
       - run: npm run peso
+      # Contraste de la paleta (tokens.css, en claro y oscuro): falla si algún par no llega a su mínimo. No necesita el build ni un navegador.
+      - run: npm run contraste
       # El navegador de las pruebas de punta a punta se guarda entre corridas: la clave lleva el lockfile, así que cambia cuando cambia la versión de Playwright.
       # Lo que baja `playwright install` es solo un navegador y sus dependencias del sistema; con la caché en su lugar no vuelve a descargarlo.
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0

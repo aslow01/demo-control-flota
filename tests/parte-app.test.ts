@@ -17,6 +17,9 @@ import { valoresConKm } from "./ayuda.ts";
 import { leerFicha } from "../src/lib/estado/ficha.ts";
 import { leerPanelDeFlota } from "../src/lib/estado/flota.ts";
 import { leerParte } from "../src/lib/estado/parte.ts";
+import { leerInicioDelConductor, leerSugerenciasDeVerComo } from "../src/lib/estado/conductor.ts";
+import { conSugerencias } from "../src/lib/estado/conductor-opciones.ts";
+import { leerEntradaAlRecorrido } from "../src/lib/estado/recorrido.ts";
 import { autoguardadoDeParte, autoguardadoDeCierre } from "../src/lib/estado/parte-escritura.ts";
 
 const H = "2026-11-18";
@@ -84,7 +87,7 @@ describe("las vistas según la ruta y el perfil", () => {
       crearAvisoPestanas: () => ({ avisarCambio: () => {}, cerrar: () => {} }),
     });
     expect(leerParte(t)).toBeNull();
-    expect(t.inicioDelConductor()).toBeNull();
+    expect(leerInicioDelConductor(t)).toBeNull();
     await t.iniciar();
     expect(leerParte(t)?.tipo).toBe("edicion");
     const { app } = await iniciada();
@@ -119,11 +122,11 @@ describe("las vistas según la ruta y el perfil", () => {
       crearAvisoPestanas: () => ({ avisarCambio: () => {}, cerrar: () => {} }),
       nuevoId: () => "x",
     });
-    expect(antes.entradaAlRecorrido()).toBeNull();
+    expect(leerEntradaAlRecorrido(antes)).toBeNull();
     const { app } = await iniciada();
-    expect(app.entradaAlRecorrido()).toEqual({ conductorId: "c-07" });
+    expect(leerEntradaAlRecorrido(app)).toEqual({ conductorId: "c-07" });
     // la sugerencia coincide con la marca «Para probar» del diálogo «Ver como»
-    expect(app.opcionesDeConductor().find((o) => o.id === "c-07")?.paraProbar?.etiqueta).toBe("Para probar: la unidad tiene la documentación vencida");
+    expect(conSugerencias(app.opcionesDeConductor(), leerSugerenciasDeVerComo(app)).find((o) => o.id === "c-07")?.paraProbar?.etiqueta).toBe("Para probar: la unidad tiene la documentación vencida");
   });
 
   it("perfil Encargado: el conductor se elige y arranca con el asignado", async () => {
@@ -135,23 +138,23 @@ describe("las vistas según la ruta y el perfil", () => {
 
   it("el inicio del conductor: su unidad, el aviso de que ZK 214 BD no puede salir y ningún «Empezar la revisión» (C01, P21)", async () => {
     const { app } = await iniciada({ perfil: C07 });
-    const v = app.inicioDelConductor();
+    const v = leerInicioDelConductor(app);
     expect(v).toMatchObject({
       unidad: { patenteTexto: "ZK 214 BD", interno: "Int. 07" },
       hoyEstado: { tipo: "no-puede-salir", renglon1: "El seguro de ZK 214 BD venció el 17/11/2026. La unidad no puede salir.", renglon2: "Avise al encargado." },
       avisoAptitud: null,
     });
-    expect(app.inicioDelConductor("u-01")?.unidad?.patenteTexto).toBe("ZYN 469");
+    expect(leerInicioDelConductor(app, "u-01")?.unidad?.patenteTexto).toBe("ZYN 469");
   });
 
   it("el perfil Encargado no tiene inicio del conductor", async () => {
     const { app } = await iniciada();
-    expect(app.inicioDelConductor()).toBeNull();
+    expect(leerInicioDelConductor(app)).toBeNull();
   });
 
   it("C13: el conductor de ZW 749 JE tiene el borrador de ayer entre sus pendientes y la unidad lo avisa en el inicio", async () => {
     const { app } = await iniciada({ perfil: { tipo: "conductor", conductorId: "c-13" } });
-    const v = app.inicioDelConductor();
+    const v = leerInicioDelConductor(app);
     expect(v?.pendientes).toEqual([
       {
         clave: "pt-0579",
@@ -453,13 +456,13 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(eventos(app).at(-1)).toBe("revision-enviada");
     expect(parteDeHoy(app, "ZYN469")).toMatchObject({ estado: "en-uso", autor: "Andrés Echegaray", conductorId: "c-01", revisado: MEDIODIA, enviado: null });
     expect(leerParte(app)?.tipo).toBe("cierre");
-    expect(app.inicioDelConductor()?.hoyEstado).toEqual({
+    expect(leerInicioDelConductor(app)?.hoyEstado).toEqual({
       tipo: "en-uso",
       etiqueta: "En uso desde las 12:00",
       texto: "Al terminar la jornada, cierre el parte con el kilometraje y el combustible.",
       primario: { texto: "Cerrar el parte", href: "#/parte/ZYN469/2026-11-18" },
     });
-    expect(app.inicioDelConductor()?.unidad?.ultimoRegistro).toBe("Último registro: 141.711 km (revisión del 18/11/2026).");
+    expect(leerInicioDelConductor(app)?.unidad?.ultimoRegistro).toBe("Último registro: 141.711 km (revisión del 18/11/2026).");
   });
 
   it("K3: con 1 km menos que el último registro, error en «Al iniciar», el envío se bloquea y el borrador queda", async () => {
@@ -549,7 +552,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     expect(leerPanelDeFlota(app)?.filas.find((f) => f.patente === "ZYN469")?.estado).toMatchObject({ categoria: "no-puede-salir", etiqueta: "Bloqueada" });
     expect(app.centroDeAlertas?.protagonista.items.find((i) => i.patente === "ZYN469")).toMatchObject({ categoria: "no-puede-salir", motivo });
     await app.cambiarPerfil(C01);
-    expect(app.inicioDelConductor()?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: expect.stringContaining("hasta mañana") });
+    expect(leerInicioDelConductor(app)?.hoyEstado).toMatchObject({ tipo: "enviado", hastaManana: expect.stringContaining("hasta mañana") });
   });
 
   it("un punto no crítico con «Impide usar la unidad» también deja la unidad fuera de servicio y el parte sin salida (P11)", async () => {
@@ -579,7 +582,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const r = await app.enviarRevisionDeParte(uid, H, v);
     expect(r.tipo === "advertencias" && r.advertencias[0]?.texto).toBe("1.358.289 km sin registrar desde el último parte");
     expect((await app.enviarRevisionDeParte(uid, H, v, ["salto-km"])).tipo).toBe("enviado");
-    expect(app.inicioDelConductor()?.unidad?.ultimoRegistro).toBe("Último registro: 1.500.000 km (revisión del 18/11/2026).");
+    expect(leerInicioDelConductor(app)?.unidad?.ultimoRegistro).toBe("Último registro: 1.500.000 km (revisión del 18/11/2026).");
   });
 
   it("más de 2.000.000 km es un error de formato, no una advertencia", async () => {
@@ -694,7 +697,7 @@ describe("enviar la revisión (P4, P12, L1, K3, K6, P9, P14, P16)", () => {
     const g = await app.guardarBorradorDeParte(idDe(app, "ZYN469"), H, { ...valoresConKm({ conductorId: "c-01", kmInicio: 141711 }), checklist: completo(valoresConKm({ conductorId: "c-01", kmInicio: 141711 })).checklist });
     expect(g).toMatchObject({ ok: true });
     expect(leerParte(app)).toMatchObject({ tipo: "no-disponible", nota: "El borrador se conserva: cuando el encargado cargue una licencia vigente, podrá enviarlo.", borrador: { descartar: "Descartar borrador" } });
-    expect(app.inicioDelConductor()?.hoyEstado).toMatchObject({ tipo: "licencia-no-vigente", borrador: { texto: "Tiene una revisión empezada: se conserva." } });
+    expect(leerInicioDelConductor(app)?.hoyEstado).toMatchObject({ tipo: "licencia-no-vigente", borrador: { texto: "Tiene una revisión empezada: se conserva." } });
   });
 
   it("doble envío (doble clic): se envía una sola vez y la segunda respuesta es el mismo parte, marcado como ya enviado", async () => {
@@ -822,7 +825,7 @@ describe("cerrar el parte (P3, P4, P12, P15, K2, K4, K7)", () => {
     expect(parteDeHoy(app, "ZYN469")).toMatchObject({ estado: "en-uso", kmFin: 141811, combustible: "medio", litrosCargados: 45.5, enviado: null });
     expect(auto.indicador).toMatchObject({ estado: "guardado", visible: "Guardado en este equipo a las 12:00" });
     expect(eventos(app)).toHaveLength(antes);
-    expect(app.inicioDelConductor()?.unidad?.ultimoRegistro).toBe("Último registro: 141.711 km (revisión del 18/11/2026).");
+    expect(leerInicioDelConductor(app)?.unidad?.ultimoRegistro).toBe("Último registro: 141.711 km (revisión del 18/11/2026).");
     app.cerrar();
     const otra = await iniciada({ repo, patente: "ZYN469" });
     expect(cierre(otra.app).valoresIniciales).toMatchObject({ kmFin: "141.811", combustible: "medio", litros: "45,5" });
@@ -884,9 +887,9 @@ describe("cerrar el parte (P3, P4, P12, P15, K2, K4, K7)", () => {
     expect(eventos(app).at(-1)).toBe("parte-enviado");
     expect(parteDeHoy(app, "ZYN469")).toMatchObject({ estado: "enviado", autor: "Andrés Echegaray", conductorId: "c-01", enviado: MEDIODIA });
     expect(leerParte(app)?.tipo).toBe("lectura");
-    expect(app.inicioDelConductor()?.hoyEstado).toEqual({ tipo: "enviado", etiqueta: "Cerrado a las 12:00", sinSalida: null, hastaManana: null, enlace: { texto: "Ver el parte", href: "#/parte/ZYN469/2026-11-18" } });
-    expect(app.inicioDelConductor()?.ultimosPartes.filas[0]).toMatchObject({ fecha: "18/11/2026", recorrido: "100 km" });
-    expect(app.inicioDelConductor()?.unidad?.ultimoRegistro).toBe("Último registro: 141.811 km (parte del 18/11/2026).");
+    expect(leerInicioDelConductor(app)?.hoyEstado).toEqual({ tipo: "enviado", etiqueta: "Cerrado a las 12:00", sinSalida: null, hastaManana: null, enlace: { texto: "Ver el parte", href: "#/parte/ZYN469/2026-11-18" } });
+    expect(leerInicioDelConductor(app)?.ultimosPartes.filas[0]).toMatchObject({ fecha: "18/11/2026", recorrido: "100 km" });
+    expect(leerInicioDelConductor(app)?.unidad?.ultimoRegistro).toBe("Último registro: 141.811 km (parte del 18/11/2026).");
   });
 
   it("K2: el fin menor que el inicio, error en «Al terminar»", async () => {

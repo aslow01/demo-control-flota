@@ -5,18 +5,29 @@
   import Boton from "../componentes/Boton.svelte";
   import BotonConfirmar from "../componentes/BotonConfirmar.svelte";
   import Campo from "../componentes/Campo.svelte";
+  import Casilla from "../componentes/Casilla.svelte";
   import Dialogo from "../componentes/Dialogo.svelte";
   import Dato from "../componentes/Dato.svelte";
+  import Detalles from "../componentes/Detalles.svelte";
   import EnlaceAccion from "../componentes/EnlaceAccion.svelte";
   import Etiqueta from "../componentes/Etiqueta.svelte";
+  import Forma, { type FormaVisual } from "../componentes/Forma.svelte";
   import Horizonte from "../componentes/Horizonte.svelte";
   import Icono from "../componentes/Icono.svelte";
+  import ItemRevision from "../componentes/ItemRevision.svelte";
+  import Odometro from "../componentes/Odometro.svelte";
   import Panel from "../componentes/Panel.svelte";
   import Patente from "../componentes/Patente.svelte";
+  import ReglaDeSalida from "../componentes/ReglaDeSalida.svelte";
+  import SelectorCombustible from "../componentes/SelectorCombustible.svelte";
+  import SelloDatos from "../componentes/SelloDatos.svelte";
   import { ETIQUETAS_DE_PARTE, ICONOS, type NombreIcono, type Tono } from "../componentes/tipos.ts";
   import { SEMILLA_POR_DEFECTO, generar } from "../lib/datos/generador.ts";
   import { calcularAlertas, type Alerta } from "../lib/dominio/alertas.ts";
   import { horizonteCompleto, horizonteDeUnidad, horizonteMinimo } from "../lib/dominio/horizonte.ts";
+  import type { ValoresItem } from "../lib/dominio/formulario-parte-valores.ts";
+  import { centroDeAlertas } from "../lib/estado/centro-alertas.ts";
+  import { calcularSalida } from "../lib/estado/salida.ts";
   import { formatearPatente } from "../lib/dominio/patente.ts";
   import { textoUnidadNoPuedeSalir } from "../lib/dominio/textos-conductor.ts";
   import type { Grupo } from "../lib/dominio/vencimientos.ts";
@@ -135,6 +146,27 @@
     { unidad: "ZEP 235", texto: "Seguro vencido (sin horizonte)", dias: [-4] },
   ];
   const minimas = filasMinima.map((f, i) => ({ ...f, horizonte: horizonteMinimo(deEjemplo(`u-${i}`, f.dias), `u-${i}`) }));
+
+  // Regla de salida (Inicio, 15.6): el centro de alertas y la salida del mismo estado del generador.
+  const centroMuestra = centroDeAlertas(estadoMuestra, alertasMuestra, HOY_MUESTRA, "Empresa de ejemplo");
+  const salidaMuestra = calcularSalida(estadoMuestra, centroMuestra, HOY_MUESTRA);
+  const formas: FormaVisual[] = ["rombo", "triangulo", "circulo", "aro", "check", "cuadro"];
+  let cifraOdometro = $state(23);
+
+  // Parte: ítems de revisión, combustible y casilla
+  let itemEnOrden = $state<ValoresItem>({ respuesta: "en-orden", descripcion: "", impideUso: false });
+  let itemNovedad = $state<ValoresItem>({ respuesta: "con-novedad", descripcion: "Pérdida de aceite.", impideUso: false });
+  let itemCritico = $state<ValoresItem>({ respuesta: "", descripcion: "", impideUso: false });
+  let nivel = $state<"" | "reserva" | "cuarto" | "medio" | "tres-cuartos" | "lleno">("medio");
+  let nivelVacio = $state<"" | "reserva" | "cuarto" | "medio" | "tres-cuartos" | "lleno">("");
+  const opcionesNivel = [
+    { valor: "reserva", etiqueta: "Reserva" },
+    { valor: "cuarto", etiqueta: "1/4" },
+    { valor: "medio", etiqueta: "1/2" },
+    { valor: "tres-cuartos", etiqueta: "3/4" },
+    { valor: "lleno", etiqueta: "Lleno" },
+  ] as const;
+  let casilla = $state(false);
 
   // Campos
   let texto = $state("DEMO-88-4471");
@@ -327,6 +359,61 @@
 
     <h3>Completa en un contenedor de 20 rem (la caja pasa arriba, «30 días» pasa a «30»)</h3>
     <div class="angosto muestra-horizonte" data-muestra="angosta"><Horizonte horizonte={horizonteDelEjemplo} /></div>
+  </Panel>
+
+  <Panel titulo="Formas y sello" meta="15.4 y 15.6" icono="marca">
+    <p class="nota">Las formas que acompañan a cada tono (el color nunca va solo):</p>
+    <ul class="etiquetas" data-muestra="formas">
+      {#each formas as f (f)}
+        <li class="forma-muestra"><Forma forma={f} /> <span class="nota codigo">{f}</span></li>
+      {/each}
+    </ul>
+    <p class="nota">Sello «Datos ficticios» (en la aplicación se muestra uno solo, según el ancho):</p>
+    <div class="fila-muestra" data-muestra="sello"><SelloDatos /></div>
+    <p class="nota">Odómetro de la regla de salida (cifra fija con estilo de tambor):</p>
+    <div class="fila-muestra" data-muestra="odometro">
+      <Odometro valor={cifraOdometro} />
+      <Boton variante="secundario" onclick={() => (cifraOdometro = cifraOdometro === 23 ? 7 : 23)}>Cambiar la cifra</Boton>
+    </div>
+  </Panel>
+
+  <Panel titulo="Regla de salida" meta="Inicio, 15.6 y 15.7" icono="llave">
+    <div class="muestra-horizonte" data-muestra="regla-de-salida">
+      <ReglaDeSalida
+        salida={salidaMuestra}
+        idTitulo="muestra-titulo-regla"
+        recorrido={null}
+        alRenovar={() => {}}
+        alProbarComoConductor={() => {}}
+        estado=""
+        repetir={0}
+      />
+    </div>
+    <h3>Horizonte interactivo (regla de vencimientos)</h3>
+    <div class="muestra-horizonte" data-muestra="regla-vencimientos">
+      <Horizonte regla={centroMuestra.vencimientos.regla} alRenovar={() => {}} />
+    </div>
+  </Panel>
+
+  <Panel titulo="Parte: revisión y combustible" meta="5.12, 5.13">
+    <div class="formulario">
+      <ItemRevision texto="Luces y balizas" critico={false} notaCritica={null} etiquetaImpideUso="Impide usar la unidad" idBase="m-luces" bind:valor={itemEnOrden} />
+      <ItemRevision texto="Aceite y fugas" critico={false} notaCritica={null} etiquetaImpideUso="Impide usar la unidad" idBase="m-aceite" bind:valor={itemNovedad} />
+      <ItemRevision
+        texto="Frenos"
+        critico
+        notaCritica="Con novedad, la unidad queda fuera de servicio."
+        etiquetaImpideUso="Impide usar la unidad"
+        idBase="m-frenos"
+        bind:valor={itemCritico}
+        error="Indique si está en orden o con novedad."
+      />
+      <SelectorCombustible leyenda="Nivel de combustible" requerido opciones={opcionesNivel} bind:valor={nivel} id="m-nivel" />
+      <SelectorCombustible leyenda="Nivel de combustible" requerido opciones={opcionesNivel} bind:valor={nivelVacio} id="m-nivel-vacio" error="Elija un nivel." />
+      <Casilla etiqueta="Cargué combustible en el viaje" bind:marcada={casilla} ayuda="Se pedirán los litros." />
+    </div>
+    <Detalles resumen="Anteriores (2)"><p class="nota">Seguro anterior, reemplazado el 17/11/2026.</p></Detalles>
+    <Detalles resumen="Parte del 20/11/2026" suave><p class="nota">Cerrado a las 18:42.</p></Detalles>
   </Panel>
 
   <Panel titulo="Botones" meta="5.1">
@@ -612,6 +699,11 @@
   }
   .muestra-horizonte {
     padding-block: var(--e-1);
+  }
+  .forma-muestra {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e-2);
   }
   .celda-minima {
     display: flex;

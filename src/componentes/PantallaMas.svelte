@@ -1,7 +1,8 @@
 <script lang="ts">
   // Pantalla «Más» (`#/mas`, la ven los dos perfiles): lo que antes colgaba de la barra superior. «Ver como» (el perfil de ahora y cómo cambiarlo), «La demo»
-  // («Cómo funciona», «Reiniciar demo», volver al portafolio) y el texto del pie. Los diálogos los abre quien la usa (`App.svelte`).
+  // («Cómo funciona», «Reiniciar demo», volver al portafolio), «Apariencia» (tema y «Sin animaciones»; solo vive acá, DE7) y el texto del pie. Los diálogos los abre quien la usa (`App.svelte`).
   import { NOMBRES_DE_PANTALLA } from "../lib/dominio/textos-base.ts";
+  import Apariencia from "./Apariencia.svelte";
   import Boton from "./Boton.svelte";
   import Icono from "./Icono.svelte";
   import { TEXTO_MAS, TEXTO_PIE, URL_PORTAFOLIO } from "./textos-marco.ts";
@@ -28,21 +29,21 @@
 <div class="mas">
   <h1 tabindex="-1">{NOMBRES_DE_PANTALLA.mas}</h1>
 
-  <section aria-labelledby="mas-ver-como">
+  <section class="ficha" aria-labelledby="mas-ver-como">
     <h2 class="rotulo" id="mas-ver-como">{T.verComo.titulo}</h2>
-    <div class="lista">
-      <div class="fila perfil">
-        <p class="datos">
-          <strong>{perfil}</strong>
-          <span>{descripcionDelPerfil}</span>
-          <span>{T.verComo.ayuda}</span>
-        </p>
-        <Boton variante="secundario" aria-haspopup="dialog" onclick={alCambiarPerfil}>{T.verComo.cambiarPerfil}</Boton>
-      </div>
+    <div class="fila perfil">
+      <p class="datos">
+        <strong>{perfil}</strong>
+        <span>{descripcionDelPerfil}</span>
+        <span>{T.verComo.ayuda}</span>
+      </p>
+      <Boton variante="secundario" aria-haspopup="dialog" onclick={alCambiarPerfil}>{T.verComo.cambiarPerfil}</Boton>
     </div>
   </section>
 
-  <section aria-labelledby="mas-la-demo">
+  <Apariencia />
+
+  <section class="ficha" aria-labelledby="mas-la-demo">
     <h2 class="rotulo" id="mas-la-demo">{T.laDemo.titulo}</h2>
     <ul class="lista">
       <li>
@@ -73,33 +74,37 @@
 </div>
 
 <style>
+  /* «Más» en Pie de rey (15.9.9): tres fichas en una columna de 40 rem («Ver como», «Apariencia», «La demo») y la autoría al pie. Misma ficha que `Panel` y `Apariencia`: hoja lisa,
+     contorno fino y cabeza de 1,5 px en tinta. Los renglones miden 60 px (44 como mínimo) y el rótulo de cada ficha va en técnica, como el de «Apariencia». */
   .mas {
     display: flex;
     flex-direction: column;
-    gap: var(--e-5);
+    gap: var(--e-4);
     width: 100%;
-    max-width: 47.5rem;
+    max-width: 40rem;
   }
-  section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--e-2);
-  }
-  .rotulo {
-    color: var(--c-texto-2);
-    font-family: var(--t-familia);
-    font-stretch: 100%;
-    font-weight: 700;
+  h1 {
+    margin-bottom: var(--e-2);
   }
 
+  .ficha {
+    display: flex;
+    flex-direction: column;
+    background: var(--c-hoja);
+    border: 1px solid var(--c-filete-medio);
+    border-top: var(--b-fuerte) solid var(--c-tinta);
+  }
+  .rotulo {
+    padding: var(--e-4) var(--e-4) var(--e-3);
+    color: var(--c-tinta-2);
+  }
+
+  /* Los renglones se separan con un filete entero; el primero también, para cerrar la cabeza. */
   .lista {
-    overflow: hidden;
-    background: var(--c-superficie);
-    border: 1px solid var(--c-borde);
-    border-radius: var(--r-3);
+    border-top: 1px solid var(--c-filete);
   }
   li + li {
-    border-top: 1px solid var(--c-borde);
+    border-top: 1px solid var(--c-filete);
   }
   .fila {
     display: flex;
@@ -111,7 +116,7 @@
     padding: var(--e-3) var(--e-4);
     border: 0;
     background: none;
-    color: var(--c-texto);
+    color: var(--c-tinta);
     font: inherit;
     text-align: left;
     text-decoration: none;
@@ -126,13 +131,24 @@
   @media (hover: hover) {
     button.fila:hover,
     a.fila:hover {
-      background: var(--c-superficie-2);
+      background: var(--c-papel-2);
       text-decoration: none;
     }
   }
+  button.fila:active,
+  a.fila:active {
+    background: var(--c-papel-2);
+  }
   .perfil {
     flex-wrap: wrap;
+    border-top: 1px solid var(--c-filete);
     cursor: default;
+  }
+  /* Por debajo de 30 rem el botón baja entero a su renglón: más fácil de pulsar con el pulgar y sin quedar a medias. */
+  @media (max-width: 29.99rem) {
+    .perfil > :global(.boton) {
+      flex: 1 1 100%;
+    }
   }
   .datos {
     display: flex;
@@ -141,19 +157,28 @@
     gap: 0.125rem;
     min-width: 0;
   }
+  /* El nombre del renglón va en la letra de texto (el cartel queda para el h1 y las cifras). */
   .datos strong {
-    font-family: var(--t-familia-titulo);
-    font-stretch: var(--t-ancho-titulo);
-    font-size: 1.1875rem;
-    font-weight: 650;
-    line-height: 1.25;
+    font-size: var(--t-cuerpo);
+    font-weight: var(--t-peso-fuerte);
+    line-height: 1.3;
+  }
+  .perfil .datos strong {
+    font-size: 1.0625rem;
   }
   .datos span {
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
     font-size: var(--t-tabla);
+    line-height: 1.4;
   }
   .fila > :global(.icono) {
-    color: var(--c-texto-2);
+    flex: none;
+    color: var(--c-tinta-3);
+  }
+  @media (hover: hover) {
+    .fila:hover > :global(.icono) {
+      color: var(--c-tinta);
+    }
   }
 
   .pie {
@@ -161,5 +186,19 @@
     flex-direction: column;
     gap: var(--e-2);
     max-width: 62ch;
+    padding-top: var(--e-3);
+    border-top: 1px solid var(--c-filete);
+  }
+
+  /* Colores forzados: el fondo del cursor encima desaparece, así que el renglón lleva un contorno del color de selección. */
+  @media (forced-colors: active) {
+    .ficha {
+      border-top-width: 3px;
+    }
+    button.fila:hover,
+    a.fila:hover {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
   }
 </style>

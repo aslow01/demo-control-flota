@@ -44,16 +44,28 @@
 </div>
 
 <style>
+  /* Pie de rey (15.5.10): caja con fondo `--c-crit-fondo`, borde de 1,5 px en el crítico y un precinto de 6 px a la izquierda (el texto nunca va sobre el rayado: tiene su
+     propia columna). Título en la letra de texto, 16 px y peso 650, en tinta; los enlaces en el color del enlace, subrayados, de 24 px de alto como mínimo. */
   .resumen {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: var(--e-2);
     min-width: 0;
-    padding: var(--e-3) var(--e-4);
-    background: var(--c-critico-f);
-    border: 2px solid var(--c-critico-r);
+    padding: var(--e-3) var(--e-4) var(--e-3) calc(var(--e-4) + 6px);
+    background: var(--c-crit-fondo);
+    border: var(--b-fuerte) solid var(--c-crit);
     border-radius: var(--r-1);
-    color: var(--c-critico-t);
+    color: var(--c-tinta);
+  }
+  .resumen::before {
+    --precinto-color: var(--c-crit-marca);
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--precinto-color) 0 1.5px, transparent 1.5px 7px);
   }
   /* El foco llega por programa al enviar con errores (con ratón no cuenta como «foco visible»): quien ve tiene que saber dónde quedó. Anillo siempre, que se suma al borde. */
   .resumen[tabindex="-1"]:focus {
@@ -66,10 +78,10 @@
     gap: var(--e-2);
     font-family: var(--t-familia);
     font-stretch: 100%;
-    font-size: var(--t-h3);
-    font-weight: 750;
+    font-size: 1rem;
+    font-weight: var(--t-peso-fuerte);
     line-height: 1.3;
-    color: var(--c-critico-t);
+    color: var(--c-tinta);
   }
   .titulo :global(.forma) {
     margin-top: 0.4375rem;
@@ -92,7 +104,7 @@
     display: inline-flex;
     align-items: center;
     min-height: var(--alto-tactil);
-    color: var(--c-critico-t);
+    color: var(--c-enlace);
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -101,7 +113,14 @@
   /* Texto agrandado: menos relleno a los lados para que el mensaje conserve el ancho. */
   @container parte (max-width: 17rem) {
     .resumen {
-      padding-inline: var(--e-2);
+      padding-right: var(--e-2);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .resumen::before {
+      forced-color-adjust: none;
+      --precinto-color: CanvasText;
     }
   }
 </style>

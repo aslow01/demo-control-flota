@@ -1,110 +1,44 @@
-// Movimiento (componentes/movimiento.ts): solo lo que se puede probar sin navegador: que un filtro o una letra del buscador no lleven transición,
-// que la cuenta de la cifra sea una sola curva que termina justo en su valor y que con «menos movimiento» no cuente. Lo visual se mira en el navegador.
+// Movimiento (componentes/movimiento.ts): solo lo que se puede probar sin navegador: que un filtro o una letra del buscador no lleven transición, que «menos movimiento»
+// incluya «Sin animaciones» (`data-movimiento="quieto"` en <html>) y que se pueda esperar a que termine la transición entre pantallas. Lo visual se mira en el navegador.
+// (La cuenta de la cifra cobre —`pedirCuenta`, `consumirCuenta`, `alPedirseLaCuenta`, `contarHasta`— se retiró en la etapa 2: la cifra ya no cuenta, 15.10.)
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { conMovimiento, consumirCuenta, contarHasta, esWebKitSinChromium, pedirCuenta } from "../src/componentes/movimiento.ts";
+import { conMovimiento, esWebKitSinChromium, esperarTransicion, quiereMenosMovimiento } from "../src/componentes/movimiento.ts";
 import { ubicacionEnMemoria } from "../src/lib/estado/ubicacion.ts";
 
 afterEach(() => vi.unstubAllGlobals());
 
-/** Un reloj y un `requestAnimationFrame` a mano: cada `avanzar(ms)` corre el cuadro pendiente a esa hora. */
-function relojDeCuadros(reducir = false) {
-  let ahora = 1000;
-  vi.stubGlobal("window", { matchMedia: () => ({ matches: reducir }) });
-  let pendiente: ((t: number) => void) | null = null;
-  vi.stubGlobal("performance", { now: () => ahora });
-  vi.stubGlobal("requestAnimationFrame", (f: (t: number) => void) => {
-    pendiente = f;
-    return 1;
-  });
-  vi.stubGlobal("cancelAnimationFrame", () => {
-    pendiente = null;
-  });
-  return {
-    avanzar(ms: number) {
-      ahora += ms;
-      const f = pendiente;
-      pendiente = null;
-      f?.(ahora);
-    },
-    hayCuadro: () => pendiente !== null,
-  };
-}
+describe("quiereMenosMovimiento", () => {
+  /** El sistema pide menos movimiento (o no) y <html> trae (o no) `data-movimiento`. */
+  function preferencias(sistema: boolean, movimiento?: string) {
+    vi.stubGlobal("window", { matchMedia: () => ({ matches: sistema }) });
+    vi.stubGlobal("document", { documentElement: { dataset: movimiento === undefined ? {} : { movimiento } } });
+  }
 
-describe("contarHasta", () => {
-  it("cuenta de 0 al valor, sin retroceder, y termina en el valor justo", () => {
-    const reloj = relojDeCuadros();
-    const vistos: number[] = [];
-    let termino = false;
-    contarHasta(12, (n) => vistos.push(n), () => (termino = true));
-    expect(vistos).toEqual([0]);
-    for (let i = 0; i < 12; i++) reloj.avanzar(60);
-    expect(vistos[0]).toBe(0);
-    expect(vistos.at(-1)).toBe(12);
-    expect(vistos).toEqual([...vistos].sort((a, b) => a - b));
-    expect(termino).toBe(true);
-    expect(reloj.hayCuadro()).toBe(false);
+  it("sin ninguna de las dos preferencias, el movimiento está permitido", () => {
+    preferencias(false);
+    expect(quiereMenosMovimiento()).toBe(false);
   });
 
-  it("un primer cuadro con hora anterior al inicio no da números negativos", () => {
-    const reloj = relojDeCuadros();
-    const vistos: number[] = [];
-    contarHasta(5, (n) => vistos.push(n), () => {});
-    reloj.avanzar(-16);
-    expect(vistos.every((n) => n >= 0)).toBe(true);
+  it("el sistema pide menos movimiento: sí", () => {
+    preferencias(true);
+    expect(quiereMenosMovimiento()).toBe(true);
   });
 
-  it("con 0 no anima: muestra 0 y termina enseguida", () => {
-    relojDeCuadros();
-    const vistos: number[] = [];
-    let termino = false;
-    contarHasta(0, (n) => vistos.push(n), () => (termino = true));
-    expect(vistos).toEqual([0]);
-    expect(termino).toBe(true);
+  it("«Sin animaciones» (`data-movimiento=\"quieto\"`): sí, aunque el sistema permita el movimiento", () => {
+    preferencias(false, "quieto");
+    expect(quiereMenosMovimiento()).toBe(true);
   });
 
-  it("con menos movimiento no anima ni con un valor mayor que 0: muestra el valor final y termina enseguida", () => {
-    const reloj = relojDeCuadros(true);
-    const vistos: number[] = [];
-    let termino = false;
-    contarHasta(12, (n) => vistos.push(n), () => (termino = true));
-    expect(vistos).toEqual([12]);
-    expect(termino).toBe(true);
-    expect(reloj.hayCuadro()).toBe(false);
+  it("cualquier otro valor de `data-movimiento` no cuenta", () => {
+    preferencias(false, "andando");
+    expect(quiereMenosMovimiento()).toBe(false);
+    preferencias(false, "");
+    expect(quiereMenosMovimiento()).toBe(false);
   });
 
-  it("se puede cortar: no pide más cuadros ni avisa que terminó", () => {
-    const reloj = relojDeCuadros();
-    let termino = false;
-    const cortar = contarHasta(9, () => {}, () => (termino = true));
-    cortar();
-    reloj.avanzar(1000);
-    expect(termino).toBe(false);
-    expect(reloj.hayCuadro()).toBe(false);
-  });
-});
-
-describe("consumirCuenta", () => {
-  const menosMovimiento = (reducir: boolean) => {
-    vi.stubGlobal("window", { matchMedia: () => ({ matches: reducir }) });
-    vi.stubGlobal("document", { dispatchEvent: () => true });
-  };
-
-  it("cuenta una sola vez por pedido (la primera es la de abrir la demo)", () => {
-    menosMovimiento(false);
-    expect(consumirCuenta()).toBe(true);
-    expect(consumirCuenta()).toBe(false);
-    pedirCuenta();
-    expect(consumirCuenta()).toBe(true);
-    expect(consumirCuenta()).toBe(false);
-  });
-
-  it("con menos movimiento nunca cuenta, y igual gasta el pedido", () => {
-    menosMovimiento(false);
-    pedirCuenta();
-    menosMovimiento(true);
-    expect(consumirCuenta()).toBe(false);
-    menosMovimiento(false);
-    expect(consumirCuenta()).toBe(false);
+  it("las dos a la vez: sí", () => {
+    preferencias(true, "quieto");
+    expect(quiereMenosMovimiento()).toBe(true);
   });
 });
 
@@ -145,7 +79,7 @@ describe("conMovimiento con otra pantalla", () => {
       querySelector: (selector: string) => (selector === "main h1" ? {} : null), // el título ya está: no hay que esperar la pantalla
       querySelectorAll: () => [],
       getElementById: () => null,
-      documentElement: { classList: { add: () => {}, remove: () => {} } },
+      documentElement: { classList: { add: () => {}, remove: () => {} }, dataset: {} },
       startViewTransition: (actualizar: () => unknown) => {
         iniciadas.push(actualizar);
         const hecho = Promise.resolve(actualizar());
@@ -192,6 +126,80 @@ describe("conMovimiento con otra pantalla", () => {
     await dejarCorrer();
     expect(consola).toHaveBeenCalledWith(fallo);
     consola.mockRestore();
+  });
+
+  /** Una transición que termina cuando la prueba lo dice (`terminar`). */
+  function transicionQueTermina() {
+    let terminar!: () => void;
+    const finished = new Promise<void>((listo) => (terminar = listo));
+    const documento = (globalThis as unknown as { document: { startViewTransition: unknown } }).document;
+    documento.startViewTransition = (actualizar: () => unknown) => ({ ready: Promise.resolve(), updateCallbackDone: Promise.resolve(actualizar()), finished });
+    return terminar;
+  }
+
+  it("esperarTransicion: sin ninguna transición en curso se cumple enseguida", async () => {
+    navegador(UA.chrome);
+    let cumplida = false;
+    void esperarTransicion().then(() => (cumplida = true));
+    await dejarCorrer();
+    expect(cumplida).toBe(true);
+  });
+
+  it("esperarTransicion: con una transición entre pantallas en curso espera a que termine, y después vuelve a cumplirse enseguida", async () => {
+    navegador(UA.chrome);
+    const terminar = transicionQueTermina();
+    const base = ubicacionEnMemoria("#/inicio");
+    conMovimiento(base).alCambiar(() => {});
+    base.irA("#/movilidades");
+    let cumplida = false;
+    void esperarTransicion().then(() => (cumplida = true));
+    await dejarCorrer();
+    expect(cumplida).toBe(false);
+    terminar();
+    await dejarCorrer();
+    expect(cumplida).toBe(true);
+    let otra = false;
+    void esperarTransicion().then(() => (otra = true));
+    await dejarCorrer();
+    expect(otra).toBe(true);
+  });
+
+  it("esperarTransicion: sin View Transitions (WebKit) espera a que termine la animación CSS de entrada, no antes", async () => {
+    navegador(UA.webkitPlaywright);
+    // El `#principal` de la página: guarda el oyente de «animationend» para poder dispararlo.
+    const captura: { alTerminar: ((e: unknown) => void) | null } = { alTerminar: null };
+    const principal = {
+      addEventListener: (_nombre: string, oyente: (e: unknown) => void) => (captura.alTerminar = oyente),
+      classList: { add: () => {}, remove: () => {} },
+      offsetWidth: 0,
+    };
+    (globalThis as unknown as { document: { getElementById: unknown } }).document.getElementById = () => principal;
+    vi.stubGlobal("HTMLElement", class {});
+    const base = ubicacionEnMemoria("#/inicio");
+    conMovimiento(base).alCambiar(() => {});
+    base.irA("#/movilidades");
+    await dejarCorrer();
+    let cumplida = false;
+    void esperarTransicion().then(() => (cumplida = true));
+    await dejarCorrer();
+    expect(cumplida).toBe(false);
+    const elemento = Object.assign(new (globalThis as unknown as { HTMLElement: new () => object }).HTMLElement(), principal);
+    captura.alTerminar?.({ target: elemento, currentTarget: elemento });
+    await dejarCorrer();
+    expect(cumplida).toBe(true);
+  });
+
+  it("esperarTransicion: una transición saltada o rota (`finished` rechazada) tampoco deja esperando", async () => {
+    navegador(UA.chrome);
+    const documento = (globalThis as unknown as { document: { startViewTransition: unknown } }).document;
+    documento.startViewTransition = () => ({ ready: Promise.resolve(), updateCallbackDone: Promise.resolve(), finished: Promise.reject(new Error("saltada")) });
+    const base = ubicacionEnMemoria("#/inicio");
+    conMovimiento(base).alCambiar(() => {});
+    base.irA("#/movilidades");
+    let cumplida = false;
+    void esperarTransicion().then(() => (cumplida = true));
+    await dejarCorrer();
+    expect(cumplida).toBe(true);
   });
 });
 

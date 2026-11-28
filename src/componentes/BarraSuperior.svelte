@@ -1,11 +1,11 @@
 <script lang="ts">
-  // Barra superior del celular y la tableta (menos de 64 rem; desde ahí es el lateral). Fija arriba, en dos pisos:
-  //  - Fila: a la izquierda la marca (en las pantallas de la barra inferior) o «‹ Atrás» (en la ficha y el parte); a la derecha el chip del perfil, que abre «Ver como».
-  //    Al bajar la página el título de la pantalla ocupa el lugar de la marca (el h1 ya salió de la vista); «Atrás» queda solo con la flecha.
-  //  - Franja «Demo con datos ficticios · día»: siempre visible, para que nadie confunda esto con un sistema real.
+  // Barra superior del celular y la tableta (menos de 64 rem; desde ahí es el lateral). Fija arriba, un solo piso (docs/diseno-ui.md, 15.4.4):
+  //  - Pantallas del menú: la marca, el sello «Datos ficticios» y el chip del perfil, que abre «Ver como». Al bajar la página el título de la pantalla ocupa el lugar de la marca.
+  //  - Ficha y parte: «‹» (el enlace al padre), el título y el chip. El sello no entra: baja al renglón de lámina que abre `main`.
   // «Atrás» es un enlace al padre de la pantalla (la ficha vuelve a Movilidades como la dejó la persona); la historia del navegador sigue andando con su propio botón.
   // Sin la demo cargada (arranque o error) no hay chip: no hay perfil que cambiar.
   import Icono from "./Icono.svelte";
+  import SelloDatos from "./SelloDatos.svelte";
   import { TEXTO_MARCO, TEXTO_NAVEGACION } from "./textos-marco.ts";
 
   let {
@@ -14,7 +14,6 @@
     titulo,
     perfil,
     esConductor,
-    fecha,
     alVerComo,
   }: {
     cargada: boolean;
@@ -26,8 +25,6 @@
     perfil: string;
     /** El punto del chip cambia de color con el perfil (además del texto: el color nunca va solo). */
     esConductor: boolean;
-    /** «miércoles 25/11/2026». */
-    fecha: string;
     alVerComo: () => void;
   } = $props();
 
@@ -50,17 +47,17 @@
           <Icono nombre="atras" /><span class="atras-texto">{atras.texto}</span>
         </a>
       {:else}
-        <p class="marca"><Icono nombre="marca" />{TEXTO_MARCO.nombreApp}</p>
+        <p class="marca"><Icono nombre="marca" /><span class="marca-texto">{TEXTO_MARCO.nombreApp}</span></p>
       {/if}
       <span class="titulo" aria-hidden="true">{titulo}</span>
     </div>
+    {#if atras === null}<SelloDatos />{/if}
     {#if cargada}
       <button type="button" class="chip" class:conductor={esConductor} aria-haspopup="dialog" aria-label={TEXTO_NAVEGACION.chipPerfil(perfil)} onclick={alVerComo}>
-        <span class="punto" aria-hidden="true"></span><span aria-hidden="true">{perfil}</span><Icono nombre="abajo" />
+        <span class="punto" aria-hidden="true"></span><span class="nombre" aria-hidden="true">{perfil}</span><Icono nombre="abajo" />
       </button>
     {/if}
   </div>
-  <p class="franja"><b>{TEXTO_MARCO.etiquetaDemoMarca}</b> <span>{TEXTO_MARCO.etiquetaDemoDatos}{cargada ? ` · ${fecha}` : ""}</span></p>
 </header>
 
 <style>
@@ -69,33 +66,30 @@
     top: 0;
     z-index: 50;
     padding-top: env(safe-area-inset-top, 0px);
-    background: var(--c-fondo);
-    border-bottom: 1px solid transparent;
-    transition: border-color var(--m-rapido) linear;
-  }
-  .barra.con-titulo {
-    border-bottom-color: var(--c-borde);
+    /* Opaca y sin desenfoque (15.2, regla 14): el desenfoque es solo de la barra de escritorio. */
+    background: var(--c-papel);
+    border-bottom: 1px solid var(--c-filete-medio);
   }
   .fila {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: var(--e-1) var(--e-2);
-    /* Sin alto fijo, y si no entran los dos la marca y el chip van en renglones separados (1.4.4): nada se monta ni se parte letra por letra. */
+    /* Sin alto fijo, y si con el texto agrandado no entran las tres piezas, la que sobra baja a otro renglón (1.4.4): nada se monta ni se parte letra por letra. */
     min-height: var(--alto-barra);
-    padding: 0 0.625rem 0 var(--gutter);
+    padding-inline: var(--gutter);
   }
   .izquierda {
     position: relative;
     display: flex;
-    flex: 1 1 8rem;
+    flex: 1 1 2rem;
     align-items: center;
     align-self: stretch;
     gap: var(--e-2);
-    min-width: 0;
+    min-width: 1.75rem;
   }
   .marca {
-    --icono-tam: 1.375rem;
+    --icono-tam: 1.75rem;
     display: flex;
     align-items: center;
     gap: var(--e-2);
@@ -103,11 +97,15 @@
     font-family: var(--t-familia-titulo);
     font-stretch: var(--t-ancho-titulo);
     font-size: 1.125rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-weight: var(--t-peso-cartel);
+    line-height: 1;
+    letter-spacing: -0.005em;
     transition:
       opacity var(--m-medio) var(--m-curva),
       transform var(--m-medio) var(--m-curva);
+  }
+  .marca-texto {
+    white-space: nowrap;
   }
   .titulo {
     position: absolute;
@@ -116,7 +114,8 @@
     font-family: var(--t-familia-titulo);
     font-stretch: var(--t-ancho-titulo);
     font-size: 1.125rem;
-    font-weight: 700;
+    font-weight: var(--t-peso-cartel);
+    line-height: 1.2;
     white-space: nowrap;
     text-overflow: ellipsis;
     opacity: 0;
@@ -134,91 +133,115 @@
     opacity: 0;
     transform: translateY(-30%);
   }
-  /* «Atrás» queda con la flecha sola y el título se corre a su derecha. */
+  /* Ficha y parte: el título siempre se ve, a la derecha de la flecha. */
   .con-atras .titulo {
-    left: 2.5rem;
-  }
-  .con-titulo .atras-texto {
-    display: none;
+    left: 2.75rem;
+    opacity: 1;
+    transform: translateY(-50%);
   }
   .atras {
-    --icono-tam: 1.375rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.125rem;
-    min-height: var(--alto-tactil);
-    margin-left: -0.375rem;
-    padding: 0 0.625rem 0 0.125rem;
+    --icono-tam: 1.5rem;
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: var(--alto-tactil);
+    height: var(--alto-tactil);
+    margin-left: -0.625rem;
     border-radius: var(--r-1);
-    color: var(--c-texto);
-    font-size: 1rem;
-    font-weight: 600;
+    color: var(--c-pleno-texto);
     text-decoration: none;
   }
-  .con-titulo .atras {
-    padding-right: 0.125rem;
+  .atras-texto {
+    display: none;
   }
   @media (hover: hover) {
     .atras:hover {
-      background: var(--c-superficie-2);
-      text-decoration: none;
+      background: var(--c-papel-2);
     }
   }
 
+  /* Chip de perfil: 44 px, el botón secundario (borde de tinta, sombra dura). Nunca se parte: un nombre largo se corta con elipsis dentro del chip. */
   .chip {
     --icono-tam: 1rem;
     display: inline-flex;
-    flex: none;
+    flex: 0 1 auto;
     align-items: center;
-    gap: 0.375rem;
+    gap: var(--e-2);
+    min-width: 0;
     min-height: var(--alto-tactil);
-    padding: 0 0.625rem 0 0.75rem;
-    border: 1.5px solid var(--c-borde-fuerte);
-    border-radius: var(--r-pildora);
-    background: var(--c-superficie);
-    color: var(--c-texto);
+    padding: 0 var(--e-2) 0 var(--e-3);
+    border: var(--b-control) solid var(--c-tinta);
+    border-radius: var(--r-1);
+    background: var(--c-hoja);
+    box-shadow: var(--s-dura) var(--c-tinta);
+    color: var(--c-tinta);
     font-size: 0.875rem;
     font-weight: 600;
+    line-height: 1;
     white-space: nowrap;
     cursor: pointer;
   }
+  .nombre {
+    min-width: 0;
+    padding-block: 0.1em; /* `overflow: hidden` con interlínea 1 cortaba la cola de la «g» con el texto al 200 % */
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   @media (hover: hover) {
     .chip:hover {
-      background: var(--c-superficie-2);
+      background: var(--c-papel-2);
     }
   }
+  .chip:active {
+    transform: translateY(2px);
+    box-shadow: none;
+  }
   .punto {
+    flex: none;
     width: 0.5rem;
     height: 0.5rem;
-    border-radius: 50%;
+    border-radius: var(--r-redondo);
     background: var(--c-tinta);
   }
+  /* El conductor lleva un punto vacío (aro): además del texto, la forma lo distingue. */
   .chip.conductor .punto {
-    background: var(--c-quincena-r);
+    background: none;
+    box-shadow: inset 0 0 0 1.5px var(--c-tinta);
   }
 
-  .franja {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    column-gap: var(--e-2);
-    min-height: var(--alto-franja);
-    padding: 0.125rem var(--gutter);
-    border-block: 1px solid var(--c-borde);
-    background: var(--c-superficie-2);
-    color: var(--c-texto-2);
-    font-size: var(--t-chico);
-    line-height: 1.3;
+  /* Lo que cede cuando falta ancho, en orden (15.4.4): la marca queda en su ícono; el sello aprieta su espaciado (en SelloDatos); por debajo de 22,5 rem el sello baja al renglón de lámina. */
+  @media (max-width: 29.99rem) {
+    .marca-texto {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
   }
-  .franja b {
-    color: var(--c-texto);
-    font-size: 0.7188rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+  @media (max-width: 23.74rem) {
+    .fila {
+      padding-inline: var(--e-3);
+    }
+  }
+  @media (max-width: 22.49rem) {
+    .fila :global(.sello) {
+      display: none;
+    }
+  }
+  /* Al desplazar, el título ocupa el lugar de la marca y manda sobre el sello: entre 360 y 480 px el sello le dejaba 45 px y el título quedaba cortado. El sello sale de la vista pero sigue en el árbol
+     de accesibilidad («Demo con datos ficticios»), y vuelve al subir. */
+  @media (max-width: 29.99rem) {
+    .con-titulo .fila :global(.sello) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
   }
 
-  /* Desde 64 rem la navegación es el lateral y la barra de migas. */
+  /* Desde 64 rem la navegación es el lateral y la barra de escritorio. */
   @media (min-width: 64rem) {
     .barra {
       display: none;

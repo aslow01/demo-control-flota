@@ -135,20 +135,30 @@
     justify-content: center;
     gap: var(--e-1);
     padding: var(--e-2) var(--e-3);
-    /* El borde fino es transparente: solo se ve en colores forzados, donde el fondo desaparece. */
+    /* Papel y tinta (15.6.6): fondo del tono, precinto de 6 px a la izquierda (abajo) y esquinas rectas. El borde fino es transparente: solo se ve en colores forzados, donde el fondo desaparece. */
+    position: relative;
+    padding-inline-start: calc(var(--e-3) + 6px);
     border: 1px solid transparent;
-    border-inline-start: 4px solid var(--tono-r);
-    border-radius: var(--r-1);
+    border-radius: 0;
     background: var(--tono-f);
     color: var(--tono-t);
+  }
+  .caja::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--tono-r) 0 1.5px, transparent 1.5px 5px);
   }
   /* Con 0 va en gris y con "0". Define sus propios tonos: no hereda los de un aviso que la contenga. */
   .caja.cero {
     --tono-t: var(--c-texto-2);
-    --tono-f: var(--c-superficie-2);
-    --tono-r: var(--c-borde-fuerte);
+    --tono-f: var(--c-papel-2);
+    --tono-r: var(--c-tinta-3);
   }
   .caja-rotulo {
+    font-family: var(--t-mono);
     font-size: var(--t-rotulo);
     line-height: 1.3;
     font-weight: 600;
@@ -157,9 +167,10 @@
   }
   .caja-cifra {
     font-family: var(--t-familia-titulo);
+    font-stretch: var(--t-ancho-titulo);
     font-size: var(--t-h2);
     line-height: 1;
-    font-weight: 700;
+    font-weight: var(--t-peso-cartel);
   }
   /* Mediana: compacta, el rótulo y la cifra en una línea. */
   .horizonte[data-variante="mediana"] .caja {
@@ -227,8 +238,10 @@
 
   .pista {
     grid-template-rows: minmax(var(--alto-pista), auto) 4px;
-    background: var(--c-superficie-2);
-    border-radius: var(--r-1) var(--r-1) 0 0;
+    /* La pista sobre la hoja, con el contorno de 1 px (15.6.6). */
+    background: var(--c-hoja);
+    border-radius: 0;
+    box-shadow: inset 0 0 0 1px var(--c-filete-medio);
     /* Transparente: solo se ve en colores forzados, donde el fondo de la pista desaparece. */
     outline: 1px solid transparent;
     outline-offset: -1px;
@@ -272,7 +285,7 @@
     border-radius: 50%;
     background: var(--marca);
     /* Aro de 2 px del color de la pista: separa las marcas vecinas. */
-    box-shadow: 0 0 0 2px var(--c-superficie-2);
+    box-shadow: 0 0 0 2px var(--c-hoja);
   }
   /* Con más de las que caben, la última es un aro del mismo color ("y más"; el número exacto está en la lista). */
   .marca.hueca {
@@ -310,7 +323,7 @@
     max-inline-size: 100%;
     padding-inline: var(--e-2);
     /* Tapa las líneas punteadas que cruzan el texto. */
-    background: var(--c-superficie-2);
+    background: var(--c-hoja);
     text-align: center;
     font-size: var(--t-chico);
     line-height: 1.3;

@@ -44,9 +44,9 @@
     margin-inline: calc(-1 * var(--gutter));
     padding: var(--e-3) var(--gutter);
     padding-bottom: calc(var(--e-3) + env(safe-area-inset-bottom, 0px));
-    background: var(--c-superficie);
-    border-top: 1px solid var(--c-borde);
-    box-shadow: 0 -8px 24px rgb(0 0 0 / 0.08);
+    /* Pie de rey (15.5.10): fondo `--c-papel` opaco (nada se transparenta detrás del texto) y un filete superior de 1,5 px en tinta, sin sombra. */
+    background: var(--c-papel);
+    border-top: var(--b-fuerte) solid var(--c-tinta);
   }
   .estado-barra {
     --icono-tam: 1.125rem;
@@ -55,13 +55,13 @@
     min-width: 0;
     align-items: center;
     gap: var(--e-2);
-    font-size: 0.9375rem;
-    font-weight: 650;
+    font-size: 0.875rem;
+    font-weight: 600;
     line-height: 1.3;
-    color: var(--c-texto);
+    color: var(--c-tinta);
   }
   .estado-barra.lista {
-    color: var(--c-vigente-t);
+    color: var(--c-ok);
   }
   /* Desde 40 rem la barra es de la columna del parte: no se ensancha hasta los bordes y queda separada del borde de abajo. */
   @media (min-width: 40rem) {
@@ -69,8 +69,8 @@
       bottom: var(--e-3);
       margin-inline: 0;
       padding: var(--e-3) var(--e-4);
-      border: 1px solid var(--c-borde);
-      border-radius: var(--r-2);
+      border: var(--b-fuerte) solid var(--c-tinta);
+      border-radius: var(--r-0);
       box-shadow: var(--s-flotante);
     }
   }

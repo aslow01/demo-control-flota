@@ -76,6 +76,7 @@
 </span>
 
 <style>
+  /* Pie de rey (15.5.1): dos pasos. El primero usa `secundario` o `texto` y el segundo `peligro` (de contorno, en el crítico); el aspecto de los dos lo da `Boton`. */
   .confirmar {
     position: relative;
     display: inline-flex;

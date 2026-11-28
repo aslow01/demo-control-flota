@@ -94,13 +94,11 @@
     <div class="lista" id={ID_LISTA}>
       {#if sinNada}
         <section class="caja vacio">
-          <span class="marca-vacia" aria-hidden="true"><i></i><i></i><i></i><b></b></span>
           <h2 id="vencimientos-vacio" tabindex="-1">{TEXTO_VACIO_PANTALLAS.vencimientos.titulo}</h2>
           <p>{TEXTO_VACIO_PANTALLAS.vencimientos.ayuda}</p>
         </section>
       {:else if v.textoVacio !== null}
         <section class="caja vacio">
-          <span class="marca-vacia sin" aria-hidden="true"><i></i><i></i><i></i><b></b></span>
           <h2 id="vencimientos-vacio" tabindex="-1">{v.textoVacio}</h2>
         </section>
       {:else}
@@ -143,10 +141,12 @@
 {/if}
 
 <style>
+  /* Vencimientos (FL-03, 15.9.3): título y resumen, una ficha con el horizonte (papel y tinta, sin campo pleno: el cobalto está solo en el filtro elegido), el segmentado de
+     filtros y una ficha por tramo con su forma en el título y una fila por documento. Entre piezas, 12 px, como en Inicio y Movilidades. */
   .pantalla {
     display: flex;
     flex-direction: column;
-    gap: var(--e-4);
+    gap: var(--e-3);
     width: 100%;
     min-width: 0;
   }
@@ -156,25 +156,29 @@
     align-items: flex-start;
     gap: var(--e-2);
   }
+  /* La línea de resumen: 13 px en `--c-tinta-2`; la primera parte, en tinta. */
   .contexto {
-    color: var(--c-texto-2);
+    font-size: var(--t-chico);
+    line-height: 1.4;
+    color: var(--c-tinta-2);
   }
   .contexto strong {
-    color: var(--c-texto);
+    color: var(--c-tinta);
     font-weight: 600;
   }
 
-  /* El panel de Turno: superficie, borde fino y sombra casi nula. Lo comparten la regla, los grupos y el estado vacío. */
+  /* La ficha (15.5.4): hoja, contorno de 1 px, cabeza de 1,5 px en tinta, esquinas rectas y sin sombra. La comparten el horizonte, cada grupo y el vacío. */
   .caja {
     container: caja / inline-size;
     min-width: 0;
-    background: var(--c-superficie);
-    border: 1px solid var(--c-borde);
-    border-radius: var(--r-2);
+    background: var(--c-hoja);
+    border: 1px solid var(--c-filete-medio);
+    border-top: var(--b-fuerte) solid var(--c-tinta);
+    border-radius: var(--r-0);
     box-shadow: var(--s-panel);
   }
 
-  /* ---------- Regla y leyenda ---------- */
+  /* ---------- Horizonte ---------- */
   .regla {
     display: flex;
     flex-direction: column;
@@ -192,14 +196,16 @@
     }
   }
 
-  /* ---------- Lo que pasó al renovar o cargar ---------- */
+  /* ---------- Lo que pasó al renovar o cargar (15.5.6: borde de 1,5 px y fondo del tono «en orden») ---------- */
   .estado {
     padding: var(--e-3) var(--e-4);
-    background: var(--c-superficie);
-    border: 1px solid var(--c-borde);
-    border-left: 4px solid var(--c-vigente-r);
-    border-radius: var(--r-2);
+    background: var(--c-ok-f);
+    border: var(--b-fuerte) solid var(--c-ok-t);
+    border-radius: var(--r-0);
+    color: var(--c-tinta);
+    font-size: var(--t-cuerpo);
     font-weight: 600;
+    line-height: 1.4;
   }
   /* Sin mensaje la región sigue en el DOM (tiene que existir antes del texto) pero no ocupa lugar. */
   .estado.oculto {
@@ -210,51 +216,60 @@
   .lista {
     display: flex;
     flex-direction: column;
-    gap: var(--e-4);
+    gap: var(--e-3);
     min-width: 0;
   }
+  /* Barra de título de la ficha: 44 px como mínimo, la forma del tono antes del título y la cuenta en técnica. */
   .barra {
     display: flex;
     align-items: center;
-    min-height: 3rem;
+    min-height: var(--alto-tactil);
     padding: 0 var(--e-4);
-    border-bottom: 1px solid var(--c-borde);
+    border-bottom: 1px solid var(--c-filete);
   }
   h2 {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--e-2) var(--e-3);
+    gap: var(--e-1) var(--e-3);
     padding-block: var(--e-2);
-    /* Como el título de un panel: la fuente de texto (la de títulos queda para el h1 y las cifras). */
+    /* Título de ficha: la letra de texto (la de cartel queda para el h1 y las piezas de vacío). */
     font-family: var(--t-familia);
     font-stretch: 100%;
-    font-size: 1.0625rem;
-    font-weight: 700;
+    font-size: var(--t-h2-ficha);
+    font-weight: var(--t-peso-h2);
     line-height: 1.3;
-    letter-spacing: -0.005em;
   }
   .cantidad {
-    color: var(--c-texto-3);
-    font-size: var(--t-chico);
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
     font-weight: 600;
+    color: var(--c-tinta-3);
   }
 
   .fila {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: var(--e-3);
-    padding: var(--e-3) var(--e-4) var(--e-3) calc(var(--e-4) + 2px);
-    /* Franja de 4 px del tono, a la izquierda de la fila. */
-    box-shadow: inset 4px 0 0 var(--tono-r, transparent);
+    padding: var(--e-3) var(--e-4) var(--e-3) calc(var(--e-4) + 6px);
+  }
+  /* Precinto de 6 px del tono en el borde izquierdo (15.5.5). Solo decoración: lo que dice el estado está en la etiqueta. */
+  .fila::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--tono-r, var(--c-tinta-3)) 0 1.5px, transparent 1.5px 5px);
   }
   .fila + .fila {
-    border-top: 1px solid var(--c-borde);
+    border-top: 1px solid var(--c-filete);
   }
   @media (hover: hover) {
     .fila:hover {
-      background: var(--c-superficie-2);
+      background: var(--c-papel-2);
     }
   }
   .cuerpo {
@@ -274,14 +289,18 @@
   }
   .sec {
     margin-top: 0.1875rem;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
     font-size: var(--t-tabla);
     line-height: 1.4;
     overflow-wrap: anywhere;
   }
+  /* El enlace de la patente mide 24 px de alto como mínimo (WCAG 2.5.8): en línea con el texto medía 16 px. */
   .sec a {
     position: relative;
+    display: inline-block;
+    min-height: 1.5rem;
     color: inherit;
+    line-height: 1.5rem;
   }
   /* El número del documento («DEMO-LC-8514») no se parte en el guion: si no entra, baja entero. */
   .codigo {
@@ -294,11 +313,21 @@
     inset-inline: -0.25rem;
     inset-block: -0.75rem;
   }
-  /* Con poco lugar (320 px, o el texto agrandado) el botón baja debajo del texto, con su ancho. */
-  @container caja (max-width: 18rem) {
+  /* «Renovar» o «Cargar» (secundario): 36 px en escritorio. El tamaño «chico» del botón queda para los renglones de las fichas. */
+  .accion :global(.boton) {
+    min-height: 2.25rem;
+  }
+  /* Con poco lugar (el celular, o el texto agrandado) el botón baja debajo del texto, a todo el ancho y de 40 px. */
+  @container caja (max-width: 30rem) {
     .fila {
       grid-template-columns: minmax(0, 1fr);
-      justify-items: start;
+    }
+    .accion {
+      display: flex;
+    }
+    .accion :global(.boton) {
+      flex: 1 1 auto;
+      min-height: 2.5rem;
     }
   }
   /* Con el texto agrandado (la caja mide 14 rem o menos) un número largo no puede ensanchar la página: ahí sí se parte. */
@@ -308,69 +337,27 @@
     }
   }
 
-  /* ---------- Vacío ---------- */
+  /* ---------- Vacío (15.5.12): caja de 1 px punteada en `--c-control` sobre la hoja, el porqué en cartel a 78 % y 24 px. Sin ilustración ---------- */
   .vacio {
     display: grid;
     justify-items: start;
     gap: var(--e-2);
-    padding: var(--e-6) var(--e-4);
+    padding: var(--e-5) var(--e-4);
+    border: 1px dashed var(--c-control);
+    background: var(--c-hoja);
   }
   .vacio h2 {
     padding: 0;
-    font-size: var(--t-h3);
+    font-family: var(--t-familia-titulo);
+    font-stretch: var(--t-ancho-titulo);
+    font-size: var(--t-h2);
+    font-weight: var(--t-peso-cartel);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
   }
   .vacio p {
     max-width: 46ch;
-    color: var(--c-texto-2);
-  }
-  /* La marca del vacío es la regla propia, vacía: tres tramos, la línea de hoy y un tilde (o un aro si no hubo resultados). */
-  .marca-vacia {
-    position: relative;
-    display: grid;
-    grid-template-columns: 7fr 8fr 15fr;
-    width: 10.5rem;
-    height: 1rem;
-    margin: 1.5rem 0 var(--e-2) 0.125rem;
-  }
-  .marca-vacia i:nth-child(1) {
-    background: var(--c-semana-f);
-    border-radius: 3px 0 0 3px;
-  }
-  .marca-vacia i:nth-child(2) {
-    background: var(--c-quincena-f);
-  }
-  .marca-vacia i:nth-child(3) {
-    background: var(--c-mes-f);
-    border-radius: 0 3px 3px 0;
-  }
-  .marca-vacia::before {
-    content: "";
-    position: absolute;
-    inset-block: -0.375rem;
-    left: -0.125rem;
-    width: 3px;
-    border-radius: 2px;
-    background: var(--c-hoy);
-  }
-  .marca-vacia b {
-    position: absolute;
-    top: -1.375rem;
-    left: 0.5rem;
-    width: 0.75rem;
-    height: 1.375rem;
-    border: solid var(--c-vigente-r);
-    border-width: 0 4px 4px 0;
-    transform: rotate(40deg);
-  }
-  .marca-vacia.sin b {
-    top: -0.1875rem;
-    left: 4.625rem;
-    width: 1.375rem;
-    height: 1.375rem;
-    border: 3.5px solid var(--c-borde-fuerte);
-    border-radius: 50%;
-    background: var(--c-superficie);
-    transform: none;
+    color: var(--c-tinta-2);
   }
 
   @media (forced-colors: active) {
@@ -378,19 +365,8 @@
     .estado {
       border-color: CanvasText;
     }
-    .fila {
-      box-shadow: none;
-      border-inline-start: 4px solid CanvasText;
-    }
-    .marca-vacia i {
-      background: Canvas;
-      outline: 1px solid CanvasText;
-    }
-    .marca-vacia::before {
-      background: CanvasText;
-    }
-    .marca-vacia b {
-      border-color: CanvasText;
+    .fila::before {
+      background-image: repeating-linear-gradient(-45deg, CanvasText 0 1.5px, transparent 1.5px 5px);
     }
   }
 </style>

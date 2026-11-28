@@ -21,6 +21,7 @@
 </div>
 
 <style>
+  /* Pie de rey (15.5.9): rótulo en técnica de 12 px y mayúsculas, valor de 14 px y peso 600. Sin estados. */
   .dato {
     display: flex;
     flex-direction: column;
@@ -28,14 +29,19 @@
     min-width: 0;
   }
   dt {
-    font-size: var(--t-chico);
-    font-weight: 600;
-    line-height: 1.4;
-    color: var(--c-texto-2);
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    line-height: 1.3;
+    text-transform: uppercase;
+    color: var(--c-tinta-3);
   }
   dd {
     margin: 0;
-    color: var(--c-texto);
+    color: var(--c-tinta);
+    font-size: 0.875rem;
+    font-weight: 600;
     line-height: 1.5;
   }
 </style>

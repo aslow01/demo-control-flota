@@ -13,15 +13,18 @@
   import DialogoConductor from "./componentes/DialogoConductor.svelte";
   import DialogoReiniciar from "./componentes/DialogoReiniciar.svelte";
   import EnlaceAccion from "./componentes/EnlaceAccion.svelte";
+  import { entrada } from "./componentes/entrada.ts";
   import Lateral from "./componentes/Lateral.svelte";
+  import { codigoDeLamina, padreDeLamina } from "./componentes/lamina.ts";
   import Migas from "./componentes/Migas.svelte";
   import PantallaInicio from "./componentes/PantallaInicio.svelte";
+  import SelloDatos from "./componentes/SelloDatos.svelte";
   import { cuentasDeNavegacion } from "./componentes/insignias.ts";
-  import { pedirCuenta } from "./componentes/movimiento.ts";
   import { TEXTO_MARCO, TEXTO_MAS, TEXTO_NAVEGACION, TEXTO_REINICIO } from "./componentes/textos-marco.ts";
   import type { OpcionConductor } from "./componentes/tipos.ts";
-  import { bajar, esVersionNueva } from "./lib/descarga.ts";
-  import { aHash, migasDe, nombreDePantalla, rutaPorDefecto, type Ruta } from "./lib/estado/enrutador.ts";
+  import { bajar, esVersionNueva, PLAZO_DE_DESCARGA_MS } from "./lib/descarga.ts";
+  import { conSugerencias, PLAZO_DE_SUGERENCIAS_MS } from "./lib/estado/conductor-opciones.ts";
+  import { aHash, nombreDePantalla, rutaPorDefecto, type Ruta } from "./lib/estado/enrutador.ts";
   import { formatearFechaConDia } from "./lib/dominio/fechas.ts";
   import { NOMBRES_DE_PANTALLA, TEXTO_AVISO, TEXTO_ERROR_ARRANQUE, TEXTO_ERROR_DESCARGA, TEXTO_ERROR_PANTALLA, textoDatosDeOtraFecha } from "./lib/dominio/textos-base.ts";
   import { app } from "./lib/estado/instancia.ts";
@@ -96,7 +99,7 @@
     if (r.ok) {
       irAlTitulo = app.versionDePantalla !== pantallaAntes; // si cambió la pantalla, el foco va a su título
       dialogoReiniciarAbierto = false;
-      pedirCuenta(); // la cifra cobre de Inicio vuelve a contar desde 0
+      entrada.reiniciar(); // la entrada de Inicio y de Hoy vuelve a pedirse (15.10); la que sigue en pantalla arranca de nuevo
       anunciar(TEXTO_REINICIO.hecho);
     } else {
       errorAlReiniciar = r.error.mensaje;
@@ -110,13 +113,33 @@
   let perfilInicialDelDialogo = $state<"encargado" | "conductor">("encargado");
   /** El conductor que el diálogo trae elegido al abrirse desde «Probar como conductor» (Inicio); `null` = el del perfil actual. */
   let conductorInicialDelDialogo = $state<string | null>(null);
-  const conductores = $derived<OpcionConductor[]>(app.opcionesDeConductor());
+  // Las opciones (quién, con qué unidad) son livianas y viajan con el marco: de ellas sale también de quién es la vista de ahora.
+  const opcionesDeConductor = $derived(app.opcionesDeConductor());
   const conductorActual = $derived(app.perfil.tipo === "conductor" ? app.perfil.conductorId : null);
-  const opcionActual = $derived(conductores.find((c) => c.id === conductorActual));
+  const opcionActual = $derived(opcionesDeConductor.find((c) => c.id === conductorActual));
+  // Las marcas «Para probar» del diálogo salen de `estado/conductor.ts`, que no viaja con el marco (arma el inicio de cada conductor): se baja la primera vez que se abre «Ver como».
+  // Hasta entonces, y si no baja, las opciones van sin marcas. Calcularlas es lo caro del diálogo, así que solo se leen con el diálogo abierto: cerrado (sigue montado, con su
+  // lista) nadie las lee y un cambio de estado, como el autoguardado del parte, no las vuelve a calcular. Al reabrirlo se calculan de nuevo solo si algo cambió.
+  let trozoDelConductor = $state.raw<typeof import("./lib/estado/conductor.ts") | null>(null);
+  const sugerencias = $derived(trozoDelConductor?.leerSugerenciasDeVerComo(app) ?? null);
+  const conductores = $derived<OpcionConductor[]>(conSugerencias(opcionesDeConductor, dialogoVerComoAbierto ? sugerencias : null));
   const esConductor = $derived(app.perfil.tipo === "conductor");
   const perfilTexto = $derived(esConductor ? TEXTO_MARCO.perfilConductor : TEXTO_MARCO.perfilEncargado);
 
-  function pedirVerComo(inicial: "encargado" | "conductor" = app.perfil.tipo, conductorId: string | null = null): void {
+  /** Cuánto se espera en silencio a las sugerencias antes de decir que «Ver como» se está abriendo (lo mismo que el arranque y las pantallas: 300 ms). */
+  const DEMORA_DEL_AVISO_MS = 300;
+
+  async function pedirVerComo(inicial: "encargado" | "conductor" = app.perfil.tipo, conductorId: string | null = null): Promise<void> {
+    // Primero las sugerencias (un pedido chico, solo la primera vez). Con un plazo corto: si no llegan a tiempo el diálogo se abre igual, sin ellas, y la próxima vez se vuelven a pedir.
+    if (trozoDelConductor === null) {
+      // Si tardan, el botón no queda mudo: un mensaje de estado dice que se está abriendo. Se retira al terminar la espera (si otro anuncio ya ocupó su lugar, no se toca).
+      const aviso = setTimeout(() => (anuncio = TEXTO_MARCO.abriendoVerComo), DEMORA_DEL_AVISO_MS);
+      trozoDelConductor = await bajar(() => import("./lib/estado/conductor.ts"), { plazoMs: PLAZO_DE_SUGERENCIAS_MS }).catch(() => null);
+      clearTimeout(aviso);
+      if (anuncio === TEXTO_MARCO.abriendoVerComo) anuncio = "";
+    }
+    // Si mientras bajaban se abrió otro diálogo (o este mismo, con un segundo clic), no se le pone uno encima.
+    if (document.querySelector("dialog[open]") !== null) return;
     errorAlCambiarPerfil = "";
     perfilInicialDelDialogo = inicial;
     conductorInicialDelDialogo = conductorId;
@@ -216,19 +239,10 @@
   const tituloDeLaBarra = $derived(
     app.ruta.tipo === "operacion" ? (app.ruta.solapa === "partes" ? NOMBRES_DE_PANTALLA.operacionPartes : NOMBRES_DE_PANTALLA.operacionNovedades) : nombreDeLaPantalla,
   );
-  // «Atrás» lleva al padre (la ficha, a Movilidades con el filtro y la búsqueda que tenía); en las pantallas de la barra no hay.
-  const atras = $derived.by(() => {
-    const padre = app.padre;
-    if (padre === null) return null;
-    const nombre = nombreDePantalla(padre);
-    return { href: aHash(padre), texto: padre.tipo === "operacion" ? TEXTO_NAVEGACION.operacionCorto : nombre, nombreAccesible: TEXTO_NAVEGACION.volverA(nombre) };
-  });
-  // Migas: las pantallas de la barra llevan un solo tramo (su nombre); la primera miga de las demás vuelve al padre tal como estaba.
-  const tramos = $derived.by(() => {
-    const migas = migasDe(app.ruta, app.perfil);
-    if (migas.length === 0) return [{ nombre: tituloDeLaBarra, href: null }];
-    return migas.map((m, i) => ({ nombre: m.nombre, href: m.ruta === null ? null : aHash(i === 0 && app.padre !== null ? app.padre : m.ruta) }));
-  });
+  // «Atrás» lleva al padre (la ficha, a Movilidades con el filtro y la búsqueda que tenía); en las pantallas de la barra no hay. El mismo enlace va en el encabezado de lámina del escritorio
+  // (15.4.3), junto al código de la lámina («FL-01» a «FL-09»).
+  const atras = $derived(app.padre === null ? null : padreDeLamina(app.padre));
+  const codigoDeLaLamina = $derived(codigoDeLamina(app.ruta));
   const descripcionDelPerfil = $derived(
     !esConductor
       ? TEXTO_MAS.verComo.encargadoDescripcion
@@ -291,7 +305,11 @@
     }
     void tick().then(enfocarTitulo);
   }
-  // Un trozo que no se pudo bajar (sin red, o un trozo de una versión anterior que ya no está): título y «Recargar»; el foco va a ese título.
+  // Cada pantalla se baja al entrar, con un plazo: una que no responde (la conexión se cortó a medio camino) no queda en «Cargando la pantalla…» para siempre.
+  function bajarPantalla<T>(cargar: () => Promise<T>): Promise<T> {
+    return bajar(cargar, { plazoMs: PLAZO_DE_DESCARGA_MS });
+  }
+  // Un trozo que no se pudo bajar (sin red, sin respuesta, o un trozo de una versión anterior que ya no está): título y «Recargar»; el foco va a ese título.
   function alMostrarseElErrorDeCarga(): void {
     void tick().then(enfocarTitulo);
   }
@@ -394,15 +412,19 @@
   />
 
   <div class="marco">
-    <BarraSuperior cargada={lista} {atras} titulo={tituloDeLaBarra} perfil={perfilTexto} {esConductor} {fecha} alVerComo={() => pedirVerComo()} />
-    {#if lista}
-      <header class="barra-escritorio">
-        <div class="ancho interior">
-          <Migas {tramos} />
-          <span class="fecha">{fecha}</span>
-        </div>
-      </header>
-    {/if}
+    <BarraSuperior cargada={lista} {atras} titulo={tituloDeLaBarra} perfil={perfilTexto} {esConductor} alVerComo={() => pedirVerComo()} />
+    <!-- La barra de escritorio existe también durante el arranque (vacía, con su alto): al llegar los datos nada se corre. -->
+    <header class="barra-escritorio">
+      <div class="ancho interior">
+        {#if lista}
+          <Migas codigo={codigoDeLaLamina} padre={atras} />
+          <div class="datos-lamina">
+            <SelloDatos />
+            <span class="fecha">{fecha}</span>
+          </div>
+        {/if}
+      </div>
+    </header>
     <!-- Región viva siempre presente (vacía, sin relleno): lo que llega con la página abierta (D9) se anuncia como un cambio dentro de ella. -->
     <div class="avisos ancho" class:hay={lista && (app.avisos.length > 0 || app.hayCambiosEnOtraPestana)} role="status" bind:this={regionDeAvisos}>
       {#if app.fase === "lista"}
@@ -439,25 +461,41 @@
     </div>
 
     <main id="principal" class="ancho" class:en-parte={enParte} tabindex="-1">
+      <!-- Renglón de lámina (15.4.4): solo por debajo de 64 rem (en escritorio la misma información está en la barra) y primero en `main`, antes del `h1`. A la derecha, la fecha (pantallas del menú)
+           o el sello (ficha, parte y cualquier pantalla angosta de menos de 22,5 rem, donde la barra no lo lleva): es el mismo dato en dos lugares y la hoja de estilos deja uno solo a la vista. -->
+      {#if lista && codigoDeLaLamina !== null}
+        <p class="renglon-lamina" class:con-padre={atras !== null}>
+          <span class="lamina-codigo" aria-hidden="true">{codigoDeLaLamina}</span>
+          <span class="lamina-fecha">{fecha}</span>
+          <SelloDatos />
+        </p>
+      {/if}
       <svelte:boundary onerror={(_error, reponer) => (reponerPantalla = reponer)}>
         {#if app.fase === "arrancando"}
-          <!-- 5.19: nada durante 300 ms; después, el texto y un <progress> indeterminado. La región existe desde el principio para que se anuncie. -->
-          <div class="preparando" role="status">
-            {#if app.preparando}
-              <p id="texto-preparando">{TEXTO_AVISO.preparando}</p>
-              <progress aria-labelledby="texto-preparando"></progress>
-            {/if}
+          <!-- El cuadro cero de la regla (15.4.6): la caja vacía, sin ningún dato falso, con el alto de la regla real (la hoja de estilos reserva arriba el del encabezado de la pantalla), así
+               al llegar los datos la regla aparece en el mismo lugar. 5.19: nada durante 300 ms; después, el texto y un <progress> indeterminado. La región existe desde el principio para que se anuncie. -->
+          <div class="cuadro-cero">
+            <div class="cuadro-cero-reserva" aria-hidden="true"></div>
+            <div class="cuadro-cero-caja">
+              <div class="preparando" role="status">
+                {#if app.preparando}
+                  <p id="texto-preparando">{TEXTO_AVISO.preparando}</p>
+                  <progress aria-labelledby="texto-preparando"></progress>
+                {/if}
+              </div>
+            </div>
+            <div class="cuadro-cero-escala" aria-hidden="true"></div>
           </div>
         {:else if app.fase === "error"}
           <h1 tabindex="-1">{TEXTO_ERROR_ARRANQUE.titulo}</h1>
-          <p class="parrafo">{app.errorDeArranque}</p>
+          <div class="ficha-error" data-tono="critico"><p class="parrafo">{app.errorDeArranque}</p></div>
           <div class="acciones-error">
             <Boton onclick={() => window.location.reload()}>{TEXTO_MARCO.recargar}</Boton>
           </div>
         {:else if app.ruta.tipo === "inicio"}
           <PantallaInicio alAbrirParte={() => pedirVerComo("conductor")} alProbarComoConductor={(conductorId) => pedirVerComo("conductor", conductorId)} />
         {:else if app.ruta.tipo === "vencimientos"}
-          {#await bajar(() => import("./componentes/PantallaVencimientos.svelte"))}
+          {#await bajarPantalla(() => import("./componentes/PantallaVencimientos.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaVencimientos }}
             <PantallaVencimientos />
@@ -465,7 +503,7 @@
             {@render errorDeCarga(error)}
           {/await}
         {:else if app.ruta.tipo === "operacion"}
-          {#await bajar(() => import("./componentes/PantallaOperacion.svelte"))}
+          {#await bajarPantalla(() => import("./componentes/PantallaOperacion.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaOperacion }}
             <PantallaOperacion alAbrirParte={() => pedirVerComo("conductor")} />
@@ -473,7 +511,7 @@
             {@render errorDeCarga(error)}
           {/await}
         {:else if app.ruta.tipo === "movilidades"}
-          {#await bajar(() => import("./componentes/PantallaFlota.svelte"))}
+          {#await bajarPantalla(() => import("./componentes/PantallaFlota.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaFlota }}
             <PantallaFlota />
@@ -481,7 +519,7 @@
             {@render errorDeCarga(error)}
           {/await}
         {:else if app.ruta.tipo === "mas"}
-          {#await bajar(() => import("./componentes/PantallaMas.svelte"))}
+          {#await bajarPantalla(() => import("./componentes/PantallaMas.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaMas }}
             <PantallaMas perfil={perfilTexto} {descripcionDelPerfil} alCambiarPerfil={() => pedirVerComo()} alComoFunciona={abrirComoFunciona} alReiniciar={pedirReinicio} />
@@ -491,7 +529,7 @@
         {:else if app.ruta.tipo === "unidad"}
           <!-- Una ficha nueva (otra patente, o el alta de una unidad) arranca limpia: filtro del historial, mensajes y diálogos. -->
           {#key app.versionDePantalla}
-            {#await bajar(() => import("./componentes/PantallaFicha.svelte"))}
+            {#await bajarPantalla(() => import("./componentes/PantallaFicha.svelte"))}
               {@render cargandoPantalla()}
             {:then { default: PantallaFicha }}
               <PantallaFicha />
@@ -500,7 +538,7 @@
             {/await}
           {/key}
         {:else if app.ruta.tipo === "conductor"}
-          {#await bajar(() => import("./componentes/PantallaConductor.svelte"))}
+          {#await bajarPantalla(() => import("./componentes/PantallaConductor.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaConductor }}
             <PantallaConductor />
@@ -508,7 +546,7 @@
             {@render errorDeCarga(error)}
           {/await}
         {:else if app.ruta.tipo === "mis-partes"}
-          {#await bajar(() => import("./componentes/PantallaMisPartes.svelte"))}
+          {#await bajarPantalla(() => import("./componentes/PantallaMisPartes.svelte"))}
             {@render cargandoPantalla()}
           {:then { default: PantallaMisPartes }}
             <PantallaMisPartes />
@@ -518,7 +556,7 @@
         {:else if app.ruta.tipo === "parte"}
           <!-- Un parte nuevo (otra unidad u otra fecha) arranca limpio: formulario, errores y el panel de «Parte enviado». -->
           {#key app.versionDePantalla}
-            {#await bajar(() => import("./componentes/PantallaParte.svelte"))}
+            {#await bajarPantalla(() => import("./componentes/PantallaParte.svelte"))}
               {@render cargandoPantalla()}
             {:then { default: PantallaParte }}
               <PantallaParte bind:titulo={tituloDelParte} />
@@ -571,14 +609,14 @@
 />
 
 <style>
-  /* El foco y el desplazamiento de «saltar al foco» no quedan bajo las barras fijas: arriba la superior (con su franja), abajo la inferior; en escritorio, arriba la de migas. */
+  /* El foco y el desplazamiento de «saltar al foco» no quedan bajo las barras fijas: arriba la barra visible más 12 px; abajo, por debajo de 64 rem, la barra inferior, el área segura y 16 px. */
   :global(html) {
-    scroll-padding-top: calc(var(--alto-barra) + var(--alto-franja) + var(--e-4));
-    scroll-padding-bottom: calc(var(--alto-pestanas) + var(--e-4));
+    scroll-padding-top: calc(var(--alto-barra) + 0.75rem);
+    scroll-padding-bottom: calc(var(--alto-pestanas) + env(safe-area-inset-bottom, 0px) + var(--e-4));
   }
   @media (min-width: 64rem) {
     :global(html) {
-      scroll-padding-top: 4.5rem;
+      scroll-padding-top: calc(var(--alto-lamina) + 0.75rem);
       scroll-padding-bottom: var(--e-4);
     }
   }
@@ -602,14 +640,15 @@
     }
   }
 
-  /* Ancho y medianil del contenido: alineados con las migas y la fecha de la barra de escritorio. Pegado a la izquierda, no centrado. */
+  /* Ancho y medianil del contenido: alineados con el encabezado de lámina de la barra de escritorio. Pegado a la izquierda, no centrado. */
   .ancho {
     width: 100%;
     max-width: 82.5rem;
     padding-inline: var(--gutter);
   }
 
-  /* Barra de escritorio: migas a la izquierda y la fecha a la derecha. Fija arriba al desplazar. */
+  /* Barra de escritorio (15.4.3): el encabezado de lámina a la izquierda (código y, en la ficha y el parte, el enlace al padre) y a la derecha el sello y la fecha. Fija arriba, de 56 px, con el
+     papel al 92 % y 6 px de desenfoque (la única pieza con desenfoque). */
   .barra-escritorio {
     display: none;
   }
@@ -619,20 +658,30 @@
       position: sticky;
       top: 0;
       z-index: 40;
-      background: var(--c-fondo);
-      border-bottom: 1px solid var(--c-borde);
-      color: var(--c-texto-2);
-      font-size: var(--t-tabla);
+      background: color-mix(in srgb, var(--c-papel) 92%, transparent);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--c-filete-medio);
     }
     .interior {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: var(--e-4);
-      min-height: 3.5rem;
+      min-height: var(--alto-lamina);
+    }
+    .datos-lamina {
+      display: flex;
+      flex: none;
+      align-items: center;
+      gap: var(--e-5);
     }
     .fecha {
-      flex: none;
+      color: var(--c-tinta-2);
+      font-family: var(--t-mono);
+      font-size: var(--t-rotulo);
+      font-weight: 500;
+      letter-spacing: 0.06em;
     }
   }
 
@@ -653,16 +702,73 @@
     align-items: flex-start;
     gap: var(--e-4);
     /* Abajo deja lugar a la barra inferior fija (en el parte no hay: manda la barra de envío). */
-    padding-block: var(--e-5) calc(var(--alto-pestanas) + env(safe-area-inset-bottom, 0px) + var(--e-6));
+    padding-block: var(--e-4) calc(var(--alto-pestanas) + env(safe-area-inset-bottom, 0px) + var(--e-6));
   }
   main.en-parte {
     padding-bottom: var(--e-6);
   }
   @media (min-width: 64rem) {
     main {
-      padding-bottom: var(--e-7);
+      padding-block: var(--e-5) var(--e-7);
     }
   }
+
+  /* Renglón de lámina (celular y tableta): código a la izquierda y, a la derecha, la fecha o el sello. Técnica de 12 px. */
+  .renglon-lamina {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e-2) var(--e-3);
+    width: 100%;
+    min-height: 1.5rem;
+    margin-bottom: calc(var(--e-2) * -1);
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    line-height: 1;
+  }
+  /* El código y la fecha no se parten; con el texto al 200 % el renglón baja la pieza que no entra a otra línea en lugar de ensanchar la página. */
+  .lamina-codigo {
+    color: var(--c-tinta-3);
+    white-space: nowrap;
+  }
+  .lamina-fecha {
+    margin-left: auto;
+    color: var(--c-tinta-2);
+    white-space: nowrap;
+  }
+  .renglon-lamina :global(.sello) {
+    display: none;
+  }
+  /* Ficha y parte: el sello no entra en la barra, así que baja acá, y la fecha no se muestra. */
+  .renglon-lamina.con-padre .lamina-fecha {
+    display: none;
+  }
+  .renglon-lamina.con-padre :global(.sello) {
+    display: inline-flex;
+    margin: 0 3px 0 auto;
+  }
+  /* El caso de 320 px: el sello baja al renglón de todas las pantallas y la fecha no se muestra. */
+  @media (max-width: 22.49rem) {
+    .renglon-lamina {
+      min-height: 2.125rem;
+    }
+    .lamina-fecha {
+      display: none;
+    }
+    .renglon-lamina :global(.sello) {
+      display: inline-flex;
+      margin: 0 3px 0 auto;
+    }
+  }
+  @media (min-width: 64rem) {
+    .renglon-lamina {
+      display: none;
+    }
+  }
+
   .acciones-error {
     display: flex;
     flex-wrap: wrap;
@@ -671,23 +777,84 @@
   .error-aviso {
     font-weight: 600;
   }
+
+  /* Arranque (15.4.6): el cuadro cero de la regla, la caja vacía con el alto de la regla real (15.6.2, por el ancho del contenedor). Arriba se reserva el alto del encabezado de la pantalla
+     (título y línea; el renglón de lámina ya está arriba) y, sobre la caja, el de la fila del cursor: al llegar los datos la regla aparece en el mismo lugar, sin salto. Sin bloques grises ni brillo. */
+  .cuadro-cero {
+    container: cero / inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-4);
+    width: 100%;
+  }
+  .cuadro-cero-reserva {
+    height: calc(min(var(--t-h1), 14vw) + var(--e-2) + 1.5 * var(--t-cuerpo));
+  }
+  .cuadro-cero-caja {
+    display: flex;
+    align-items: center;
+    height: 8rem;
+    margin-top: 0.75rem;
+    padding: var(--e-4);
+    background: var(--c-hoja);
+    border: var(--b-caja) solid var(--c-tinta);
+  }
+  @container cero (min-width: 37.5rem) {
+    .cuadro-cero-caja {
+      height: 12.25rem;
+    }
+  }
+  @container cero (min-width: 60rem) {
+    .cuadro-cero-caja {
+      height: 15.75rem;
+    }
+  }
+  /* La escala sin marcas ni números: solo la línea. */
+  .cuadro-cero-escala {
+    height: 0;
+    margin-top: calc(var(--e-4) * -0.5);
+    border-top: 1px solid var(--c-tinta);
+  }
   .preparando {
     display: flex;
     flex-direction: column;
     gap: var(--e-2);
     width: min(100%, 24rem);
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
   progress {
-    width: 100%;
+    width: min(100%, 20rem);
+    accent-color: var(--c-tinta);
   }
-  /* Los trozos locales llegan en un instante: el texto no aparece hasta pasados 300 ms (como en el arranque) para que no parpadee. */
+  /* «Cargando la pantalla…»: un renglón sobre la hoja con un filete de 1,5 px en tinta arriba. Los trozos locales llegan en un instante: el texto no aparece hasta pasados 300 ms (como en el
+     arranque) para que no parpadee. */
   .diferida {
+    width: 100%;
+    padding: var(--e-4);
+    background: var(--c-hoja);
+    border-top: var(--b-fuerte) solid var(--c-tinta);
     animation: aparecer-tarde 0s linear 300ms backwards;
   }
   @keyframes aparecer-tarde {
     from {
       visibility: hidden;
     }
+  }
+
+  /* Error de arranque: una ficha con un precinto crítico de 6 px en el borde izquierdo (el rayado no depende del color). */
+  .ficha-error {
+    position: relative;
+    max-width: 40rem;
+    padding: var(--e-4) var(--e-4) var(--e-4) calc(var(--e-4) + 6px);
+    background: var(--c-hoja);
+    border: 1px solid var(--c-filete-medio);
+    border-top: var(--b-fuerte) solid var(--c-tinta);
+  }
+  .ficha-error::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--tono-r) 0 1.5px, transparent 1.5px 5px);
   }
 </style>

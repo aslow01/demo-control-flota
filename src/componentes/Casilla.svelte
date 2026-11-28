@@ -35,6 +35,8 @@
 </div>
 
 <style>
+  /* Pie de rey (15.5.7): caja de 20 px con borde de 1,5 px y esquinas de 2 px; marcada, fondo de tinta con la marca de verificación. El rótulo es parte del objetivo (44 px
+     de alto). Sigue siendo la casilla nativa (teclado, foco y lectores salen solos): solo se le cambia la piel. */
   .casilla {
     display: flex;
     flex-direction: column;
@@ -51,17 +53,57 @@
     cursor: pointer;
   }
   input {
+    appearance: none;
+    position: relative;
     flex: none;
-    width: 1.375rem;
-    height: 1.375rem;
+    width: 1.25rem;
+    height: 1.25rem;
     margin: 0;
-    accent-color: var(--c-acento);
+    background: var(--c-hoja);
+    border: var(--b-control) solid var(--c-control);
+    border-radius: var(--r-1);
     cursor: pointer;
   }
+  input:checked {
+    background: var(--c-tinta);
+    border-color: var(--c-tinta);
+  }
+  /* La marca: dos bordes de un rectángulo girado, en el color del texto sobre la tinta. */
+  input:checked::after {
+    content: "";
+    position: absolute;
+    left: 0.3125rem;
+    top: 0.0625rem;
+    width: 0.375rem;
+    height: 0.6875rem;
+    border: solid var(--c-sobre-tinta);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  @media (hover: hover) {
+    input:hover:not(:disabled) {
+      border-color: var(--c-tinta);
+    }
+  }
+  input:disabled {
+    background: var(--c-papel-2);
+    border-color: var(--c-control);
+    cursor: not-allowed;
+  }
   .ayuda {
-    padding-left: calc(1.375rem + var(--e-3));
+    padding-left: calc(1.25rem + var(--e-3));
     font-size: var(--t-chico);
     line-height: 1.4;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
+  }
+
+  @media (forced-colors: active) {
+    input {
+      appearance: auto;
+      forced-color-adjust: auto;
+    }
+    input:checked::after {
+      display: none;
+    }
   }
 </style>

@@ -1,6 +1,25 @@
 // Control del peso del JS (`scripts/peso-js.mjs`): la lógica pura, separada de la lectura de `dist/`.
 import { describe, expect, it } from "vitest";
-import { AVISO_TROZO, TOPE_INICIAL, TOPE_PRIMERA_VISITA, TOPE_TOTAL_AVISO, evaluarPeso, gzipBytes, jsDeLaCargaInicial, jsDeLaPrimeraVisita, lineaDeAviso, resumenEnMarkdown, resumirPeso } from "../scripts/peso-js.mjs";
+import {
+  AVISO_CSS_INICIAL,
+  AVISO_CSS_TOTAL,
+  AVISO_TROZO,
+  TOPE_CSS_INICIAL,
+  TOPE_FUENTES,
+  TOPE_INICIAL,
+  TOPE_PRIMERA_VISITA,
+  TOPE_TOTAL_AVISO,
+  cssDeLaCargaInicial,
+  esUnaFuente,
+  evaluarPeso,
+  gzipBytes,
+  jsDeLaCargaInicial,
+  jsDeLaPrimeraVisita,
+  lineaDeAviso,
+  resumenEnMarkdown,
+  resumirEstilos,
+  resumirPeso,
+} from "../scripts/peso-js.mjs";
 
 const HTML = `<!doctype html><html><head>
 <script type="module" crossorigin src="/assets/index-AAA.js"></script>
@@ -70,15 +89,15 @@ describe("evaluarPeso", () => {
     expect(arriba.avisos).toHaveLength(1);
     expect(arriba.avisos[0]).toContain("PantallaFicha-AAA.js");
   });
-  it("los topes son los de la etapa 1 del rediseño: 95.000 B iniciales, 100.000 B en la primera visita, aviso de 30.000 B por trozo y de 180.000 B en el total", () => {
-    expect(TOPE_INICIAL).toBe(95_000);
-    expect(TOPE_PRIMERA_VISITA).toBe(100_000);
+  it("los topes son los de la etapa 2 del rediseño (subidos el 28/11/2026 por la regla de salida de la T9, decisión de Matías; la etapa 1 los había fijado en 95.000 y 100.000 B): 97.000 B iniciales, 102.000 B en la primera visita, aviso de 30.000 B por trozo y de 180.000 B en el total", () => {
+    expect(TOPE_INICIAL).toBe(97_000);
+    expect(TOPE_PRIMERA_VISITA).toBe(102_000);
     expect(AVISO_TROZO).toBe(30_000);
     expect(TOPE_TOTAL_AVISO).toBe(180_000);
   });
-  it("el aviso del total está cerca de lo que mide hoy (165.809 B): menos de 20 kB de margen, para que avise de verdad", () => {
-    expect(TOPE_TOTAL_AVISO - 165_809).toBeGreaterThan(0);
-    expect(TOPE_TOTAL_AVISO - 165_809).toBeLessThan(20_000);
+  it("el aviso del total está cerca de lo que mide hoy (175.367 B): menos de 20 kB de margen, para que avise de verdad", () => {
+    expect(TOPE_TOTAL_AVISO - 175_367).toBeGreaterThan(0);
+    expect(TOPE_TOTAL_AVISO - 175_367).toBeLessThan(20_000);
   });
 });
 
@@ -93,7 +112,7 @@ describe("lineaDeAviso", () => {
 
 describe("resumenEnMarkdown", () => {
   it("arma una tabla con las tres medidas y sus topes, y lista los avisos", () => {
-    const md = resumenEnMarkdown({ inicial: 93_886, primeraVisita: 99_276, total: 165_809 }, ["un aviso"]);
+    const md = resumenEnMarkdown({ inicial: 93_886, primeraVisita: 99_276, total: 175_367 }, ["un aviso"]);
     expect(md).toContain("| Carga inicial |");
     expect(md).toContain("| Primera visita |");
     expect(md).toContain("| Total |");
@@ -147,7 +166,111 @@ describe("la primera visita (la carga inicial más el generador de datos)", () =
     expect(evaluarPeso({ inicial: 90_000, primeraVisita: TOPE_PRIMERA_VISITA + 1, total: 1 }).ok).toBe(false);
   });
 
-  it("la carga inicial sigue teniendo su tope de 95.000 B, sin subirlo", () => {
+  it("la carga inicial tiene su tope de 97.000 B (subido el 28/11/2026 por la regla de salida de la T9)", () => {
     expect(evaluarPeso({ inicial: TOPE_INICIAL + 1, primeraVisita: TOPE_INICIAL + 1, total: 1 }).ok).toBe(false);
+  });
+});
+
+// Etapa 2 del rediseño: el CSS y las fuentes también se miden. El CSS inicial bloquea el primer pintado (tope que falla); las fuentes protegen la decisión de no sumar tipografías.
+describe("el CSS y las fuentes", () => {
+  const HTML_CON_HOJAS = `<!doctype html><html><head>
+<script type="module" crossorigin src="/assets/index-AAA.js"></script>
+<link rel="modulepreload" crossorigin href="/assets/comun-BBB.js">
+<link rel="stylesheet" crossorigin href="/assets/index-CCC.css">
+<link crossorigin href="/assets/Boton-DDD.css" rel="stylesheet">
+<link rel="stylesheet" href="/assets/index-CCC.css">
+<link rel="stylesheet" href="https://otro.example/externo.css">
+<link rel="stylesheet" href="//otro.example/sin-protocolo.css">
+<link rel="icon" href="/favicon.svg">
+<link rel="preload" as="style" href="/assets/precarga-EEE.css">
+</head><body></body></html>`;
+
+  describe("cssDeLaCargaInicial", () => {
+    it("toma las hojas de estilo locales del HTML, sin repetir y sin traer JS, íconos, precargas ni externas", () => {
+      expect(cssDeLaCargaInicial(HTML_CON_HOJAS)).toEqual(["assets/index-CCC.css", "assets/Boton-DDD.css"]);
+    });
+    it("sin hojas devuelve lista vacía", () => {
+      expect(cssDeLaCargaInicial("<html></html>")).toEqual([]);
+      expect(cssDeLaCargaInicial(HTML)).toEqual(["assets/index-CCC.css"]);
+    });
+  });
+
+  describe("resumirEstilos", () => {
+    const hojas = [
+      { ruta: "assets/index-CCC.css", gzip: 1000 },
+      { ruta: "assets/Boton-DDD.css", gzip: 200 },
+      { ruta: "assets/PantallaFicha-FFF.css", gzip: 30 },
+    ];
+    it("suma el CSS inicial con las hojas del HTML y el total con todas", () => {
+      expect(resumirEstilos(hojas, ["assets/index-CCC.css", "assets/Boton-DDD.css"])).toEqual({ cssInicial: 1200, cssTotal: 1230 });
+    });
+    it("sin hojas en el HTML el inicial es 0 (no falla: una página sin CSS no pesa)", () => {
+      expect(resumirEstilos(hojas, [])).toEqual({ cssInicial: 0, cssTotal: 1230 });
+      expect(resumirEstilos([], [])).toEqual({ cssInicial: 0, cssTotal: 0 });
+    });
+    it("falla si el HTML nombra una hoja que no está en dist/", () => {
+      expect(() => resumirEstilos(hojas, ["assets/falta.css"])).toThrow(/falta\.css/);
+    });
+  });
+
+  describe("esUnaFuente", () => {
+    it("reconoce los archivos de tipografía por su extensión, en cualquier carpeta y sin mirar mayúsculas", () => {
+      for (const ruta of ["assets/bricolage-AAA.woff2", "assets/vieja.woff", "fuentes/otra.TTF", "x.otf"]) expect(esUnaFuente(ruta), ruta).toBe(true);
+      for (const ruta of ["assets/index-AAA.js", "assets/index-CCC.css", "og-inicio.png", "assets/woff2-notas.txt"]) expect(esUnaFuente(ruta), ruta).toBe(false);
+    });
+  });
+
+  describe("evaluarPeso con CSS y fuentes", () => {
+    const bien = { inicial: 1, total: 1 };
+    it("los topes son los de la etapa 2 del rediseño: CSS inicial 26.000 B (aviso desde 23.000 B), aviso del CSS total a 48.000 B y fuentes 205.000 B", () => {
+      expect(TOPE_CSS_INICIAL).toBe(26_000);
+      expect(AVISO_CSS_INICIAL).toBe(23_000);
+      expect(AVISO_CSS_TOTAL).toBe(48_000);
+      expect(TOPE_FUENTES).toBe(205_000);
+    });
+    it("sin esas medidas se evalúa como antes", () => {
+      expect(evaluarPeso(bien)).toEqual({ ok: true, avisos: [] });
+    });
+    it("el CSS inicial en su aviso no avisa; un byte arriba avisa y no falla", () => {
+      expect(evaluarPeso({ ...bien, cssInicial: AVISO_CSS_INICIAL })).toEqual({ ok: true, avisos: [] });
+      const r = evaluarPeso({ ...bien, cssInicial: AVISO_CSS_INICIAL + 1 });
+      expect(r.ok).toBe(true);
+      expect(r.avisos).toHaveLength(1);
+      expect(r.avisos[0]).toContain("CSS inicial");
+    });
+    it("el CSS inicial en su tope pasa (con aviso); un byte arriba falla", () => {
+      expect(evaluarPeso({ ...bien, cssInicial: TOPE_CSS_INICIAL }).ok).toBe(true);
+      expect(evaluarPeso({ ...bien, cssInicial: TOPE_CSS_INICIAL + 1 }).ok).toBe(false);
+    });
+    it("el CSS total arriba de su aviso avisa y nunca falla", () => {
+      expect(evaluarPeso({ ...bien, cssTotal: AVISO_CSS_TOTAL })).toEqual({ ok: true, avisos: [] });
+      const r = evaluarPeso({ ...bien, cssTotal: AVISO_CSS_TOTAL * 3 });
+      expect(r.ok).toBe(true);
+      expect(r.avisos).toHaveLength(1);
+      expect(r.avisos[0]).toContain("CSS total");
+    });
+    it("las fuentes en su tope pasan; un byte arriba fallan, sin aviso previo", () => {
+      expect(evaluarPeso({ ...bien, fuentes: TOPE_FUENTES })).toEqual({ ok: true, avisos: [] });
+      expect(evaluarPeso({ ...bien, fuentes: TOPE_FUENTES + 1 }).ok).toBe(false);
+    });
+    it("lo medido el 27/11/2026 (15.101 B iniciales, 31.712 B en total y 200.712 B de fuentes) pasa sin avisos", () => {
+      expect(evaluarPeso({ ...bien, cssInicial: 15_101, cssTotal: 31_712, fuentes: 200_712 })).toEqual({ ok: true, avisos: [] });
+    });
+    it("un tope de JS pasado sigue fallando aunque el CSS y las fuentes estén bien", () => {
+      expect(evaluarPeso({ inicial: TOPE_INICIAL + 1, total: 1, cssInicial: 1, cssTotal: 1, fuentes: 1 }).ok).toBe(false);
+    });
+  });
+
+  describe("resumenEnMarkdown con CSS y fuentes", () => {
+    it("agrega una tabla con el CSS inicial, el CSS total y las fuentes; sin esas medidas no la agrega", () => {
+      const sin = resumenEnMarkdown({ inicial: 1, primeraVisita: 1, total: 1 }, []);
+      expect(sin).not.toContain("CSS inicial");
+      const con = resumenEnMarkdown({ inicial: 1, primeraVisita: 1, total: 1, cssInicial: 15_101, cssTotal: 31_712, fuentes: 200_712 }, []);
+      expect(con).toContain("| CSS inicial |");
+      expect(con).toContain("| CSS total |");
+      expect(con).toContain("| Fuentes |");
+      expect(con).toContain("15.101 B");
+      expect(con).toContain("Sin avisos.");
+    });
   });
 });

@@ -53,6 +53,9 @@ Los **textos** de interfaz salen de `src/lib/dominio/textos.ts` y `src/component
 | Insignia de Inicio (4.3) | Avisa desde las otras pantallas cuántas unidades no pueden salir; estando en Inicio no se muestra (repetía la cifra grande de al lado). |
 | Vista previa al compartir | `index.html` lleva `description`, Open Graph y `twitter:card`; la imagen es `public/og-inicio.png` (1200 × 630, captura de Inicio). Son etiquetas meta: no cargan nada y la CSP no cambia. |
 
+
+**Actualización del 27/11/2026 — rediseño, etapa 2: «Pie de rey».** Matías eligió la dirección visual «Pie de rey» para la demo. La especificación para llevarla a producción es la **sección 15**, que **manda sobre las secciones 1, 3, 4 y 10** donde digan otra cosa y sobre el aspecto (colores, tipografía, radios, sombras y medidas) descrito en las secciones 5, 6 y 14. Siguen vigentes sin cambios las rutas (2), el comportamiento de cada pieza (5 y 6), los estados (8), la accesibilidad (9) y la verificación (12). No cambia ninguna regla de negocio.
+
 ---
 
 ## 0. Encuadre
@@ -91,7 +94,7 @@ Referencias reales (para mirar cómo resuelven, no para copiar):
 - **Samsara, inspección previa al viaje del conductor (DVIR)**: punto por punto, defecto con descripción, y el resultado "apto / no apto para operar". De ahí la idea de que una novedad crítica saque la unidad de servicio.
 - **Things 3, vista "Upcoming"**: el tiempo como eje de lectura (hoy, esta semana, más adelante) sin colores estridentes.
 - **GOV.UK Design System**: resumen de errores al enviar un formulario, mensajes de error junto al campo, botón de enviar que nunca se deshabilita.
-- **Linear**: densidad cómoda en listas, foco de teclado visible sin ruido.
+- **Una herramienta de gestión densa**: densidad cómoda en listas, foco de teclado visible sin ruido.
 
 ### 1.1 Alternativas consideradas
 
@@ -1819,3 +1822,2061 @@ sección 7**: el maquetador los ajusta y lo anota en `docs/registro.md`.
     nuevo de "Cerrar antes". Anotar en `docs/registro.md` cada medida (alto de filas y tarjetas, "Al iniciar" y "Al
     terminar", `scrollWidth`). Después: `qa-destructor`, `auditor-accesibilidad` y `disenador-ui` contra este documento,
     y `critico-reclutador`.
+
+---
+
+## 15. «Pie de rey»: rediseño, etapa 2 — marco y sistema (27/11/2026)
+
+Matías eligió la dirección visual **«Pie de rey»** para la demo, mirando un prototipo navegable (no versionado). Esta
+sección es la especificación para llevarla a producción. Es un **cambio de piel y de composición**: no agrega módulos ni
+funciones, y no cambia ninguna regla de negocio ni la estructura de datos de las pantallas.
+
+**Precedencia.** Esta sección **manda sobre las secciones 1, 3, 4 y 10** donde digan otra cosa, y sobre el aspecto
+(colores, tipografía, radios, sombras, medidas) descrito en las secciones 5, 6 y 14. **Siguen vigentes sin cambios** el
+comportamiento de las secciones 2 (rutas), 5 y 6 (qué hace cada pieza, foco, textos y estados del parte), 8, 9 y 12.
+Donde un comportamiento cambia, esta sección lo dice de forma explícita.
+
+**Encuadre.**
+
+| | |
+| --- | --- |
+| Quién la usa | El encargado de flota (escritorio y celular) y el conductor (celular, de pie junto a la unidad). |
+| Quién la evalúa | Un gerente de logística o administración y un líder técnico. |
+| Qué se entiende en tres segundos | En Inicio: **cuántas unidades pueden salir hoy, cuántas no y cuál es la acción que destraba la primera**. En Hoy: **si el conductor puede salir con su unidad**. |
+| Acción principal | Inicio: la «Acción del día». Hoy: «Empezar la revisión» (o lo que el estado del día pida). Las demás pantallas conservan la suya (sección 0). |
+
+**Criterio que decide los empates: claridad en tres segundos y sin ruido.**
+
+1. Cada pantalla tiene **una** pieza que manda y se lee primero. Si dos piezas compiten, la segunda baja de tamaño, de
+   color o de lugar.
+2. **Se mueve una pieza por vez.** Nunca toda la pantalla ni todos los colores a la vez; nunca dos gestos que empiezan
+   en el mismo cuadro (15.10).
+3. **Un solo campo de color pleno por pantalla** (15.2). El rojo y el ámbar solo dicen estado.
+4. Poca información por pantalla: lo que no ayuda a decidir en ese momento baja de la primera pantalla o se va.
+5. Toda marca de dibujo técnico (cota, globo, escala, cursor) **dice un dato**. La que no se puede leer como dato, se saca.
+6. Ante la duda entre un adorno y un texto legible, gana el texto.
+
+Con este criterio se revisa el boceto estático (Inicio y Hoy) antes de construir, y cada tanda de maquetación.
+
+---
+
+### 15.1 Conciliación: qué sale de cada dirección
+
+La **estructura** (módulos, perfiles, rutas, sin dinero, qué llega en cada etapa) sale del plan de producto de la demo;
+la **piel** sale de «Pie de rey». Donde chocan, manda «Pie de rey».
+
+#### 15.1.1 Los choques y cómo se resuelven
+
+| # | Tema | Lo que decían las secciones 1, 3, 4 y 10 | «Pie de rey» | Resolución |
+| --- | --- | --- | --- | --- |
+| 1 | **Color** | Papel gris cálido; la tinta es la acción; el color solo es estado; minerales (cobre, azufre, azurita, grafito, malaquita). | Papel cálido y tinta, **un azul cobalto** en un campo pleno por pantalla; de noche, cianotipo. | Manda «Pie de rey». La tinta **sigue siendo la acción** (botón primario). El cobalto es **la medida**, nunca un estado. La azurita deja de ser un tono: «quincena» pasa a tinta y «mes» a contorno (15.3.1). Rojo y ámbar quedan para crítico y atención. |
+| 2 | **Bricolage Grotesque** | Títulos y cifras a 85 % de ancho. (El plan de producto previo la retiraba.) | Cartel a 75–78 % para la cifra monumental, el veredicto y los títulos. | Se queda, a **75 %** en cifras y veredicto y **78 %** en títulos. Ninguna tipografía nueva: son los mismos tres archivos. |
+| 3 | **Cifra** | Una cifra protagonista (cobre, 56 px) y cuatro secundarias en tarjetas iguales. | Una cifra **monumental** (hasta 200 px) dentro de la mordaza; prohibidas las tarjetas de indicador iguales en fila. | La cifra de Inicio pasa a ser **«disponibles hoy» sobre activas**, monumental y en tambores. Las cuatro secundarias pasan a **renglones de lectura** (15.6.4). Sigue habiendo una sola cifra protagonista por pantalla. |
+| 4 | **Movimiento** | Solo la transición entre pantallas y la cuenta de la cifra cobre; prohibidas las animaciones de entrada. | Movimiento mecánico: mordaza que se cierra, tambores, piezas que caen, sellos. | Se admite **una coreografía de entrada por vista y por sesión**, de menos de 1.050 ms, con una pieza por vez (15.10). La cuenta vieja de la cifra se retira. Se suma el control «Sin animaciones». |
+| 5 | **Textura** | Superficies planas; prohibidos papel, sellos, gradientes. | Grano de imprenta, rejilla en el campo pleno, precinto rayado, cuadrícula y exposición de noche. | Textura **solo en la página, en el campo pleno y en la zona roja**. Las zonas de lectura (tablas, listas, formularios, diálogos) van en hoja lisa. **Ningún texto sobre trama** (15.2, regla 8). |
+| 6 | **Patente** | Rótulo con banda neutra; prohibido imitar la placa oficial (banda azul, escudo, leyendas). | Chapa con franja cobalto; en el tamaño grande, franja alta con una leyenda de país. | La chapa lleva la **franja cobalto** (es el color de la casa, no el de la placa oficial) y **ninguna leyenda, escudo ni bandera**. La prohibición de imitar la placa oficial sigue vigente. Es un desvío a propósito respecto del prototipo. |
+
+#### 15.1.2 Módulos, rutas y etapas del rediseño
+
+El rediseño se hace por etapas. Para no confundirlas con las etapas de `docs/plan.md` (que son las de la construcción
+original), acá se nombran siempre **«rediseño, etapa N»**.
+
+| Rediseño, etapa | Qué trae | Estado |
+| --- | --- | --- |
+| 1 | Carga por pantalla (`import()` por ruta) y pruebas de punta a punta. Invisible. | Hecha |
+| **2** | **Marco y sistema «Pie de rey»** (esta sección): tokens, tipografía, texturas, marco, componentes base, regla de salida en Inicio, veredicto en Hoy, las nueve pantallas actuales con la piel nueva. | En curso |
+| 3 | Datos e Inicio completo: historia de 120 días; registrador de 30 días dentro de la mordaza; lecturas como instrumentos; lista de piezas con cajetín; registro de salida; agenda. **Escena completa «Renovar seguro»** (la llave vuela en arco, nota de revisión, resaltado cruzado entre llave y renglón) y exposición del cianotipo al cambiar de tema. | Pendiente |
+| 4 | Unidades: «Movilidades» pasa a llamarse «Unidades»; tabla densa con regla mini; cajón de la unidad por dirección; ficha con pestañas. Buscador global con la tecla `/` y cambio de densidad compacta / cómoda. | Pendiente |
+| 5 | Vencimientos y partes: regla de plazos; exportar CSV e `.ics`; partes diarios; «Todo en orden» con deshacer; regla de tres casillas del conductor; unidad bloqueada a pantalla completa. | Pendiente |
+| 6 | Conductores (tabla y ficha). | Pendiente |
+| 7 a 9 | Mantenimiento, combustible y reportes. Se deciden viendo andar las anteriores. | Sin decidir |
+
+- **Módulos de esta etapa: los que existen.** Encargado: Inicio, Movilidades, Vencimientos, Operación diaria (Partes y
+  Novedades), ficha de unidad y parte. Conductor: Hoy, Mis partes y parte. Los dos: Más. El lateral y la barra inferior
+  muestran **solo pantallas que existen**: ningún destino «próximamente».
+- **Rutas: las de la sección 2, sin cambios.** No se renombra ninguna ni se agrega ninguna.
+- **Perfiles:** Encargado y Conductor, con «Ver como» (5.2). Sin usuarios ni contraseñas.
+- **Sin dinero.** Combustible y kilometraje se muestran en litros, kilómetros y días; no hay precios ni costos.
+- Lo que el prototipo muestra y esta etapa **no** trae queda en la tabla de arriba con su etapa. Nada de eso se dibuja
+  a medias ni se deja como botón que no hace nada.
+
+---
+
+### 15.2 Dirección y reglas de producción
+
+**«Pie de rey».** El pie de rey es el calibre del taller: una regla graduada, una mordaza que se cierra sobre lo que se
+mide y un cursor que marca la lectura. Cada pantalla principal mide **una** cosa de la operación. De día es un plano en
+papel: papel cálido, tinta negra, filetes finos y un único campo azul cobalto. De noche es el cianotipo del mismo
+plano: papel azul de Prusia con su cuadrícula, tinta clara, y el campo medido en crema con la cifra en cobalto. Lo que
+se toca (chapa, llave) es un **objeto** de papel claro, de día y de noche.
+
+Referencias reales, para mirar cómo resuelven y no para copiar: los planos de conjunto del dibujo técnico normalizado
+(lista de piezas, globos numerados, cotas); los calibres con escala principal y cursor; los odómetros mecánicos de
+tambor; los tableros de llaves de una base de flota; los cianotipos de planos; la densidad de una herramienta de gestión
+moderna; las cifras tabulares y el monoespaciado para identificadores de las herramientas para desarrolladores; el
+*bullet graph* (gráfico de bala) como ejemplo de gráfico que reemplaza a un medidor. Sin nombres de marca: el repositorio
+es público (decisión DE1 de Matías, 28/11/2026).
+
+**Reglas de producción.** Valen para todo archivo de `src/`.
+
+1. **Un campo pleno por pantalla.** `--c-pleno` cubre un campo grande: la mordaza de la regla (Inicio). Fuera de ahí
+   aparece solo en detalles: destino activo del menú, filtro elegido, el botón que destraba y el anillo de foco. En las
+   pantallas sin regla no hay campo pleno grande.
+2. **El pleno nunca es estado.** El estado se dice con **forma + palabra + color** (15.3.1). Nunca con el color solo.
+3. **Precinto** (rayado a −45°) para lo que no puede salir, está vencido o falta. No depende del color: es una trama.
+4. **Una cifra monumental por pantalla**, en la letra de cartel. En Hoy, que no tiene cifra, la monumental es el
+   **veredicto**. Las demás cifras miden 44 px o menos; las de tabla van en monoespaciada.
+5. **Esquinas rectas.** Radio 0 en fichas, paneles y diálogos; 2 px en controles; 3 px en la chapa. Lo redondo queda
+   para piezas físicas (el cuerpo de la llave, el agujero, los globos).
+6. **Filetes, no sombras.** Las hojas se separan con un filete de 1 px y se encabezan con uno de 1,5 px en tinta.
+   Sombra solo en lo que se levanta del papel (diálogo, menú, rótulo de cota, chapa con el cursor encima) y la
+   **sombra dura de 2 px** de los botones.
+7. **Nada de cifras fijas.** Ninguna hoja de estilo ni componente lleva escrito un número de unidades, una fracción,
+   una fecha ni una patente. Todo sale de los datos: la cantidad de divisiones de la escala, la medida de la mordaza y
+   la cantidad de llaves llegan por propiedades (`style:--act`, `style:--medida`) y el diseño funciona con cualquier
+   valor (15.6.7). El prototipo tenía valores escritos a mano; no se copian.
+8. **Ningún texto sobre trama.** El texto nunca va sobre el rayado, el grano con rejilla ni la cuadrícula. Va en una
+   **placa lisa**: un rectángulo de color liso (sin grano ni rejilla detrás), y el contraste se mide contra la placa.
+   Excepción única: la cifra monumental, que es texto grande y supera 3:1 con holgura.
+9. **Texto de 12 px como mínimo** (`0.75rem`), también el monoespaciado. El prototipo tenía un rótulo de 11 px: no se
+   copia. Las ayudas y los párrafos, 13 px o más.
+10. **Objetivos de 24 × 24 px como piso** (WCAG 2.5.8) en todo lo que se pulsa. Medidas de trabajo: 36 px en controles
+    de escritorio y 28 px en acciones de renglón; por debajo de 64 rem, **44 px** en el marco y en todo el recorrido
+    del conductor (48 px en el checklist y el combustible, como hoy) y **40 px** en las acciones de renglón de las
+    pantallas del encargado, incluida la «Acción del día».
+11. **Nada de `prefers-color-scheme` en componentes.** El modo se resuelve en `tokens.css` (y, para las texturas por
+    modo, también ahí). Un componente que necesita otro color en oscuro usa un token; si no existe, se agrega el token
+    con su par medido. Tampoco `rgb()` ni hexadecimales sueltos en los `<style>` de los componentes.
+12. **Sin atributo `style`.** Los valores dinámicos van por `style:--x` (que Svelte aplica por CSSOM) y la hoja de
+    estilos los lee. Sin `{@html}`. Sin directivas `transition:`, `in:`, `out:` ni `animate:` de Svelte.
+13. **Solo se animan `transform`, `opacity` y `clip-path`**, salvo la medida de la mordaza en la escena (15.7), que es
+    una transición de `flex-basis` de una sola pieza. Nada se mueve más de 5 segundos sin que la persona lo pida
+    (excepción: el indicador de «cargando», que dura lo que dura la espera).
+14. **Sin desenfoque de fondo por debajo de 64 rem.** La barra de escritorio es la única pieza con desenfoque (6 px).
+15. **Todo en `rem`**, salvo filetes, bordes y radios, que van en `px`. Las medidas en px de esta sección son a 16 px
+    de base.
+16. **Español neutro** en todo texto de interfaz; cifras con coma decimal y punto de miles (`es-AR`).
+17. Todo se comprueba sobre la compilación de producción (`dist`) servida con la CSP real, no sobre `npm run dev`.
+
+---
+
+### 15.3 Tokens
+
+Fuente de los valores: `src/estilos/tokens.css`. Se **conservan los nombres `--c-*`** que ya usan los componentes
+(15.3.4) y cambian de valor; se agregan los grupos nuevos. Prefijos: `--c-` color · `--obj-` color de objeto · `--tx-`
+textura · `--t-` tipografía · `--e-` espaciado · `--r-` radio · `--b-` borde · `--s-` sombra · `--m-` movimiento.
+
+#### 15.3.1 Color
+
+| Token | Claro (papel) | Oscuro (plano nocturno) | Uso |
+| --- | --- | --- | --- |
+| `--c-papel` | `#F1ECE1` | `#0A2550` | Fondo de página (con grano; de noche, además, cuadrícula y exposición). |
+| `--c-papel-2` | `#E7E0D1` | `#13366C` | Fila con el cursor encima, zonas, botón deshabilitado. |
+| `--c-hoja` | `#FBF8F1` | `#0C2857` | Hojas lisas: fichas, tablas, formularios, diálogos. De noche casi no se separa del papel: es un solo plano. |
+| `--c-tinta` | `#17140F` | `#EDF3FA` | Texto principal, filetes fuertes, **acción primaria**. |
+| `--c-tinta-2` | `#4B4539` | `#BFD1E6` | Texto secundario. |
+| `--c-tinta-3` | `#675F50` | `#9AB5D3` | Rótulos, ejes, ayudas; marca de «mes» y de neutro. |
+| `--c-tinta-hover` | `#36322C` | `#CDD6E2` | Botón primario con el cursor encima. |
+| `--c-tinta-borde` | `#17140F` | `#6F8FB8` | Borde y sombra dura del botón primario. De día es la propia tinta (el botón no cambia); de noche es un azul medio, distinto del relleno claro, para que el botón se lea como botón y no como un campo vacío. Decorativo como canto; el par está en 15.3.3. |
+| `--c-sobre-tinta` | `#F1ECE1` | `#0A2550` | Texto sobre tinta. |
+| `--c-control` | `#857D6E` | `#7F9EC2` | Borde de campos, casillas y filtros (3:1). |
+| `--c-filete` | tinta al 14 % | tinta al 14 % | Separadores (`color-mix(in srgb, var(--c-tinta) 14%, transparent)`). Decorativo: no se mide. |
+| `--c-filete-medio` | tinta al 30 % | tinta al 30 % | Contorno de fichas, reglas de sección. Decorativo: no se mide. |
+| `--c-pleno` | `#1F3FD1` | `#F1ECE1` | **El** campo: la mordaza. De noche es papel expuesto (crema). |
+| `--c-pleno-hover` | `#1733B0` | `#E4DCCB` | Pleno con el cursor encima. |
+| `--c-pleno-borde` | `#0F1F70` | `#A39A86` | Canto (sombra dura) del botón pleno. Decorativo. |
+| `--c-sobre-pleno` | `#FFFFFF` | `#1F3FD1` | Cifra y texto sobre el pleno. De noche, cobalto sobre crema. |
+| `--c-sobre-pleno-2` | `#E4E9FC` | `#3B4A86` | Rótulos de 12 px sobre el pleno. |
+| `--c-pleno-suave` | `#DEE3F8` | `#1A417D` | Fila elegida, campo recién editado. |
+| `--c-pleno-texto` | `#1C39BF` | `#A9C7FF` | Enlaces, anillo de foco, sello «Datos ficticios». |
+| `--c-pleno-trama` | blanco al 12 % | cobalto (`#1F3FD1`) al 15 % | Rejilla dentro del pleno. Decorativa. |
+| `--c-crit` | `#B02D18` | `#FF9E85` | Crítico: texto. |
+| `--c-crit-relleno` | `#BE3219` | `#D24027` | Crítico: relleno **con texto blanco encima** (zona roja, placa roja, insignia). |
+| `--c-crit-marca` | `#BE3219` | `#E2543A` | Crítico: franja, precinto como marca, rombo, borde de campo inválido. **Nunca lleva texto encima.** |
+| `--c-crit-fondo` | `#F7DED6` | `#3A2240` | Crítico: fondo de etiqueta y de aviso. |
+| `--c-aten` | `#855600` | `#F5C463` | Atención: texto. |
+| `--c-aten-relleno` | `#A86F08` | `#E0A53A` | Atención: franja, trama, triángulo. |
+| `--c-aten-fondo` | `#F5E5C2` | `#3A3324` | Atención: fondo. |
+| `--c-ok` | `#1D6842` | `#8BE0B4` | En orden: texto y marca. Se usa poco: lo normal no se pinta. |
+| `--c-ok-fondo` | `#DCEADF` | `#123F43` | En orden: fondo. |
+| `--c-sobre-solido` | `#FFFFFF` | `#FFFFFF` | Texto sobre `--c-crit-relleno`. |
+| `--c-foco-oscuro` | `#FFFFFF` | `#FFFFFF` | Anillo de foco sobre el lateral, la barra inferior y la zona roja. **Nunca** sobre el destino actual ni sobre un control apretado del lateral: su fondo es claro (15.5). |
+| `--c-lat` | `#17140F` | `#051735` | Lateral y barra inferior. |
+| `--c-lat-tx` · `--c-lat-tx-2` | `#EEE8DC` · `#ADA594` | `#E6EEF7` · `#95B0CE` | Texto del lateral; secciones, autoría y destinos sin elegir. |
+| `--c-lat-borde` · `--c-lat-hover` | `--c-lat-tx` al 14 % · al 8 % | igual | Filetes y cursor encima en el lateral. Decorativos. |
+| `--c-velo` | `rgb(23 20 15 / 0.46)` | `rgb(2 10 22 / 0.6)` | Detrás de los diálogos. |
+
+Cuatro valores **difieren del prototipo a propósito**, por medición:
+
+- `--c-sobre-pleno-2` (`#E4E9FC` / `#3B4A86`) y la rejilla al 12 % son los valores corregidos del prototipo que no
+  habían llegado a su hoja de sistema.
+- `--c-pleno-suave` de noche baja de `#1B4583` a `#1A417D`: con el valor original, el texto terciario sobre una fila
+  elegida daba 4,46:1; con el nuevo da 4,73:1.
+- `--c-crit-marca` es nuevo. De noche, el rojo de relleno (`#D24027`) contra la fila con el cursor encima daba
+  2,54:1; como relleno tiene que quedarse (el blanco encima da 4,66:1), la **marca** sobre fondos oscuros usa un rojo
+  más claro (`#E2543A`: 3,14:1 sobre `--c-papel-2`, el peor fondo de la tabla). De día los dos son el mismo color.
+  Sobre ese rojo más claro el blanco da 3,77:1: por eso **nunca lleva texto encima**.
+- `--c-tinta-borde` es nuevo (revisión del boceto de Inicio y Hoy, 27/11/2026). De noche el botón primario tenía
+  relleno, borde y sombra del mismo color (`#EDF3FA`) y se leía como un campo vacío, no como un botón. El borde y la
+  sombra dura pasan a `#6F8FB8`: 4,52:1 contra el papel, 4,32:1 contra la hoja y 3,55:1 contra `--c-papel-2`, y 2,99:1
+  contra el propio relleno, así que la sombra de 3 px se ve. De día vale la tinta: no cambia nada.
+- **Sobre una fila elegida** (`--c-pleno-suave`) la marca crítica de noche da 2,65:1. Regla: en una fila elegida la
+  forma del tono se pinta con el color de **texto** del tono (`-t`: 5,00:1 o más) y el precinto de la fila se
+  reemplaza por la barra de 4 px en `--c-pleno`; el estado lo sigue diciendo la etiqueta.
+
+**Tonos de estado.** Se conservan los seis nombres (`critico`, `semana`, `quincena`, `mes`, `vigente`, `neutro`), sus
+alias minerales y la regla «el color nunca va solo». Cambian los valores:
+
+| Tono (`data-tono`) | Significa (sin cambios) | Forma | Texto `-t` | Fondo `-f` | Marca `-r` |
+| --- | --- | --- | --- | --- | --- |
+| `critico` (alias `diferencia`) | Vencido, faltante, bloqueada, novedad crítica. | rombo | `--c-crit` | `--c-crit-fondo` | `--c-crit-marca` |
+| `semana` (alias `revisar`) | Vence en 7 días o menos; parte sin enviar; novedad abierta. | triángulo | `--c-aten` | `--c-aten-fondo` | `--c-aten-relleno` |
+| `quincena` (alias `pendiente`) | Vence en 8 a 15 días; «En uso». | círculo lleno | `--c-tinta` | `--c-papel-2` | `--c-tinta` |
+| `mes` | Vence en 16 a 30 días. | aro | `--c-tinta-2` | `--c-papel-2` | `--c-tinta-3` |
+| `vigente` (alias `ok`) | Vigente, disponible, parte cerrado. | sin forma o marca de verificación | `--c-ok` | `--c-ok-fondo` | `--c-ok` |
+| `neutro` | Borrador, de baja, fuera de servicio por taller o a mano. | cuadrado | `--c-tinta-2` | `--c-papel-2` | `--c-tinta-3` |
+
+«Quincena» y «mes» comparten fondo: se distinguen por la forma (círculo lleno contra aro) y por la palabra. El azul ya
+no es un tono, porque el azul es la medida. Que «quincena» deje de ser azul cambia el aspecto del horizonte que ya
+conocía: decisión DE4 de Matías (28/11/2026), tinta sin azul.
+
+#### 15.3.2 Objetos: claros de día y de noche
+
+Un **objeto** (`.objeto`) es lo que se toca y representa una cosa física: la chapa (`.patente`), la llave, el rótulo de
+cota y la llave del conductor en Hoy. De noche **no se oscurece**: sigue siendo papel claro con tinta negra y los
+colores de día, sobre el plano azul.
+
+| Token | Claro | Oscuro | Uso |
+| --- | --- | --- | --- |
+| `--obj-hoja` | `#FBF8F1` | `#EDE7DA` | Papel del objeto. De noche baja un punto para no encandilar. |
+| `--obj-papel` | `#F1ECE1` | `#E2DACA` | Agujero de la llave, zona secundaria. |
+| `--obj-papel-2` | `#E7E0D1` | `#D9D0BD` | Zona sin cubrir dentro de un objeto. |
+| `--obj-sombra` | `rgb(23 20 15 / 0.22)` | `rgb(0 0 0 / 0.28)` | Sombra de 1 px del objeto. |
+| `--obj-contorno` | `#17140F` | `#EDE7DA` | Contorno de los objetos cuyo cuerpo **no** es papel: llave y chapa críticas, llave disponible con el cursor encima (15.6.3). De día es tinta; de noche, papel claro. Los objetos de papel siguen con contorno `--obj-tinta`. |
+| `--obj-tinta` · `--obj-tinta-2` · `--obj-tinta-3` | `#17140F` · `#4B4539` · `#675F50` | los mismos | Texto dentro del objeto. |
+| `--obj-control` | `#857D6E` | el mismo | Borde de control dentro del objeto. |
+| `--obj-franja` | `#1F3FD1` | el mismo | Franja cobalto de la chapa y de la llave. Dentro de un objeto es también «el pleno». |
+| `--obj-sobre-franja` | `#FFFFFF` | el mismo | Texto sobre la franja usada como fondo (llave disponible con el cursor encima). |
+| `--obj-pleno-suave` | `#DEE3F8` | el mismo | Fila elegida o campo recién editado dentro de un objeto. |
+| `--obj-enlace` | `#1C39BF` | el mismo | Enlace y foco dentro del objeto. |
+| `--obj-crit` · `--obj-crit-relleno` · `--obj-crit-fondo` | `#B02D18` · `#BE3219` · `#F7DED6` | los mismos | Crítico dentro del objeto: texto, relleno y marca, fondo de etiqueta. |
+| `--obj-aten` · `--obj-aten-relleno` · `--obj-aten-fondo` | `#855600` · `#A86F08` · `#F5E5C2` | los mismos | Atención dentro del objeto. |
+| `--obj-ok` · `--obj-ok-fondo` | `#1D6842` · `#DCEADF` | los mismos | En orden dentro del objeto: texto y fondo de etiqueta. |
+
+**Decisión técnica (tomada).** Se mantiene `build.target: "es2022"`. Con ese destino, `light-dark()` no llega al
+navegador como tal: se compila a variables que se resuelven en `:root`, así que un `color-scheme: light` puesto en un
+descendiente **no** vuelve a resolver los tokens. Por eso los objetos no dependen de `color-scheme`:
+
+- Los `--obj-*` se declaran en `:root`. Cambian con el modo solo `--obj-hoja`, `--obj-papel`, `--obj-papel-2`,
+  `--obj-sombra` y `--obj-contorno`.
+- `.objeto` **vuelve a declarar** los tokens generales que usa lo de adentro, apuntándolos a los `--obj-*`. Dentro de
+  un objeto todo color vale lo que vale de día. La lista es **cerrada**:
+
+  | Tokens generales | Dentro de `.objeto` valen |
+  | --- | --- |
+  | `--c-hoja`, `--c-superficie` | `--obj-hoja` |
+  | `--c-papel` | `--obj-papel` |
+  | `--c-papel-2`, `--c-superficie-2` | `--obj-papel-2` |
+  | `--c-tinta`, `--c-tinta-2`, `--c-tinta-3` y `--c-texto`, `--c-texto-2`, `--c-texto-3` | `--obj-tinta`, `--obj-tinta-2`, `--obj-tinta-3` |
+  | `--c-sobre-tinta` | `--obj-hoja` |
+  | `--c-control`, `--c-borde-fuerte` | `--obj-control` |
+  | `--c-filete`, `--c-borde` | `--obj-tinta` al 14 % (`color-mix`, como en 15.3.1) |
+  | `--c-filete-medio`, `--c-ventana-borde` | `--obj-tinta` al 30 % |
+  | `--c-pleno` | `--obj-franja` |
+  | `--c-sobre-pleno` | `--obj-sobre-franja` |
+  | `--c-pleno-suave` | `--obj-pleno-suave` |
+  | `--c-pleno-texto`, `--c-enlace`, `--c-foco` | `--obj-enlace` |
+  | `--c-crit`, `--c-crit-relleno`, `--c-crit-marca`, `--c-crit-fondo` | `--obj-crit`, `--obj-crit-relleno`, `--obj-crit-relleno`, `--obj-crit-fondo` |
+  | `--c-aten`, `--c-aten-relleno`, `--c-aten-fondo` | `--obj-aten`, `--obj-aten-relleno`, `--obj-aten-fondo` |
+  | `--c-ok`, `--c-ok-fondo` | `--obj-ok`, `--obj-ok-fondo` |
+  | Los alias de tono (`--c-critico-*`, `--c-diferencia-*`, `--c-semana-*`, `--c-revisar-*`, `--c-vigente-*`, `--c-ok-t` / `-f` / `-r`, `--c-quincena-*`, `--c-pendiente-*`, `--c-mes-*`, `--c-neutro-*`) | Se vuelven a declarar con la misma fórmula de 15.3.4. |
+
+  Así una etiqueta o un ícono dentro de un objeto se resuelve en claro sin repetir colores en cada componente.
+- **Por qué hay que repetir también los filetes y los alias.** Un token declarado en `:root` con otro token adentro
+  (`color-mix(… var(--c-tinta) …)`, `var(--c-crit-fondo)`) queda resuelto en `:root`: cambiar `--c-tinta` más abajo no
+  lo vuelve a calcular. Sin repetirlos, de noche y dentro de un objeto daban: etiqueta crítica sobre su fondo 2,18:1;
+  etiqueta en orden 1,71:1; texto sobre la fila elegida 1,83:1; filete 1,02:1 (no se veía); y el fondo pleno, crema
+  sobre crema, 1,05:1.
+- **Un token que no está en la lista no se usa dentro de un objeto** (por ejemplo `--c-tinta-hover`,
+  `--c-pleno-hover`, `--c-sobre-pleno-2`, los del lateral). Si hace falta, se suma a la lista y a 15.3.3 antes de
+  usarlo.
+- **`.objeto` va en el cuerpo dibujado, nunca en el elemento que recibe el foco.** El enlace o el botón que envuelve
+  al objeto queda afuera y su anillo usa el `--c-foco` de la página (7,47:1 o más contra el plano). Si `.objeto`
+  estuviera en el propio enlace, el anillo tomaría `--obj-enlace` y de noche daría 1,71:1 contra el plano. Los dos
+  casos de esta etapa: `a.enlace-patente` queda afuera y `.patente` es el objeto; el enlace que ocupa la división del
+  tablero queda afuera y el cuerpo de la llave es el objeto. Un control que está **dentro** de un objeto sí usa
+  `--obj-enlace` en su anillo, que se mide contra `--obj-hoja`.
+- **Sobre `--obj-papel-2` solo va texto en `--obj-tinta` o `--obj-tinta-2`.** De noche no alcanzan 4,5:1
+  `--obj-tinta-3` (4,12), `--obj-aten` (4,12), `--obj-crit` (4,24) ni `--obj-ok` (4,41). Como marca (3:1) sí sirven.
+- `.objeto` lleva además `color-scheme: light` para los controles nativos de adentro, si los hubiera.
+
+**Selector de tema.** El modo sigue la preferencia del dispositivo, salvo que la persona elija uno (15.4.5).
+`main.ts` pone `data-modo="claro"` o `data-modo="oscuro"` en `<html>` antes de montar la aplicación; «Automático» es
+la ausencia del atributo. `tokens.css` declara `color-scheme: light dark` en `:root`, `color-scheme: light` en
+`:root[data-modo="claro"]` y `color-scheme: dark` en `:root[data-modo="oscuro"]`.
+
+**Qué se comprueba antes de escribir el resto** (primer paso de la tanda de tokens, sobre `dist`): con tres tokens de
+prueba, el color calculado en tres casos: (1) sistema en oscuro sin `data-modo`; (2) `data-modo="oscuro"` con el
+sistema en claro; (3) un `.objeto` de noche. Si la versión compilada no responde a `data-modo`, se usa el **formato de
+dos bloques**: `:root { … }` con los valores claros y los oscuros repetidos en `@media (prefers-color-scheme: dark) {
+:root:not([data-modo="claro"]) { … } }` y en `:root[data-modo="oscuro"] { … }`. El control de contraste lee los dos
+formatos. La especificación no cambia: cambia solo cómo se escribe `tokens.css`.
+
+**Navegadores.** La piel nueva no puede subir el piso de navegadores de la demo. Lo que usa de forma nativa son las
+consultas de contenedor con unidades `cqi` y `color-mix()`, que la demo ya usaba. `light-dark()` no se exige (se
+compila o se reemplaza por los dos bloques). Las transiciones de vista y `text-wrap: balance` son mejora progresiva:
+sin ellas todo funciona y se ve completo. No se usa `:has()`. El soporte exacto se documenta en `docs/stack.md` según
+lo que resulte compilado.
+
+#### 15.3.3 Pares de contraste (insumo del control de contraste)
+
+Medidos con la fórmula de luminancia relativa de WCAG 2.x sobre los valores de 15.3.1 y 15.3.2: **124 pares, 231
+mediciones, 0 fallan, 12 justas** (27/11/2026, con los 22 pares que sumó la revisión de accesibilidad y los 3 del
+borde del primario de noche). «~» marca un
+par justo: menos de 0,3 por encima de su mínimo; no se toca ninguno de esos colores sin volver a medir. «—» significa
+que el par no se usa en ese modo (o que en ese modo la pieza se recorta por otro par, que está en la tabla). Esta
+tabla es la que `scripts/contraste.mjs` tiene que reproducir leyendo `tokens.css`; un par nuevo se agrega acá y al
+script antes de usarlo.
+
+| Grupo | Par (texto o marca / fondo) | Claro | Oscuro | Mínimo | Dónde se usa |
+| --- | --- | --- | --- | --- | --- |
+| Texto | `--c-tinta` / `--c-papel` | 15,59 | 13,49 | 4,5 | Texto, secundario y rótulos sobre la página, la hoja y la fila con el cursor |
+| Texto | `--c-tinta` / `--c-hoja` | 17,32 | 12,91 | 4,5 | Texto, secundario y rótulos sobre la página, la hoja y la fila con el cursor |
+| Texto | `--c-tinta` / `--c-papel-2` | 13,98 | 10,61 | 4,5 | Texto, secundario y rótulos sobre la página, la hoja y la fila con el cursor |
+| Texto | `--c-tinta-2` / `--c-papel` | 8,07 | 9,67 | 4,5 | Texto, secundario y rótulos sobre la página, la hoja y la fila con el cursor |
+| Texto | `--c-tinta-2` / `--c-hoja` | 8,96 | 9,25 | 4,5 | Texto, secundario y rótulos sobre la página, la hoja y la fila con el cursor |
+| Texto | `--c-tinta-2` / `--c-papel-2` | 7,23 | 7,61 | 4,5 | Texto, secundario y rótulos sobre la página, la hoja y la fila con el cursor |
+| Texto | `--c-tinta-3` / `--c-papel` | 5,35 | 7,12 | 4,5 | Texto, secundario y rótulos sobre la página, la hoja y la fila con el cursor |
+| Texto | `--c-tinta-3` / `--c-hoja` | 5,95 | 6,81 | 4,5 | Texto, secundario y rótulos sobre la página, la hoja y la fila con el cursor |
+| Texto | `--c-tinta-3` / `--c-papel-2` | 4,80 ~ | 5,60 | 4,5 | Texto, secundario y rótulos sobre la página, la hoja y la fila con el cursor |
+| Texto en fila elegida | `--c-tinta` / `--c-pleno-suave` | 14,39 | 8,97 | 4,5 | Fila elegida, campo recién editado |
+| Texto en fila elegida | `--c-tinta-2` / `--c-pleno-suave` | 7,44 | 6,43 | 4,5 | Fila elegida, campo recién editado |
+| Texto en fila elegida | `--c-tinta-3` / `--c-pleno-suave` | 4,94 | 4,73 ~ | 4,5 | Fila elegida, campo recién editado |
+| Enlace | `--c-pleno-texto` / `--c-papel` | 7,47 | 8,83 | 4,5 | Enlaces, sello «Datos ficticios», marca «Para probar» |
+| Enlace | `--c-pleno-texto` / `--c-hoja` | 8,29 | 8,44 | 4,5 | Enlaces, sello «Datos ficticios», marca «Para probar» |
+| Enlace | `--c-pleno-texto` / `--c-papel-2` | 6,70 | 6,94 | 4,5 | Enlaces, sello «Datos ficticios», marca «Para probar» |
+| Enlace | `--c-pleno-texto` / `--c-pleno-suave` | 6,89 | 5,87 | 4,5 | Enlaces, sello «Datos ficticios», marca «Para probar» |
+| Foco (3:1) | `--c-pleno-texto` / `--c-papel` | 7,47 | 8,83 | 3 | Anillo de foco sobre cada fondo |
+| Foco (3:1) | `--c-pleno-texto` / `--c-hoja` | 8,29 | 8,44 | 3 | Anillo de foco sobre cada fondo |
+| Foco (3:1) | `--c-pleno-texto` / `--c-papel-2` | 6,70 | 6,94 | 3 | Anillo de foco sobre cada fondo |
+| Foco (3:1) | `--c-pleno-texto` / `--c-pleno-suave` | 6,89 | 5,87 | 3 | Anillo de foco sobre cada fondo |
+| Foco (3:1) | `--c-pleno-texto` / `--c-crit-fondo` | 6,86 | 8,30 | 3 | Anillo de foco sobre cada fondo |
+| Foco (3:1) | `--c-pleno-texto` / `--c-aten-fondo` | 7,07 | 7,33 | 3 | Anillo de foco sobre cada fondo |
+| Foco (3:1) | `--c-pleno-texto` / `--c-ok-fondo` | 7,07 | 6,77 | 3 | Anillo de foco sobre cada fondo |
+| Foco sobre lo oscuro (3:1) | `--c-foco-oscuro` / `--c-lat` | 18,37 | 17,79 | 3 | Anillo en el lateral y en la barra inferior |
+| Foco sobre lo oscuro (3:1) | `--c-foco-oscuro` / `--c-crit-relleno` | 5,74 | 4,66 | 3 | Anillo sobre la zona roja y la placa roja |
+| Foco sobre el pleno (3:1) | `--c-sobre-pleno` / `--c-pleno` | 7,81 | 6,63 | 3 | Anillo **por dentro** de lo que tiene el pleno de fondo: destino actual del lateral y de la barra inferior, renglones de lectura dentro de la mordaza. También el canto de la mordaza. No es el anillo del botón pleno, que va por fuera (15.5) |
+| Canto (3:1) | `--c-sobre-pleno` / `--c-crit-relleno` | 5,74 | — | 3 | De día, el canto de la mordaza contra la zona roja (cobalto contra rojo da 1,36: sin canto claro no se separan) |
+| Campos (3:1) | `--c-pleno` / `--c-crit-relleno` | — | 3,96 | 3 | De noche, la mordaza crema contra la zona roja: se separan solas |
+| Tinta como acción | `--c-sobre-tinta` / `--c-tinta` | 15,59 | 13,49 | 4,5 | Botón primario, índice de ficha, lectura de la escala |
+| Tinta como acción | `--c-sobre-tinta` / `--c-tinta-hover` | 10,81 | 10,27 | 4,5 | Botón primario con el cursor encima |
+| Canto del primario (3:1) | `--c-tinta-borde` / `--c-papel` | 15,59 | 4,52 | 3 | Borde y sombra dura del botón primario sobre la página |
+| Canto del primario (3:1) | `--c-tinta-borde` / `--c-hoja` | 17,32 | 4,32 | 3 | Lo mismo sobre una hoja (diálogo, aviso, ficha) |
+| Canto del primario (3:1) | `--c-tinta-borde` / `--c-papel-2` | 13,98 | 3,55 | 3 | Lo mismo sobre una zona o una fila con el cursor encima |
+| Tinta como marca (3:1) | `--c-tinta` / `--c-papel` | 15,59 | 13,49 | 3 | Borde de botón, filete de 1,5 px, solapa elegida, cursor de la regla, línea de hoy, círculo de quincena |
+| Tinta como marca (3:1) | `--c-tinta` / `--c-hoja` | 17,32 | 12,91 | 3 | Borde de botón, filete de 1,5 px, solapa elegida, cursor de la regla, línea de hoy, círculo de quincena |
+| Tinta como marca (3:1) | `--c-tinta` / `--c-papel-2` | 13,98 | 10,61 | 3 | Borde de botón, filete de 1,5 px, solapa elegida, cursor de la regla, línea de hoy, círculo de quincena |
+| Tinta como marca (3:1) | `--c-tinta` / `--c-pleno-suave` | 14,39 | 8,97 | 3 | Borde de botón, filete de 1,5 px, solapa elegida, cursor de la regla, línea de hoy, círculo de quincena |
+| Control (3:1) | `--c-control` / `--c-papel` | 3,46 | 5,43 | 3 | Borde de campos, casillas y segmentado |
+| Control (3:1) | `--c-control` / `--c-hoja` | 3,84 | 5,20 | 3 | Borde de campos, casillas y segmentado |
+| Control (3:1) | `--c-control` / `--c-papel-2` | 3,10 ~ | 4,27 | 3 | Borde de un control en una fila con el cursor encima; borde del botón y del campo deshabilitados |
+| Control (3:1) | `--c-control` / `--c-pleno-suave` | 3,19 ~ | 3,61 | 3 | Radios de «Ver como» en la fila elegida |
+| Control (3:1) | `--c-control` / `--c-crit-fondo` | 3,18 ~ | 5,11 | 3 | Borde de un control dentro de una caja de fondo crítico |
+| Deshabilitado | `--c-tinta-3` / `--c-papel-2` | 4,80 ~ | 5,60 | 4,5 | Texto del botón y del campo deshabilitados |
+| Pleno | `--c-sobre-pleno` / `--c-pleno` | 7,81 | 6,63 | 4,5 | Cifra monumental, botón pleno, destino activo, segmento elegido |
+| Pleno | `--c-sobre-pleno-2` / `--c-pleno` | 6,45 | 7,10 | 4,5 | Rótulos de la mordaza (12 px) |
+| Pleno | `--c-sobre-pleno` / `--c-pleno-hover` | 9,83 | 5,72 | 4,5 | Botón pleno y renglón de lectura con el cursor encima |
+| Pleno | `--c-sobre-pleno-2` / `--c-pleno-hover` | 8,12 | 6,14 | 4,5 | Rótulo de un renglón de lectura con el cursor encima |
+| Pleno como campo (3:1) | `--c-pleno` / `--c-papel` | 6,63 | 12,79 | 3 | La mordaza y el destino activo que sobresale del lateral |
+| Pleno como campo (3:1) | `--c-pleno` / `--c-hoja` | 7,36 | 12,24 | 3 | La mordaza y el destino activo que sobresale del lateral |
+| Crítico (texto) | `--c-crit` / `--c-papel` | 5,51 | 7,52 | 4,5 | Mensajes, etiqueta, error de campo, cota de la zona roja |
+| Crítico (texto) | `--c-crit` / `--c-hoja` | 6,12 | 7,19 | 4,5 | Mensajes, etiqueta, error de campo, cota de la zona roja |
+| Crítico (texto) | `--c-crit` / `--c-papel-2` | 4,94 | 5,92 | 4,5 | Mensajes, etiqueta, error de campo, cota de la zona roja |
+| Crítico (texto) | `--c-crit` / `--c-crit-fondo` | 5,06 | 7,07 | 4,5 | Mensajes, etiqueta, error de campo, cota de la zona roja |
+| Crítico (texto) | `--c-crit` / `--c-pleno-suave` | 5,09 | 5,00 | 4,5 | Mensajes, etiqueta, error de campo, cota de la zona roja |
+| Crítico (texto) | `--c-tinta` / `--c-crit-fondo` | 14,32 | 12,68 | 4,5 | Texto de un aviso crítico |
+| Crítico (texto) | `--c-tinta-2` / `--c-crit-fondo` | 7,41 | 9,09 | 4,5 | Texto de un aviso crítico |
+| Crítico (relleno) | `--c-sobre-solido` / `--c-crit-relleno` | 5,74 | 4,66 ~ | 4,5 | Sello de la zona roja, placa roja, insignia, «Con novedad» elegido |
+| Crítico (marca, 3:1) | `--c-crit-marca` / `--c-papel` | 4,87 | 3,99 | 3 | Franja, precinto como marca, rombo del horizonte, borde de campo inválido |
+| Crítico (marca, 3:1) | `--c-crit-marca` / `--c-hoja` | 5,41 | 3,82 | 3 | Franja, precinto como marca, rombo del horizonte, borde de campo inválido |
+| Crítico (marca, 3:1) | `--c-crit-marca` / `--c-papel-2` | 4,37 | 3,14 ~ | 3 | Franja, precinto como marca, rombo del horizonte, borde de campo inválido |
+| Crítico (marca, 3:1) | `--c-crit-marca` / `--c-crit-fondo` | 4,47 | 3,75 | 3 | Franja, precinto como marca, rombo del horizonte, borde de campo inválido |
+| Crítico (campo, 3:1) | `--c-crit-relleno` / `--c-hoja` | 5,41 | 3,09 ~ | 3 | La zona roja contra la caja de la regla y contra la página |
+| Crítico (campo, 3:1) | `--c-crit-relleno` / `--c-papel` | 4,87 | 3,23 ~ | 3 | La zona roja contra la caja de la regla y contra la página |
+| Atención (texto) | `--c-aten` / `--c-papel` | 5,36 | 9,30 | 4,5 | Etiqueta y aviso de tarea |
+| Atención (texto) | `--c-aten` / `--c-hoja` | 5,95 | 8,90 | 4,5 | Etiqueta y aviso de tarea |
+| Atención (texto) | `--c-aten` / `--c-papel-2` | 4,80 | 7,31 | 4,5 | Etiqueta y aviso de tarea |
+| Atención (texto) | `--c-aten` / `--c-aten-fondo` | 5,07 | 7,72 | 4,5 | Etiqueta y aviso de tarea |
+| Atención (texto) | `--c-aten` / `--c-pleno-suave` | 4,94 | 6,18 | 4,5 | Etiqueta y aviso de tarea |
+| Atención (texto) | `--c-tinta` / `--c-aten-fondo` | 14,75 | 11,20 | 4,5 | Texto de un aviso de atención |
+| Atención (texto) | `--c-tinta-2` / `--c-aten-fondo` | 7,63 | 8,03 | 4,5 | Texto de un aviso de atención |
+| Atención (marca, 3:1) | `--c-aten-relleno` / `--c-papel` | 3,61 | 6,90 | 3 | Franja, trama, triángulo del horizonte |
+| Atención (marca, 3:1) | `--c-aten-relleno` / `--c-hoja` | 4,01 | 6,60 | 3 | Franja, trama, triángulo del horizonte |
+| Atención (marca, 3:1) | `--c-aten-relleno` / `--c-papel-2` | 3,23 ~ | 5,43 | 3 | Franja, trama, triángulo del horizonte |
+| Atención (marca, 3:1) | `--c-aten-relleno` / `--c-aten-fondo` | 3,41 | 5,73 | 3 | Franja, trama, triángulo del horizonte |
+| En orden (texto) | `--c-ok` / `--c-papel` | 5,73 | 9,63 | 4,5 | «Disponible», parte cerrado |
+| En orden (texto) | `--c-ok` / `--c-hoja` | 6,36 | 9,21 | 4,5 | «Disponible», parte cerrado |
+| En orden (texto) | `--c-ok` / `--c-papel-2` | 5,14 | 7,57 | 4,5 | «Disponible», parte cerrado |
+| En orden (texto) | `--c-ok` / `--c-ok-fondo` | 5,43 | 7,38 | 4,5 | «Disponible», parte cerrado |
+| En orden (texto) | `--c-ok` / `--c-pleno-suave` | 5,29 | 6,40 | 4,5 | «Disponible», parte cerrado |
+| En orden (texto) | `--c-tinta` / `--c-ok-fondo` | 14,76 | 10,34 | 4,5 | Texto de un aviso en orden |
+| En orden (texto) | `--c-tinta-2` / `--c-ok-fondo` | 7,64 | 7,41 | 4,5 | Texto de un aviso en orden |
+| Mes y neutro (marca, 3:1) | `--c-tinta-3` / `--c-hoja` | 5,95 | 6,81 | 3 | Aro del horizonte, franja de «Fuera de servicio» por taller y de baja |
+| Mes y neutro (marca, 3:1) | `--c-tinta-3` / `--c-papel-2` | 4,80 | 5,60 | 3 | Aro del horizonte, franja de «Fuera de servicio» por taller y de baja |
+| Mes y neutro (marca, 3:1) | `--c-tinta-3` / `--c-pleno-suave` | 4,94 | 4,73 | 3 | Aro del horizonte, franja de «Fuera de servicio» por taller y de baja |
+| Lateral | `--c-lat-tx` / `--c-lat` | 15,05 | 15,20 | 4,5 | Destinos del lateral |
+| Lateral | `--c-lat-tx-2` / `--c-lat` | 7,51 | 7,95 | 4,5 | Secciones, autoría, destinos sin elegir de la barra inferior |
+| Objeto | `--obj-tinta` / `--obj-hoja` | 17,32 | 14,91 | 4,5 | Patente de la chapa y de la llave, veredicto «Puede salir» |
+| Objeto | `--obj-tinta` / `--obj-papel` | 15,59 | 13,22 | 4,5 | Texto sobre el papel del objeto |
+| Objeto | `--obj-tinta` / `--obj-papel-2` | 13,98 | 11,99 | 4,5 | Texto sobre la zona sin cubrir de un objeto (solo tinta y tinta-2: 15.3.2) |
+| Objeto | `--obj-tinta-2` / `--obj-hoja` | 8,96 | 7,71 | 4,5 | Rótulo de cota, modelo de la unidad |
+| Objeto | `--obj-tinta-2` / `--obj-papel-2` | 7,23 | 6,20 | 4,5 | Texto secundario sobre la zona sin cubrir de un objeto |
+| Objeto | `--obj-tinta-3` / `--obj-hoja` | 5,95 | 5,12 | 4,5 | Texto terciario dentro de un objeto |
+| Objeto | `--obj-tinta-3` / `--obj-papel` | 5,35 | 4,54 ~ | 4,5 | Texto terciario sobre el papel secundario del objeto |
+| Objeto | `--obj-tinta` / `--obj-pleno-suave` | 14,39 | 14,39 | 4,5 | Texto en una fila elegida dentro de un objeto |
+| Objeto | `--obj-tinta-2` / `--obj-pleno-suave` | 7,44 | 7,44 | 4,5 | Texto secundario en una fila elegida dentro de un objeto |
+| Objeto | `--obj-sobre-franja` / `--obj-franja` | 7,81 | 7,81 | 4,5 | Patente de la llave disponible con el cursor encima o con el foco |
+| Objeto | `--obj-crit` / `--obj-crit-fondo` | 5,06 | 5,06 | 4,5 | Etiqueta crítica con fondo dentro de un objeto |
+| Objeto | `--obj-ok` / `--obj-ok-fondo` | 5,43 | 5,43 | 4,5 | Etiqueta en orden con fondo dentro de un objeto |
+| Objeto | `--obj-enlace` / `--obj-hoja` | 8,29 | 7,14 | 4,5 | Enlace dentro de un objeto |
+| Objeto | `--obj-crit` / `--obj-hoja` | 6,12 | 5,27 | 4,5 | Veredicto «No puede salir hoy», estado crítico del rótulo de cota |
+| Objeto | `--obj-aten` / `--obj-hoja` | 5,95 | 5,12 | 4,5 | Patente de la llave bloqueada, en su placa lisa |
+| Objeto | `--obj-aten` / `--obj-aten-fondo` | 5,07 | 5,07 | 4,5 | Estado de atención dentro de un objeto |
+| Objeto | `--obj-ok` / `--obj-hoja` | 6,36 | 5,48 | 4,5 | Estado en orden del rótulo de cota |
+| Objeto | `--c-sobre-solido` / `--obj-crit-relleno` | 5,74 | 5,74 | 4,5 | Patente de la llave fuera de servicio, en su placa roja |
+| Objeto (marca, 3:1) | `--obj-franja` / `--obj-hoja` | 7,36 | 6,34 | 3 | Franja cobalto de la chapa |
+| Objeto (marca, 3:1) | `--obj-control` / `--obj-hoja` | 3,84 | 3,31 | 3 | Borde de control dentro de un objeto |
+| Objeto (marca, 3:1) | `--obj-crit-relleno` / `--obj-hoja` | 5,41 | 4,66 | 3 | Precinto del veredicto bloqueado |
+| Objeto (marca, 3:1) | `--obj-aten-relleno` / `--obj-hoja` | 4,01 | 3,45 | 3 | Trama de la llave bloqueada |
+| Objeto (marca, 3:1) | `--obj-tinta-3` / `--obj-papel-2` | 4,80 | 4,12 | 3 | Precinto de la llave fuera de servicio por taller o a mano |
+| Objeto (marca, 3:1) | `--obj-contorno` / `--obj-crit-relleno` | — | 4,66 | 3 | De noche, el contorno claro contra el cuerpo rojo de la llave y de la chapa críticas |
+| Objeto (marca, 3:1) | `--obj-contorno` / `--obj-franja` | — | 6,34 | 3 | De noche, el contorno claro contra el cuerpo cobalto de la llave disponible con el cursor encima |
+| Objeto contra el plano (3:1) | `--obj-tinta` / `--c-papel` | 15,59 | — | 3 | De día el objeto se recorta por su contorno de tinta |
+| Objeto contra el plano (3:1) | `--obj-tinta` / `--c-hoja` | 17,32 | — | 3 | De día, la chapa dentro de una tabla |
+| Objeto contra el plano (3:1) | `--obj-hoja` / `--c-papel` | — | 12,23 | 3 | De noche el objeto se recorta por su papel claro |
+| Objeto contra el plano (3:1) | `--obj-hoja` / `--c-hoja` | — | 11,70 | 3 | De noche, la chapa dentro de una tabla |
+| Objeto contra el plano (3:1) | `--obj-hoja` / `--c-papel-2` | — | 9,62 | 3 | De noche, la chapa en una fila con el cursor encima |
+| Objeto contra el plano (3:1) | `--obj-hoja` / `--c-pleno-suave` | — | 8,13 | 3 | De noche, la chapa en una fila elegida |
+| Objeto contra el plano (3:1) | `--obj-crit-relleno` / `--c-papel` | 4,87 | — | 3 | De día, la llave y la chapa críticas se recortan por su cuerpo rojo |
+| Objeto contra el plano (3:1) | `--obj-crit-relleno` / `--c-hoja` | 5,41 | — | 3 | De día, la llave y la chapa críticas se recortan por su cuerpo rojo |
+| Objeto contra el plano (3:1) | `--obj-crit-relleno` / `--c-papel-2` | 4,37 | — | 3 | De día, la llave y la chapa críticas se recortan por su cuerpo rojo |
+| Objeto contra el plano (3:1) | `--obj-franja` / `--c-papel` | 6,63 | — | 3 | De día, la llave disponible con el cursor encima se recorta por su cuerpo cobalto |
+| Objeto contra el plano (3:1) | `--obj-contorno` / `--c-papel` | — | 12,23 | 3 | De noche, un objeto de cuerpo lleno se recorta por su contorno claro |
+| Objeto contra el plano (3:1) | `--obj-contorno` / `--c-hoja` | — | 11,70 | 3 | De noche, un objeto de cuerpo lleno se recorta por su contorno claro |
+| Objeto contra el plano (3:1) | `--obj-contorno` / `--c-papel-2` | — | 9,62 | 3 | De noche, un objeto de cuerpo lleno se recorta por su contorno claro |
+
+**Objetos de cuerpo lleno, de noche.** La regla «el objeto se recorta 3:1 contra el plano» se cumple con el papel
+claro solo si el cuerpo es papel. De noche el rojo de la llave crítica da 2,63:1 contra `--c-papel`, 2,51 contra
+`--c-hoja` y 2,07 contra `--c-papel-2`; el cobalto de la llave disponible con el cursor encima, 1,93, 1,85 y 1,52; y
+el contorno de tinta, 1,22. Por eso esas piezas llevan el contorno `--obj-contorno` (15.3.2), que de noche es papel
+claro.
+
+Lo que esta tabla **no** cubre y se mide sobre lo maquetado, en imagen: el texto de 12 px sobre el pleno con la rejilla
+detrás (por eso va en placa lisa: 15.2, regla 8), los píxeles de grano bajo la cifra monumental (texto grande: mínimo
+3:1) y el filete de las fichas de noche (decorativo). El par cobalto sobre tinta del lateral (el destino activo contra
+el fondo del lateral, de día) da 2,35:1 y **no se usa como señal**: el destino activo se reconoce por la marca clara
+de 3 px, por el texto y porque sobresale sobre la página (15.4.2).
+
+#### 15.3.4 Correspondencia de los nombres `--c-*` actuales
+
+Los nombres actuales (496 usos en 52 archivos) son la interfaz: **se quedan** y pasan a ser alias de los tokens
+nuevos. Una pantalla todavía sin vestir sigue andando con la paleta nueva.
+
+| Nombre actual | Pasa a valer | Nota |
+| --- | --- | --- |
+| `--c-escritorio`, `--c-fondo` | `--c-papel` | |
+| `--c-superficie` | `--c-hoja` | |
+| `--c-superficie-2`, `--c-ventana-control-hover` | `--c-papel-2` | |
+| `--c-ventana-barra` | `--c-papel` | Cabecera y pie de diálogo; barra de estado de la ficha. |
+| `--c-ventana-borde` | `--c-filete-medio` | |
+| `--c-texto`, `--c-texto-2`, `--c-texto-3` | `--c-tinta`, `--c-tinta-2`, `--c-tinta-3` | |
+| `--c-borde` | `--c-filete` | |
+| `--c-borde-fuerte` | `--c-control` | |
+| `--c-acento`, `--c-tinta` | `--c-tinta` | `--c-tinta` pasa a ser el valor de base y `--c-acento` su alias. |
+| `--c-acento-hover`, `--c-tinta-hover` | `--c-tinta-hover` | |
+| `--c-acento-texto`, `--c-sobre-tinta` | `--c-sobre-tinta` | |
+| `--c-acento-suave`, `--c-edicion` | `--c-pleno-suave` | |
+| `--c-enlace`, `--c-foco` | `--c-pleno-texto` | |
+| `--c-ok-t` / `-f` / `-r` | `--c-ok` / `--c-ok-fondo` / `--c-ok` | |
+| `--c-revisar-t` / `-f` / `-r` | `--c-aten` / `--c-aten-fondo` / `--c-aten-relleno` | |
+| `--c-diferencia-t` / `-f` / `-r` | `--c-crit` / `--c-crit-fondo` / `--c-crit-marca` | |
+| `--c-pendiente-t` / `-f` / `-r` | `--c-tinta` / `--c-papel-2` / `--c-tinta` | La azurita deja de ser un tono. |
+| `--c-neutro-t` / `-f` / `-r` | `--c-tinta-2` / `--c-papel-2` / `--c-tinta-3` | |
+| `--c-critico-*`, `--c-semana-*`, `--c-quincena-*`, `--c-mes-*`, `--c-vigente-*` | sin cambios | Siguen siendo alias de los cinco grupos de arriba. |
+| `--c-critico-solido` | `--c-crit-relleno` | |
+| `--c-sobre-solido`, `--c-sobre-solido-2`, `--c-peligro-texto` | `#FFFFFF` | El texto chico sobre el rojo también es blanco: es el único que alcanza 4,5:1. |
+| `--c-peligro-hover` | `--c-crit-fondo` | El botón de peligro pasa a ser de contorno (15.5.1). |
+| `--c-foco-oscuro` | `#FFFFFF` | |
+| `--c-patente-fondo` | `--obj-hoja` | |
+| `--c-patente-banda` | `--obj-franja` | |
+| `--c-hoy` | `--c-tinta` | |
+| `--c-lat`, `--c-lat-tx`, `--c-lat-tx-2`, `--c-lat-hover`, `--c-lat-borde` | valores de 15.3.1 | |
+| `--c-lat-activo` / `--c-lat-activo-tx` | `--c-pleno` / `--c-sobre-pleno` | |
+| `--c-velo` | valor de 15.3.1 | |
+
+Regla que nace de esta tabla: **ningún texto va sobre `--c-critico-r`** (es marca). El relleno con texto es
+`--c-critico-solido`. Hoy `Boton.svelte` pinta el botón de peligro con `--c-critico-r` de fondo: al vestirlo pasa a
+contorno. Los tokens que queden sin ningún uso al cerrar la maquetación se borran.
+
+#### 15.3.5 Tipografía
+
+Las mismas tres familias alojadas, los mismos tres archivos y las mismas declaraciones `@font-face` (`font-display:
+swap` con la fuente de reemplazo «Ajustada»). **No cambia ninguna métrica**: si alguna cambiara, se vuelve a medir la
+«Ajustada».
+
+| Rol | Familia | Ancho | Pesos |
+| --- | --- | --- | --- |
+| **Cartel**: cifra monumental, veredicto, cifras de lectura, `h1`, título de diálogo, marca | Bricolage Grotesque (`--t-familia-titulo`) | 75 % en cifras y veredicto (`--t-ancho-cifra`), 78 % en títulos (`--t-ancho-titulo`) | 760 en títulos, 780 en cifras |
+| **Texto**: interfaz, párrafos, botones, títulos de ficha | Schibsted Grotesk (`--t-familia`) | — | 400, 600, 650 |
+| **Técnica**: patentes, códigos de lámina, rótulos, cifras de tabla, ejes, cotas | Red Hat Mono (`--t-mono`) | — | **500 y 600** (el archivo se declara con ese rango: no pedir 700) |
+
+| Token | Valor | Uso |
+| --- | --- | --- |
+| `--t-monumental` | por contenedor: `clamp(3.5rem, 22cqi, 12.5rem)` con la regla de 37,5 rem o más y `clamp(3.5rem, 38cqi, 7.5rem)` por debajo (15.6.2) | La cifra de la mordaza. Se dimensiona por el ancho del campo (la mordaza), no de la ventana. Interlínea 0,74. |
+| `--t-veredicto` | `3.75rem` (60 px); `2.875rem` (46 px) si ocupa dos renglones | El veredicto de Hoy. Interlínea 0,86. |
+| `--t-cifra-grande` | `5.5rem` (88 px) | El número del sello de la zona roja; baja por contenedor hasta `2.75rem`. |
+| `--t-cifra` | `2.75rem` (44 px); `2rem` por debajo de 45 rem | Cifras de lectura fuera de la mordaza. |
+| `--t-h1` | `clamp(2rem, 1.6rem + 1.6vw, 2.75rem)` | Título de pantalla, cartel a 78 %, peso 760, interlínea 1. Se conserva el tope `min(var(--t-h1), 14vw)`. |
+| `--t-h2` | `1.5rem` | Título de sección suelta (parte, estado vacío), cartel a 78 %, peso 760. |
+| `--t-h2-ficha` | `1rem` | Título de ficha (`Panel`), en la letra de texto, peso 650. |
+| `--t-h3` | `1rem` | Grupo, en la letra de texto, peso 650. |
+| `--t-cuerpo` | `0.875rem` desde 64 rem; `0.9375rem` por debajo | Texto general. Los campos de formulario por debajo de 64 rem siguen en `1rem` (16 px evita el zoom automático de iOS). |
+| `--t-tabla` · `--t-chico` | `0.8125rem` | Celdas; ayudas y notas. |
+| `--t-rotulo` | `0.75rem` | Rótulos en técnica, mayúsculas, `letter-spacing: 0.06em`, peso 500. Mínimo absoluto. |
+| `--t-patente-chica` · `--t-patente-grande` · `--t-patente-llave` | `0.8125rem` · `1.625rem` · `2.125rem` (`1.75rem` por debajo de 22,5 rem) | Chapa en tablas; en el título de la ficha y del parte; en la llave de Hoy. |
+
+- `h1` usa cartel; `h2` y `h3` dejan de heredar el cartel por defecto: `base.css` les pone la letra de texto, y las
+  secciones sueltas piden el cartel con `--t-h2`.
+- Cifras tabulares solo en cifras sueltas y columnas, nunca dentro de una oración (regla de 3.4, sin cambios). Las
+  cifras de tabla van en técnica.
+- Medida de lectura de los párrafos: `max-width: 62ch` (sin cambios).
+- **La coreografía no espera a las letras para mostrar texto**: con `swap` el texto se ve siempre. Lo que espera es
+  el movimiento (15.10).
+
+#### 15.3.6 Espacio, formas, sombras y texturas
+
+- **Espaciado:** se conserva la escala `--e-1` a `--e-8` (`0.25rem` a `4rem`) y `--gutter` (16, 24 y 32 px).
+- **Radios:** `--r-0: 0` (fichas, paneles, diálogos, caja de la regla) · `--r-1: 2px` y `--r-2: 2px` (controles) ·
+  `--r-chapa: 3px` · `--r-redondo: 999px` (solo piezas físicas: globo, agujero, punto). `--r-3`, `--r-4` y
+  `--r-pildora` pasan a `0`, `0` y `2px`: ya no hay píldoras. Quien necesite un círculo usa `--r-redondo`.
+- **Bordes:** `--b-filete: 1px` · `--b-control: 1.5px` (sin cambios) · `--b-fuerte: 1.5px` (cabeza de ficha, botón) ·
+  `--b-caja: 2px` (caja de la regla, llave de Hoy, diálogo).
+- **Sombras:** `--s-panel: none` (las fichas no llevan sombra) · `--s-dura: 0 2px 0` (botones; el color lo pone el
+  botón) · `--s-pieza: 0 1px 0 var(--obj-sombra)` (objetos) · `--s-flotante: 0 10px 18px -10px rgb(0 0 0 / 0.5), 0 2px
+  0 var(--c-filete-medio)` (menú, rótulo de cota, chapa con el cursor encima) · `--s-ventana: 0 18px 30px -16px rgb(0 0
+  0 / 0.55)` (diálogo).
+- **Alturas y anchos fijos** (se cambian junto con `scroll-padding`):
+
+  | Token | Valor | Antes |
+  | --- | --- | --- |
+  | `--ancho-lateral` | `14.75rem` (236 px) | `16rem` |
+  | `--alto-lamina` (nuevo) | `3.5rem` (56 px): barra de escritorio | — |
+  | `--alto-barra` | `3.375rem` (54 px): barra superior por debajo de 64 rem | `3.25rem` |
+  | `--alto-franja` | `0`: la franja desaparece; el token queda hasta que nadie lo use | `1.625rem` |
+  | `--alto-pestanas` | `3.875rem` (62 px): barra inferior | `4rem` |
+  | `--alto-control` (nuevo) | `2.25rem` (36 px) desde 64 rem; `2.75rem` por debajo | — |
+  | `--alto-tactil`, `--alto-segmento`, `--alto-barra-envio` | sin cambios (44, 48 y 72 px) | |
+
+  `scroll-padding-top`: alto de la barra visible más 12 px. `scroll-padding-bottom`: por debajo de 64 rem, alto de la
+  barra inferior más el área segura más 16 px (en el parte, el de la barra de envío, como hoy).
+- **Texturas** (`src/estilos/texturas/`, SVG propios, cada uno de menos de 4 kB para que la compilación los incruste
+  como `data:`; la CSP ya permite `img-src 'self' data:`; **ningún pedido nuevo**):
+
+  | Archivo | Dónde | Cómo |
+  | --- | --- | --- |
+  | `grano-claro.svg` | Página (de día), campo pleno, zona roja | Mosaico de 160 a 200 px. Ruido al 12–16 %. |
+  | `grano-oscuro.svg` | Página (de noche) | Igual. |
+  | `exposicion.svg` | Página (de noche) | Manchas grandes y suaves al 13 %, mosaico de 720 px. |
+  | `registro.svg` | Una marca de registro en la esquina superior derecha de la mordaza, solo con el tablero completo | Máscara pintada con `--c-sobre-pleno`, opacidad 0,55, `aria-hidden`. |
+
+  De noche la página suma la **cuadrícula del plano**: líneas de 1 px cada 48 px (tinta al 7 %) y cada 12 px (al
+  2,8 %), con gradientes. Las pilas de fondo por modo son tokens (`--tx-pagina`, `--tx-pleno`, `--tx-roja`) declarados
+  en `tokens.css`, que es el único archivo que distingue el modo. Sin `background-attachment: fixed`. Las hojas
+  (`--c-hoja`) tapan la textura: detrás de un texto de lectura nunca hay grano ni cuadrícula.
+- **Precinto:** `repeating-linear-gradient(-45deg, <color> 0 1.5px, transparent 1.5px 7px)`. En la zona roja, sobre el
+  relleno: `rgb(0 0 0 / 0.2)` de 2 px cada 9 px.
+
+#### 15.3.7 Movimiento
+
+| Token | Valor | Uso |
+| --- | --- | --- |
+| `--m-curva` | `cubic-bezier(0.16, 0.9, 0.12, 1)` | «Tope»: arranca rápido y frena contra el tope. Mordaza, tambores, diálogo. La curva de la casa. |
+| `--m-curva-resorte` (nuevo) | `cubic-bezier(0.34, 1.5, 0.6, 1)` | Encaje con rebote corto: llave que cae, sello que se estampa. |
+| `--m-curva-carro` (nuevo) | `cubic-bezier(0.65, 0, 0.35, 1)` | Va y vuelve: cursor de calibre del botón. |
+| `--m-rapido` · `--m-medio` · `--m-lento` · `--m-largo` (nuevo) | `90ms` · `160ms` · `320ms` · `640ms` | Clic · cursor encima y foco · diálogo y disclosure · mordaza. |
+
+`prefers-reduced-motion: reduce` y `:root[data-movimiento="quieto"]` valen lo mismo: `base.css` apaga **todas** las
+animaciones y transiciones (`animation: none; transition: none`), también las de las transiciones de vista, y el
+JavaScript no inicia ninguna (`quiereMenosMovimiento()` consulta las dos cosas). Todo aparece completo y en su estado
+final. La coreografía está en 15.10.
+
+**Colores forzados** (`forced-colors: active`): foco con `Highlight`; bordes de fichas, chapa, llave y caja de la regla
+con `CanvasText`; la mordaza con `Highlight` de fondo y `HighlightText` de texto; la zona roja con borde `CanvasText` y
+el precinto dibujado con `CanvasText`; las texturas de página se quitan. Ningún dato depende de un color de autor.
+
+---
+
+### 15.4 Marco
+
+Un solo corte, el de siempre: **64 rem**. Desde ahí, lateral y barra de escritorio; por debajo, barra superior y barra
+inferior. No hay lateral como panel con velo. Orden del DOM y de tabulación: el de la sección 2, sin cambios.
+
+#### 15.4.1 Escritorio (desde 64 rem)
+
+```
+┌─────────────────┬──────────────────────────────────────────────────────────────────────┐
+│ ▣ Control       │ FL-05   ‹ Movilidades                 ◆ DATOS FICTICIOS   viernes 27/11/2026 │ 56 px, fija
+│   de flota      ├──────────────────────────────────────────────────────────────────────┤
+│                 │ (avisos globales, si hay)                                             │
+│   Inicio      ④ │                                                                      │
+│ FLOTA           │  Título de la pantalla (h1)                                          │
+│ ▌Movilidades ▒▒▒▒▶ el destino activo sobresale sobre la página                          │
+│   Vencimientos③ │                                                                      │
+│ OPERACIÓN       │  contenido (ancho máximo: --ancho-max)                               │
+│   Operación   ⑤ │                                                                      │
+│ ─────────────── │                                                                      │
+│ Cómo funciona   │                                                                      │
+│ Reiniciar demo  │                                                                      │
+│ Ver como        │                                                                      │
+│ Encargado     ⌄ │                                                                      │
+│ APARIENCIA      │                                                                      │
+│ [Claro|Oscuro|Automático]                                                              │
+│ [ Sin animaciones ]                                                                    │
+│ ← Volver al portafolio                                                                 │
+│ autoría · Más → │                                                                      │
+└─────────────────┴──────────────────────────────────────────────────────────────────────┘
+  236 px, fijo, alto de la ventana; regla graduada en el canto derecho
+```
+
+**El segundo rótulo del lateral es «Operación»** (decisión DE2 de Matías, 28/11/2026): el dibujo, 15.4.2 y la fila 25
+de 15.14 dicen lo mismo.
+
+#### 15.4.2 Lateral
+
+- Fondo `--c-lat` (tinta de día, Prusia profundo de noche), texto `--c-lat-tx`. Ancho `--ancho-lateral`. En el canto
+  derecho, una **regla graduada** dibujada con gradientes (marca cada 8 px, mayor cada 40 px, en `--c-lat-borde`):
+  decorativa, `pointer-events: none`.
+- **Marca:** ícono de la casa (15.13) y «Control de flota» en cartel a 78 %, 20 px. Ya no lleva debajo la etiqueta de
+  la demo: el aviso de datos ficticios es el sello de la barra.
+- **Destinos:** los de hoy y en el mismo orden. Encargado: Inicio; rótulo «Flota»; Movilidades; Vencimientos; rótulo
+  «Operación»; Operación diaria. Conductor: Hoy; Mis partes (sin rótulos). Los rótulos de sección son presentación
+  (`aria-hidden="true"`, en técnica de 12 px, `--c-lat-tx-2`): la lista sigue siendo una sola lista de enlaces.
+- **Ítem:** 36 px de alto, ícono de 17 px, texto de 14 px y peso 500, insignia a la derecha.
+
+  | Estado | Aspecto |
+  | --- | --- |
+  | Normal | Texto `--c-lat-tx`. |
+  | Cursor encima | Fondo `--c-lat-hover` y marca de 3 px a la izquierda en `--c-lat-tx`. |
+  | Foco | Anillo de 3 px en `--c-foco-oscuro`, por dentro (`outline-offset: -3px`). |
+  | Activo (pulsado) | Fondo `--c-lat-tx` al 14 %. |
+  | **Actual** (`aria-current="page"`) | Fondo `--c-pleno`, texto `--c-sobre-pleno` en peso 650, marca de 3 px a la izquierda en `--c-sobre-pleno`, y el ítem **sobresale del lateral sobre la página** `min(1.375rem, var(--gutter) - 0.625rem)`, como la mordaza de un calibre. |
+  | **Foco sobre el actual** | Anillo de 3 px en **`--c-sobre-pleno`**, por dentro (7,81:1 de día y 6,63 de noche contra `--c-pleno`). No `--c-foco-oscuro`: de noche el pleno es crema y el blanco da 1,18:1. |
+  | Actual en ventanas bajas (menos de 47,5 rem de alto) | No sobresale; el lateral desplaza por dentro. |
+
+- **Insignias:** las de 4.3 (mismas cifras, mismos nombres accesibles). Cuadradas, técnica de 12 px, mínimo 22 px de
+  ancho. Críticas: `--c-crit-relleno` con `--c-sobre-solido`. Las demás: borde `--c-lat-borde` y texto `--c-lat-tx`.
+  Sobre el ítem actual, la insignia no crítica usa borde y texto `--c-sobre-pleno`.
+- **Pie del lateral**, separado por un filete, de arriba abajo: «Cómo funciona» (botón, **siempre visible**),
+  «Reiniciar demo», el botón de perfil «Ver como» (dos renglones: rótulo y perfil, con flecha; es **el único** botón
+  visible cuyo nombre accesible empieza con «Ver como»), el control «Apariencia» (15.4.5), «Volver al portafolio», la
+  autoría y el enlace «Más».
+
+#### 15.4.3 Barra de escritorio: encabezado de lámina
+
+Reemplaza a las migas. 56 px, fija arriba del contenido, fondo `--c-papel` al 92 % con desenfoque de 6 px y filete
+inferior `--c-filete-medio`.
+
+- **Izquierda:** el **código de lámina** (`FL-01` a `FL-09`, tabla de 15.9) en técnica de 12 px, `--c-tinta-3`. Va
+  **fuera del `h1`**: es un elemento de la barra. En la **ficha** y en el **parte**, a continuación, el **enlace al
+  padre**: «‹ Movilidades», «‹ Operación diaria» u «‹ Hoy», según 2 (es la única vuelta atrás en escritorio). Enlace de
+  14 px y peso 600 en `--c-pleno-texto`, con 36 px de alto de objetivo; conserva su `nav` con nombre («Ruta») y el
+  nombre accesible «Volver a …». En las pantallas del menú no hay enlace: ya no se repite el nombre de la pantalla ni
+  el de la solapa.
+- **Derecha:** el **sello «Datos ficticios»** y la fecha («viernes 27/11/2026», técnica de 12 px, `--c-tinta-2`).
+- **Sello:** 26 px de alto, técnica de 12 px en mayúsculas con `letter-spacing: 0.08em`, color `--c-pleno-texto`, borde
+  de 1,5 px y un segundo filete de 1 px separado 2 px (doble borde, como un sello de goma), girado −1,5°. No es un
+  control. Su texto visible es corto; el nombre completo va en texto para lectores (15.14).
+
+#### 15.4.4 Celular y tableta (menos de 64 rem)
+
+```
+Pantallas del menú                         Ficha y parte
+┌──────────────────────────────────────┐  ┌──────────────────────────────────────┐
+│ ▣ Control de flota  ◆DATOS FICT. ●Encarg.⌄│  │ ‹  Unidad ZYN 469          ●Encargado ⌄│ 54 px
+├──────────────────────────────────────┤  ├──────────────────────────────────────┤
+│ FL-01                 viernes 27/11/2026 │  │ FL-05               ◆ DATOS FICTICIOS │ renglón de lámina
+│ Inicio                               │  │ [ZYN 469]                            │
+```
+
+- **Barra superior:** 54 px, fija, fondo `--c-papel` **opaco** (sin desenfoque), filete inferior. Un solo piso: la
+  franja «Demo con datos ficticios · fecha» desaparece.
+  - **Pantallas del menú:** marca (ícono y nombre) · sello · **chip de perfil**. Al bajar la página, el título de la
+    pantalla ocupa el lugar de la marca (como hoy).
+  - **Ficha y parte:** «‹ Atrás» (44 × 44, con su nombre accesible «Volver a …») · título (cartel de 18 px, una línea,
+    con elipsis; sigue siendo `aria-hidden` porque el `h1` lo dice) · chip de perfil. **El sello no entra** y baja al
+    renglón de lámina.
+  - **Qué cede, en orden, cuando falta ancho:** (1) por debajo de 30 rem, la marca queda en su ícono; (2) por debajo
+    de 23,75 rem, el sello aprieta su espaciado (`letter-spacing: 0.04em`, relleno de 6 px); (3) por debajo de
+    22,5 rem (el caso de 320 px), el sello baja al renglón de lámina, como en la ficha y el parte; (4) el chip de
+    perfil nunca se parte ni se oculta: si el nombre del perfil es largo («Conductor · Tamara»), se corta con elipsis
+    dentro del chip. A 360 px entran el ícono de la marca, el sello apretado y el chip (unos 338 px de 360, por
+    cuenta de anchos; se mide en el boceto).
+- **Chip de perfil:** 44 px de alto, borde de 1,5 px en tinta, radio 2 px, punto de 8 px y flecha. Es el único botón
+  visible que empieza con «Ver como» por debajo de 64 rem y abre el diálogo «Ver como» en un clic. Estados: los del
+  botón secundario (15.5.1).
+- **Renglón de lámina:** primer elemento dentro de `main`, antes del `h1`. Código de lámina a la izquierda y, a la
+  derecha, la fecha (pantallas del menú) o el sello (ficha y parte, y cualquier pantalla por debajo de 22,5 rem: ahí
+  la fecha no se muestra). Técnica de 12 px. Solo se muestra por debajo de 64 rem (en escritorio esa información está
+  en la barra): es el mismo dato en dos lugares, y solo uno se dibuja.
+- **Barra inferior** (`nav` «Secciones»): 62 px más el área segura, fondo `--c-lat`, filete superior de 2 px en
+  tinta. Los mismos destinos y el mismo orden que hoy. Cada destino ocupa su columna entera (objetivo de 62 px de
+  alto), con ícono de 20 px y nombre de 12 px y peso 600.
+
+  | Estado | Aspecto |
+  | --- | --- |
+  | Normal | Texto e ícono `--c-lat-tx-2`. |
+  | Foco | Anillo de 3 px en `--c-foco-oscuro`, por dentro. |
+  | Pulsado | Fondo `--c-lat-tx` al 14 %. |
+  | **Actual** (`aria-current="page"`) | Fondo `--c-pleno`, texto `--c-sobre-pleno`. |
+  | **Foco sobre el actual** | Anillo de 3 px en **`--c-sobre-pleno`**, por dentro (7,81:1 y 6,63). Nunca `--c-foco-oscuro` sobre el pleno (1,18:1 de noche). |
+
+  Insignia arriba a la derecha del ícono, como en el lateral. En el parte no hay barra inferior: manda la barra de
+  envío (sin cambios).
+
+  **Columnas y nombres (revisión del boceto, 27/11/2026).**
+  - **Columnas iguales**, repartidas por partes iguales (`repeat(N, 1fr)`) y sin relleno lateral dentro de la
+    columna. Con cinco destinos (encargado) mide 78 px a 390, 72 a 360 y 64 a 320; con tres (conductor), un tercio.
+    El ancho **no se reparte según el largo del nombre**: así el pulgar encuentra cada destino siempre en el mismo
+    lugar y ninguno baja de los 44 px que pide la regla 10 de 15.2 (con columnas proporcionales, «Más» medía 43,4 px
+    a 360 y 35,4 a 320).
+  - **Nombres en la letra de cartel angosta**: Bricolage Grotesque a 78 % de ancho (`--t-ancho-titulo`), 12 px y peso
+    600. Medidos con la fuente real, «Vencimientos» (el más largo) mide 62,6 px (60,4 a 75 %); con la letra de texto
+    medía 77,8 px y no entraba en 72. A 72 px sobra; a 64 px (320) queda 1,4 px de aire, sin relleno. **No se abrevia
+    ningún nombre ni se baja de 12 px.** Si sobre lo maquetado desborda a 320 px, se avisa al diseño.
+  - **Verificación:** el control de medidas del boceto y el de producción suman el piso de **44 px** de lado a lado
+    a todo lo pulsable del marco por debajo de 64 rem (hoy solo avisan por debajo de 24 px).
+
+#### 15.4.5 Control «Apariencia»
+
+Un grupo con título «Apariencia» que **no** empieza con «Ver como». Vive solo en la pantalla «Más» (todos los anchos):
+salió del pie del lateral por el segundo recorte del presupuesto de peso (decisión DE7 de Matías, 28/11/2026), y el
+lateral no lo lleva.
+
+- **Tema:** tres opciones excluyentes, «Claro», «Oscuro» y «Automático». Son `input type="radio"` nativos dentro de un
+  `fieldset` con su `legend`, dibujados como un **segmentado** (15.5.8): las flechas mueven entre opciones sin código
+  propio. «Automático» es la opción por defecto y sigue al dispositivo.
+- **«Sin animaciones»:** un botón con `aria-pressed`. Apretado: fondo `--c-tinta` y texto `--c-sobre-tinta` (en el
+  lateral, fondo `--c-lat-tx` y texto `--c-lat`), con una marca cuadrada llena antes del texto; sin apretar, la marca
+  es un cuadrado vacío. La marca hace que el estado no dependa del color.
+- En el lateral todo mide 36 px de alto; en «Más», 44 px.
+- Las dos preferencias se guardan en el equipo (`localStorage`) y se aplican antes de montar la aplicación
+  (`data-modo` y `data-movimiento` en `<html>`). Al cambiar el tema se actualiza también `theme-color`. El cambio de
+  tema es **instantáneo** en esta etapa (la exposición animada llega en la etapa 3 del rediseño).
+- Estados de cada control: normal, cursor encima (`--c-papel-2`, o `--c-lat-hover` en el lateral), foco (anillo),
+  pulsado, elegido. En el lateral el anillo de estos controles es `--c-foco-oscuro` y va **por fuera**, con 2 px de
+  separación, sobre `--c-lat` (18,37:1 y 17,79): elegido o apretado, el control tiene fondo claro, y por dentro el
+  blanco daría 1,2:1. No tienen estado deshabilitado, de error ni de carga. Si `localStorage` no está disponible, los
+  controles funcionan igual y la preferencia dura lo que dura la sesión; no se muestra un error.
+
+#### 15.4.6 Arranque: el cuadro cero
+
+Mientras la aplicación arranca (`fase === "arrancando"`) se muestra el **cuadro cero de la regla**: la caja del calibre
+vacía, sin ningún dato falso.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                                                              │  caja de la regla: borde de 2 px en tinta,
+│   Preparando la flota de ejemplo…                            │  fondo --c-hoja, mismo alto que la regla real
+│   ▰▰▰▰▱▱▱▱▱▱ (progress nativo)                               │  (15.6.2), sin mordaza, sin cifra, sin llaves
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+├──────────────────────────────────────────────────────────────┤  escala sin marcas ni números (solo la línea)
+```
+
+- Arriba de la caja se reserva el alto del encabezado de la pantalla (renglón de lámina, título y línea) como espacio
+  vacío: cuando llegan los datos, la regla aparece **en el mismo lugar y con el mismo tamaño**, sin salto de diseño.
+  No hay bloques grises ni brillo de carga.
+- Se conserva tal cual lo que fijan las pruebas: el contenedor `role="status"`, el texto «Preparando la flota de
+  ejemplo…» y el `progress` con `aria-labelledby`, que aparecen recién cuando la espera supera el umbral actual. Antes
+  del umbral se ve la caja vacía.
+- `progress`: nativo e indeterminado, `accent-color: var(--c-tinta)`, ancho `min(100%, 20rem)`.
+- El cuadro cero es el mismo para cualquier ruta de entrada.
+
+**«Cargando la pantalla…»** (una pantalla que se baja al entrar, desde los 300 ms): el mismo `role="status"` con su
+texto y su `progress`, en un renglón sobre `--c-hoja` con filete superior de 1,5 px en tinta. Sin caja de regla.
+
+**Error de arranque** (`fase === "error"`): `h1` «No se pudo iniciar la demo» en cartel; debajo, una ficha con precinto
+crítico de 6 px en el borde izquierdo, el párrafo del error y el botón primario «Recargar la página». Sin «Reiniciar
+demo». No se dibuja la caja de la regla (no hay nada que medir).
+
+**Error de descarga, «Hay una versión nueva», ruta desconocida y datos dañados:** el mismo esquema (título, párrafo,
+botón), sin precinto cuando no es un error (versión nueva, ruta desconocida). Los textos son los actuales.
+
+#### 15.4.7 Avisos globales
+
+Debajo de la barra, dentro del ancho del contenido, con el componente `Aviso` (15.5.6). La región `role="status"`
+sigue existiendo siempre, vacía. Almacenamiento no disponible y almacenamiento perdido: tono `semana`. Datos de otra
+fecha: `semana`, con «Cerrar aviso». Demo actualizada: `neutro`, con cierre. Cambios en otra pestaña: `quincena`, con
+«Actualizar» y, si falla, su mensaje de error dentro del aviso.
+
+---
+
+### 15.5 Componentes base
+
+Cada pieza conserva su `<script>`, sus `props`, su marcado accesible y su comportamiento (secciones 5 y 14). Lo que
+sigue es su **piel**. Estados comunes a todo lo operable: normal, cursor encima (solo en `@media (hover: hover)`),
+**foco visible**, pulsado y deshabilitado. La excepción del `h1` (sin anillo) sigue igual. Densidad compacta, única.
+
+**El anillo de foco.** Siempre de 3 px. Regla que decide el color: **un anillo por fuera se mide contra lo que rodea
+a la pieza; un anillo por dentro, contra el fondo de la propia pieza.**
+
+| Caso | Anillo | Contra qué se mide (15.3.3) |
+| --- | --- | --- |
+| **General**: todo lo que está sobre la página, una hoja, una fila o un fondo de tono. Incluye el **botón de aspecto pleno** y el segmento elegido. | `--c-foco`, **por fuera**, con 2 px de separación. | El fondo que rodea a la pieza: 5,87:1 o más en todos. |
+| Sobre lo oscuro: ítems del lateral y de la barra inferior (sin elegir), sello de la zona roja, opción roja del checklist. | `--c-foco-oscuro`, **por dentro**. | `--c-lat` (18,37 y 17,79) o `--c-crit-relleno` (5,74 y 4,66). |
+| Pieza cuyo fondo es el pleno y que no admite anillo por fuera: destino actual del lateral y de la barra inferior, renglones de lectura dentro de la mordaza. | `--c-sobre-pleno`, **por dentro**. | `--c-pleno` (7,81 y 6,63). |
+| Dentro de un objeto (15.3.2). | `--obj-enlace` (lo que vale `--c-foco` ahí adentro), por fuera con 2 px. | `--obj-hoja` (8,29 y 7,14). |
+
+Lo que **no** se hace: `--c-sobre-pleno` por fuera (sobre la hoja da 1,06:1 de día y 1,85 de noche) ni
+`--c-foco-oscuro` sobre un fondo claro (sobre el pleno da 1,18:1 de noche).
+
+#### 15.5.1 `Boton`, `EnlaceAccion` y `BotonConfirmar`
+
+Anatomía: alto `--alto-control` (36 px; 44 por debajo de 64 rem), relleno horizontal de 14 px, borde de 1,5 px, radio
+2 px, texto de 14 px y peso 600, **sombra dura de 2 px hacia abajo** en el color de su borde. Tamaño `chico`: 28 px en
+escritorio y 40 por debajo de 64 rem (44 en el recorrido del conductor). Tamaño `grande`: 52 px, texto de 16 px,
+sombra de 3 px. El botón lee cuatro
+propiedades (`--b-fondo`, `--b-texto`, `--b-borde`, `--b-fondo-hover`): así un contenedor puede darle el aspecto
+«pleno» sin tocar su `<script>`.
+
+| Variante | Fondo · texto · borde | Cursor encima |
+| --- | --- | --- |
+| `primario` | `--c-tinta` · `--c-sobre-tinta` · `--c-tinta-borde` | `--c-tinta-hover` |
+| `secundario` | `--c-hoja` · `--c-tinta` · `--c-tinta` | `--c-papel-2` |
+| `texto` | transparente · `--c-pleno-texto`, subrayado · sin borde ni sombra | subrayado de 2 px |
+| `peligro` | `--c-hoja` · `--c-crit` · `--c-crit` | `--c-crit-fondo` |
+| `icono` | transparente · `--c-tinta` · sin borde ni sombra; caja de 36 px (44 por debajo de 64 rem) | `--c-papel-2` |
+| aspecto **pleno** (lo da el contenedor; solo la acción que destraba) | `--c-pleno` · `--c-sobre-pleno` · `--c-pleno-borde` | `--c-pleno-hover` |
+
+**El primario de noche.** Relleno `--c-tinta` (claro, `#EDF3FA`), texto `--c-sobre-tinta`, y borde y sombra dura en
+`--c-tinta-borde` (`#6F8FB8`), **no en el color del relleno**: sin esa diferencia el botón era un bloque plano que se
+leía como un campo vacío (en Hoy, a 100 px de la llave en crema). Con el cursor encima cambia el relleno a
+`--c-tinta-hover`; el borde no cambia. De día el borde sigue siendo la tinta. Pares en 15.3.3. **Descartada:** darle a
+«Empezar la revisión» el aspecto pleno. El pleno es la acción que destraba una pieza (regla 1 de 15.2), y Hoy no tiene
+regla; además, de noche el pleno es crema, casi igual a la llave (`--obj-hoja`), y dejaría dos piezas iguales
+compitiendo.
+
+| Estado | Aspecto |
+| --- | --- |
+| Cursor encima | Además del fondo, en primario, secundario y pleno una línea de 1,5 px (el **cursor de calibre**) cruza el botón de izquierda a derecha en 520 ms con `--m-curva-carro`, a opacidad 0,35, una sola vez por entrada del puntero. |
+| Foco | Anillo general: `--c-foco`, por fuera, con 2 px de separación. **También en el aspecto pleno** (8,29:1 de día y 8,44 de noche sobre la hoja de la nota): el contenedor no cambia el anillo, así los dos botones de la «Acción del día» muestran el foco igual. |
+| Pulsado | Baja 2 px y pierde la sombra (`--m-rapido`). |
+| Deshabilitado (`disabled` o `aria-disabled="true"` sin carga) | Fondo `--c-papel-2`, texto `--c-tinta-3`, borde `--c-control`, sin sombra, `cursor: not-allowed`. |
+| Cargando (`cargando`: hoy pone `aria-disabled="true"` y el texto «Guardando…») | Igual que el normal de su variante, sin sombra y con `cursor: progress`. El texto lo dice todo; no se agrega un giro (el botón no expone un atributo propio de carga y no se toca su `<script>`). |
+| Error | No tiene: el error vive junto al campo o en el diálogo. |
+
+`EnlaceAccion` es un enlace con el mismo aspecto y los mismos estados. `BotonConfirmar` (dos pasos) usa `texto` en el
+primer paso y `peligro` en el segundo; su tiempo y su foco no cambian.
+
+#### 15.5.2 `Patente`: la chapa
+
+Es un **objeto** (`.objeto`). **Conserva la clase `.patente`** (la usa el movimiento entre pantallas) y
+`a.enlace-patente`.
+
+- Papel `--obj-hoja`, texto `--obj-tinta` en técnica y peso 600, borde de 1,5 px en `--obj-tinta`, radio 3 px, sombra
+  `--s-pieza`, y una **franja de 3 px** en `--obj-franja` arriba. Sin leyenda, escudo ni bandera.
+- `chica` (tablas, listas): 13 px, relleno `0.375rem 0.375rem 0.1875rem`, `white-space: nowrap`.
+- `grande` (título de la ficha y del parte): `--t-patente-grande`, borde de 2 px, franja de 8 px.
+- En la llave de Hoy: `--t-patente-llave`, franja de 12 px (15.8).
+- Enlace: cursor encima, sube 1 px y toma `--s-flotante`; pulsado, baja 1 px y pierde la sombra; foco, anillo en
+  `--c-foco` (el anillo está fuera del objeto, sobre el plano). Para que eso se cumpla, **`.objeto` va en `.patente`
+  y no en `a.enlace-patente`** (15.3.2). Deshabilitado, error, vacío y cargando: no tiene.
+- De noche su color calculado de fondo es `rgb(237, 231, 218)`: una prueba lo fija.
+
+#### 15.5.3 `Etiqueta`, `EtiquetaParte` y `Forma`
+
+- **`Forma`**: 10 px, en el color de marca del tono (`-r`). Rombo, triángulo, círculo lleno, aro (trazo de 1,5 px) y
+  cuadrado (8 px). Sin estados.
+- **`Etiqueta`** con fondo: 22 px de alto, técnica de 12 px en mayúsculas (`letter-spacing: 0.04em`, peso 600), forma o
+  ícono antes de la palabra, texto `-t`, fondo `-f`, borde de 1 px (`-t` al 40 %), esquinas rectas. No es un control.
+- **`Etiqueta` `variante="texto"`** («Disponible», «Bloqueada» en una fila): sin fondo ni borde; forma y palabra en
+  `-t`, peso 600, en la letra de texto de 13 px y sin mayúsculas forzadas.
+- **`EtiquetaParte`**: una `Etiqueta` con el ícono y el tono de `ETIQUETAS_DE_PARTE` (sin cambios).
+
+#### 15.5.4 `Panel`: la ficha
+
+- Hoja `--c-hoja`, contorno de 1 px `--c-filete-medio`, **cabeza de 1,5 px en tinta**, radio 0, sin sombra.
+- **Barra de título:** mínimo 44 px; ícono de 16 px en tinta; `h2` en la letra de texto (`--t-h2-ficha`, peso 650);
+  `meta` en técnica de 12 px, `--c-tinta-3`; `controles` a la derecha. Filete inferior `--c-filete`. El `h2` conserva
+  su `id`, su `tabindex="-1"` y su anillo cuando recibe el foco.
+- **Interior:** relleno de 16 px (`sinRelleno`: 0).
+- **Barra de estado** (`role="status"`): fondo `--c-papel`, filete superior, texto de 13 px. Vacía mide 0, como hoy.
+- Estados: normal; con mensaje; vacío (lo dibuja el contenido: 15.5.12). No tiene cursor encima, pulsado ni
+  deshabilitado.
+
+#### 15.5.5 `ListaTabla`: la tabla densa
+
+Conserva `data-variante` y `data-col`, sus roles y su paso a tarjetas por ancho de contenedor.
+
+- **Encabezado:** técnica de 12 px en mayúsculas, `--c-tinta-3`, sobre `--c-hoja`, con filete inferior de 1,5 px en
+  tinta. Las palabras no se parten.
+- **Fila:** mínimo 46 px en escritorio; filete inferior `--c-filete`; cifras a la derecha en técnica.
+
+  | Estado | Aspecto |
+  | --- | --- |
+  | Cursor encima | Fondo `--c-papel-2`. |
+  | Foco en un control de la fila | Anillo en el control. |
+  | Con tono (`data-tono`) | **Precinto de 6 px** en el borde izquierdo con el color de marca del tono (reemplaza la franja lisa de 4 px). Las filas en orden no llevan nada. |
+  | Elegida | Fondo `--c-pleno-suave` y barra de 4 px en `--c-pleno` a la izquierda, que reemplaza al precinto; las formas de tono pasan a su color de texto (15.3.1). |
+  | Recién actualizada | Destello de `--c-pleno-suave` a transparente en 1.200 ms, una vez (regla de 3.6). |
+  | Vacía | Pieza de vacío (15.5.12) en lugar de las filas. |
+  | Cargando | No tiene: los datos ya están en memoria. |
+
+- **En tarjetas** (contenedor angosto): cada fila es una hoja con cabeza de 1,5 px en tinta, la chapa y el estado en
+  el primer renglón, y los rótulos de columna en técnica de 12 px.
+
+#### 15.5.6 `Aviso`
+
+Borde de 1,5 px en el color de texto del tono, fondo `-f`, ícono de 20 px en el color del tono, texto en `--c-tinta`
+(el titular en peso 600) y segundo renglón en `--c-tinta-2` de 13 px. Tono `neutro`: fondo `--c-hoja` y borde en tinta.
+Con botón de cierre («Cerrar aviso», ícono, 36 o 44 px) o con una acción a la derecha (debajo, a menos de 40 rem). Sus
+roles y el manejo del foco al cerrarse no cambian. Estados: normal y los del botón que contenga.
+
+#### 15.5.7 `Campo` y `Casilla`
+
+- **`Campo`:** rótulo de 13 px y peso 600 arriba; control de `--alto-control` (48 px con `grande` y en el parte), fondo
+  `--c-hoja`, borde de 1,5 px `--c-control`, radio 2 px; ayuda de 13 px en `--c-tinta-3`; sufijo de unidad («km»)
+  junto al control.
+
+  | Estado | Aspecto |
+  | --- | --- |
+  | Cursor encima | Borde `--c-tinta-2`. |
+  | Foco | Anillo; el borde pasa a tinta. |
+  | Con valor recién guardado | Destello `--c-pleno-suave`, una vez. |
+  | Error (`aria-invalid="true"`) | Borde `--c-crit-marca` y barra interior de 3 px a la izquierda en el mismo color; mensaje de 13 px y peso 600 en `--c-crit`, con rombo, unido por `aria-describedby`. No desaparece solo. |
+  | Deshabilitado | Fondo `--c-papel-2`, texto `--c-tinta-3`. |
+  | Vacío | Marcador de posición en `--c-tinta-3`. |
+  | `select` | Igual; flecha nativa. |
+
+- **`Casilla`:** caja de 20 px con borde de 1,5 px `--c-control` y radio 2 px; marcada, fondo `--c-tinta` con marca de verificación
+  `--c-sobre-tinta`; el rótulo es parte del objetivo (44 px de alto). Cursor encima: borde en tinta. Foco: anillo.
+  Deshabilitada: `--c-papel-2`.
+
+#### 15.5.8 `FiltrosConteo` y `FiltrosEnlace`: el segmentado
+
+Cajas rectas (radio 2 px) de `--alto-control`, con 6 px entre sí, que bajan de renglón sin partirse. Texto de 13 px y
+peso 600; conteo en técnica de 12 px; la forma del tono antes del texto, cuando la tienen.
+
+| Estado | Aspecto |
+| --- | --- |
+| Normal | Fondo `--c-hoja`, borde de 1,5 px `--c-control`, texto `--c-tinta-2`, conteo `--c-tinta-3`, forma en el color del tono. |
+| Cursor encima | Borde y texto en tinta, fondo `--c-papel-2`. |
+| Foco | Anillo general, por fuera; el mismo en el elegido y en los demás (15.5). |
+| **Elegido** (`aria-current="page"` en los enlaces; `:checked` en los radios) | Fondo `--c-pleno`, texto y forma `--c-sobre-pleno`, conteo `--c-sobre-pleno-2`, borde `--c-pleno`. |
+| Con conteo en cero | Igual que el normal; el cero se muestra. |
+
+`FiltrosEnlace` sigue llevando a la vista el filtro elegido al cargar; `FiltrosConteo` sigue siendo un grupo de radios.
+
+#### 15.5.9 `Detalles`, `Dato`, `MenuMas`
+
+- **`Detalles`:** resumen de `--alto-control` con flecha que gira 90° en `--m-medio`, texto de 13 px y peso 600 en
+  `--c-pleno-texto`; contenido con filete izquierdo de 1 px. Estados: cerrado, abierto, cursor encima (subrayado),
+  foco.
+- **`Dato`:** rótulo en técnica de 12 px, mayúsculas, `--c-tinta-3`; valor de 14 px y peso 600. Sin estados.
+- **`MenuMas`** («Más acciones»): botón secundario con `aria-expanded`; lista sobre `--c-hoja` con borde de 1,5 px en
+  tinta, sombra `--s-flotante` y esquinas rectas; cada opción mide `--alto-control` (44 px por debajo de 64 rem).
+  Opción con el cursor encima: `--c-papel-2`. Esc y la salida del foco lo cierran, como hoy.
+
+#### 15.5.10 Piezas del parte: `ItemRevision`, `SelectorCombustible`, `BarraEnvio`, `ResumenErrores`
+
+- **`ItemRevision`:** nombre del punto en 15 px y peso 600; «Punto crítico» con rombo, en técnica de 12 px y
+  `--c-crit`; dos opciones de 48 px, lado a lado.
+
+  | Estado | «En orden» | «Con novedad» |
+  | --- | --- | --- |
+  | Sin elegir | Fondo `--c-hoja`, borde de 1,5 px en tinta, sombra dura. | Igual. |
+  | Elegida | Fondo `--c-tinta`, texto `--c-sobre-tinta`, marca de verificación antes del texto. | Fondo `--c-crit-relleno`, texto `--c-sobre-solido`, rombo antes del texto. |
+  | Foco | Anillo (sobre la opción roja, `--c-foco-oscuro` por dentro). | |
+  | Error (sin responder tras intentar enviar) | Precinto crítico de 6 px en el borde izquierdo del ítem y su mensaje, como en `Campo`. | |
+
+  Con «Con novedad», el detalle se despliega debajo (sin cambios de comportamiento).
+- **Barra de progreso del parte** (en `ParteFormulario`): un **segmento cuadrado por punto**, con borde de 1 px en
+  tinta. Sin responder: vacío. En orden: lleno en `--c-ok`. Con novedad: lleno en `--c-crit-marca`. Sin marca aparte
+  para los puntos críticos (regla del 26/11/2026).
+- **`SelectorCombustible`:** cinco segmentos de 48 px con borde de tinta; se llenan en tinta hasta el elegido
+  (`data-lleno`), y el elegido lleva además su texto en peso 650 y una marca de 3 px abajo. Sigue siendo un grupo de
+  radios. Foco: anillo. Error: como en `Campo`.
+- **`BarraEnvio`** (conserva la clase `.barra-envio`): fija abajo, fondo `--c-papel` opaco, filete superior de 1,5 px
+  en tinta; a la izquierda, lo que falta («Faltan N datos», 14 px y peso 600); a la derecha, el primario `grande`.
+  Estados del texto: faltan datos, listo, revise datos (en `--c-crit`, con rombo). Enviando: el primario en carga.
+  El botón **nunca se deshabilita** por datos faltantes.
+- **`ResumenErrores`:** caja con fondo `--c-crit-fondo`, borde de 1,5 px `--c-crit` y precinto de 6 px a la izquierda;
+  título en la letra de texto de 16 px y peso 650, en `--c-tinta`; enlaces en `--c-enlace`, subrayados, de 24 px de
+  alto como mínimo. Recibe el foco al aparecer, como hoy.
+- **Indicador de guardado:** texto de 13 px con ícono; guardado en `--c-tinta-2`, error en `--c-crit`. Sin animación.
+
+#### 15.5.11 `Dialogo`: modal centrado (diseño nuevo)
+
+El sistema de origen no traía un diálogo modal; este es su diseño. **No cambian** el elemento `<dialog>` con
+`showModal()`, el manejo del foco, Esc, la trampa de foco, el aviso de cambios sin guardar, la clase `.pie`, los
+atributos `data-foco-inicial`, `data-foco-cancelar` y `data-seguir-editando`, ni la clase `dialogo-abierto` en
+`<html>`.
+
+```
+              velo (--c-velo)
+     ┌────────────────────────────────────────────┐
+     │ Renovar seguro de ZK 214 BD             ✕  │  cabecera: --c-papel, filete inferior de 1,5 px en tinta
+     ├────────────────────────────────────────────┤
+     │ Los campos con * son obligatorios.         │
+     │ Número*   [______________]                 │  cuerpo: --c-hoja, relleno de 16 px,
+     │ Emisor    [______________]                 │  desplazamiento propio si no entra
+     │ Vence*    [__/__/____]                     │
+     ├────────────────────────────────────────────┤
+     │ [ Guardar ]  Cancelar                      │  .pie: --c-papel, filete superior de 1,5 px en tinta
+     └────────────────────────────────────────────┘
+```
+
+- **Caja:** fondo `--c-hoja`, borde de 2 px en tinta, radio 0, sombra `--s-ventana`.
+- **Desde 40 rem:** centrado, ancho `min(34rem, 100% - 2rem)`, alto máximo 85 % de la ventana.
+- **Menos de 40 rem:** se conserva la **hoja inferior** (pegada abajo, a todo el ancho, hasta el 92 % del alto), ahora
+  con esquinas rectas y borde solo arriba. Es el comportamiento probado y el más cómodo para el pulgar; el cajón
+  lateral llega con la etapa 4 del rediseño.
+- **Cabecera:** mínimo 56 px; título (`h2`) en cartel a 78 %, 22 px y peso 760; botón de cierre de ícono (44 × 44).
+- **Pie:** el primario primero y «Cancelar» (botón de texto) después, a la izquierda; a menos de 40 rem, el primario a
+  todo el ancho y «Cancelar» debajo.
+- **Entrada:** desde 40 rem, opacidad de 0 a 1 y escala de 0,98 a 1 en `--m-medio` con `--m-curva`; a menos de 40 rem,
+  sube 24 px en `--m-lento`. Con movimiento reducido o «Sin animaciones», aparece de una vez.
+
+| Estado del diálogo | Aspecto |
+| --- | --- |
+| Abierto | Como arriba; el fondo no se desplaza. |
+| Cuerpo que desborda | El cuerpo es una región enfocable con su anillo **por dentro**. |
+| Con cambios sin guardar, al cancelar | El pie cambia a «Tiene cambios sin guardar.» con «Descartar cambios» (peligro) y «Seguir editando» (secundario). |
+| Guardando (`bloqueado`) | El primario en carga; el cierre y «Cancelar» con aspecto deshabilitado. |
+| Error al guardar | El error se dice dentro del cuerpo (resumen o campo); el diálogo no se cierra. |
+| Informativo | Un solo botón que cierra («Entendido»). |
+
+**Los quince diálogos.** Todos usan la base de arriba; ninguno cambia de contenido ni de foco inicial.
+
+| # | Componente | Qué es | Primario | Particularidad de la piel |
+| --- | --- | --- | --- | --- |
+| 1 | `DialogoFormulario` | Base de los formularios: campos, resumen de errores, «Guardando…». | Guardar | Resumen de errores de 15.5.10 arriba de los campos. |
+| 2 | `DialogoDocumento` | Renovar, cargar o corregir un documento o una licencia. | Guardar | Es el que abre la «Acción del día». |
+| 3 | `DialogoCargarOtro` | Cargar otro documento (con `select` de tipo). | Guardar | — |
+| 4 | `DialogoUnidad` | Agregar unidad. | Guardar | Formulario largo: el cuerpo desplaza. |
+| 5 | `DialogoAsignacion` | Cambiar proyecto o conductor. | Guardar | Aviso de tono `semana` dentro del cuerpo. |
+| 6 | `DialogoKilometraje` | Corregir kilometraje. | Guardar | Nota del último registro en `--c-tinta-2`. |
+| 7 | `DialogoNovedad` | Cargar novedad. | Guardar | Casilla «Impide usar la unidad» con su nota. |
+| 8 | `DialogoResolver` | Resolver novedad. | Guardar | Lo que se resuelve, arriba, en una caja con filete y su etiqueta. |
+| 9 | `DialogoFueraDeServicio` | Poner fuera de servicio. | Poner fuera de servicio | «Desde hoy (…)» como texto, no como campo. |
+| 10 | `DialogoVolver` | Volver a servicio. Foco inicial en el título. | Volver a servicio (o «Ver novedades») | Aviso crítico o de atención dentro del cuerpo. |
+| 11 | `DialogoBaja` | Dar de baja. | Dar de baja (peligro) | Aviso crítico con precinto: no se deshace. |
+| 12 | `DialogoReiniciar` | Reiniciar demo. Foco inicial en «Cancelar». | Reiniciar demo (peligro) | Si falla, el error va dentro del cuerpo. |
+| 13 | `DialogoConductor` | «Ver como». | Aplicar | Radios de perfil como segmentado; lista de conductores en filas de 52 px con radio; fila elegida en `--c-pleno-suave` con barra de 4 px en `--c-pleno`; «Sin licencia vigente» con rombo en `--c-crit`; marca «Para probar» en `--c-pleno-texto`. |
+| 14 | `DialogoComoFunciona` | Solo informa. Foco inicial en el título. | Entendido | Subtítulos en la letra de texto; las reglas se muestran con las mismas etiquetas de la aplicación. |
+| 15 | `DialogoAntesDeEnviar` | Avisos antes de enviar o de cerrar. Foco inicial en «Volver al parte». | Enviar de todos modos / Cerrar de todos modos | Cada aviso con su ícono y su tono, en filas separadas por filete. |
+
+`DialogosDeDocumento` no dibuja nada propio.
+
+#### 15.5.12 Estados vacío y cargando (piezas)
+
+- **Vacío:** caja con borde de 1 px punteado en `--c-control` sobre `--c-hoja`; la frase que dice por qué está vacío en letra de texto (`--t-cuerpo`, `--c-texto-2`), no en cartel (T17: un vacío no puede ser lo más fuerte de una pantalla tranquila; la cifra de cartel es una por pantalla) y, si existe, la acción que sigue. Sin ilustración. La marca de tres rayas actual
+  se retira.
+- **Cargando:** no hay esqueletos ni brillo. Solo existen el cuadro cero (15.4.6), «Cargando la pantalla…» y los
+  botones en carga.
+
+---
+
+### 15.6 La regla de salida (pieza firma de Inicio)
+
+Mide **cuántas unidades activas pueden salir hoy**. Reemplaza a la cifra cobre y a las cuatro tarjetas. Todo sale de
+los datos de hoy (una función de estado nueva, `salida.ts`): la regla no lleva ningún valor escrito.
+
+#### 15.6.1 Anatomía
+
+```
+                                                                    ├─ desglose ──────┤        cota de la zona roja
+┌──────────────────────────────────────────────────────────────────┬────────────────┐
+│ DISPONIBLES HOY                          ◆  3  Vencidos o faltantes  › ┃▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│
+│                                          ▲  9  Vencen en 30 días     › ┃▒┌────────────┐▒│
+│ ██  ████                                 ■  3  Partes pendientes     › ┃▒│ 4          │▒│  caja de la regla
+│  █  █  █                                 ◆  1  Novedad crítica       › ┃▒│ No dispon. │▒│
+│  █  ████  /23                                                          ┃▒│ hoy        │▒│
+│                                                                        ┃▒│ 2 bloq. …  │▒│
+└────────────────────────────────────────────────────────────────────────▼─┴────────────┴─┘
+0····|····5····|····10···|····15···|···[19]··|···23                                         escala y cursor
+══╤══╤══╤══╤══╤══╤══╤══╤══╤══╤══╤══╤══╤══╤══╤══╤══╤══╤══╤═══╤══╤══╤══╤══                    riel
+  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯  ▯    ▨  ▨  ▧  ▧                     llaves
+                                                             ①  ②  ③  ④                     globos
+┌─────────────────────────────────────────────────────────────┴─────────────────────────────┐
+│ ① ACCIÓN DEL DÍA  ZK 214 BD no puede salir: Seguro vencido…  [ Renovar ] [ Probar como conductor → ] │
+└────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+| Pieza | Qué dice | Cómo se dibuja |
+| --- | --- | --- |
+| **Caja** | El total: las unidades activas. | Ancho completo, borde de 2 px en tinta, fondo `--c-hoja`. Es un contenedor de tamaño (`container: regla / inline-size`). |
+| **Mordaza** | Las disponibles. | Campo `--c-pleno` de ancho `--medida × 100 %`, con grano y rejilla de 48 px (`--c-pleno-trama`), y un **canto de 3 px en `--c-sobre-pleno`** en su borde derecho: blanco de día (7,81:1 contra el cobalto y 5,74 contra el rojo) y cobalto de noche (6,63 contra la crema). De día el canto es lo que separa la mordaza de la zona roja, porque cobalto contra rojo da 1,36:1; de noche los dos campos se separan solos (3,96). Es también un contenedor (`container: mordaza / inline-size`). |
+| **Título** (`h2`, `tabindex="-1"`) | «Disponibles hoy». | Es el único epígrafe de la cifra: dice qué se mide, y el `h1` de la pantalla es «Inicio». Rótulo en técnica, mayúsculas, peso 600, `--c-sobre-pleno` (7,81:1 y 6,63:1), **14 px desde 37,5 rem de regla y 13 px por debajo** (celular), **en placa lisa** (rectángulo `--c-pleno` sin grano ni rejilla, relleno `0.125rem 0.375rem`). Ancho del texto medido con la fuente real (Red Hat Mono 600, mayúsculas, `letter-spacing: 0.06em`): 138,6 px a 14 px y 128,7 px a 13 px, más 12 px de relleno. Es el destino del foco al resolver (15.7). |
+| **Cifra monumental** | Disponibles sobre activas: «19 /23». | Tambores de odómetro en cartel a 75 %, peso 780, `--t-monumental`, color `--c-sobre-pleno`. El «/23» en cartel al 32 % del tamaño, `--c-sobre-pleno-2`. Los tambores son `aria-hidden`: el valor está siempre en el texto para lectores. |
+| **Zona roja** | Las no disponibles. | El resto de la caja: `--c-crit-relleno` con grano y precinto. |
+| **Sello** | Cuántas no salen y por qué. | Placa lisa `--c-crit-relleno` con borde de 1,5 px `--c-sobre-solido` y un segundo filete, girada −1,5°: el número en cartel (`--t-cifra-grande`) y «No disponibles hoy» (13 px, peso 600). El desglose ya no va en el sello (T17, segunda vuelta de T16): se ve igual con cualquier ancho en la cota (tablero completo) o en el rótulo del tablero corto. Es un **enlace** al filtro «No disponibles hoy» de Movilidades. |
+| **Cota** | La medida de la zona roja. | Línea con topes sobre la zona roja y su rótulo, **el desglose** («2 bloqueadas por documentos · 2 fuera de servicio») en técnica de 12 px, `--c-crit`, sobre el color de la página. Va siempre alineado al borde derecho de la regla, sobre la línea, así que no cambia con el ancho de la zona (T17: antes decía «4 unidades», que repetía el número del sello). Solo con el tablero completo. |
+| **Cursor** | La lectura. | Línea de 2 px en tinta con cabeza triangular, en `--medida`. Se dibuja **fuera de la caja**: la cabeza, arriba, y la línea desde el borde inferior de la caja hasta el pie de las llaves, donde separa las que salen de las que no. **Dentro de la caja su tramo es el canto** de la mordaza (una línea de tinta ahí daría 2,35:1 contra el cobalto). |
+| **Escala** | De 0 a las activas. | Marcas con **gradientes** (ningún nodo por marca): menor cada unidad, mayor cada 5; números en técnica de 12 px; la lectura, en un recuadro de tinta con texto `--c-sobre-tinta`. `aria-hidden`. |
+| **Llaves** | Cada unidad activa, en el orden de la escala. | 15.6.3. |
+| **Renglones de lectura** | Las cuatro cifras de hoy. | 15.6.4. |
+| **Acción del día** | Lo que destraba la primera pieza. | 15.7. |
+
+**Lectura para lectores de pantalla.** La regla lleva un párrafo, visible solo para lectores, con la conclusión
+completa («Disponibles hoy: 19 de 23 unidades activas.» y el desglose de las que no). Está en el DOM desde el primer
+cuadro con el **valor final**. Tambores, escala, cursor, cota, ganchos y marca de registro son `aria-hidden`.
+
+**Estados del sello** (el único control dentro de la caja, además de los renglones): cursor encima, fondo `--c-hoja`
+y texto `--c-crit`; foco, anillo de 3 px en `--c-foco-oscuro` por dentro de la placa y un filete de tinta por fuera;
+pulsado, baja 1 px. Su tamaño responde al ancho de la zona roja (`container: zona / inline-size`): con 7 rem o más,
+número y nombre; con menos, **solo el número** (el nombre pasa al rótulo del tablero corto, 15.6.3; el desglose nunca está en el sello). El objetivo nunca mide menos de 44 × 44 px: si la zona roja mide menos de
+2,75 rem, el sello **sale de ella** y se ancla a la esquina inferior derecha de la caja (15.6.7, «Zona roja más
+angosta que el sello»).
+
+#### 15.6.2 Medidas por ancho de la regla
+
+Los cortes de la regla son **de contenedor**, no de ventana (la regla no sabe si hay lateral).
+
+| Ancho de la regla | Alto de la caja | Cifra (15.3.5) | Tablero de llaves | Renglones de lectura |
+| --- | --- | --- | --- | --- |
+| 60 rem o más (ventana de unos 1.260 px en adelante) | 252 px | 22 % del ancho de la mordaza, hasta 200 px | Completo (si la cantidad lo permite, 15.6.3) | **Dentro** de la mordaza, si el campo es ancho (15.6.4) |
+| De 37,5 a 60 rem (tableta; escritorio angosto) | 196 px | 22 % del ancho de la mordaza, hasta 200 px | Completo (si la cantidad lo permite) | Debajo, en lista de dos columnas |
+| Menos de 37,5 rem (celular) | 128 px | 38 % del ancho de la mordaza, hasta 120 px | **Corto** | Debajo, en lista de una columna |
+
+- La cifra se dimensiona por el ancho de **la mordaza** (unidades `cqi`), así nunca la desborda.
+- **Mordaza angosta.** Si la mordaza mide menos de 10,25 rem (9,75 con la regla de menos de 37,5 rem;
+  `@container mordaza (max-width: 10.25rem)`: pocas o ninguna
+  disponible), el título y la cifra salen de ella y se dibujan en una **placa lisa** de `--c-hoja`, con borde de 1,5 px
+  y texto en tinta, anclada justo a la derecha del canto, sobre la zona roja. La mordaza conserva su ancho real: la
+  medida no se falsea. Los cortes salen del título: su placa (150,6 px a 14 px; 140,7 px a 13 px) más el margen de la
+  caja y el relleno de 12 px de cada lado, con el mismo criterio que el corte anterior de 9 rem para el título de
+  12 px. Es una cuenta; se confirma en el boceto y sobre lo maquetado (15.15).
+- Con el campo angosto o medio, la marca de registro no se dibuja.
+
+#### 15.6.3 El tablero de llaves
+
+Una **llave por unidad activa**, en el orden de la escala: primero las disponibles y, a la derecha del cursor, las no
+disponibles. Las llaves están **colgadas desde el primer cuadro** (15.10).
+
+**Tablero completo.**
+
+- Cada llave ocupa una división de la escala (`100 % / activas`). El **enlace ocupa toda la división** (es el objetivo:
+  24 px de ancho o más, por la tabla de más abajo); el cuerpo dibujado mide `min(100% - 6px, 2.625rem)` de ancho y
+  108 px de alto (92 px por debajo de 60 rem). Cuelga de un riel de 3 px en tinta por un gancho de 2 px.
+- El tablero y la escala miden lo mismo que la regla, de borde a borde, **sin relleno lateral**: las divisiones se
+  cuentan sobre el ancho completo.
+- La llave es un **objeto**: cuerpo `--obj-hoja` con borde de 1,5 px en `--obj-tinta`, radio `3px 3px 10px 10px`,
+  agujero redondo de 7 px, franja de 3 px en `--obj-franja` y la patente **en vertical**, en técnica de 12 px y peso
+  600. `.objeto` va en el **cuerpo**, no en el enlace de la división (15.3.2).
+
+  | Llave | Aspecto |
+  | --- | --- |
+  | Disponible | Lisa y derecha. |
+  | No disponible, tono `critico` (bloqueada por documentos; fuera de servicio por novedad crítica) | Cuerpo `--obj-crit-relleno` con precinto oscuro y **contorno de 1,5 px en `--obj-contorno`** (de noche es papel claro: 12,23:1 contra el plano y 4,66 contra el rojo; el rojo solo daría 2,63); patente en **placa lisa roja** con texto blanco y borde blanco de 1 px; cuelga torcida (+4° o −3°, alternando). |
+  | No disponible, tono `neutro` (fuera de servicio por taller o a mano) | Cuerpo `--obj-papel-2` con precinto en `--obj-tinta-3`; patente en placa lisa `--obj-hoja` con texto en tinta; cuelga torcida. |
+  | Cursor encima o foco | Se endereza, sube 3 px, toma `--s-flotante` y muestra el **rótulo de cota**. La disponible, además, pasa a fondo **`--obj-franja`** con texto **`--obj-sobre-franja`** (7,81:1) y contorno `--obj-contorno`. No se usa `--c-pleno` de la página: de noche es crema y contra el papel de la llave da 1,05:1. |
+  | Foco | Anillo de 3 px en `--c-foco`, separado 4 px, en el **enlace de la división** (está fuera del objeto: 7,47:1 de día y 8,83 de noche contra la página). |
+  | Pulsada | Baja 1 px. |
+
+  El ámbar no se usa en las llaves: «vence pronto» no es un motivo para no salir.
+- **Globos.** Debajo de cada llave no disponible, un globo de 20 px con su **número de pieza** (1, 2, 3…), en técnica
+  de **12 px** y peso 600, en el color de texto de su tono (vale para los tres lugares donde aparece el globo). Es el
+  mismo número del renglón de «No disponibles hoy» (15.6.5) y de la «Acción del día». Son
+  texto dentro de un círculo dibujado con CSS (no caracteres especiales), `aria-hidden`: el número va en el nombre
+  accesible de la llave.
+- **Rótulo de cota: uno solo, compartido.** Es un objeto con borde de 1,5 px y sombra `--s-flotante`, de 14,25 rem de
+  ancho, que se ubica debajo de la llave señalada (posición por `style:--x`) con una guía vertical de 14 px. Dice, en
+  horizontal: la patente (técnica de 18 px), el interno, y el estado con forma y palabra más el motivo. En las
+  primeras y últimas divisiones se alinea al borde para no salirse. Es `aria-hidden`: lo mismo está en el nombre
+  accesible de la llave. Se mantiene mientras el puntero esté sobre la llave **o sobre el propio rótulo**, y
+  **Escape lo oculta** sin mover el foco (WCAG 1.4.13). Sin puntero fino (táctil) no aparece al tocar: un toque abre
+  la ficha. Con foco de teclado aparece siempre, haya o no puntero fino.
+- **Teclado (tablero completo):** el tablero es **una sola parada de tabulación**. Tab entra en la última llave
+  enfocada o, la primera vez, en la **primera no disponible** (si no hay, en la primera llave). Flecha derecha e
+  izquierda mueven de a una; Inicio y Fin van a la primera y a la última; Enter abre la ficha (es un enlace); otro
+  Tab sale. En el tablero completo todas las llaves están a la vista: las flechas las recorren todas.
+- **Ayuda de teclado, a la vista.** Quien usa el teclado y ve la pantalla tiene que enterarse de las flechas. Cuando
+  el foco entra a una llave por teclado (`:focus-visible`), el rótulo de cota suma un **último renglón**, separado por
+  un filete: la frase de ayuda (15.14, fila 9), en 12 px y `--obj-tinta-2`, en dos renglones como máximo. Con el
+  puntero ese renglón no se muestra (la lógica marca el rótulo con `data-origen="teclado"`, 15.6.8). No ocupa lugar
+  nuevo ni mueve nada. La misma frase llega a los lectores de pantalla una sola vez, por `aria-describedby`.
+- **Nombre accesible** de cada llave: patente, estado, motivo si no sale, número de pieza si lo tiene, y que lleva a
+  la ficha (15.14). La lista tiene nombre propio.
+
+**Tablero corto.** Es la forma del tablero cuando la llave no llegaría a 24 px de ancho. Resuelve el pedido de
+**patentes en horizontal** en el celular: 23 chapas horizontales no entran colgadas en 360 px, y las 19 que salen no
+ayudan a decidir nada en tres segundos.
+
+```
+0··············[19]····23        escala: solo 0, la lectura y el total
+══╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤══╤═╤═╤═╤══   riel con un gancho por unidad activa (dibujado, sin texto)
+NO DISPONIBLES HOY · 2 bloqueadas por documentos · 2 fuera de servicio
+─┬──────────┬──────────┬──────────┬──────────
+ ▨ZK 214 BD  ▨ZZD 563   ▧ZU 899 QE  ▧ZR 536 MZ      las que no salen, colgadas, con la patente en horizontal
+```
+
+- **Riel con ganchos:** un gancho de 2 × 8 px por unidad activa, dibujado con un gradiente que se repite cada `100 % /
+  activas`. Es `aria-hidden` y no se pulsa: muestra la cantidad, no las unidades.
+- **Es una lista aparte, solo con las no disponibles** (hasta ocho posiciones). La lista de llaves del tablero
+  completo y esta **nunca se ven a la vez**: la consulta de contenedor muestra una y oculta la otra con `display:
+  none`, que la saca también del orden de tabulación y del árbol de accesibilidad. En el DOM, la lista corta va
+  después de la completa. Las disponibles no tienen chapa en el tablero corto: la cantidad la dicen la cifra y el
+  párrafo para lectores; el listado está en Movilidades.
+- **Rótulo de la fila:** «No disponibles hoy» en técnica de 12 px, `--c-crit`, seguido del desglose en 12 px,
+  `--c-tinta-2`, partido solo en el «·» (cada mitad en una sola línea: nunca queda «servicio» solo en un renglón).
+- **Las no disponibles** cuelgan de su propio riel de 3 px, cada una por un gancho de 2 × 8 px, como **chapas
+  horizontales**: patente en técnica de 12 px y peso 600, en placa lisa (roja o de papel, según el tono), con borde
+  de precinto y un giro de ±2°. La chapa roja lleva además, por fuera, el **contorno de 1,5 px en `--obj-contorno`**,
+  como la llave crítica. Objetivo de 40 px de alto. Bajan de renglón (cada renglón con su riel) sin partirse.
+  A 360 px entran cuatro por renglón; a 320, tres.
+- **Tope:** se muestran hasta **ocho**. Si hay más, la octava posición es un enlace con forma de chapa que dice «y N
+  más» y lleva al filtro «No disponibles hoy» de Movilidades.
+- **Teclado (tablero corto): sin parada única.** Cada chapa y el enlace «y N más» son enlaces comunes, cada uno con
+  su parada de Tab (**ocho como máximo**), en el orden en que se ven. No hay flechas ni ayuda. Foco: anillo general en
+  el enlace, fuera de la chapa.
+- Sin globos, sin cota y sin rótulo de cota.
+
+**Por qué dos listas y no una con las disponibles ocultas.** La forma del tablero la decide la hoja de estilos por
+el ancho del contenedor, sin que el código lo sepa. Con una sola lista y la parada itinerante, si la última llave
+enfocada fue una disponible y la regla pasa a corta (girar el teléfono, achicar la ventana), el `tabindex="0"` queda
+en un elemento oculto y las chapas quedan sin parada de Tab. Con dos listas, la parada del tablero completo se oculta
+y vuelve junto con su lista, y las chapas del corto no dependen de ella. La lista corta sale de los mismos datos y
+tiene ocho nodos como máximo. Si el presupuesto de peso no la admite, la alternativa es una sola lista en la que la
+lógica vuelve a calcular la parada cuando cambia el ancho del contenedor.
+
+**Condición que se prueba, se construya como se construya:** con el foco en una llave disponible, se achica la regla
+hasta el tablero corto, y con Tab se llega a cada chapa visible y a «y N más»; al volver al tablero completo, Tab
+entra en una llave visible. En ninguna de las dos formas queda un `tabindex="0"` en un elemento oculto habiendo
+llaves a la vista.
+
+**Cuándo se usa cada uno.** La regla recibe la cantidad de activas en tramos (`data-carga`) y la hoja de estilos la
+cruza con el ancho del contenedor. Así el tablero completo solo aparece cuando cada llave mide 24 px o más.
+
+| `data-carga` | Unidades activas | Tablero completo desde |
+| --- | --- | --- |
+| `a` | hasta 24 | 37,5 rem de regla |
+| `b` | 25 a 30 | 47,5 rem |
+| `c` | 31 a 46 | 70,5 rem |
+| `d` | 47 o más | nunca: siempre corto |
+
+En el peor caso de cada tramo la división mide 25,0 px (`a`: 600 px entre 24), 25,3 px (`b`: 760 entre 30) y 24,5 px
+(`c`: 1.128 entre 46). La holgura total sobre los 24 px es de 24, 40 y 24 px: por eso el tablero **no lleva relleno
+lateral** (más de 12 px por lado en `a` o en `c` dejaría el objetivo por debajo de 24 px). Si alguna vez hace falta
+un relleno, se suben los cortes en la misma medida.
+
+#### 15.6.4 Los renglones de lectura (en lugar del registrador)
+
+El registrador de 30 días llega en la etapa 3 del rediseño. Su lugar lo ocupan **las cuatro cifras de hoy** que ya
+calcula Inicio (vencidos o faltantes, vencen en 30 días, partes pendientes, novedad crítica), como **renglones**, no
+como tarjetas.
+
+- Cada renglón es un **enlace** a su lista (los destinos de hoy): forma del tono · cifra en cartel a 75 % · rótulo ·
+  flecha. Una sola lista con nombre.
+- **Dentro de la mordaza** (las tres condiciones: regla de 60 rem o más; campo ancho, `data-campo="ancho"`, que es
+  una medida de 0,70 o más; y menos de 47 unidades activas, `data-carga` distinto de `d`):
+  columna de `min(22rem, 40%)` alineada contra el canto, centrada en alto, sobre una **placa lisa** `--c-pleno` (sin
+  grano ni rejilla). Renglones de 36 px con filete de 1 px en `--c-sobre-pleno-2`; cifra de 28 px y forma en
+  `--c-sobre-pleno`; rótulo de 14 px en `--c-sobre-pleno`. **Sin color de tono**: sobre el pleno el estado lo dicen la
+  forma y la palabra. Cursor encima: fondo `--c-pleno-hover`. Foco: anillo `--c-sobre-pleno` por dentro.
+- **Fuera de la mordaza** (cualquier otro caso): debajo de la «Acción del día», en una hoja con cabeza de 1,5 px en
+  tinta; dos columnas desde 37,5 rem de regla y una por debajo. Renglones de 44 px con filete; cifra de `--t-cifra` a
+  2 rem en tinta; forma en el color de marca de su tono; rótulo de 14 px. Cursor encima: `--c-papel-2` y la cifra en
+  `--c-pleno-texto`.
+- Una cifra en cero se muestra (el cero es información) con su forma en `--c-tinta-3`.
+- Los renglones **no se mueven** en la entrada: están en su lugar desde el primer cuadro.
+
+#### 15.6.5 «No disponibles hoy»: la lista de piezas
+
+El panel actual, con la misma información, pasa a leerse como la **lista de piezas** del plano.
+
+- Ficha (15.5.4) con su título y su desglose de hoy.
+- Cada renglón: **globo con el número de pieza** · chapa en horizontal · interno · etiqueta de estado (variante texto,
+  con forma) · motivo · flecha. El renglón entero sigue siendo el enlace a la ficha. Precinto de 6 px a la izquierda
+  con la marca de su tono. Mínimo 54 px.
+- El número es el mismo del globo de la llave: esa es toda la relación entre las dos piezas en esta etapa (el
+  resaltado cruzado llega en la etapa 3 del rediseño).
+- «Conductores que no pueden manejar hoy», el enlace «Ver las N no disponibles en Movilidades» y el estado vacío no
+  cambian de contenido.
+
+#### 15.6.6 Convivencia con el horizonte
+
+Inicio tiene dos reglas y **un solo campo pleno**: el de la regla de salida. El **horizonte de vencimientos queda en
+papel y tinta**:
+
+- Pista sobre `--c-hoja`. Tramo de 0 a 7 días, `--c-aten-fondo`; de 8 a 15, `--c-papel-2`; de 16 a 30, sin fondo (solo
+  contorno de 1 px).
+- Marcas: triángulo en `--c-aten-relleno`, círculo lleno en tinta, aro en `--c-tinta-3`. Línea de «Hoy» en tinta.
+- Caja «Vencidos o faltantes»: fondo `--c-crit-fondo`, precinto de 6 px a la izquierda, cifra en cartel en `--c-crit`.
+- Los rótulos de patente de la regla (`[data-rotulo]`) **conservan su familia, tamaño, peso, relleno y ancho de
+  borde**: el código los mide para acomodarlos. Solo cambian de color (son objetos).
+- El horizonte va **debajo** de la regla de salida y nunca a su lado en la primera pantalla: primero la medida de hoy,
+  después lo que viene.
+
+#### 15.6.7 Límites
+
+Cada límite tiene su prueba en la lógica y se provoca con altas y bajas.
+
+| Caso | Qué se ve |
+| --- | --- |
+| **Cero no disponibles** | La mordaza ocupa toda la caja; no hay zona roja, sello, cota ni globos; el cursor queda en el extremo; todas las llaves derechas (o, en el tablero corto, solo el riel con ganchos y ningún rótulo de fila). La «Acción del día» pasa a su variante «en orden» (15.7). Renglones dentro de la mordaza, si entra. |
+| **Zona roja más angosta que el sello** (menos de 2,75 rem; por ejemplo, **una sola no disponible** de 23 a 360 px: la zona mide unos 14 px) | La zona conserva su ancho real (la medida no se falsea) y el sello **sale de ella**: placa lisa de 44 × 44 px como mínimo, sin giro, con solo el número (cartel de 28 px), **anclada a la esquina inferior derecha de la caja**, por dentro del borde; crece hacia la izquierda, sobre la mordaza. Conserva su borde de 1,5 px en `--c-sobre-solido`, que de día es lo que la recorta sobre el cobalto (7,81:1); de noche la recorta su propio rojo sobre la crema (3,96). Tapa los 44 px de abajo del canto; el resto del canto y el cursor siguen marcando la lectura. No pisa el título ni la cifra (a la izquierda), la marca de registro (arriba a la derecha) ni los renglones de lectura (centrados en alto: con la caja de 252 px quedan 10 px libres, medidos en el boceto a
+1280 px; la cuenta daba 8). Nombre y desglose van en el rótulo del tablero corto; con el tablero completo, en la cota, cuyo rótulo se alinea al borde derecho de la regla cuando no entra entre los topes. Foco y cursor encima: los del sello (15.6.1). A este estado se llega resolviendo piezas con la «Acción del día». Se dibujó y se midió en el boceto (`inicio-una.html`, 27/11/2026): con la zona roja de 14,1 px (a 360 px) y de 42,4 px (a 1280 px) el sello sale de ella, mide 44 × 44, queda dentro de la caja y no pisa el título, la cifra ni los renglones. |
+| **Todas no disponibles** | La mordaza mide 0: título y cifra («0 /N») salen a la placa lisa sobre la zona roja (15.6.2). Toda la caja es zona roja; todas las llaves torcidas. |
+| **Una sola unidad activa** | Escala de 0 a 1, una llave centrada en su división. Cifra «1 /1» o «0 /1». |
+| **Flota vacía** (ninguna unidad activa) | El cuadro cero (15.4.6) con un mensaje en lugar del progreso: no hay mordaza, cifra, escala numerada ni llaves. El `h2` sigue presente. La regla lleva `data-vacia` y no divide por cero. |
+| **Más unidades de las que entran** | Tablero corto según la tabla de 15.6.3. Con más de 60 activas, la escala deja las marcas menores y conserva las mayores. |
+| **Primera no disponible sin acción de documento** | La «Acción del día» toma la **primera pieza que sí tiene** acción de documento y su guía sale de esa pieza (no necesariamente la 1). Si ninguna la tiene, ofrece «Ver ficha» de la primera (15.7). |
+| **Muchas no disponibles en el celular** | Hasta ocho chapas colgadas y «y N más». |
+| **Cifras de tres dígitos** | La cifra baja de tamaño con el ancho de la mordaza; el «/N» nunca baja de 16 px. |
+| **Texto al 200 % a 360 px** | La cifra respeta su mínimo de 3,5 rem; las chapas colgadas pasan a una por renglón; sin desplazamiento horizontal. |
+
+#### 15.6.8 Lo que la lógica le entrega a la hoja de estilos
+
+Para que la hoja de estilos no calcule nada ni lleve números escritos, el componente de la regla expone esto (nombres
+propuestos; si el programador necesita otros, se cambian acá antes de maquetar):
+
+| Dónde | Qué | Para qué |
+| --- | --- | --- |
+| Regla | `style:--medida` (de 0 a 1) | Ancho de la mordaza, posición del cursor y de la lectura. |
+| Regla | `style:--act` (entero) | Divisiones de la escala, ganchos y columnas del tablero. |
+| Regla | `data-campo="ancho"`, `"medio"` o `"angosto"` (medida de 0,70 o más; de 0,45 a 0,70; menor) | Renglones dentro o fuera de la mordaza; marca de registro. |
+| Regla | `data-carga="a"`, `"b"`, `"c"` o `"d"` (15.6.3) | Tablero completo o corto. |
+| Regla | `data-vacia` | Flota vacía. |
+| Vista | `data-entrada` y `data-pausa` (15.10) | Coreografía. |
+| Tambor | `style:--d` (dígito) y `style:--desde` (dígito anterior) | Posición de la tira. `--desde` vale lo mismo que `--d` en la entrada (la cifra marca el valor final desde el cuadro 0, 15.10) y vale el dígito anterior solo cuando una acción cambió el dato (15.7): giran únicamente los dígitos que cambian. |
+| Llave | `data-sale="si"` o `"no"`, `data-tono` (en las que no salen) y `style:--i` (posición) y `style:--j` (orden entre las que no salen) | Aspecto, giro y escalón de la caída. |
+| Chapa del tablero corto (lista aparte, 15.6.3) | `data-tono` y `style:--j` | Aspecto, giro y escalón de la caída. Sin `tabindex`: son enlaces comunes. |
+| Número de la escala | `style:--x` (de 0 a 1) | Posición. La lógica omite los que quedarían a menos de 0,05 de la lectura o del final. |
+| Rótulo de cota | `style:--x` y `data-lado` | Posición bajo la llave señalada. |
+| Rótulo de cota | `data-origen="teclado"` cuando lo muestra el foco de teclado | Renglón de ayuda de las flechas. |
+| «Acción del día» | `style:--x` | Posición de la guía. |
+
+---
+
+### 15.7 La «Acción del día»
+
+La acción principal de Inicio. Es una **nota de plano**: hoja `--c-hoja`, borde de 1,5 px en tinta, sombra
+`--s-pieza`, a todo el ancho de la regla, 12 px debajo del tablero de llaves. Va **siempre en el flujo** (no
+flotante): así no depende de dónde caiga la pieza ni de cuántas haya.
+
+**Contenido, de izquierda a derecha:** globo con el número de la pieza · rótulo «Acción del día» (técnica de 12 px) ·
+la frase del motivo (14 px, peso 600; es el texto que ya existe para el aviso de la unidad) · **botón de la acción**
+con aspecto **pleno** · segundo botón **«Probar como conductor»** (secundario, con flecha).
+
+- El botón de la acción usa la acción de documento que Inicio ya calcula («Renovar» o «Cargar», con su nombre
+  accesible completo) y **abre el diálogo de siempre** (15.5.11, fila 2).
+- **«Probar como conductor»** (decisión tomada: la franja de arriba se muda acá) aparece solo cuando existe el
+  recorrido que hoy muestra la franja. Conserva **su texto y su comportamiento**: abre «Ver como» con Conductor y ese
+  conductor ya elegidos, y lleva `aria-haspopup="dialog"`. La frase de invitación de la franja pasa a ser la
+  descripción del botón y **se ve en todos los anchos** (revisión del boceto, 27/11/2026): 13 px, `--c-tinta-2`,
+  hasta dos renglones (tres entre 26 y 56 rem), **debajo del propio botón «Probar como conductor»**, con su borde
+  izquierdo alineado con el del botón y hasta el borde derecho de la nota. En el celular es el gancho que explica para
+  qué sirve el botón; en la fila de 56 rem o más, alineada con el botón y no con «Renovar», deja de parecer una
+  descripción de los dos. Sigue referida por `aria-describedby`.
+- **Guía:** con el tablero completo, una línea vertical de 1,5 px y 12 px de alto une el borde superior de la nota con
+  el globo de su pieza (posición por `style:--x`). Con el tablero corto no hay guía ni globo: la frase nombra la
+  patente.
+- **Sigue siendo el único botón pleno de la pantalla** y no hay otro primario en Inicio.
+
+| Ancho de la nota | Disposición | Alto de los botones |
+| --- | --- | --- |
+| 56 rem o más | Una fila: globo, rótulo, frase, botones a la derecha; la frase de invitación, debajo de «Probar como conductor». | 36 px |
+| De 26 a 56 rem | Dos filas: rótulo y frase; debajo, los dos botones lado a lado y, bajo «Probar como conductor», su frase de invitación. | 40 px |
+| Menos de 26 rem (celular) | Rótulo; frase (hasta dos renglones); botón de la acción a todo el ancho; debajo, «Probar como conductor» a todo el ancho y, bajo él, su frase de invitación (13 px, hasta dos renglones). | **40 px** cada uno |
+
+**Primera pantalla del celular.** A 390 × 844 y a 360 × 800 la nota queda **entera por encima de la barra
+inferior**, con sus dos botones. Cuenta de alturas a 390 px de ancho, **hecha con las medidas de esta sección (no es
+una medición)**: barra 54 · renglón de lámina 24 · título 38 · línea de contexto 36 (dos renglones) · caja de la regla
+128 · escala 26 · tablero corto 80 (riel con ganchos, rótulo y un renglón de chapas) · nota 174 · separaciones 48:
+unos **610 px** de los 782 disponibles. A 360 × 800, con la línea de contexto en tres renglones y el rótulo de la fila
+en dos, unos 645 de 738. A 360 × 640 **no** se garantiza. El boceto lo mide con los textos reales y una prueba de punta
+a punta lo comprueba en los dos primeros tamaños.
+
+**Medido en el boceto (27/11/2026) y con la frase de «Probar como conductor» a la vista.** Sin la frase, la nota
+medía 182,2 px (no 174) y entraba entera: «Renovar» en 533,9–573,9 y «Probar como conductor» en 583,9–623,9 (40 px
+cada uno), contra una barra inferior que empieza en 782 px a 390 × 844 y en 738 px a 360 × 800: holgura de 145,1 y
+de 101,1 px. La frase de 13 px en dos renglones suma unos 38 px (dos renglones de 18,2 px más la separación; cuenta,
+no medición): la holgura baja a unos 107 y 63 px. Se vuelve a medir con los textos finales en esos dos tamaños. A
+320 × 640 no entra (−111,9 px en el boceto, sin la frase) y no se garantiza. Si a 360 × 800 la holgura medida queda
+por debajo de 24 px, se avisa al diseño antes de resolverlo: la frase no se recorta ni baja de 13 px.
+
+| Variante | Cuándo | Qué muestra |
+| --- | --- | --- |
+| **Con acción de documento** | La pieza elegida tiene un documento para renovar o cargar. | Lo de arriba. |
+| **Sin acción de documento** | Ninguna pieza no disponible tiene acción de documento (por ejemplo, todas fuera de servicio por novedad). | La frase de la primera pieza y, en lugar del botón pleno, el enlace con aspecto de botón secundario «Ver ficha». Sin «Probar como conductor» si no hay recorrido. |
+| **En orden** | No hay ninguna no disponible. | La frase «todas disponibles» que ya existe, con un círculo vacío en `--c-ok` antes del texto. **Sin botones.** La nota se queda (no desaparece) para que la pantalla no salte. |
+| **Flota vacía** | Ninguna unidad activa. | No se muestra la nota: el mensaje y su enlace van dentro del cuadro cero. |
+
+Estados de los botones: los de 15.5.1. Guardando: el diálogo, no la nota. Error: dentro del diálogo, que no se cierra.
+
+**Al resolver** (versión mínima de la escena; la completa llega en la etapa 3 del rediseño). Cuando el diálogo guarda
+y una unidad pasa a estar disponible, **la regla no se rearma: se mueve en su lugar**, una pieza por vez.
+
+| t (ms) | Qué pasa |
+| --- | --- |
+| 0 | Se cierra el diálogo. El **foco va al título de la regla** (el `h2` «Disponibles hoy», que muestra su anillo). Una región `role="status"` anuncia el resultado: el mensaje que el diálogo ya produce y la medida nueva (15.14). Los textos para lectores ya dicen el valor final. La llave resuelta aparece derecha, lisa y en su lugar nuevo entre las disponibles; si el presupuesto de peso lo permite, llega ahí con la transición de vista que ya existe para la patente; si no, de una vez. |
+| 0–640 | **La mordaza corre** hasta la medida nueva (transición de `flex-basis` con `--m-curva`); el cursor y el recuadro de la lectura la acompañan con la misma duración y la misma curva: es un solo gesto. Los tambores **giran un paso**, solo los dígitos que cambian. |
+| 640–900 | **El sello de la zona roja se vuelve a estampar** con el número nuevo (escala de 1,35 a 1 con `--m-curva-resorte`, 260 ms). Si ya no queda ninguna no disponible, la zona roja no existe y no hay sello. |
+| 900 | Todo quieto. La «Acción del día» muestra la acción siguiente o su variante «en orden». |
+
+- El mensaje del resultado se ve también en pantalla: un renglón de estado dentro de la nota, debajo de los botones
+  (13 px, `--c-tinta-2`), que es la misma región `role="status"`. No hay avisos emergentes.
+- Con movimiento reducido o «Sin animaciones», todo cambia de una vez en el instante 0; foco y anuncio, iguales.
+- Los otros dos orígenes del diálogo (la lista de piezas y el horizonte) siguen llevando el foco y el mensaje a su
+  panel, como hoy; la regla se mueve igual, porque la medida cambió.
+- Un valor que cambia por una acción **no** vuelve a correr la coreografía de entrada.
+
+---
+
+### 15.8 Hoy del conductor: veredicto y llave
+
+Hoy no tiene cifra: su pieza monumental es el **veredicto**. El `h1` sigue siendo «Hoy» y los ocho estados del día
+(6.4) no cambian de reglas, de textos ni de acciones. Cambia cómo se presentan la unidad y la respuesta a «¿puedo
+salir?».
+
+```
+┌──────────────────────────────────────┐
+│ ▣  ◆ DATOS FICTICIOS   ● Conductor ⌄ │ 54 px
+├──────────────────────────────────────┤
+│ FL-07              viernes 27/11/2026 │
+│ Hoy                                  │
+│ ▪ Hoy, viernes 27/11/2026            │  ficha (Panel), con su título de siempre
+│            ━━━┳━━━                   │  gancho
+│   ┌───────────○───────────┐          │  llave: objeto, borde de 2 px,
+│   │  ┌─────────────────┐  │          │  radio 6 px arriba y 22 px abajo
+│   │  │▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀│  │          │
+│   │  │    ZYN 469      │  │          │  chapa: --t-patente-llave, franja de 12 px
+│   │  └─────────────────┘  │          │
+│   │ Int. 01 · Chevrolet S10 2015     │
+│   │ Último registro: 141.711 km …    │
+│   ├───────────────────────┤          │  filete de 1,5 px
+│   │  ○  Puede salir       │          │  veredicto: cartel a 75 %, 60 px
+│   └───────────────────────┘          │
+│ (aviso de tarea, si lo hay)          │
+│ Antes de salir, revise la unidad…    │
+│ [      Empezar la revisión       ]   │  primario grande, 52 px
+│ [ Usar otra unidad ]                 │
+├──────────────────────────────────────┤
+│   Hoy        Mis partes        Más   │ 62 px
+└──────────────────────────────────────┘
+```
+
+- **La llave** va dentro de la ficha «Hoy», en lugar del bloque actual de patente, interno y descripción. Es un
+  **objeto** (`.objeto`): papel `--obj-hoja`, borde de 2 px en `--obj-tinta`, sombra `0 16px 26px -14px rgb(0 0 0 /
+  0.55)`, agujero de 12 px y gancho de 3 px en tinta. Ancho `min(100%, 24rem)`, centrada.
+- **La chapa** de adentro es la `Patente` de siempre con el tamaño de la llave. No es un enlace (el conductor no tiene
+  ficha).
+- **Interno, descripción y último registro:** 13 px, `--obj-tinta-2`, centrados.
+- **El veredicto** ocupa el pie de la llave, a todo su ancho, separado por un filete de 1,5 px: marca de 42 px y texto
+  en cartel a 75 %, peso 780, `--t-veredicto`, con `text-wrap: balance`. Es un párrafo, no un título, y **no** es una
+  región viva: se lee en el orden normal, antes de los avisos y del botón.
+- **Fuera de la llave**, debajo y sin cambios: el aviso que corresponda (15.5.6), la frase de lo que hay que hacer, el
+  primario (grande, 52 px) y «Usar otra unidad».
+
+| Veredicto | Marca | Color | Pie de la llave |
+| --- | --- | --- | --- |
+| **Sale** | Círculo con marca de verificación | `--obj-tinta` | Liso. |
+| **No sale** | Rombo con signo de admiración | `--obj-crit` | Franja de **precinto** de 10 px en `--obj-crit-relleno`; el borde de la llave pasa a `--obj-crit-relleno`. El texto va a 46 px (suele ocupar dos renglones). |
+| **Tarea** | Triángulo | `--obj-tinta` | Liso. |
+| **Sin veredicto** | — | — | No hay llave: solo el `select` de unidad. |
+
+| Estado del día (6.4) | Veredicto | Qué más cambia |
+| --- | --- | --- |
+| Sin parte (puede empezar) | Sale | Primario «Empezar la revisión». |
+| Borrador | Sale | Primario «Continuar la revisión». |
+| En uso | Sale (texto propio: 15.14) | Etiqueta «En uso desde …» y primario «Cerrar el parte». |
+| Cerrado | Sale (texto propio) | Etiqueta de cerrado y enlace «Ver el parte». |
+| Cerrado sin salida (novedad crítica en la revisión) | **No sale** | Aviso crítico de siempre. |
+| **Unidad fuera de servicio** | **No sale** | Aviso de siempre; «Usar otra unidad». |
+| **Unidad bloqueada por documentos** | **No sale** | Aviso crítico de siempre, sin primario. |
+| **Licencia sin vigencia** | **No sale** (texto propio: habla del conductor, no de la unidad) | Aviso de bloqueo, sin primario y sin «Usar otra unidad». |
+| **«Cerrar antes»** | Tarea | Aviso de tono `semana` y primario «Cerrar el parte anterior». No es un bloqueo: no lleva rojo. |
+| **Sin unidad asignada** | Sin veredicto | Solo el `select` «Elija una unidad». Al elegir una, aparece su llave. |
+
+**Veredictos (decisión DE3 de Matías, 28/11/2026): solo donde hay algo que decidir.** «Puede salir», «No puede salir hoy»,
+«Sin licencia vigente» y «Cierre pendiente» son veredictos. En «En uso» y con el parte cerrado el pie de la llave lleva la
+etiqueta de estado que ya existe («En uso desde las 06:52»), sin texto nuevo: decir «Puede salir» sería falso. Lo
+resuelve `estado/veredicto.ts`.
+
+- La **variante bloqueada** (los cuatro «No sale») es la segunda pantalla que se dibuja en el boceto previo.
+- En el celular, la llave con su veredicto y el primario entran en la primera pantalla a 390 × 844 cuando no hay aviso
+  de tarea. Con aviso, entra la llave entera y el primario puede quedar debajo: el aviso manda.
+- **Desde 64 rem** se conservan las dos columnas actuales; la llave no crece más allá de 24 rem.
+- Al elegir otra unidad, la llave cambia de una vez (sin animación) y la barra de estado de la ficha lo dice, como
+  hoy.
+- Entrada: 15.10.
+
+---
+
+### 15.9 Pantallas y estados
+
+Las nueve pantallas conservan su estructura de datos, sus rutas, su `h1` y sus acciones. Por pantalla: código de
+lámina, jerarquía, grilla y comportamiento a 360, 768 y 1280 px.
+
+| Lámina | Pantalla | Ruta |
+| --- | --- | --- |
+| FL-01 | Inicio | `#/inicio` |
+| FL-02 | Movilidades | `#/movilidades` |
+| FL-03 | Vencimientos | `#/vencimientos` |
+| FL-04 | Operación diaria | `#/operacion/…` |
+| FL-05 | Ficha de unidad | `#/unidad/…` |
+| FL-06 | Parte diario | `#/parte/…` |
+| FL-07 | Hoy | `#/conductor` |
+| FL-08 | Mis partes | `#/conductor/partes` |
+| FL-09 | Más | `#/mas` |
+
+#### 15.9.1 Inicio (FL-01)
+
+Jerarquía: (1) regla de salida, (2) «Acción del día», (3) renglones de lectura si van fuera, (4) «No disponibles hoy»,
+(5) horizonte de vencimientos, (6) operación diaria, (7) autoría (solo por debajo de 64 rem). La franja «Probar como
+conductor» de arriba **ya no existe**.
+
+| Ancho | Disposición |
+| --- | --- |
+| **1280** (regla de unos 61 rem) | Encabezado; regla con el tablero completo y los renglones dentro de la mordaza; nota en una fila; debajo, dos columnas: «No disponibles hoy» a la izquierda y, a la derecha, Vencimientos sobre Operación diaria. La regla y la nota entran sin bajar. |
+| **768** (regla de 45 rem) | Caja de 196 px; tablero completo (hasta 24 activas); nota en dos filas; renglones en lista de dos columnas; los tres paneles en una columna. |
+| **360** | Caja de 128 px; tablero corto; nota apilada con botones de 40 px; renglones en una columna; paneles en una columna. La nota entra entera en la primera pantalla (15.7). |
+
+Encabezado: `h1` «Inicio» y la línea de contexto actual (texto sin cambios), en `--c-tinta-2` y 13 px.
+
+#### 15.9.2 Movilidades (FL-02)
+
+Jerarquía: título con «Agregar unidad» (secundario, a la derecha), línea de resumen, y una ficha con buscador,
+proyecto, orden, filtros (segmentado) y la tabla densa.
+
+| Ancho | Disposición |
+| --- | --- |
+| **1280** | Tabla de siete columnas; fila de 46 px como mínimo; chapa en la primera columna; estado como etiqueta de texto con forma; próximo vencimiento con el horizonte mínimo en papel y tinta; kilómetros en técnica, a la derecha. Fila no disponible con precinto a la izquierda. |
+| **768** | La tabla pasa a tarjetas cuando su contenedor no alcanza (corte actual); filtros en dos renglones. |
+| **360** | Tarjetas; buscador a todo el ancho; proyecto y orden apilados; «Agregar unidad» debajo del título, sin dominar. |
+
+Estados: sin resultados por filtro o búsqueda → pieza de vacío con «Quitar filtros»; sin unidades → vacío con «Agregar
+unidad»; fila de baja → tono `neutro`, texto en `--c-tinta-2`, sin acciones.
+
+#### 15.9.3 Vencimientos (FL-03)
+
+Jerarquía: título y resumen; ficha con el horizonte completo (papel y tinta, 15.6.6); filtros (segmentado); grupos por
+tramo, cada uno una ficha con su forma en el título y filas con acción.
+
+| Ancho | Disposición |
+| --- | --- |
+| **1280** | Horizonte a todo el ancho con la caja «Vencidos o faltantes» a la izquierda; grupos uno debajo del otro; en cada fila, etiqueta, documento, titular y fechas a la izquierda y «Renovar» o «Cargar» (secundario, 36 px) a la derecha. |
+| **768** | Igual, con la caja de vencidos arriba de la pista. |
+| **360** | Filas apiladas con el botón debajo, a todo el ancho y de 40 px; los rótulos de la pista no se pisan (lo resuelve el código que ya existe). |
+
+Estados: «Nada vence en los próximos 30 días» en la pista; grupo vacío no se muestra; lista vacía → pieza de vacío.
+Mensaje tras guardar: en la barra de estado de la ficha de la lista.
+
+#### 15.9.4 Operación diaria (FL-04)
+
+Jerarquía: título; **solapas** Partes y Novedades (son enlaces: 36 px en escritorio y 44 por debajo, conteo en
+técnica; la elegida, texto en tinta y **barra inferior de 3 px en tinta**, no en pleno); grupos de la solapa en
+fichas; pie de la solapa.
+
+| Ancho | Disposición |
+| --- | --- |
+| **1280** | Una columna de fichas; filas con estado, qué pasó, unidad (chapa), fecha y acción. |
+| **768** | Igual. |
+| **360** | Filas en tarjetas; la acción debajo, de 40 px. |
+
+Estados: solapa sin pendientes → pieza de vacío con su título y su ayuda; grupo sin filas → su frase.
+
+#### 15.9.5 Ficha de unidad (FL-05)
+
+Jerarquía: enlace al padre (en la barra); `h1` con la **chapa grande**; línea de interno y modelo; estado de hoy
+(aviso del tono que corresponda; «Disponible» sin fondo); datos (proyecto, conductor, kilometraje) con `Dato`;
+acciones; fichas Documentos, Novedades, Kilometraje e Historial.
+
+| Ancho | Disposición |
+| --- | --- |
+| **1280** | Encabezado con las acciones a la derecha en columna; Documentos a la izquierda (dos tercios) y Novedades sobre Kilometraje a la derecha; Historial a todo el ancho. |
+| **768** | Acciones en una fila debajo del encabezado; las fichas en una columna. |
+| **360** | Acciones a todo el ancho, de 44 px; documentos en tarjetas con sus botones debajo; historial con la hora arriba de cada evento. |
+
+Estados: unidad de baja → aviso `neutro` y ninguna acción; sin novedades, sin partes, documentos faltantes («Falta
+cargar» con rombo) → como hoy, con la pieza de vacío nueva; patente inexistente → título, párrafo y enlace, sin
+precinto. El horizonte mediano de Documentos, en papel y tinta.
+
+#### 15.9.6 Parte diario (FL-06)
+
+Columna única de `--ancho-parte`. Jerarquía: enlace al padre; `h1` con el paso; renglón de contexto; chapa grande e
+interno; secciones numeradas (`h2` en cartel, `--t-h2`); barra de envío.
+
+| Ancho | Disposición |
+| --- | --- |
+| **1280** | La misma columna de 40 rem, centrada; la barra de envío con el ancho de la columna. |
+| **768** | Igual. |
+| **360** | Campos de 48 px y 16 px de letra; opciones del checklist lado a lado; la barra de envío no tapa el campo enfocado. |
+
+| Estado | Piel |
+| --- | --- |
+| Revisión (paso 1) y cierre (paso 2) | Formulario sobre `--c-hoja`, secciones separadas por filete de 1,5 px en tinta. |
+| Con errores | `ResumenErrores` arriba (15.5.10), campos e ítems en error. |
+| **Bloqueado por documento o por licencia** (pantalla E) | `h1` de siempre; ficha con precinto crítico de 6 px a la izquierda, el motivo y, si aplica, su acción. Sin formulario. |
+| «Cerrar antes» (pantalla E) | Aviso de tono `semana` con primario. Sin rojo. |
+| Enviado (C1), no puede salir (C2), cerrado (C3) | `h1` en `--c-tinta` (nunca en el color del tono); línea de resultado; acciones. C2 lleva precinto crítico. |
+| Lectura (D) | Datos con `Dato` en una hoja; la revisión leída punto por punto con su forma. |
+| Enviando o cerrando | El primario en carga; el formulario no se bloquea a la vista. |
+| Dirección mal escrita | Título, párrafo y enlace. |
+
+#### 15.9.7 Hoy (FL-07)
+
+15.8. A **1280**, dos columnas (la ficha «Hoy» con la llave, y a la derecha Pendientes, Su licencia y Mis últimos
+partes). A **768** y **360**, una columna con «Hoy» primero.
+
+#### 15.9.8 Mis partes (FL-08)
+
+Lista de partes en una ficha: fecha (enlace), chapa, recorrido en técnica a la derecha y su etiqueta de parte. A
+**360**, dos renglones por parte. Vacío: «Todavía no envió partes.» en la pieza de vacío.
+
+#### 15.9.9 Más (FL-09)
+
+Tres fichas en una columna de 40 rem: «Ver como» (perfil de ahora y «Cambiar perfil», que **no** empieza con «Ver
+como»), **«Apariencia»** (15.4.5) y «La demo» («Cómo funciona», «Reiniciar demo», volver al portafolio). Al pie, la
+autoría. Igual a los tres anchos; por debajo de 64 rem los controles miden 44 px.
+
+#### 15.9.10 Tabla de estados (lista de control)
+
+Es la tabla de la sección 8 con la fila de la regla y los estados del marco. Cada celda dice dónde está especificada
+su piel.
+
+| Pantalla | Cargando | Vacío | Sin datos | Error |
+| --- | --- | --- | --- | --- |
+| **Toda la aplicación** | Arranque: cuadro cero (15.4.6). Pantalla que se baja: «Cargando la pantalla…» (15.4.6). | — | — | Error de arranque; error de descarga; «Hay una versión nueva»; ruta desconocida; datos dañados (15.4.6). Almacenamiento no disponible o perdido, datos de otra fecha, cambios en otra pestaña (15.4.7). |
+| **Regla de salida** | Cuadro cero. | Flota vacía (15.6.7). | Una sola unidad; cifras de tres dígitos (15.6.7). | Cero no disponibles; todas no disponibles; más unidades de las que entran; primera pieza sin acción de documento (15.6.7 y 15.7). |
+| **Inicio** | — | «No disponibles hoy» vacío; operación sin pendientes; horizonte sin vencimientos (15.5.12, 15.6.6). | — | Error al guardar: dentro del diálogo (15.5.11). |
+| **Movilidades** | — | Sin resultados; sin unidades (15.9.2). | — | — |
+| **Vencimientos** | — | Nada vence; lista vacía (15.9.3). | — | Error al guardar: dentro del diálogo. |
+| **Operación diaria** | — | Solapa sin pendientes (15.9.4). | — | — |
+| **Ficha** | — | Sin novedades; sin partes; solo documentos faltantes (15.9.5). | Historial con un solo evento. | Patente inexistente; unidad de baja (15.9.5). |
+| **Hoy** | — | «Mis últimos partes» vacío. | Sin unidad asignada (15.8). | Unidad fuera de servicio; unidad bloqueada; licencia sin vigencia; «Cerrar antes» (15.8). |
+| **Mis partes** | — | Sin partes (15.9.8). | — | — |
+| **Parte** | Enviando; cerrando (15.9.6). | — | Primer registro de la unidad (ayuda del campo). | Resumen de errores; guardado con error; bloqueado por documento o licencia; «Cerrar antes»; dirección mal escrita (15.9.6). |
+| **Más** | — | — | — | — |
+
+Transversales, en todas: claro y oscuro; `forced-colors` (15.3.7); movimiento reducido y «Sin animaciones» (15.10);
+320 y 360 px sin desplazamiento horizontal; texto al 200 % a 360 px (regla de la sección 12).
+
+---
+
+### 15.10 Coreografía
+
+**Regla general: se mueve una pieza por vez.** La entrada corre **una vez por vista y por sesión**, termina antes de
+**1.050 ms** y después queda fija. «Reiniciar demo» la vuelve a pedir.
+
+**Estados de entrada.** El contenedor de la vista lleva `data-entrada`:
+
+| Valor | Cuándo | Qué hace |
+| --- | --- | --- |
+| `completa` | Primera vez que se ve esa vista en la sesión. | Corre la coreografía de la tabla. |
+| `breve` | Al volver a una vista ya vista. | Solo la transición entre pantallas que ya existe (sale en 110 ms; entra en 230 ms subiendo 10 px). |
+| `fija` | A los 1.500 ms de empezar. | Ya no aplica ninguna regla de animación: el estado final no depende del relleno de la animación. |
+| `quieta` | Movimiento reducido o «Sin animaciones». | Todo completo y en su estado final desde el primer cuadro. |
+
+**Pausa en el primer cuadro.** Con `completa`, las animaciones están puestas pero **en pausa** (`data-pausa`) hasta
+que se cumplan las dos condiciones: (a) las letras cargaron **o** pasaron 450 ms; (b) terminó la transición entre
+pantallas, si hubo una. El primer cuadro **está diseñado para leerse** y no muestra ningún dato falso.
+
+**Entrada de Inicio** (`completa`):
+
+| t (ms) | Pieza | Qué pasa |
+| --- | --- | --- |
+| 0 | **Todo en su lugar** | Título, caja, escala, **las llaves colgadas y derechas**, renglones de lectura, «Acción del día» (ya se puede pulsar), lista de piezas, horizonte y operación. **La cifra dice el valor final desde el cuadro 0** («19 /23»): los tambores ya están en su dígito y no cuentan. El campo pleno ocupa toda la caja, con una tapa de color pleno sobre la zona roja; el cursor está en el extremo, y el recuadro de la lectura y la cota todavía no se dibujan (aparecen cuando el cursor llega, abajo). Nada del primer cuadro dice una cifra falsa: la cifra, el párrafo para lectores, los globos y los renglones de «No disponibles hoy» cuentan lo mismo. |
+| 120–660 | **La mordaza** | Se cierra hasta la medida frenando contra el tope (`--m-curva`). Es un solo gesto de dos partes que duran y frenan igual: la tapa que descubre la zona roja y el canto con el cursor, que viaja del extremo a la lectura. **La cifra no se mueve.** En los últimos 120 ms del gesto (540–660), cuando el cursor llega, el recuadro de la lectura y la cota de la zona roja aparecen con un fundido (`opacity`): son el remate del mismo gesto, no empiezan uno nuevo. |
+| 660–880 | **Las llaves que no salen** | Caen 6 px y quedan torcidas (`--m-curva-resorte`, 160 ms cada una, escalonadas 20 ms; el escalón se achica para que el conjunto termine a los 880 ms aunque sean muchas). **Las que salen no se mueven nunca.** |
+| 880–1.040 | **El sello** | Se estampa el número de la zona roja (escala de 1,35 a 1, `--m-curva-resorte`). |
+| 1.500 | | `fija`. |
+
+- **Solo con `transform`, `opacity` y `clip-path`.** La mordaza real tiene su ancho final desde el cuadro 0. Lo que se
+  mueve es una **tapa** de color pleno puesta sobre la zona roja, que se achica con `scaleX` desde la izquierda, y el
+  canto con el cursor, que se trasladan con `translateX` en unidades de contenedor. Los tambores **no se mueven**
+  en la entrada: están en su dígito final desde el cuadro 0 (`style:--d`; `style:--desde` vale lo mismo). Todo en CSS: el JavaScript solo pone
+  `data-entrada` y `data-pausa`.
+- Con el tablero corto, las chapas colgadas hacen la misma caída (una por vez, mismo tiempo total).
+- Con cero no disponibles no hay nada que cerrar: la entrada no mueve nada.
+- **Primer recorte de peso previsto** (los tambores pasan a ser la cifra fija con su aspecto, sin contar): con el
+  cambio de arriba la entrada **ya no cuenta**, se decida lo que se decida. Lo que queda por decidir es si, al
+  resolver, los dígitos que cambian lo hacen de una vez (decisión DE7 de Matías, 28/11/2026: el odómetro es una cifra fija
+  con aspecto de tambor). El resto de la tabla no cambia.
+- Si hay una tarea de más de 50 ms durante la entrada en un celular lento, se simplifica la coreografía del celular
+  (se quita la caída de las chapas) antes que cualquier otra cosa.
+
+**Entrada de Hoy** (`completa`):
+
+| t (ms) | Pieza | Qué pasa |
+| --- | --- | --- |
+| 0 | Todo en su lugar | Título, ficha, la llave con su chapa y sus datos, aviso, botón. El veredicto está escrito (para lectores, desde el cuadro 0) y a la vista en su lugar, con opacidad 0. |
+| 80–520 | **La llave** | Se balancea una vez desde su gancho (de +4° a −3° a 0°, `--m-curva-resorte`). |
+| 520–900 | **El veredicto** | Se estampa (escala de 1,18 a 1 y giro de −2,5° a 0°, `--m-curva`). |
+| 1.500 | | `fija`. |
+
+**Las demás pantallas** no tienen coreografía propia: usan la transición entre pantallas que ya existe, incluido el
+viaje de la patente entre la lista y la ficha.
+
+**Estado final accesible.** Desde el cuadro 0 el DOM dice los valores finales: el párrafo de la regla, los nombres de
+las llaves, el veredicto. Lo que se anima es `aria-hidden` o es solo una transformación visual. **No se anuncia ningún
+valor intermedio** y ninguna región viva cambia durante la entrada. Una instantánea del árbol de accesibilidad a t = 0
+y a 1,5 s da lo mismo.
+
+**Movimiento reducido y «Sin animaciones».** `data-entrada="quieta"`: sin coreografía, sin transición entre
+pantallas, sin cursor de calibre, sin destellos; la escena de 15.7 cambia de una vez. Con «Sin animaciones» activo,
+`document.getAnimations()` queda vacío al navegar.
+
+**Microinteracciones** (todas de menos de 600 ms y de una sola pieza): cursor de calibre del botón (15.5.1); llave que
+se endereza y sube (15.6.3); chapa que sube 1 px; flecha de `Detalles` que gira; destello de la fila actualizada.
+
+---
+
+### 15.11 Contratos que no se tocan
+
+Los fijan las pruebas de punta a punta, el código que elige elementos por clase o atributo, o las dos cosas. Vestir
+una pieza **no** los cambia. Las 24 pruebas de punta a punta actuales tienen que seguir pasando **sin modificarse**.
+
+**Estructura y títulos**
+
+- `main#principal` con `tabindex="-1"`, y dentro **un `h1`** con `tabindex="-1"` y **el texto exacto** de hoy: «Inicio»,
+  «Movilidades», «Vencimientos», «Operación diaria», «Hoy», «Mis partes», «Más»; en la ficha, la patente (dentro de un
+  elemento `.patente`); en el parte, el nombre del paso; en los errores, sus títulos actuales. **El código de lámina va
+  fuera del `h1`**, y nada más se le agrega adentro.
+- Los `id` que el código busca: `principal`, `app`, `texto-cargando`, `texto-preparando`, `titulo-no-disponibles`,
+  `titulo-vencimientos`, `titulo-operacion`, `lista-vencimientos`, los de las solapas y los de las fichas de la
+  unidad.
+- Dos títulos que el código busca **por posición**, no por `id`: el primer `h2` dentro de `#lista-vencimientos`
+  (destino del foco después de guardar en Vencimientos; `PantallaVencimientos.svelte`) y el **primer `h2` del
+  diálogo** (destino del foco inicial cuando se pide en el título; `Dialogo.svelte`). Al vestir no se pone otro `h2`
+  delante de ninguno de los dos.
+
+**Marco**
+
+- **Un único botón visible** cuyo nombre accesible coincide con `/^Ver como Encargado/` (sin los dos puntos, para que el texto visible «Ver como Encargado» del lateral sea parte del nombre: 2.5.3), a 1280 y a 360 px, que
+  **abre el diálogo «Ver como» en un clic** (sin menú intermedio). El diálogo se llama «Ver como», tiene radios cuyo
+  nombre empieza con «Conductor» y con el nombre del conductor, y un botón «Aplicar». **Ningún nombre accesible nuevo
+  empieza con «Ver como».**
+- **«Cómo funciona»** es un botón visible en el marco a 1280 px.
+- En la navegación, los enlaces «Más», «Vencimientos» y «Movilidades» conservan esos nombres.
+- La región `role="status"` de «Cargando la pantalla…» contiene un `progress`. La de arranque contiene el texto
+  «Preparando la flota de ejemplo…» y su `progress`. El botón de los errores se llama «Recargar la página».
+- La región `role="status"` de los avisos globales existe siempre.
+
+**Clases que usa el código**
+
+| Clase o selector | Quién lo usa |
+| --- | --- |
+| `.patente` (y `main h1 .patente`) | El viaje de la patente entre pantallas. |
+| `.barra-envio` (y su `button`) | El foco del parte. |
+| `.pie` dentro del diálogo | El foco inicial del diálogo. |
+| `dialogo-abierto` en `<html>` | El bloqueo del desplazamiento del fondo. |
+| `con-transicion` en `<html>` y `entra` en `main` | La transición entre pantallas. |
+| `svg.sprite` | El sprite de íconos. |
+| `.boton`, `.enlace-accion` | Estilos de contexto de otras piezas. |
+| `.icono`, `.forma`, `.panel`, `.aviso`, `.etiqueta`, `.dato`, `.enlace-patente` | Otros componentes las alcanzan con `:global(…)` para acomodar la pieza en su contexto. Si una cambia de nombre, hay que cambiar a quien la usa en el mismo cambio. |
+| `.menu` (de `MenuMas`), `.item` (de `ItemRevision`), `.panel .controles`, `.barra .meta` (de `Panel`), `.fecha-parte` y `.apilado` (celdas de la tabla) | Igual que la fila anterior: también se alcanzan con `:global(…)`. |
+
+**Atributos `data-*` que lee el JavaScript:** `data-foco-inicial`, `data-foco-cancelar`, `data-foco-lista`,
+`data-seguir-editando`, `data-resumen-parte`, y en la regla de vencimientos `data-punto`, `data-rotulo` y `data-fila`.
+También el atributo **`enterkeyhint`** de los campos del parte (el formulario lo lee para decidir qué hace Enter:
+pasar al control siguiente o llevar el foco al botón de envío), `dialog[open]` (frena la transición entre pantallas),
+`[aria-current="page"]` en los filtros de enlace y `button[aria-controls]` en «Más acciones». Los `data-*` de
+presentación que ya existen (`data-tono`, `data-variante`, `data-col`, `data-tamano`, `data-forma`, `data-lleno`,
+`data-resp`, `data-critico`, `data-etiqueta`, `data-sin-valor`, `data-tramo`, `data-borde`, `data-grande`) conservan
+nombre y valores.
+
+**Nombres accesibles que usan las pruebas:** botón «Poner fuera de servicio»; diálogo «Poner fuera de servicio:
+{patente}»; campo «Motivo»; enlace «Empezar la revisión»; campo «Al iniciar»; botones «Descartar borrador» y
+«Confirmar descarte»; los textos de estado «{patente} está fuera de servicio.» y «Borrador guardado en este equipo.»;
+el texto «Fuera de servicio».
+
+**Nombres de los trozos que interceptan las pruebas:** `assets/PantallaMas-*.js`, `assets/PantallaVencimientos-*.js`
+y `assets/generador-*.js`. Salen del nombre del archivo de origen: `PantallaMas.svelte`, `PantallaVencimientos.svelte`
+y `src/lib/datos/generador.ts` no se renombran, y cada uno sigue saliendo en un trozo propio.
+
+**Lo que cada pantalla tiene que seguir cumpliendo:** sin errores ni avisos de consola; sin violaciones de la CSP;
+sin pedidos a otros orígenes; axe sin hallazgos a 1280 y a 360 px; sin desborde horizontal a 360 px; **29 pedidos (hoy 31, ver más abajo) como
+máximo** en la primera visita y ninguna fuente nueva. Es el número de antes de la etapa 2: al partir el trozo del
+conductor la primera visita hizo 30 pedidos (decisión DE6 de Matías, 28/11/2026: aceptar 30) y con `public/arranque.js`,
+que pone el tema guardado antes del primer pintado (T16), hace 31; la prueba de la primera visita acepta 31.
+
+**Textos:** ningún texto existente cambia. En particular, los dos textos del recorrido («Probar como conductor» y su
+frase) quedan iguales aunque cambien de lugar.
+
+**Reparto:** el maquetador toca solo `<style>` y marcado de presentación; el programador, solo `<script>`, `.ts` y
+pruebas. Un contrato que haga falta cambiar se pide antes, no se cambia al vestir.
+
+---
+
+### 15.12 Lo que NO hay que hacer
+
+Además de la sección 10, que sigue vigente salvo en lo que 15.1.1 resuelve:
+
+- Un segundo campo pleno grande en la misma pantalla, o el pleno para decir un estado.
+- Tarjetas de indicador iguales en fila; donas; medidores; cifra grande con etiqueta chica y línea de color, repetida.
+- Más de una cifra monumental por pantalla, o una cifra monumental en la letra de texto.
+- Un primer cuadro en blanco, o una cifra que arranca en un número que no es dato (ni un cero inventado).
+- Una cifra que cuenta desde el total en la entrada: el cuadro 0 diría «23 /23» con cuatro llaves rojas a la vista.
+- El título de la regla («Disponibles hoy») por debajo de 14 px en escritorio y de 13 px en el celular.
+- Repartir el ancho de la barra inferior según el largo de los nombres, abreviar un nombre o bajarlo de 12 px.
+- Un botón primario de noche con borde y sombra del color de su relleno (se lee como un campo vacío).
+- Mover las llaves que salen. Mover dos piezas a la vez. Animar el título, los paneles o las listas en la entrada.
+- Texto sobre la trama; texto de menos de 12 px; monoespaciado en peso 700.
+- Cifras, fracciones, fechas o patentes escritas en una hoja de estilos o en un componente.
+- Un oscuro genérico: el plano nocturno es el cianotipo (papel de Prusia, cuadrícula, campo crema con cifra cobalto).
+- Objetos que se oscurecen de noche (chapa, llave, rótulo de cota).
+- `.objeto` en el enlace o el botón que recibe el foco; un token que no está en la lista de 15.3.2 dentro de un
+  objeto; texto en `--obj-tinta-3` o en un color de tono sobre `--obj-papel-2`.
+- El anillo `--c-sobre-pleno` por fuera de una pieza, o `--c-foco-oscuro` sobre un fondo claro (el pleno de noche, un
+  control apretado del lateral).
+- Un `tabindex="0"` en una llave oculta; ocultar llaves de una lista con parada itinerante.
+- Leyendas de país, escudos o banderas en la chapa. Imitar la placa oficial.
+- Radios grandes, píldoras, sombras difusas en fichas, vidrio esmerilado (salvo la barra de escritorio), degradados de
+  color, brillos.
+- Marcas de plano que no dicen nada: cotas sin medida, globos sin número que remita a algo, escalas sin lectura.
+- Ámbar en una llave, o rojo en «Cerrar antes» (es una tarea).
+- Contar una cifra desde cero cuando cambia un dato (giran solo los dígitos que cambian), o rearmar la regla para
+  mostrar un cambio.
+- `prefers-color-scheme`, `rgb()` o hexadecimales sueltos en un componente; atributo `style`; `light-dark()` dentro de
+  `.objeto` esperando que se resuelva en claro.
+- Desenfoque de fondo por debajo de 64 rem; `background-attachment: fixed`; texturas detrás de texto de lectura.
+- Un destino del menú que todavía no existe, o un botón que no hace nada.
+- Un nombre accesible nuevo que empiece con «Ver como».
+- Dibujar a medias algo de las etapas 3 a 9 del rediseño (registrador, lecturas como instrumentos, cajón, buscador,
+  densidad, regla de tres casillas).
+- Presentar la demo como copia de un sistema existente o nombrar empresas, personas o proyectos reales.
+
+---
+
+### 15.13 Íconos nuevos para el sprite
+
+Mismo estilo que los actuales: `viewBox` de 24, trazo de 1,75 px con `currentColor` (o relleno, en los del menú), sin
+color propio. Se agregan a `ICONOS` y al sprite de `index.html`.
+
+| Nombre | Dibujo | Dónde |
+| --- | --- | --- |
+| `marca` (se **redibuja**; mismo nombre) | Un calibre: regla horizontal con mordaza fija y mordaza móvil. | Lateral, barra superior, favicon. |
+| `tema-claro` | Círculo con ocho rayos cortos. | Control «Apariencia». |
+| `tema-oscuro` | Media luna. | Control «Apariencia». |
+| `tema-auto` | Círculo partido en vertical, una mitad llena. | Control «Apariencia». |
+| `quieto` | Dos barras verticales (pausa) dentro de un cuadrado. | «Sin animaciones». |
+| `rombo-alerta` | Rombo con signo de admiración. | Veredicto «No sale». |
+| `circulo-check` | Círculo con marca de verificación. | Veredicto «Sale». |
+
+Las formas de estado (rombo, triángulo, círculo, aro, cuadrado), los globos, los ganchos y las marcas de la escala
+**no son íconos**: se dibujan con CSS. El favicon es `marca` en cobalto sobre papel; `theme-color` es `#F1ECE1` de día
+y `#0A2550` de noche.
+
+---
+
+### 15.14 Textos (para `redactor-ux`)
+
+Regla: español neutro, sin voseo, al lector de usted o en forma impersonal. **No cambia ningún texto existente.**
+La columna «Texto final» es la que se implementa. Donde «Origen» nombra una función o una constante, el texto sale
+de ahí y no se escribe de nuevo; donde dice **nuevo**, la cadena se agrega tal cual (los archivos `.ts` los toca el
+programador, no esta tabla). `{P}` es la patente con formato; `{n}`, `{d}` y `{a}`, números.
+
+| # | Dónde | Texto final | Origen | Notas |
+| --- | --- | --- | --- | --- |
+| 1 | Regla: título (`h2`) | Disponibles hoy | **Nuevo.** | 15 caracteres. Con el título de 14 px el tope es **15** (el corte de la mordaza angosta de 15.6.2 está calculado para eso): un texto más largo obliga a subir ese corte. Es rótulo y destino del foco. |
+| 2 | Regla: párrafo para lectores, con no disponibles | Disponibles hoy: 19 de 23 unidades activas. 4 unidades no disponibles hoy: 2 bloqueadas por documentos · 2 fuera de servicio. | `textoDisponibles(d, a)`, un espacio, `textoProtagonista(n)`, «: », `textoDesgloseNoDisponibles(b, f)` y punto. | Solo el «: » y el punto son nuevos. Valor final desde el primer cuadro. |
+| 2b | Regla: párrafo para lectores, sin no disponibles | Disponibles hoy: 23 de 23 unidades activas. Ninguna unidad bloqueada ni fuera de servicio. | `textoDisponibles(d, a)`, un espacio, `TEXTO_INICIO.sinNoDisponibles` y punto. | Con la flota vacía no se usa esta frase («0 de 0»): va la fila 21. |
+| 3 | Regla: cota de la zona roja (tablero completo) | 2 bloqueadas por documentos · 2 fuera de servicio | `textoDesgloseNoDisponibles(b, f)`. | T17: antes era «4 unidades» (`salida.cota`, que ya no se muestra); el número está en el sello. |
+| 4 | Sello de la zona roja: nombre visible | No disponibles hoy | `TEXTO_CENTRO.protagonista`. | T17: el desglose salió del sello (va en la cota o en el rótulo del tablero corto). El nombre accesible sigue llevando el desglose (fila 5). |
+| 5 | Sello de la zona roja: nombre accesible del enlace (`aria-label`) | 4 no disponibles hoy: ver en Movilidades · 1 no disponible hoy: ver en Movilidades | `TEXTO_NAVEGACION.insignias.noDisponibles(n)` y, **nuevo**, «: ver en Movilidades». | **Desvío de la propuesta**, ver «Decisiones» más abajo. El desglose va como descripción (`aria-describedby`), no en el nombre. |
+| 6 | Tablero completo: nombre de la lista | Unidades activas | **Nuevo.** | No empieza con «Ver como». Sin la palabra «llaves»: quien no ve el dibujo recibe una lista de unidades. |
+| 6b | Tablero corto: nombre de la lista | No disponibles hoy | `TEXTO_CENTRO.protagonista` (por `aria-labelledby` al rótulo de la fila). | La lista corta solo trae las que no salen. |
+| 7 | Llave disponible: nombre accesible | ZT 301 KA, disponible. Ver ficha. | `{P}`, coma, `TEXTO_FLOTA.estado["puede-salir"]` en minúscula, punto, `TEXTO_ALERTAS.verFicha` y punto. | Patente primero: es lo que se ve en la llave. |
+| 8 | Llave no disponible: nombre accesible | ZK 214 BD, bloqueada. Seguro vencido hace 1 día. Número 1. Ver ficha. | `{P}`, la etiqueta de estado en minúscula, el motivo de la lista (`motivo`, que no trae punto), **nuevo** «Número {n}.» y `TEXTO_ALERTAS.verFicha`. | Patente primero. El número es el del globo. «Número» y no «Pieza»: ver «Decisiones». |
+| 8b | Chapa del tablero corto: nombre accesible | ZK 214 BD, bloqueada. Seguro vencido hace 1 día. Ver ficha. | Como la fila 8, sin el número. | El tablero corto no tiene globos. |
+| 9 | Tablero completo: ayuda de teclado (a la vista en el rótulo de cota y, una vez, para lectores) | Use las flechas para recorrer las unidades. | **Nuevo.** | 43 caracteres (tope: unos 60). La misma frase en los dos lugares. No va en el tablero corto. |
+| 10 | Tablero corto: enlace «y N más», visible | y 3 más | `TEXTO_ALERTAS.yMas(n)`. | — |
+| 11 | Tablero corto: enlace «y N más», resto del nombre accesible (solo lectores) | no disponibles hoy: ver en Movilidades | `TEXTO_ALERTAS.yMas(n)` y, **nuevo**, « no disponibles hoy: ver en Movilidades». | Se lee «y 3 más no disponibles hoy: ver en Movilidades». Siempre en plural: el enlace aparece con más de ocho, así que `{n}` vale 2 o más. |
+| 12 | Renglones de lectura: nombre de la lista | Resumen de hoy | **Nuevo.** | Sin metáfora («lecturas» no dice qué hay). |
+| 13 | Renglones de lectura: cada renglón | 3 Vencidos o faltantes · 9 Vencen en 30 días · 3 Partes pendientes · 1 Novedad crítica | Cifra y rótulo de `TEXTO_INICIO` (`cifraVencidos`, `cifraProximos`, `cifraPartes`, `cifraNovedadCritica(n)`). | Sin cambios. |
+| 14 | Acción del día: rótulo | Acción del día | **Nuevo.** | 14 caracteres (tope: 16). |
+| 15 | Acción del día: frase | ZK 214 BD no puede salir: Seguro vencido hace 1 día. | `textoUnidadNoPuedeSalir(P, motivos, false).titular`. | Sin cambios. |
+| 16 | Acción del día: botón de la acción | Renovar · Cargar | `etiqueta` y `nombreAccesible` de la acción de documento («Renovar seguro de ZK 214 BD»). | Sin cambios. |
+| 17 | Acción del día: segundo botón y su descripción | Probar como conductor · Pruebe la demo: vea cómo un seguro vencido impide cargar el parte. | `TEXTO_INICIO.recorrido.boton` y `TEXTO_INICIO.recorrido.texto`. | **No cambian** (los fijan las pruebas). La frase pasa a ser la descripción del botón y se ve en todos los anchos, debajo de él (15.7). |
+| 18 | Acción del día, sin acción de documento | Ver ficha (para lectores: «Ver ficha de ZK 214 BD») | `TEXTO_ALERTAS.verFicha` y `TEXTO_ALERTAS.verFichaDe(P)`. | Sin cambios. |
+| 19 | Acción del día, en orden | Todas las unidades activas están disponibles hoy. | `textoProtagonistaLector(0)`. | Con punto final, como las demás frases de la nota. |
+| 20 | Anuncio al resolver (`role="status"`, también a la vista en la nota) | Seguro de ZK 214 BD renovado. Disponibles hoy: 20 de 23 unidades activas. | El mensaje que ya da el diálogo (`textoDocumentoRenovado`, `textoDocumentoCargado`), un espacio y `textoDisponibles(d, a)`. | Ninguna cadena nueva. Dice la medida aunque no haya cambiado (la unidad puede seguir bloqueada por otro documento): así nunca afirma de más. |
+| 21 | Regla, flota vacía: mensaje | No hay unidades activas. | **Nuevo.** | No se reutiliza «Todavía no hay unidades.»: con todas las unidades de baja sería falso. |
+| 21b | Regla, flota vacía: ayuda y enlace | Aquí se verá cuántas pueden salir hoy. · Agregar una unidad en Movilidades | **Nuevos.** | La ayuda dice qué va ahí; el enlace, cómo empezar. Si el peso aprieta, la ayuda es lo primero que se saca. |
+| 22 | Sello de la barra: texto visible | Datos ficticios | **Nuevo.** | 15 caracteres (tope: 15). Las mayúsculas las pone la hoja de estilos. Oculto a lectores. |
+| 23 | Sello de la barra: texto para lectores | Demo con datos ficticios | `TEXTO_MARCO.etiquetaDemo`. | Sin cambios. |
+| 24 | Código de lámina | (sin texto para lectores) | — | **Decisión:** el código («FL-01») va con `aria-hidden="true"`. No agrega nada a lo que ya dice el `h1`. |
+| 25 | Lateral: rótulos de sección | Flota · Operación | **Nuevos.** | Una palabra cada uno; son presentación (`aria-hidden`). Decisión DE2 de Matías (28/11/2026): «Operación», y no «Jornada» como proponía esta fila. |
+| 26 | Apariencia: título del grupo | Apariencia | **Nuevo.** | No empieza con «Ver como». |
+| 27 | Apariencia: leyenda y opciones del tema | Tema · Claro · Oscuro · Automático | **Nuevos.** | Si al medir «Automático» no entra en el lateral, ahí se muestra «Auto» y el nombre accesible sigue siendo «Automático» (lo contiene). En «Más», siempre la palabra entera. |
+| 28 | Apariencia: nota del tema (solo en «Más») | Automático: sigue el tema del dispositivo. | **Nuevo.** | En el lateral no se muestra. |
+| 29 | Apariencia: botón de movimiento | Sin animaciones | **Nuevo.** | Botón con `aria-pressed`: el texto no cambia al apretarlo. |
+| 30 | Veredicto, sale (sin parte, borrador) | Puede salir | **Nuevo.** | 11 caracteres (tope: 14). |
+| 31 | Veredicto, en uso | En uso | `TEXTO_ESTADO_PARTE_EN_USO`. | La hora va aparte, en la etiqueta («En uso desde las 06:52»). DE3 (28/11/2026): no es un veredicto nuevo, el pie lleva esta etiqueta. |
+| 32 | Veredicto, cerrado | Parte cerrado | **Nuevo.** | 13 caracteres (tope: 14). DE3 (28/11/2026): el pie lleva la etiqueta de estado que ya existe, sin texto nuevo. |
+| 33 | Veredicto, no sale (unidad) | No puede salir hoy | **Nuevo.** | Vale para los tres casos de unidad: bloqueada por documentos, fuera de servicio y cerrado sin salida. |
+| 34 | Veredicto, no sale (licencia) | Sin licencia vigente | **Nuevo.** | Habla del conductor. **Desvío de la propuesta**, ver «Decisiones». |
+| 35 | Veredicto, tarea («Cerrar antes») | Cierre pendiente | **Nuevo.** | 16 caracteres (tope: 16). No es un bloqueo. DE3 (28/11/2026): es el único veredicto nuevo además de los de «sale» y «no sale». |
+| 36 | Cuadro cero | Preparando la flota de ejemplo… | `TEXTO_AVISO.preparando`. | **No cambia** (lo fijan las pruebas). |
+| 37 | Estados vacíos de las pantallas | Los actuales | `TEXTO_INICIO.noDisponiblesVacio`, `TEXTO_VACIO_PANTALLAS`, `TEXTO_CENTRO` y `TEXTO_FLOTA.sinUnidades`. | No cambian; solo cambia la pieza que los muestra. |
+| 38 | `og:image:alt` (imagen nueva de Inicio) | Inicio de la demo Control de flota: cuántas unidades pueden salir hoy, cuáles no y por qué. | **Nuevo.** | Sin cifras. Se confirma contra la imagen final: si la captura no muestra los motivos, se quita «y por qué». |
+
+**Decisiones de redacción que se apartan de la propuesta de partida.**
+
+- **Fila 5, nombre del sello.** «Ver las N no disponibles en Movilidades» hoy solo aparece con más de seis unidades;
+  en el sello aparecería también con una, y diría «Ver las 1 no disponibles». Además, lo que se ve en el sello es
+  «4 · No disponibles hoy» y ese nombre no lo contiene (WCAG 2.5.3). El nombre final empieza con lo que se ve,
+  resuelve el singular y termina igual que la fila 11. El enlace del panel «No disponibles hoy» conserva su texto.
+- **Filas 6, 9 y 12, sin metáforas en los nombres accesibles.** «Llaves» y «lecturas» son del dibujo. La lista es de
+  unidades y la ayuda de teclado se lee igual de bien mirando las llaves que escuchándola.
+- **Fila 8, «Número» en lugar de «Pieza».** «Pieza» no aparece en ningún texto visible y, en una flota, se entiende
+  como repuesto. El número no remite a la lista «No disponibles hoy» porque esa lista muestra seis como máximo.
+- **Fila 25, «Operación» y no «Jornada».** La propuesta era «Jornada» para no repetir la palabra en dos renglones seguidos
+  («Operación» y, debajo, «Operación diaria»). Matías eligió «Operación» (DE2, 28/11/2026) y el lateral la repite.
+- **Fila 34, «Sin licencia vigente» en lugar de «No puede manejar hoy».** El aviso que sigue al veredicto ya empieza
+  con «No puede manejar hoy: …» y no puede cambiar: las mismas cuatro palabras se leerían dos veces seguidas. El
+  veredicto dice la causa y el aviso, la consecuencia. Vale para los tres motivos (falta, vencida y válida desde otra
+  fecha).
+
+**Comprobado sobre esta tabla (27/11/2026).** Ningún nombre accesible nuevo empieza con «Ver como». Los textos nuevos
+no usan voseo y respetan el vocabulario único («No disponibles hoy», «Disponible», «Bloqueada», «Fuera de
+servicio»): los estados de las filas 7, 8 y 8b salen de `TEXTO_FLOTA.estado`, no se escriben. Las cuentas de
+caracteres son de las cadenas de esta tabla; que entren en su caja se mide sobre lo maquetado (15.15).
+
+---
+
+### 15.15 Lista de control de esta sección
+
+| Qué | Dónde está |
+| --- | --- |
+| Las 9 pantallas | 15.9.1 a 15.9.9 (Inicio, Movilidades, Vencimientos, Operación diaria, Ficha, Parte, Hoy, Mis partes, Más). |
+| Los 15 diálogos | 15.5.11, tabla. |
+| Cada fila de la tabla de estados de la sección 8, más la de la regla y la del marco | 15.9.10. |
+| Componentes base con sus estados | 15.5.1 a 15.5.12. |
+| Marco: corte único, barra a 360 px, lámina con enlace al padre, «Apariencia», cuadro cero y error de arranque | 15.4. |
+| Regla de salida: mordaza con renglones, lista de piezas, convivencia con el horizonte, celular, límites | 15.6. |
+| «Acción del día» con su segundo botón y la escena mínima, con foco y anuncio | 15.7. |
+| Hoy: veredicto, llave y variante bloqueada | 15.8. |
+| Coreografía con tiempos y estado final accesible | 15.10. |
+| Tokens, pares de contraste y correspondencia `--c-*` | 15.3. |
+| Contratos | 15.11. |
+| Reglas de producción y lo que no hay que hacer | 15.2 y 15.12. |
+| Íconos y textos | 15.13 y 15.14. |
+| Lo que se volcó de la revisión del boceto y de la auditoría, y las siete decisiones de Matías | 15.16. |
+
+**Los tres pedidos de la revisión de diseño, y dónde quedan resueltos:** patentes en horizontal en el celular (tablero
+corto, 15.6.3); «Acción del día» de 40 px de alto y entera en la primera pantalla del celular (15.7); llaves colgadas
+desde el primer cuadro, donde solo se mueven las que no salen (15.10).
+
+**Qué falta medir sobre lo maquetado** (no se puede afirmar desde esta especificación): los tamaños reales de los
+objetivos; el contraste en imagen del texto sobre el pleno y de los píxeles de grano; que la «Acción del día», **ahora
+con la frase de «Probar como conductor» a la vista**, entre en 390 × 844 y 360 × 800 con los textos finales (15.7); el
+salto de diseño entre el cuadro cero y la regla; que el título de 14 px («Disponibles hoy») no pise la cifra ni el canto
+con la mordaza angosta (15.6.2); que «Vencimientos» entre en su columna a 360 y a 320 px y que todo lo pulsable del
+marco mida 44 px o más (15.4.4); el contraste, sobre lo maquetado, del borde del primario de noche (15.5.1); la
+condición de teclado del tablero al cambiar de forma (15.6.3); el texto al 200 % en la barra inferior; y el
+comportamiento en motores que no sean Chromium. **Ya medido en el boceto:** el sello fuera de la zona roja con una
+sola no disponible, a 360 y a 1280 px (15.6.7).
+
+**Revisión de accesibilidad de esta especificación (27/11/2026).** Se midió antes de construir y cambió esto:
+
+| Qué | Dónde |
+| --- | --- |
+| El anillo de foco se elige por dónde se dibuja (por fuera o por dentro). Destino actual del menú: `--c-sobre-pleno` por dentro. Botón pleno: anillo general, por fuera. | 15.5, 15.4.2, 15.4.4, 15.4.5, 15.5.1 |
+| Lista cerrada de lo que `.objeto` vuelve a declarar (con filetes, alias, pleno y fondos de tono); `.objeto` nunca en el elemento que recibe el foco; tokens `--obj-contorno`, `--obj-sobre-franja`, `--obj-pleno-suave`, `--obj-crit-fondo` y `--obj-ok-fondo`. | 15.3.2 |
+| Llave y chapa críticas, y llave disponible con el cursor encima: contorno `--obj-contorno`. | 15.6.3, 15.3.3 |
+| Tablero corto como lista aparte, con una parada de Tab por chapa; ayuda de las flechas a la vista. | 15.6.3, 15.6.8, 15.14 |
+| Canto de la mordaza en `--c-sobre-pleno`; el cursor se dibuja fuera de la caja. | 15.6.1 |
+| Sello cuando la zona roja es más angosta que él; tablero sin relleno lateral. | 15.6.1, 15.6.3, 15.6.7 |
+| 22 pares más en la tabla de contraste; número del globo en 12 px; texto prohibido sobre `--obj-papel-2`. | 15.3.3, 15.3.2, 15.6.3 |
+| Contratos que faltaban: títulos por posición, `enterkeyhint`, clases alcanzadas con `:global`, nombres de trozo. | 15.11 |
+
+---
+
+### 15.16 Revisión del boceto y de la auditoría: qué se volcó y qué se decidió (27 y 28/11/2026)
+
+Junta lo que quedó de dos revisiones: la auditoría de accesibilidad de esta especificación (T1) y la revisión de diseño
+del boceto estático de Inicio y Hoy (T2, veredicto «apto con menores»). Tiene dos partes: lo que **ya está volcado** en
+el cuerpo de la sección y las siete decisiones que Matías contestó el 28/11/2026 (15.16.3), ya volcadas también.
+
+#### 15.16.1 Los cinco pedidos de la revisión del boceto, ya volcados
+
+| # | Pedido | Qué se decidió | Dónde |
+| --- | --- | --- | --- |
+| 1 | El cuadro 0 de la entrada decía «23 /23» con cuatro llaves rojas a la vista: un dato falso bajo el título «Disponibles hoy». | La cifra marca el **valor final desde el cuadro 0** y no cuenta. El gesto queda en la tapa que descubre la zona roja y el cursor que viaja a la lectura; el recuadro de la lectura y la cota aparecen con un fundido al final del mismo gesto (540–660 ms), sin abrir un gesto nuevo. `--desde` pasa a valer lo mismo que `--d` en la entrada. **Descartada:** conservar la cuenta con la caja sin cifra mientras dura la pausa: agregaba un estado nuevo (cifra ausente) y un salto de diseño al soltarse la pausa. | 15.10, 15.6.8, 15.12 |
+| 2 | El título «Disponibles hoy» (único epígrafe de la cifra) medía 12 px en `--c-sobre-pleno-2`. | 14 px desde 37,5 rem de regla y 13 px en el celular, peso 600, `--c-sobre-pleno` (7,81:1 y 6,63:1), en placa lisa. El corte de la mordaza angosta sube de 9 a 10,25 rem (9,75 en el celular), porque el título ocupa más (cuenta, a confirmar). El tope del texto pasa a 15 caracteres. | 15.6.1, 15.6.2, 15.14 fila 1 |
+| 3 | En el celular la frase de «Probar como conductor» quedaba solo como descripción: el botón no decía para qué sirve. | Visible en todos los anchos: 13 px, hasta dos renglones, debajo del propio botón y alineada con su borde izquierdo (también a 56 rem o más, donde parecía describir a «Renovar»). La holgura de la primera pantalla baja de 145,1 y 101,1 px a unos 107 y 63 px (cuenta; se vuelve a medir). | 15.7, 15.14 fila 17 |
+| 4 | Barra inferior: con columnas repartidas por el largo del nombre, «Más» medía 43,4 px a 360 y 35,4 a 320 (menos de 44). | Columnas iguales (72 px a 360, 64 a 320), nombres en cartel angosto, 12 px, peso 600. Medido con la fuente real: «Vencimientos» 62,6 px. Sin abreviar ni bajar de 12 px; piso de 44 px en el control de medidas. | 15.4.4, 15.12 |
+| 5 | De noche, el primario («Empezar la revisión» en Hoy) se leía como un campo vacío. | Token nuevo `--c-tinta-borde` (`#6F8FB8` de noche; la tinta de día): borde y sombra dura distintos del relleno. Tres pares nuevos en 15.3.3 (4,52, 4,32 y 3,55:1). **Descartada:** darle el aspecto pleno. | 15.3.1, 15.3.3, 15.5.1, 15.12 |
+
+El conjunto de 15.3.3 pasa a **124 pares y 231 mediciones, 0 fallan, 12 justas**. Los valores de `--c-tinta-borde` los
+calculé con la fórmula de luminancia de WCAG 2.x y el ancho de los textos lo medí con las tres fuentes alojadas; el
+control `scripts/contraste.mjs` todavía tiene que reproducirlos (T5 y T6).
+
+#### 15.16.2 Lo que quedó abierto de la auditoría de accesibilidad (T1)
+
+| Qué | Estado |
+| --- | --- |
+| Referencias con marca en 15.2 y en la línea 97 (repositorio público). | **Cerrado.** DE1 (15.16.3): descritas sin marca. |
+| Segunda pasada del auditor sobre la sección corregida. | **Pendiente de proceso.** No volvió a pasar después de las correcciones de la auditoría ni después de estos cambios. Le toca: los 25 pares agregados desde la primera versión (22 de la auditoría y 3 de este cambio), los cinco `--obj-*` nuevos, el título de 14 px con la mordaza angosta, los nombres de la barra inferior y la regla del anillo por fuera o por dentro. |
+| Sello fuera de la zona roja con una sola no disponible: el anclaje era una decisión de T1 «a medir en el boceto». | **Cerrado.** Medido por T2 a 360 y 1280 px: 44 × 44, dentro de la caja, sin pisar título, cifra ni renglones; quedan 10 px libres a 1280 px (15.6.7). |
+| Largo de la ayuda de las flechas («unos 60 caracteres»). | **Cerrado.** La frase final tiene 43 caracteres (15.14, fila 9). Se confirma sobre lo maquetado. |
+| `scripts/contraste.mjs` tiene que reproducir los 124 pares y los tokens nuevos (`--obj-*` y `--c-tinta-borde`). | **Pendiente de código** (T5 y T6). |
+
+#### 15.16.3 Decisiones de Matías (28/11/2026)
+
+Las siete decisiones que esta sección dejaba abiertas las contestó Matías el 28/11/2026 (están al final de `docs/36` del
+repositorio de trabajo). Todas están volcadas en el cuerpo de la sección, salvo DE5.
+
+| # | Tema | Decisión | Dónde quedó |
+| --- | --- | --- | --- |
+| DE1 | Referencias con marca en un repositorio público. | Describirlas sin marca. | Sección 1 y 15.2. |
+| DE2 | Segundo rótulo del lateral. | «Operación». | 15.4.1, 15.4.2 y 15.14, fila 25. |
+| DE3 | Veredictos de Hoy. | Solo donde hay algo que decidir: «En uso» y el parte cerrado llevan en el pie la etiqueta de estado que ya existe. | 15.8 y 15.14, filas 31, 32 y 35. |
+| DE4 | «Quincena». | Tinta, sin azul (círculo lleno; «mes» es el aro). | 15.1.1 y 15.3.1. |
+| DE5 | `public/404.html`. | Agregarla, midiendo antes `responseStatus` y `contentType` en Firefox y WebKit. | **Sin hacer todavía** (no estaba entre los hallazgos de T15). |
+| DE6 | Pedidos de la primera visita. | Aceptar 30. | 15.11. Con `public/arranque.js` (T16) son 31. |
+| DE7 | Recortes 1 y 2 del presupuesto de peso. | Los dos: odómetro fijo y «Apariencia» solo en «Más». | 15.4.5 y 15.10. |
+#### 15.16.4 Menores de la revisión del boceto que todavía no se volcaron
+
+No frenan la construcción. Se resuelven antes de T9 (esqueleto) o de T11 (maquetación), según el caso. Los números son
+los del informe del crítico de T2.
+
+| # | Tema | Lo que propone el crítico |
+| --- | --- | --- |
+| 6 | Sello de la zona roja con desglose torcido y de 12 px (1440). | Número y nombre en todos los anchos; el desglose queda en la cabecera del panel, en el rótulo del tablero corto y como descripción del enlace. Toca 15.6.1 y 15.14, fila 4. |
+| 7 | Placa lisa de los renglones de lectura dentro de la mordaza. | Filete de 1 px en `--c-sobre-pleno-2` y encabezado visible «Resumen de hoy» (15.14, fila 12). |
+| 8 | Celular: la fecha se repite y el nombre del producto no aparece en la primera pantalla. | Renglón de lámina «FL-01 · CONTROL DE FLOTA» sin fecha, por debajo de 64 rem. |
+| 9 | Tablero corto: riel de 23 ganchos vacíos y rótulo de fila con viuda. | Sacar el riel (la escala lleva una marca por unidad); nombre y desglose en renglones separados o `text-wrap: balance`. |
+| 10 | De noche, texto de 12 y 13 px directo sobre la cuadrícula de la página (regla 8 de 15.2). | O la regla 8 exceptúa la cuadrícula de página, con el par medido en el peor punto, o el rótulo de la fila va en placa lisa. |
+| 11 | Operación diaria: precinto ámbar en renglones que no son críticos. | Precinto solo en el renglón crítico; los demás, filete liso de 2 px en el color de su tono, o nada. |
+| 12 | El anillo de foco de la llave vecina al cursor tapa el recuadro de la lectura; la cota con una sola no disponible queda apretada. | El recuadro va por encima del anillo, o el anillo baja a 2 px en esa llave; la cota se dibuja solo si su rótulo entra entre los topes. |
+| 13 | Desvíos del maquetador por escribir. | En 15.8: por debajo de 23,75 rem, marca del veredicto de 36 px, separación de 8 px y «Puede salir» nunca en dos renglones. Un solo token para «elegido» en el segmentado del lateral. La barra de escritorio de Inicio muestra solo «FL-01»: observación, sin cambio. |
+
+Aparte: el maquetador dejó 2 px de margen lateral en la escala y el tablero, contra el «sin relleno lateral» de 15.6.3.
+La holgura de 24 px (12 por lado) lo admite, pero hay que escribirlo o revertirlo antes de T9.
+
+### 15.17 Decisiones del programador en la T9 (28/11/2026): el esqueleto de la regla de salida
+
+Lo que el esqueleto (`ReglaDeSalida`, `Llave`, `Odometro`, `Apariencia`, encabezado de lámina, cuadro cero) decidió donde 15.6 a 15.14 no dicen o se apartan. El maquetador (T10, T11, T13) parte de acá.
+
+| # | Decisión | Por qué |
+| --- | --- | --- |
+| 1 | **«Apariencia» vive solo en «Más»** (`PantallaMas.svelte` monta `Apariencia.svelte`). El plan decía «enganchado en Lateral y MenuMas»: `MenuMas` es el menú «Más acciones» de la ficha, no la pantalla. | DE7 (los dos recortes). Se tocó `PantallaMas.svelte`, que no estaba en la lista de la T9. |
+| 2 | **El odómetro es la cifra fija con estilo de tambor** (DE7): un `.tambor` por dígito dentro de `.odometro` (`aria-hidden`), sin ceros de relleno, sin `--d` ni `--desde`. Al resolver, los dígitos cambian de una vez. | Recorte 1 del presupuesto de peso. Reemplaza la fila «Tambor» de 15.6.8. |
+| 3 | **El nombre accesible del sello incluye el desglose**: «4 no disponibles hoy: 2 bloqueadas por documentos · 2 fuera de servicio: ver en Movilidades». Ya no hay `aria-describedby`. | axe (`label-content-name-mismatch`, grave) y WCAG 2.5.3: el desglose se ve dentro del sello y tiene que ser parte del nombre. Cambia la fila 5 de 15.14. |
+| 4 | **No hay `data-lado` en el rótulo de cota.** La hoja de estilos alinea al borde con `clamp()` sobre `--x` (por ejemplo `clamp(0px, calc(var(--x) * 100% - 7.125rem), calc(100% - 14.25rem))`). | El código no conoce el ancho del rótulo ni el de la regla: medirlo sería código de más. Cambia la fila «Rótulo de cota» de 15.6.8. |
+| 5 | **Escala:** cada número es `.escala-num` con `data-tipo="extremo"`, `"marca"` o `"lectura"` y `style:--x`; las marcas menores se apagan con `.escala-marcas[data-menores="no"]` (más de 60 activas). | Reemplaza las clases `.inicio`, `.medio`, `.fin` y `.lectura-num` del boceto. |
+| 6 | **Dos copias de los renglones de lectura** (`.renglones[data-donde="dentro"]` y `"fuera"`) y **dos listas de unidades** (`ul.llaves` y `.corto > ul.colgadas`), como en el boceto. La hoja de estilos muestra una de cada par con `display: none`. | 15.6.3 y 15.6.4. El tablero corto no lleva globos ni parada única. |
+| 7 | **Rótulo de cota:** un solo `.rotulo-cota.objeto` (`aria-hidden`), dentro de `.tablero`. Aparece con el puntero fino (mouse o lápiz; el toque no) y con el foco de las llaves, y se va al salir el puntero del tablero, al salir el foco o con Escape (sin mover el foco). Con el foco de teclado (`:focus-visible`) lleva `data-origen="teclado"` y `.rc-ayuda`. | 15.6.3 y WCAG 1.4.13. |
+| 8 | **La región `role="status"` de la «Acción del día» existe en las tres variantes** (con acción, sin acción y en orden), siempre vacía hasta que hay algo que decir, y también cuando no hay botones. El mensaje es `textoAnuncioAlResolver` (el del diálogo y la medida nueva) y entra con el retraso de `textoAnunciado`. | Para que lo que se dice al resolver la última pieza se anuncie: la nota «en orden» no desaparece. |
+| 9 | **Flota vacía:** `.caja-cero` con el `h2`, el mensaje, la ayuda y el enlace; no hay mordaza, cifra, escala ni llaves, pero los renglones de lectura «fuera» se muestran. | 15.6.7. |
+| 10 | **Veredicto de Hoy** (`lib/estado/veredicto.ts`, `veredictoDelDia(estado, unidadBloqueada)`): con DE3 (solo donde hay algo que decidir). «Sin parte» y «Borrador» dicen «No puede salir hoy» si el aviso de aptitud (P9) está; «Cerrado» con `hastaManana` cuenta como sin salida. En «En uso» y «Cerrado» el pie lleva la etiqueta que ya existe, así que esa etiqueta se ve dos veces hasta que T13 saque la de abajo. | Una revisión automática marcó que «sale» contradecía al aviso. |
+| 11 | **Encabezado de lámina** (`componentes/lamina.ts`): `codigoDeLamina(ruta)` y `padreDeLamina(padre)`. `Migas` ahora recibe `{ codigo, padre }`; `App.svelte` usa `padreDeLamina` también para «Atrás» (antes lo armaba aparte). El renglón de lámina del celular y el sello son de T10: el código ya está en `codigoDeLaLamina`. | 15.4.3. |
+| 12 | **Cuadro cero del arranque:** `.cuadro-cero` con `.cuadro-cero-reserva`, `.cuadro-cero-caja` (dentro, el `role="status"` con el texto y el `progress` de siempre) y `.cuadro-cero-escala`. **Error de arranque:** el párrafo va dentro de `.ficha-error[data-tono="critico"]`. | 15.4.6. |
+| 13 | **La entrada de cada vista se pide al montarla** (`entrada.empezar` + `onDestroy`) y «Reiniciar demo» llama a `entrada.reiniciar()` (en `App.svelte`, al reiniciar bien). Para repetir la coreografía sin desmontar, alcanza con que la hoja de estilos aplique las animaciones solo con `[data-entrada="completa"]` y ninguna con `fija`: el cambio de atributo las reinicia. | Aviso de la T7. |
+| 14 | **La frase de la «Acción del día» (`textoUnidadNoPuedeSalir`) vive en `textos-base.ts`** y `textos-conductor.ts` la vuelve a exportar. | `salida.ts` lo importaba de `textos-conductor.ts` y arrastraba a la carga inicial todo el código de «Hoy» (+1.900 B) y rompía la prueba de la primera visita. Hay una prueba que lo vigila. |
+| 15 | **`ReglaDeSalida.svelte` lleva un bloque `<style>` provisorio** (container `regla`, una de las dos listas según el ancho, objetivos de 24 px). Lo reemplaza T11. | Sin él las 24 pruebas de punta a punta originales fallaban en axe (objetivos menores de 24 px con las dos listas a la vista). |
+| 16 | **`PantallaInicio.svelte`:** se borraron del `<style>` las reglas de lo que se fue (franja del recorrido y las cinco cifras). Cada fila de «No disponibles hoy» suma `.globo` con el número de pieza (con «Número N.» para lectores). | `svelte-check` marca como aviso el CSS sin uso. |

@@ -89,25 +89,26 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    background: var(--c-superficie);
-    border: 1px solid var(--c-borde);
-    border-radius: var(--r-2);
+    background: var(--c-hoja);
+    border: 1px solid var(--c-filete-medio);
+    border-top: var(--b-fuerte) solid var(--c-tinta); /* la cabeza de la ficha: un filete de 1,5 px en tinta */
+    border-radius: var(--r-0);
     box-shadow: var(--s-panel);
   }
 
-  /* ---------- Barra de título ---------- */
+  /* ---------- Barra de título (15.5.4): 44 px como mínimo, ícono de 16 px, título en la letra de texto, dato en técnica y filete inferior ---------- */
   .barra {
     --sangria: 0rem; /* el dato que baja a su renglón se alinea con el título: con ícono, queda corrido su ancho */
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0 var(--e-2);
-    min-height: 3rem;
+    min-height: var(--alto-tactil);
     padding: 0 var(--e-1) 0 var(--e-4);
-    border-bottom: 1px solid var(--c-borde);
+    border-bottom: 1px solid var(--c-filete);
   }
   .barra.con-icono {
-    --sangria: calc(1.25rem + var(--e-2));
+    --sangria: calc(1rem + var(--e-2));
   }
   /* Misma técnica que `.solo-lectores`: fuera de la vista, dentro del árbol de accesibilidad. */
   .barra.oculta {
@@ -123,26 +124,27 @@
     border: 0;
   }
   .icono-titulo {
+    --icono-tam: 1rem;
     display: inline-flex;
     flex: none;
-    color: var(--c-acento);
+    color: var(--c-tinta);
   }
   h2 {
     flex: 0 1 auto;
     min-width: 0;
     padding-block: var(--e-2);
-    /* El título del panel va en la fuente de texto (la de títulos queda para el h1 y las cifras). */
+    /* El título de la ficha va en la letra de texto (el cartel queda para el h1 y las secciones sueltas), peso 650. */
     font-family: var(--t-familia);
     font-stretch: 100%;
-    font-size: 1.0625rem;
-    font-weight: 700;
+    font-size: var(--t-h2-ficha);
+    font-weight: var(--t-peso-h2);
     line-height: 1.3;
-    letter-spacing: -0.005em;
   }
   .meta {
-    font-size: var(--t-chico);
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
     line-height: 1rem;
-    color: var(--c-texto-3);
+    color: var(--c-tinta-3);
   }
   .controles {
     display: flex;
@@ -167,11 +169,11 @@
     gap: var(--e-2) var(--e-3);
     min-height: 3.5rem;
     padding: var(--e-2) var(--e-3);
-    background: var(--c-superficie);
-    border-bottom: 1px solid var(--c-borde);
+    background: var(--c-hoja);
+    border-bottom: 1px solid var(--c-filete);
   }
 
-  /* ---------- Interior ---------- */
+  /* ---------- Interior (relleno de 16 px; `sinRelleno`: 0) ---------- */
   .interior {
     container: interior / inline-size;
     display: flex;
@@ -179,22 +181,16 @@
     flex-direction: column;
     gap: var(--e-3);
     min-width: 0;
-    padding: var(--e-3);
+    padding: var(--e-4);
   }
   @media (min-width: 40rem) {
     .herramientas {
       padding-inline: var(--e-4);
     }
-    .interior {
-      padding: var(--e-4);
-    }
   }
   @media (min-width: 68.75rem) {
     .herramientas {
       padding-inline: var(--e-5);
-    }
-    .interior {
-      padding: var(--e-5);
     }
   }
 
@@ -207,16 +203,17 @@
     gap: var(--e-2) var(--e-4);
     min-height: 2.5rem;
     padding: var(--e-2) var(--e-3);
-    border-top: 1px solid var(--c-borde);
-    border-radius: 0 0 calc(var(--r-2) - 1px) calc(var(--r-2) - 1px);
+    background: var(--c-papel);
+    border-top: 1px solid var(--c-filete);
     font-size: var(--t-chico);
     line-height: 1.4;
-    color: var(--c-texto);
+    color: var(--c-tinta);
   }
   .estado.vacio {
     min-height: 0;
     padding-block: 0;
     border-top-width: 0;
+    background: none;
   }
   @media (min-width: 40rem) {
     .estado {

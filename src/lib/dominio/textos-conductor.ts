@@ -163,22 +163,9 @@ export function textoSinParteFueraDeServicio(patente: string, desde: FechaCivil,
   return `${patente} está fuera de servicio desde el ${formatearFecha(desde)} (${motivo}). No hace falta parte.`;
 }
 
-/**
- * El aviso compacto de dos renglones: el hecho (`titular`, firme) y lo que hay que hacer (`accion`, más chico; vacío si no hay nada que hacer). Lo arma la
- * lógica: la vista no corta ningún texto.
- */
-export interface AvisoDeAptitud {
-  titular: string;
-  accion: string;
-}
-
-/**
- * Aviso sobre una unidad que está en servicio pero no puede salir (documentos): «ZK 214 BD no puede salir: Seguro vencido hace 1 día.» y, solo al conductor,
- * «Avise al encargado antes de usarla.».
- */
-export function textoUnidadNoPuedeSalir(patente: string, motivos: readonly string[], alConductor: boolean): AvisoDeAptitud {
-  return { titular: `${patente} no puede salir: ${motivos.join("; ")}.`, accion: alConductor ? "Avise al encargado antes de usarla." : "" };
-}
+// `AvisoDeAptitud` y `textoUnidadNoPuedeSalir` viven en `textos-base.ts`: la regla de salida de Inicio (carga inicial) arma con ellos la frase de la «Acción del día» y no puede arrastrar
+// todo este módulo, que es de la pantalla Hoy. Se vuelven a exportar acá para quien ya los importaba de este módulo.
+export { type AvisoDeAptitud, textoUnidadNoPuedeSalir } from "./textos-base.ts";
 
 export function textoPendienteBorrador(fecha: FechaCivil, patente: string): string {
   return `${patente}: el parte del ${formatearFecha(fecha)} está empezado y sin enviar.`;
@@ -202,3 +189,17 @@ export function textoSuLicencia(d: number | null, vence: FechaCivil | null): str
   if (d === 1) return `Vence mañana (${fecha})`;
   return `Vence en ${d} días (${fecha})`;
 }
+
+/**
+ * Veredicto de la llave de Hoy (etapa 2, 15.8; decisión DE3, 28/11/2026: solo donde hay algo que decidir). En «En uso» y «Cerrado» el pie de la llave lleva la etiqueta de estado que ya
+ * existe («En uso desde las 06:52», `TEXTO_INICIO_CONDUCTOR.enviado`): decir «Puede salir» ahí sería falso (la unidad ya salió o ya volvió).
+ */
+export const TEXTO_VEREDICTO = {
+  sale: "Puede salir",
+  /** Los tres casos de la unidad: bloqueada por documentos, fuera de servicio y cerrada sin salida. */
+  noSale: "No puede salir hoy",
+  /** Habla del conductor: el aviso que sigue ya empieza con «No puede manejar hoy: …» y no puede repetirse. */
+  sinLicencia: "Sin licencia vigente",
+  /** «Cerrar antes»: no es un bloqueo, es una tarea. */
+  cierrePendiente: "Cierre pendiente",
+} as const;

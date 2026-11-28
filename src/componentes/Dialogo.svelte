@@ -302,37 +302,40 @@
 </dialog>
 
 <style>
+  /* Pie de rey (15.5.11): un modal centrado en hoja lisa, con borde de 2 px en tinta, esquinas rectas y la sombra de ventana. Cabecera y pie en papel, con un filete de 1,5 px en
+     tinta; el cuerpo en hoja. A menos de 40 rem se conserva la hoja inferior (pegada abajo, a todo el ancho, hasta el 92 % del alto), con esquinas rectas y borde solo arriba. */
   dialog {
     padding: 0;
     border: 0;
-    background: var(--c-superficie);
-    color: var(--c-texto);
-    box-shadow: var(--s-flotante);
-    /* Hoja inferior a menos de 40 rem: pegada abajo, a todo el ancho, con las esquinas de arriba redondeadas y hasta el 92 % del alto. */
+    border-top: var(--b-caja) solid var(--c-tinta);
+    background: var(--c-hoja);
+    color: var(--c-tinta);
+    box-shadow: var(--s-ventana);
     width: 100%;
     max-width: none;
-    height: auto;
+    height: fit-content; /* no `auto`: un cuadro con top y bottom fijos se estiraría hasta el alto máximo y dejaría la hoja vacía debajo del pie */
     max-height: 92dvh;
     margin: auto 0 0;
-    border-radius: var(--r-3) var(--r-3) 0 0;
+    border-radius: var(--r-0);
     overscroll-behavior: contain;
   }
-  /* El velo es denso (64 %): el fondo se ve pero no compite con el diálogo. */
   dialog::backdrop {
     background: var(--c-velo);
   }
+  /* Entrada: la hoja inferior sube 24 px en `--m-lento`; el modal centrado (desde 40 rem) aparece de 0 a 1 de opacidad y de 0,98 a 1 de escala en `--m-medio`. Con movimiento
+     reducido o «Sin animaciones», base.css apaga la animación y aparece de una vez. */
   dialog[open] {
-    animation: subir var(--m-medio) var(--m-curva);
+    animation: subir var(--m-lento) var(--m-curva);
   }
   @keyframes subir {
     from {
       transform: translateY(1.5rem);
-      opacity: 0.6;
     }
   }
   @keyframes aparecer {
     from {
       opacity: 0;
+      transform: scale(0.98);
     }
   }
 
@@ -351,14 +354,17 @@
     gap: var(--e-2);
     min-height: 3.5rem;
     padding: var(--e-1) var(--e-1) var(--e-1) var(--e-4);
-    border-bottom: 1px solid var(--c-borde);
+    background: var(--c-papel);
+    border-bottom: var(--b-fuerte) solid var(--c-tinta);
   }
-  /* El título es el único lugar del diálogo con la fuente de títulos. */
+  /* El título del diálogo es de cartel (Bricolage a 78 %, 22 px, peso 760): `base.css` deja los `h2` en la letra de texto y los que quieren cartel lo piden en su componente. */
   h2 {
     padding-block: var(--e-2);
-    font-size: 1.3125rem;
-    font-weight: 750;
-    line-height: 1.2;
+    font-family: var(--t-familia-titulo);
+    font-stretch: var(--t-ancho-titulo);
+    font-size: 1.375rem;
+    font-weight: var(--t-peso-cartel);
+    line-height: 1.15;
   }
 
   .cuerpo {
@@ -385,7 +391,8 @@
     gap: var(--e-2);
     padding: var(--e-3) var(--e-4);
     padding-bottom: calc(var(--e-3) + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--c-borde);
+    background: var(--c-papel);
+    border-top: var(--b-fuerte) solid var(--c-tinta);
   }
   .acciones {
     display: flex;
@@ -396,7 +403,7 @@
   .cambios {
     font-size: var(--t-chico);
     font-weight: 600;
-    color: var(--c-texto);
+    color: var(--c-tinta);
   }
 
   /* Texto agrandado (el diálogo mide 17 rem o menos): menos relleno a los lados, así las palabras largas no se parten (S5 de la etapa 7). */
@@ -421,7 +428,7 @@
       height: fit-content; /* no `auto`: un cuadro con top y bottom fijos se estiraría hasta el alto máximo */
       max-height: 85dvh;
       margin: auto;
-      border-radius: var(--r-3);
+      border: var(--b-caja) solid var(--c-tinta);
     }
     dialog[open] {
       animation: aparecer var(--m-medio) var(--m-curva);

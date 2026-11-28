@@ -44,6 +44,13 @@ export const ICONOS = [
   "abajo",
   "salir",
   "flecha",
+  // «Pie de rey» (etapa 2, docs/diseno-ui.md 15.13): «Apariencia» y los veredictos de Hoy. Su dibujo entra al sprite de index.html con el marco (T10).
+  "tema-claro",
+  "tema-oscuro",
+  "tema-auto",
+  "quieto",
+  "rombo-alerta",
+  "circulo-check",
 ] as const;
 
 export type NombreIcono = (typeof ICONOS)[number];
@@ -84,7 +91,8 @@ export const ETIQUETAS_DE_PARTE: Record<EtiquetaDeParte, { texto: string; tono: 
 };
 
 /** Lo que el estado entrega para el parte, el inicio del conductor y el centro de alertas (todo con tipos de `lib/estado`). */
-export type { EstadoDelDia, InicioDelConductor, OpcionParaElegirConductor, PendienteDelConductor } from "../lib/estado/conductor.ts";
+export type { EstadoDelDia, InicioDelConductor, PendienteDelConductor } from "../lib/estado/conductor.ts";
+export type { OpcionParaElegirConductor } from "../lib/estado/conductor-opciones.ts";
 export type { PanelParteEnviado, ParteEnCierre, ParteEnEdicion, ParteEnLectura, ParteNoDisponible, RevisionEnLectura, VistaDeParte } from "../lib/estado/parte.ts";
 export type { AccionDeConductorSinLicencia, FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
 export type { PasoDelParte } from "../lib/dominio/formulario-parte-valores.ts";

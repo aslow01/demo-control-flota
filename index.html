@@ -4,8 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ecece7" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121110" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1ece1" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a2550" />
+    <!-- Tema y «Sin animaciones» guardados: se ponen en <html> antes del primer pintado. Script clásico y mínimo (public/arranque.js, sin comentarios para que pese poco; copia de lo que hace src/lib/estado/preferencias.ts, comparada en tests/arranque-inicial.test.ts): el módulo de la aplicación llega después. -->
+    <script src="/arranque.js"></script>
     <title>Control de flota (demo)</title>
     <meta name="description" content="Demo de control de flota: vencimientos de documentos, parte diario desde el celular y unidades no disponibles hoy. Datos ficticios." />
     <!-- Vista previa al compartir el enlace. Son etiquetas meta (no cargan nada): la CSP no cambia. La imagen es una captura de Inicio de 1200 × 630 (public/og-inicio.png). -->
@@ -17,16 +19,14 @@
     <meta property="og:image" content="https://flota.matiasormeno.com.ar/og-inicio.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Pantalla de Inicio de la demo: cuatro unidades no disponibles hoy, vencimientos y operación diaria." />
+    <meta property="og:image:alt" content="Inicio de la demo: la regla de salida con 19 de 23 unidades disponibles hoy y 4 no disponibles, una llave por unidad y la acción del día." />
     <meta name="twitter:card" content="summary_large_image" />
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231C1A17' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 17h18'/%3E%3Cpath d='M4 14.5v5'/%3E%3Cpath d='M12 14.5v5'/%3E%3Cpath d='M20 14.5v5'/%3E%3Ccircle cx='4' cy='8' r='2.5' fill='%231C1A17' stroke='none'/%3E%3C/svg%3E"
-    />
-    <!-- Solo las fuentes de la primera pantalla (texto y títulos); la de las patentes baja sola al usarse. Vite reescribe estas rutas con el nombre con huella. -->
+    <!-- Favicon: la regla con su cursor. De día, tinta y cobalto sobre la pestaña clara; de noche, tinta clara y crema (el SVG lleva su propia consulta de medios). Va incrustado: no pide nada. -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cstyle%3E.t%7Bstroke:%2317140F%7D.p%7Bfill:%231F3FD1%7D@media (prefers-color-scheme:dark)%7B.t%7Bstroke:%23EDF3FA%7D.p%7Bfill:%23F1ECE1%7D%7D%3C/style%3E%3Cg class='t'%3E%3Cpath d='M3 17h18'/%3E%3Cpath d='M4 14.5v5'/%3E%3Cpath d='M12 14.5v5'/%3E%3Cpath d='M20 14.5v5'/%3E%3C/g%3E%3Ccircle class='p' cx='4' cy='8' r='2.5' stroke='none'/%3E%3C/svg%3E" />
+    <!-- Las tres fuentes de la primera pantalla: texto, cartel (cifras y títulos) y técnica (rótulos, patentes y cifras de tabla, que están en todas las pantallas). Vite reescribe estas rutas con el nombre con huella. -->
     <link rel="preload" href="/src/estilos/fuentes/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/src/estilos/fuentes/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/src/estilos/fuentes/red-hat-mono-latin.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <!-- Sprite de íconos (docs/diseno-ui.md 5.20): dibujados a mano, 24 × 24, trazo 1.75, currentColor.
@@ -34,8 +34,8 @@
     <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
       <!-- Marco de la aplicación (E1, «Turno»): íconos rellenos que salen de las piezas de la demo (la chapa, la regla del horizonte, la lista del parte).
            Llevan `fill="currentColor" stroke="none"` en el propio `symbol`: el componente Icono dibuja con trazo y sin relleno, y lo de acá gana. -->
-      <!-- Marca: la chapa (franja superior) con la regla de 30 días como contenido. -->
-      <symbol id="i-marca" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M4.5 4h15A2.5 2.5 0 0 1 22 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5v-11A2.5 2.5 0 0 1 4.5 4Zm-.2 5.2v8.3c0 .1.1.2.2.2h15c.1 0 .2-.1.2-.2V9.2Z" /><rect x="5.5" y="14.2" width="13" height="1.8" rx=".9" /><rect x="5.5" y="11" width="1.8" height="5" rx=".9" /><circle cx="10.6" cy="12" r="1.7" /></symbol>
+      <!-- Marca: un calibre (pie de rey): la regla con su mordaza fija y la mordaza móvil, y marcas entre las dos. -->
+      <symbol id="i-marca" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M2 4.5h20v2.2H4.4V19.5H2Z" /><path d="M2 17.3h5v2.2H2Z" /><path d="M10.4 6.7h5.4v2.2h-3V19.5h-2.4Z" /><path d="M8.4 17.3h4.4v2.2H8.4Z" /><rect x="6" y="6.7" width="1.1" height="2.4" /><rect x="7.8" y="6.7" width="1.1" height="2.4" /><rect x="18" y="6.7" width="1.1" height="2.4" /><rect x="20.4" y="6.7" width="1.1" height="2.4" /></symbol>
       <!-- Inicio: un tablero con la regla del horizonte adentro y el punto de «hoy» sobre ella. -->
       <symbol id="i-inicio" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M5 3h14a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Zm0 2.3a.7.7 0 0 0-.7.7v12c0 .4.3.7.7.7h14c.4 0 .7-.3.7-.7V6a.7.7 0 0 0-.7-.7Z" /><rect x="5.5" y="11" width="13" height="2.2" rx="1.1" /><rect x="5.5" y="14.8" width="1.6" height="3" /><rect x="11.2" y="14.8" width="1.6" height="3" /><rect x="16.9" y="14.8" width="1.6" height="3" /><circle cx="9" cy="12.1" r="2.9" /></symbol>
       <!-- Movilidades: una chapa. -->
@@ -82,6 +82,14 @@
       <symbol id="i-flecha-der" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></symbol>
       <symbol id="i-ayuda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7" /><path d="M12 17h.01" /></symbol>
       <symbol id="i-reiniciar" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5" /><path d="M4.5 4.5V8H8" /></symbol>
+
+      <!-- «Pie de rey» (15.13): control «Apariencia» y veredictos de Hoy. -->
+      <symbol id="i-tema-claro" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.6" /><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6" /></symbol>
+      <symbol id="i-tema-oscuro" viewBox="0 0 24 24"><path d="M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2Z" /></symbol>
+      <symbol id="i-tema-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5a8.5 8.5 0 0 0 0 17Z" fill="currentColor" /></symbol>
+      <symbol id="i-quieto" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="1" /><path d="M10 9v6M14 9v6" /></symbol>
+      <symbol id="i-rombo-alerta" viewBox="0 0 24 24"><path d="M12 2.8 21.2 12 12 21.2 2.8 12Z" /><path d="M12 8v5" /><path d="M12 16h.01" /></symbol>
+      <symbol id="i-circulo-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M7.8 12.4l3 3 5.4-6" /></symbol>
     </svg>
 
     <noscript>

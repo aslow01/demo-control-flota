@@ -1,0 +1,1 @@
+try{var d=document.documentElement,s=localStorage,t=s.getItem("flota:tema");if(t==="claro"||t==="oscuro")d.setAttribute("data-modo",t);if(s.getItem("flota:sin-animaciones")==="1")d.setAttribute("data-movimiento","quieto")}catch(e){}

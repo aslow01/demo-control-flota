@@ -1,53 +1,108 @@
-/* Tokens de diseño: dirección «Turno» (prototipo aprobado el 25/11/2026). El color solo habla de estado; la tinta (negro cálido), de acción.
-   Claro por defecto; el oscuro sigue al dispositivo (sin selector de tema).
-   Prefijos: --c- color · --t- tipografía · --e- espaciado · --r- radio · --s- sombra · --m- movimiento.
-   Los valores de color se miden con `npm run contraste` (scripts/contraste.mjs): si se cambia uno, se vuelve a correr.
-   Los nombres de los tokens son los de la versión anterior (las pantallas viejas siguen andando con la cara nueva); los grupos «Nuevos» los trae el prototipo.
-   Atención con la estructura: `scripts/contraste.mjs` busca el primer `:root {` y, dentro del bloque @media del modo oscuro, el `:root {` con sangría. (No escribir esa condición de medios en ningún comentario: el script busca su primera aparición.) */
+/* Tokens de diseño: dirección «Pie de rey» (docs/diseno-ui.md, sección 15.3). De día es un plano en papel: papel cálido, tinta negra, filetes finos y un único
+   campo azul cobalto (la medida). De noche es el cianotipo del mismo plano: papel azul de Prusia, tinta clara, y el campo medido en crema con la cifra en cobalto.
+   Lo que se toca (chapa, llave) es un objeto de papel claro, de día y de noche: `--obj-*` y la clase `.objeto` (base.css).
+   Prefijos: --c- color · --obj- color de objeto · --tx- textura · --t- tipografía · --e- espaciado · --r- radio · --b- borde · --s- sombra · --m- movimiento.
+
+   Cómo se escribe el modo (prueba de compilación de T6, sobre `dist`): los colores llevan `light-dark(claro, oscuro)` dentro de `:root`. Con `build.target: "es2022"` Vite
+   (lightningcss) los compila a un par de variables que cambian con `color-scheme`, y `color-scheme` sigue a la preferencia del dispositivo o, si la persona eligió, a
+   `data-modo` en <html> (más abajo). Un `color-scheme: light` puesto en un descendiente NO vuelve a resolver un token ya declarado en `:root`: por eso los objetos
+   no dependen de eso, sino de los `--obj-*` que `.objeto` reasigna (base.css). Lo que no es un color (las pilas de fondo de `--tx-pagina`) no admite `light-dark()`:
+   va en el formato de dos bloques (el claro en `:root` y el oscuro repetido para la preferencia del sistema y para `data-modo="oscuro"`).
+
+   Los valores de color se miden con `npm run contraste` (scripts/contraste.mjs): si se cambia uno, se vuelve a correr. El script lee este archivo: busca los `:root` (con
+   `light-dark()` o en dos bloques) y no mira `.objeto` ni los componentes.
+   Los nombres `--c-*` de la versión anterior que todavía se usan (en las pantallas o en los pares que mide `scripts/contraste.mjs`) se conservan como alias de los nuevos (15.3.4); los 11 que no usaba nada se borraron en T16. */
 
 :root {
   color-scheme: light dark;
 
-  /* ---------- Color: base ---------- */
-  --c-escritorio: #ecece7;
-  --c-fondo: #ecece7;
-  --c-superficie: #fafaf7;
-  --c-superficie-2: #e2e3dd;
-  --c-ventana-barra: #f1f1ec;
-  --c-ventana-borde: #c9cac2;
-  --c-ventana-control-hover: #e2e3dd;
-  --c-texto: #1c1a17;
-  --c-texto-2: #4f4943;
-  --c-texto-3: #625c55;
-  --c-borde: #d3d4cd;
-  --c-borde-fuerte: #7a7b74;
-  /* Acción = tinta. El acento ya no es un color: es el negro cálido (botón primario, filtro elegido, pestaña activa). */
-  --c-acento: #1c1a17;
-  --c-acento-hover: #3a3631;
-  --c-acento-texto: #f4eee4;
-  --c-acento-suave: #e0e6f1;
-  --c-foco: #2e4a80;
-  --c-edicion: #e0e6f1;
-  --c-peligro-texto: #ffffff;
+  /* ---------- Color: papel y tinta (claro · oscuro) ---------- */
+  --c-papel: light-dark(#f1ece1, #0a2550); /* fondo de página (con grano; de noche, además, cuadrícula y exposición) */
+  --c-papel-2: light-dark(#e7e0d1, #13366c); /* fila con el cursor encima, zonas, botón deshabilitado */
+  --c-hoja: light-dark(#fbf8f1, #0c2857); /* hojas lisas: fichas, tablas, formularios, diálogos (de noche casi no se separa del papel) */
+  --c-tinta: light-dark(#17140f, #edf3fa); /* texto principal, filetes fuertes, acción primaria */
+  --c-tinta-2: light-dark(#4b4539, #bfd1e6); /* texto secundario */
+  --c-tinta-3: light-dark(#675f50, #9ab5d3); /* rótulos, ejes, ayudas; marca de «mes» y de neutro */
+  --c-tinta-hover: light-dark(#36322c, #cdd6e2); /* botón primario con el cursor encima */
+  --c-tinta-borde: light-dark(#17140f, #6f8fb8); /* borde y sombra dura del botón primario (de noche es distinto del relleno: se lee como botón) */
+  --c-sobre-tinta: light-dark(#f1ece1, #0a2550); /* texto sobre tinta */
+  --c-control: light-dark(#857d6e, #7f9ec2); /* borde de campos, casillas y filtros (3:1) */
+  --c-filete: color-mix(in srgb, var(--c-tinta) 14%, transparent); /* separadores (decorativo: no se mide) */
+  --c-filete-medio: color-mix(in srgb, var(--c-tinta) 30%, transparent); /* contorno de fichas, reglas de sección (decorativo) */
 
-  /* ---------- Color: tonos de estado (t = texto, f = fondo, r = franja o marca). Mineral: cobre, azufre, azurita, grafito, malaquita ---------- */
-  --c-ok-t: #1c5b47; /* malaquita */
-  --c-ok-f: #daeae2;
-  --c-ok-r: #1c5b47;
-  --c-pendiente-t: #2e4a80; /* azurita */
-  --c-pendiente-f: #e0e6f1;
-  --c-pendiente-r: #2e4a80;
-  --c-revisar-t: #6a5410; /* azufre */
-  --c-revisar-f: #f3e9c4;
-  --c-revisar-r: #9a7b17;
-  --c-diferencia-t: #8c3823; /* cobre */
-  --c-diferencia-f: #f5e1d9;
-  --c-diferencia-r: #8c3823;
-  --c-neutro-t: #4f4943; /* grafito */
-  --c-neutro-f: #e4e3de;
-  --c-neutro-r: #7a7670;
+  /* ---------- Color: el campo pleno (la medida). Uno por pantalla; nunca es estado ---------- */
+  --c-pleno: light-dark(#1f3fd1, #f1ece1); /* de noche es papel expuesto (crema) */
+  --c-pleno-hover: light-dark(#1733b0, #e4dccb);
+  --c-pleno-borde: light-dark(#0f1f70, #a39a86); /* canto (sombra dura) del botón pleno (decorativo) */
+  --c-sobre-pleno: light-dark(#ffffff, #1f3fd1); /* cifra y texto sobre el pleno; de noche, cobalto sobre crema */
+  --c-sobre-pleno-2: light-dark(#e4e9fc, #3b4a86); /* rótulos de 12 px sobre el pleno */
+  --c-pleno-suave: light-dark(#dee3f8, #1a417d); /* fila elegida, campo recién editado */
+  --c-pleno-texto: light-dark(#1c39bf, #a9c7ff); /* enlaces, anillo de foco, sello «Datos ficticios» */
+  --c-pleno-trama: light-dark(rgb(255 255 255 / 0.12), rgb(31 63 209 / 0.15)); /* rejilla dentro del pleno (decorativa) */
 
-  /* ---------- Color: tonos con nombre de esta demo. Son alias: siguen solos al modo oscuro. ---------- */
+  /* ---------- Color: estados. Se dicen con forma + palabra + color, nunca con el color solo ---------- */
+  --c-crit: light-dark(#b02d18, #ff9e85); /* crítico: texto */
+  --c-crit-relleno: light-dark(#be3219, #d24027); /* crítico: relleno con texto blanco encima (zona roja, placa roja, insignia) */
+  --c-crit-marca: light-dark(#be3219, #e2543a); /* crítico: franja, precinto, rombo, borde de campo inválido. Nunca lleva texto encima */
+  --c-crit-fondo: light-dark(#f7ded6, #3a2240); /* crítico: fondo de etiqueta y de aviso */
+  --c-aten: light-dark(#855600, #f5c463); /* atención: texto */
+  --c-aten-relleno: light-dark(#a86f08, #e0a53a); /* atención: franja, trama, triángulo */
+  --c-aten-fondo: light-dark(#f5e5c2, #3a3324);
+  --c-ok: light-dark(#1d6842, #8be0b4); /* en orden: texto y marca (se usa poco: lo normal no se pinta) */
+  --c-ok-fondo: light-dark(#dceadf, #123f43);
+  --c-sobre-solido: #ffffff; /* texto sobre --c-crit-relleno */
+  --c-foco-oscuro: #ffffff; /* anillo de foco sobre el lateral, la barra inferior y la zona roja (nunca sobre el destino actual) */
+
+  /* ---------- Color: lateral y barra inferior ---------- */
+  --c-lat: light-dark(#17140f, #051735);
+  --c-lat-tx: light-dark(#eee8dc, #e6eef7);
+  --c-lat-tx-2: light-dark(#ada594, #95b0ce); /* secciones, autoría y destinos sin elegir */
+  --c-lat-borde: color-mix(in srgb, var(--c-lat-tx) 14%, transparent);
+  --c-lat-hover: color-mix(in srgb, var(--c-lat-tx) 8%, transparent);
+  --c-velo: light-dark(rgb(23 20 15 / 0.46), rgb(2 10 22 / 0.6)); /* detrás de los diálogos */
+
+  /* ---------- Color: los nombres de antes del rediseño, como alias (15.3.4) ---------- */
+  --c-escritorio: var(--c-papel);
+  --c-fondo: var(--c-papel);
+  --c-superficie: var(--c-hoja);
+  --c-superficie-2: var(--c-papel-2);
+  --c-ventana-barra: var(--c-papel);
+  --c-ventana-borde: var(--c-filete-medio);
+  --c-texto: var(--c-tinta);
+  --c-texto-2: var(--c-tinta-2);
+  --c-texto-3: var(--c-tinta-3);
+  --c-borde: var(--c-filete);
+  --c-borde-fuerte: var(--c-control);
+  --c-acento: var(--c-tinta);
+  --c-acento-hover: var(--c-tinta-hover);
+  --c-acento-texto: var(--c-sobre-tinta);
+  --c-acento-suave: var(--c-pleno-suave);
+  --c-enlace: var(--c-pleno-texto);
+  --c-foco: var(--c-pleno-texto);
+  --c-hoy: var(--c-tinta);
+  --c-critico-solido: var(--c-crit-relleno);
+  --c-sobre-solido-2: #ffffff;
+  --c-patente-banda: var(--obj-franja);
+  --c-lat-activo: var(--c-pleno);
+  --c-lat-activo-tx: var(--c-sobre-pleno);
+
+  /* Tonos de estado (t = texto, f = fondo, r = franja o marca). Los cinco grupos «de fondo» y, encima, los nombres de esta demo.
+     Lo mismo se vuelve a declarar en `.objeto` (base.css): un alias que lleva otro token adentro queda resuelto en `:root`. */
+  --c-ok-t: var(--c-ok);
+  --c-ok-f: var(--c-ok-fondo);
+  --c-ok-r: var(--c-ok);
+  --c-revisar-t: var(--c-aten);
+  --c-revisar-f: var(--c-aten-fondo);
+  --c-revisar-r: var(--c-aten-relleno);
+  --c-diferencia-t: var(--c-crit);
+  --c-diferencia-f: var(--c-crit-fondo);
+  --c-diferencia-r: var(--c-crit-marca);
+  --c-pendiente-t: var(--c-tinta); /* «quincena» en tinta: el azul ya no es un tono (DE4, 28/11/2026) */
+  --c-pendiente-f: var(--c-papel-2);
+  --c-pendiente-r: var(--c-tinta);
+  --c-neutro-t: var(--c-tinta-2);
+  --c-neutro-f: var(--c-papel-2);
+  --c-neutro-r: var(--c-tinta-3);
   --c-critico-t: var(--c-diferencia-t);
   --c-critico-f: var(--c-diferencia-f);
   --c-critico-r: var(--c-diferencia-r);
@@ -64,52 +119,65 @@
   --c-vigente-f: var(--c-ok-f);
   --c-vigente-r: var(--c-ok-r);
 
-  /* ---------- Color: nuevos del prototipo «Turno» ---------- */
-  --c-tinta: var(--c-acento);
-  --c-tinta-hover: var(--c-acento-hover);
-  --c-sobre-tinta: var(--c-acento-texto);
-  --c-enlace: #2e4a80; /* azurita: enlaces y foco */
-  /* Cobre sólido: fondo de la cifra «No disponibles hoy», de las insignias y de la opción «con novedad». En claro es el mismo cobre; en oscuro, uno más hundido. */
-  --c-critico-solido: #8c3823;
-  --c-sobre-solido: #f4eee4;
-  --c-sobre-solido-2: #f3dfd6; /* texto chico sobre el cobre sólido (la leyenda de la cifra) */
-  --c-foco-oscuro: #f4eee4; /* anillo de foco sobre lo oscuro: el lateral y el cobre sólido (el azurita no llega a 3:1 ahí) */
-  --c-patente-fondo: var(--c-superficie);
-  --c-patente-banda: #4f4943;
-  --c-hoy: #1c1a17;
-  --c-velo: rgb(20 18 16 / 0.64);
-  /* Peligro con el cursor encima: 8 % más oscuro que el rojo base (en claro y en oscuro). */
-  --c-peligro-hover: color-mix(in srgb, var(--c-critico-r) 92%, black);
+  /* ---------- Color: objetos (lo que se toca: chapa, llave, rótulo de cota). Son papel claro de día y de noche ---------- */
+  --obj-hoja: light-dark(#fbf8f1, #ede7da); /* de noche baja un punto para no encandilar */
+  --obj-papel: light-dark(#f1ece1, #e2daca);
+  --obj-papel-2: light-dark(#e7e0d1, #d9d0bd);
+  --obj-sombra: light-dark(rgb(23 20 15 / 0.22), rgb(0 0 0 / 0.28));
+  --obj-contorno: light-dark(#17140f, #ede7da); /* contorno de los objetos de cuerpo lleno (llave y chapa críticas): de noche, papel claro */
+  --obj-tinta: #17140f;
+  --obj-tinta-2: #4b4539;
+  --obj-tinta-3: #675f50;
+  --obj-control: #857d6e;
+  --obj-franja: #1f3fd1; /* franja cobalto de la chapa y de la llave; dentro de un objeto es «el pleno» */
+  --obj-sobre-franja: #ffffff;
+  --obj-pleno-suave: #dee3f8;
+  --obj-enlace: #1c39bf;
+  --obj-crit: #b02d18;
+  --obj-crit-relleno: #be3219;
+  --obj-crit-fondo: #f7ded6;
+  --obj-aten: #855600;
+  --obj-aten-relleno: #a86f08;
+  --obj-aten-fondo: #f5e5c2;
+  --obj-ok: #1d6842;
+  --obj-ok-fondo: #dceadf;
 
-  /* Barra lateral (escritorio). Oscura en claro y en oscuro: es el «turno» de la marca. */
-  --c-lat: #23211e;
-  --c-lat-tx: #f4eee4;
-  --c-lat-tx-2: #c9c2b8;
-  --c-lat-hover: rgb(244 238 228 / 0.08);
-  --c-lat-activo: #f4eee4;
-  --c-lat-activo-tx: #1c1a17;
-  --c-lat-borde: rgb(244 238 228 / 0.16);
+  /* ---------- Texturas (SVG propios de src/estilos/texturas, de menos de 4 kB: la compilación los incrusta como `data:` y la CSP ya los permite; ningún pedido nuevo).
+     Solo `--tx-pagina` cambia con el modo y por eso se repite más abajo; `--tx-pleno` y `--tx-roja` valen igual en los dos. Sin `background-attachment: fixed`. ---------- */
+  --tx-pagina: url("./texturas/grano-claro.svg");
+  --tx-pagina-tam: 200px 200px;
+  --tx-pleno: url("./texturas/grano-claro.svg"), linear-gradient(var(--c-pleno-trama) 1px, transparent 1px), linear-gradient(90deg, var(--c-pleno-trama) 1px, transparent 1px);
+  --tx-roja: url("./texturas/grano-claro.svg"), repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.2) 0 2px, transparent 2px 9px);
+  --tx-registro: url("./texturas/registro.svg");
 
-  /* ---------- Tipografía (alojada en src/estilos/fuentes: la CSP solo permite 'self') ---------- */
+  /* ---------- Tipografía (alojada en src/estilos/fuentes: la CSP solo permite 'self'). Cartel · texto · técnica ---------- */
   --t-familia: "Schibsted Grotesk", "Schibsted Grotesk Ajustada", "Helvetica Neue", Arial, sans-serif;
   --t-familia-titulo: "Bricolage Grotesque", "Bricolage Grotesque Ajustada", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --t-mono: "Red Hat Mono", "Red Hat Mono Ajustada", ui-monospace, "Cascadia Mono", Consolas, monospace;
-  /* Los títulos y las cifras usan la fuente de títulos condensada. */
-  --t-ancho-titulo: 85%;
+  --t-ancho-cifra: 75%; /* Bricolage condensada: cifras y veredicto */
+  --t-ancho-titulo: 78%; /* títulos */
+  --t-peso-cartel: 760; /* títulos */
+  --t-peso-cifra: 780;
+  --t-peso-fuerte: 650; /* títulos de ficha y grupos, en la letra de texto */
+  --t-peso-h2: var(--t-peso-fuerte);
 
-  --t-cifra: clamp(2.5rem, 1.9rem + 2.6vw, 3.5rem);
-  --t-cifra-grande: 3.5rem; /* «No disponibles hoy» en Inicio (E3) */
-  --t-h1: clamp(1.75rem, 1.35rem + 1.8vw, 2.5rem);
-  --t-h2: 1.375rem;
-  --t-h3: 1.125rem;
-  --t-cuerpo: 1rem;
-  --t-tabla: 0.875rem;
+  --t-monumental: clamp(3.5rem, 38cqi, 7.5rem); /* la cifra de la mordaza; `cqi` es del contenedor donde se usa (la mordaza), no de la ventana. Interlínea 0,74 */
+  --t-monumental-ancho: clamp(3.5rem, 22cqi, 12.5rem); /* ídem, con la regla de 37,5 rem de ancho o más */
+  --t-veredicto: 3.75rem; /* el veredicto de Hoy; 2.875rem si ocupa dos renglones. Interlínea 0,86 */
+  --t-veredicto-2: 2.875rem;
+  --t-cifra-grande: 5.5rem; /* el número del sello de la zona roja; baja por contenedor hasta 2.75rem */
+  --t-cifra: 2rem; /* cifras de lectura fuera de la mordaza: 2.75rem desde 45 rem */
+  --t-h1: clamp(2rem, 1.6rem + 1.6vw, 2.75rem);
+  --t-h2: 1.5rem; /* título de sección suelta, en cartel */
+  --t-h2-ficha: 1rem; /* título de ficha (Panel), en la letra de texto */
+  --t-h3: 1rem;
+  --t-cuerpo: 0.9375rem; /* 0.875rem desde 64 rem. Los campos de formulario por debajo de 64 rem siguen en 1rem (evita el zoom de iOS) */
+  --t-tabla: 0.8125rem;
   --t-chico: 0.8125rem;
-  --t-rotulo: 0.75rem;
-  --t-patente-chica: 0.875rem;
+  --t-rotulo: 0.75rem; /* mínimo absoluto de texto */
+  --t-patente-chica: 0.8125rem;
   --t-patente-grande: 1.625rem;
-  /* 650 con fuente variable; los navegadores sin ella redondean a 600. */
-  --t-peso-h2: 650;
+  --t-patente-llave: 1.75rem; /* 2.125rem desde 22,5 rem */
 
   /* ---------- Espaciado (base 4 px) ---------- */
   --e-1: 0.25rem;
@@ -119,46 +187,79 @@
   --e-5: 1.5rem;
   --e-6: 2rem;
   --e-7: 3rem;
-  --e-8: 4rem;
   --gutter: 1rem;
   --ancho-max: 76rem;
   --ancho-parte: 40rem;
 
-  /* ---------- Radios (la píldora solo para el chip de perfil del marco nuevo) ---------- */
-  --r-1: 4px;
-  --r-2: 8px;
-  --r-3: 14px;
-  --r-4: 14px; /* alias de --r-3 hasta que las piezas viejas lo dejen de usar */
-  --r-pildora: 999px;
+  /* ---------- Radios: el plano es de esquinas rectas. Lo redondo es solo de piezas físicas (globo, agujero, punto) ---------- */
+  --r-0: 0;
+  --r-1: 2px; /* controles */
+  --r-2: 2px;
+  --r-chapa: 3px;
+  --r-redondo: 999px;
 
-  /* Borde de los controles (botón, campo, opción): 1,5 px como el prototipo; en pantallas de 1x el navegador lo dibuja de 1 px. */
-  --b-control: 1.5px;
+  /* ---------- Bordes ---------- */
+  --b-control: 1.5px; /* en pantallas de 1x el navegador lo dibuja de 1 px */
+  --b-fuerte: 1.5px; /* cabeza de ficha, botón */
+  --b-caja: 2px; /* caja de la regla, llave de Hoy, diálogo */
 
-  /* ---------- Sombras ---------- */
-  --s-panel: 0 1px 0 rgb(28 26 23 / 0.04);
-  --s-ventana: 0 1px 0 rgb(28 26 23 / 0.04), 0 6px 16px -4px rgb(28 26 23 / 0.1);
-  --s-flotante: 0 10px 30px rgb(28 26 23 / 0.18), 0 2px 6px rgb(28 26 23 / 0.08);
+  /* ---------- Sombras: filetes, no sombras. Solo lo que se levanta del papel */
+  --s-panel: none;
+  --s-dura: 0 2px 0; /* botones: el color lo pone el botón */
+  --s-pieza: 0 1px 0 var(--obj-sombra); /* objetos */
+  --s-flotante: 0 10px 18px -10px rgb(0 0 0 / 0.5), 0 2px 0 var(--c-filete-medio); /* menú, rótulo de cota, chapa con el cursor encima */
+  --s-ventana: 0 18px 30px -16px rgb(0 0 0 / 0.55); /* diálogo */
 
   /* ---------- Alturas y anchos fijos ---------- */
   --alto-barra-envio: 4.5rem;
-  --alto-tactil: 2.75rem; /* 44 px: mínimo de todo lo que se pulsa */
+  --alto-tactil: 2.75rem; /* 44 px: mínimo de todo lo que se pulsa por debajo de 64 rem */
   --alto-segmento: 3rem; /* 48 px: botones del checklist y del combustible */
-  /* Marco nuevo (E1): barra superior del celular, franja «Demo», barra inferior y lateral de escritorio. */
-  --alto-barra: 3.25rem;
-  --alto-franja: 1.625rem;
-  --alto-pestanas: 4rem;
-  --ancho-lateral: 16rem;
+  --alto-control: 2.75rem; /* 36 px (2.25rem) desde 64 rem */
+  --alto-lamina: 3.5rem; /* barra de escritorio */
+  --alto-barra: 3.375rem; /* barra superior por debajo de 64 rem */
+  --alto-pestanas: 3.875rem; /* barra inferior */
+  --ancho-lateral: 14.75rem;
 
   /* ---------- Movimiento ---------- */
-  --m-rapido: 120ms;
-  --m-medio: 220ms;
-  --m-lento: 320ms;
-  --m-curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --m-rapido: 90ms; /* clic */
+  --m-medio: 160ms; /* cursor encima y foco */
+  --m-lento: 320ms; /* diálogo y disclosure */
+  --m-largo: 640ms; /* mordaza */
+  --m-curva: cubic-bezier(0.16, 0.9, 0.12, 1); /* «tope»: arranca rápido y frena contra el tope. La curva de la casa */
+  --m-curva-resorte: cubic-bezier(0.34, 1.5, 0.6, 1); /* encaje con rebote corto */
+  --m-curva-carro: cubic-bezier(0.65, 0, 0.35, 1); /* va y vuelve */
+}
+
+/* El modo sigue al dispositivo, salvo que la persona elija uno: `main.ts` pone `data-modo="claro"` o `"oscuro"` en <html> («Automático» es la ausencia del atributo). */
+:root[data-modo="claro"] {
+  color-scheme: light;
+}
+:root[data-modo="oscuro"] {
+  color-scheme: dark;
+}
+
+@media (min-width: 22.5rem) {
+  :root {
+    --t-patente-llave: 2.125rem;
+  }
 }
 
 @media (min-width: 40rem) {
   :root {
     --gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 45rem) {
+  :root {
+    --t-cifra: 2.75rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --t-cuerpo: 0.875rem;
+    --alto-control: 2.25rem;
   }
 }
 
@@ -168,60 +269,21 @@
   }
 }
 
+/* Textura de la página de noche (formato de dos bloques: una pila de fondos no es un color y no admite `light-dark()`): grano de la emulsión, la exposición despareja
+   del pincel y la cuadrícula del plano (líneas de 1 px cada 48 px, tinta al 7 %, y cada 12 px, al 2,8 %). Solo en la página: las hojas son lisas y tapan todo esto. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --c-escritorio: #121110;
-    --c-fondo: #121110;
-    --c-superficie: #1b1a18;
-    --c-superficie-2: #26241f;
-    --c-ventana-barra: #201f1c;
-    --c-ventana-borde: #3d3a35;
-    --c-ventana-control-hover: #2d2b26;
-    --c-texto: #f1ede6;
-    --c-texto-2: #c9c2b8;
-    --c-texto-3: #a69f95;
-    --c-borde: #34322d;
-    --c-borde-fuerte: #827c72;
-    --c-acento: #f1ede6;
-    --c-acento-hover: #d8d2c8;
-    --c-acento-texto: #121110;
-    --c-acento-suave: #1b2541;
-    --c-foco: #aec1f0;
-    --c-edicion: #1b2541;
-    --c-peligro-texto: #1a0b0a;
-
-    --c-ok-t: #8ad2b2;
-    --c-ok-f: #12302a;
-    --c-ok-r: #4fae8a;
-    --c-pendiente-t: #aec1f0;
-    --c-pendiente-f: #1b2541;
-    --c-pendiente-r: #8aa4e0;
-    --c-revisar-t: #e8cc6a;
-    --c-revisar-f: #33290f;
-    --c-revisar-r: #d6b445;
-    --c-diferencia-t: #f29c82;
-    --c-diferencia-f: #3a1d15;
-    --c-diferencia-r: #e07a5c;
-    --c-neutro-t: #bdb6ac;
-    --c-neutro-f: #28261f;
-    --c-neutro-r: #8c857a;
-
-    --c-enlace: #aec1f0;
-    --c-critico-solido: #983c27;
-    --c-sobre-solido: #f4eee4;
-    --c-foco-oscuro: #f1ede6;
-    --c-patente-banda: #c9c2b8;
-    --c-hoy: #f1ede6;
-    --c-velo: rgb(0 0 0 / 0.65);
-
-    --c-lat: #22201d; /* más claro que el contenido: la pestaña activa (color del contenido) se lee como recorte */
-    --c-lat-tx: #f1ede6;
-    --c-lat-tx-2: #b3aca2;
-    --c-lat-activo: #f1ede6;
-    --c-lat-activo-tx: #121110;
-
-    --s-panel: 0 1px 0 rgb(0 0 0 / 0.3);
-    --s-ventana: inset 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 20px -6px rgb(0 0 0 / 0.6);
-    --s-flotante: 0 12px 34px rgb(0 0 0 / 0.55), 0 0 0 1px #34322d;
+  :root:not([data-modo="claro"]) {
+    --tx-pagina:
+      url("./texturas/grano-oscuro.svg"), url("./texturas/exposicion.svg"), linear-gradient(rgb(237 243 250 / 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(237 243 250 / 0.07) 1px, transparent 1px), linear-gradient(rgb(237 243 250 / 0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(237 243 250 / 0.028) 1px, transparent 1px);
+    --tx-pagina-tam: 200px 200px, 720px 720px, 48px 48px, 48px 48px, 12px 12px, 12px 12px;
   }
+}
+:root[data-modo="oscuro"] {
+  --tx-pagina:
+    url("./texturas/grano-oscuro.svg"), url("./texturas/exposicion.svg"), linear-gradient(rgb(237 243 250 / 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(237 243 250 / 0.07) 1px, transparent 1px), linear-gradient(rgb(237 243 250 / 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(237 243 250 / 0.028) 1px, transparent 1px);
+  --tx-pagina-tam: 200px 200px, 720px 720px, 48px 48px, 48px 48px, 12px 12px, 12px 12px;
 }

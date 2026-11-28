@@ -80,10 +80,16 @@
   .menu :global(.boton[data-variante="secundario"]) {
     width: 100%;
   }
+  /* Pie de rey: la flecha apunta hacia abajo cerrado y hacia arriba abierto, así el estado no depende solo del color. */
   .flecha {
     display: inline-flex;
     rotate: 90deg;
+    transition: rotate var(--m-medio) var(--m-curva);
   }
+  .menu :global(.boton[aria-expanded="true"] .flecha) {
+    rotate: -90deg;
+  }
+  /* La caja flotante es una ficha suelta: hoja lisa, contorno fino, cabeza de 1,5 px en tinta y sombra de apoyo. Los renglones se separan con un filete. */
   .lista {
     position: absolute;
     top: 100%;
@@ -91,11 +97,16 @@
     z-index: 20;
     width: 15rem;
     max-width: calc(100vw - 2rem);
-    padding: var(--e-1);
-    background: var(--c-superficie);
-    border: 1px solid var(--c-ventana-borde);
-    border-radius: var(--r-2);
+    margin-top: var(--e-1);
+    padding: 0;
+    background: var(--c-hoja);
+    border: 1px solid var(--c-filete-medio);
+    border-top: var(--b-fuerte) solid var(--c-tinta);
+    border-radius: var(--r-0);
     box-shadow: var(--s-flotante);
+  }
+  li + li {
+    border-top: 1px solid var(--c-filete);
   }
   .item {
     display: flex;
@@ -104,19 +115,34 @@
     min-height: var(--alto-tactil);
     padding: 0 var(--e-3);
     border: 0;
-    border-radius: var(--r-1);
+    border-radius: var(--r-0);
     background: none;
-    color: var(--c-texto);
-    font-weight: 500;
+    color: var(--c-tinta);
+    font-size: var(--t-cuerpo);
+    font-weight: 600;
     text-align: left;
     cursor: pointer;
   }
   .item:focus-visible {
-    outline-offset: -2px;
+    outline-offset: -3px;
   }
   @media (hover: hover) {
     .item:hover {
-      background: var(--c-superficie-2);
+      background: var(--c-papel-2);
+    }
+  }
+  .item:active {
+    background: var(--c-papel-2);
+  }
+
+  /* Colores forzados: el fondo del cursor encima desaparece; el renglón lleva un contorno del color de selección. */
+  @media (forced-colors: active) {
+    .lista {
+      border-top-width: 3px;
+    }
+    .item:hover {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
     }
   }
 </style>

@@ -86,33 +86,47 @@
 </section>
 
 <style>
+  /* Pie de rey (15.9.6): una ficha sobre la hoja, con la cabeza de 1,5 px en tinta como el `Panel`. Sin riel de color: el tono lo dicen el ícono y las palabras. Solo «La unidad no puede salir» (C2)
+     lleva el precinto crítico de 6 px a la izquierda; el texto queda fuera del rayado por el relleno (`--riel`). */
   .resultado {
+    --riel: 0px;
     container: resultado / inline-size;
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: var(--e-4);
     min-width: 0;
-    padding: var(--e-4) var(--e-4) var(--e-4) calc(var(--e-4) + 4px);
-    background: var(--c-superficie);
-    border: 1px solid var(--c-borde);
-    border-radius: var(--r-2);
-    /* El riel del tono del resultado (4 px) va como en las filas del prototipo: sombra interior, que sigue la curva del borde. */
-    box-shadow:
-      inset 4px 0 0 var(--tono-r),
-      var(--s-panel);
+    padding: var(--e-4) var(--e-4) var(--e-4) calc(var(--e-4) + var(--riel));
+    background: var(--c-hoja);
+    border: 1px solid var(--c-filete-medio);
+    border-top: var(--b-fuerte) solid var(--c-tinta);
+    border-radius: var(--r-0);
+    box-shadow: var(--s-panel);
+  }
+  .resultado[data-tono="critico"] {
+    --riel: calc(6px + var(--e-1));
+  }
+  .resultado[data-tono="critico"]::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--c-crit-marca) 0 1.5px, transparent 1.5px 7px);
   }
   @media (min-width: 40rem) {
     .resultado {
-      padding: var(--e-5) var(--e-5) var(--e-5) calc(var(--e-5) + 4px);
+      padding: var(--e-5) var(--e-5) var(--e-5) calc(var(--e-5) + var(--riel));
     }
   }
   @media (forced-colors: active) {
     .resultado {
-      border-left: 4px solid CanvasText;
       box-shadow: none;
     }
-  }
-  .cabeza {
+    .resultado[data-tono="critico"]::before {
+      background-image: repeating-linear-gradient(-45deg, CanvasText 0 1.5px, transparent 1.5px 7px);
+    }
+  }  .cabeza {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -124,8 +138,11 @@
     align-items: center;
     gap: var(--e-2);
     min-width: 0;
+    font-family: var(--t-familia-titulo);
+    font-stretch: var(--t-ancho-titulo);
     font-size: var(--t-h2);
-    line-height: 1.25;
+    font-weight: var(--t-peso-cartel);
+    line-height: 1.1;
     color: var(--c-texto);
   }
   .titulo :global(.icono) {
@@ -187,7 +204,7 @@
   /* Texto agrandado (la pantalla mide 17 rem o menos): menos relleno a los lados y botones con menos aire, así las palabras largas no se parten (S5 de la etapa 7). */
   @container pagina-parte (max-width: 17rem) {
     .resultado {
-      padding: var(--e-3) var(--e-2) var(--e-3) calc(var(--e-2) + 4px);
+      padding: var(--e-3) var(--e-2) var(--e-3) calc(var(--e-2) + var(--riel));
     }
     .acciones :global(.enlace-accion:not([data-variante="texto"])) {
       padding-inline: var(--e-2);
@@ -196,7 +213,7 @@
   /* 320 px con el texto agrandado (la pantalla mide 8 rem): el relleno baja otro escalón, para que «Documentación» (7 rem) entre entera. */
   @container pagina-parte (max-width: 8.5rem) {
     .resultado {
-      padding-inline: calc(var(--e-1) + 4px) 0;
+      padding-inline: calc(var(--e-1) + var(--riel)) 0;
     }
   }
 </style>

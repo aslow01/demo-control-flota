@@ -30,8 +30,10 @@
 <span class="forma" data-forma={forma} data-tono={tono} aria-hidden="true"></span>
 
 <style>
+  /* Pie de rey (15.5.3): 10 px, en el color de marca del tono (`-r`). Triángulo, círculo lleno y aro (trazo de 1,5 px) de 10 px; rombo y cuadrado de 8 px (girado, el rombo mide
+     11 px de punta a punta, así que a 8 px no sobresale de la caja de las demás). Sin estados. */
   .forma {
-    --forma-tam: 0.5rem;
+    --forma-tam: 0.625rem;
     display: inline-block;
     flex: none;
     width: var(--forma-tam);
@@ -40,10 +42,12 @@
     vertical-align: middle;
   }
   .forma[data-forma="rombo"] {
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-inline: 0.0625rem;
     transform: rotate(45deg);
   }
   .forma[data-forma="triangulo"] {
-    width: 0.5625rem;
     clip-path: polygon(50% 0, 100% 100%, 0 100%);
   }
   .forma[data-forma="circulo"] {
@@ -51,11 +55,11 @@
   }
   .forma[data-forma="aro"] {
     background: none;
-    border: 2px solid var(--tono-r, currentColor);
+    border: 1.5px solid var(--tono-r, currentColor);
     border-radius: 50%;
   }
   .forma[data-forma="check"] {
-    width: 0.5625rem;
+    width: 0.625rem;
     height: 0.3125rem;
     background: none;
     border: solid var(--tono-r, currentColor);
@@ -63,7 +67,10 @@
     transform: rotate(-45deg) translate(1px, -1px);
   }
   .forma[data-forma="cuadro"] {
-    border-radius: 2px;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-inline: 0.0625rem;
+    border-radius: 0;
   }
 
   /* Colores forzados: el fondo desaparece, así que la forma se dibuja con el color del texto del sistema. */

@@ -201,7 +201,7 @@
 
       {#if v.vacio !== null}
         <div class="vacio-bloque">
-          <p class="vacio"><Icono nombre="guion" />{v.vacio.texto}</p>
+          <p class="vacio">{v.vacio.texto}</p>
           {#if v.vacio.tipo === "sin-unidades"}
             <Boton variante="secundario" onclick={abrirAgregar}>{T.agregarUnidad}</Boton>
           {:else if v.vacio.conQuitarFiltros}
@@ -220,14 +220,15 @@
           {#snippet fila(f: FilaFlota)}
             {@const aspecto = aspectoDeAptitud(f.estado.categoria, origenDeFueraDeServicio(f.unidadId))}
             {@const pv = f.proximoVencimiento}
-            <td {...ENCABEZADO_DE_FILA} data-col="unidad">
+            {@const baja = f.estado.categoria === "baja"}
+            <td {...ENCABEZADO_DE_FILA} data-col="unidad" class:baja>
               <!-- Tabla: la patente y el interno en un renglón, el modelo debajo. Tarjeta (C8): el interno y el modelo van juntos en un solo grupo sin cortes (`grupo-int`) que baja entero si no entra. -->
               <span class="unidad-celda">
                 <span class="patente-unidad"><Patente patente={f.patente} href={f.href} /></span>
                 <span class="grupo-int"><span class="interno">{f.interno}</span><span class="nota modelo">{sinTipo(f.descripcion)}</span></span>
               </span>
             </td>
-            <td {...CELDA} data-col="estado">
+            <td {...CELDA} data-col="estado" class:baja>
               <span class="apilado">
                 <Etiqueta tono={aspecto.tono} icono={aspecto.icono} variante={f.estado.categoria === "puede-salir" ? "texto" : "relleno"}>{f.estado.etiqueta}</Etiqueta>
                 {#if f.estado.motivo !== null}
@@ -250,10 +251,10 @@
                 <span class="nota">{unirCifra(pv.texto)}</span>
               {/if}
             </td>
-            <td {...CELDA} data-col="km" data-etiqueta={T.columnas.km}>
-              <span class:nota={f.km.valor === null}>{f.km.texto}</span>
+            <td {...CELDA} data-col="km" data-etiqueta={T.columnas.km} class:baja>
+              <span class:nota={f.km.valor === null} class:tecnica={f.km.valor !== null}>{f.km.texto}</span>
             </td>
-            <td {...CELDA} data-col="parte" data-etiqueta={T.columnas.parte}>
+            <td {...CELDA} data-col="parte" data-etiqueta={T.columnas.parte} class:baja>
               <span class="apilado">
                 <span class="num fecha-parte" class:nota={f.ultimoParte.fecha === null}>{f.ultimoParte.texto}</span>
                 {#if f.ultimoParte.etiqueta !== null}
@@ -273,7 +274,7 @@
                 <span class="num">{f.novedades.texto}</span>
               {/if}
             </td>
-            <td {...CELDA} data-col="proyecto" data-etiqueta={T.columnas.proyecto}>
+            <td {...CELDA} data-col="proyecto" data-etiqueta={T.columnas.proyecto} class:baja>
               <span class="apilado">
                 <span>{#if f.proyecto !== null}{f.proyecto}{:else}<span aria-hidden="true">—</span><span class="solo-lectores">{T.sinProyecto}</span>{/if}</span>
                 <span class="nota">
@@ -295,15 +296,16 @@
 {/if}
 
 <style>
+  /* Movilidades (FL-02, 15.9.2): título con «Agregar unidad» (secundario), línea de resumen y una ficha con buscador, proyecto, orden, filtros y la tabla. Sin campo pleno grande: el cobalto
+     está solo en el filtro elegido (`FiltrosEnlace`). Entre piezas, 12 px, como en Inicio. */
   .pantalla {
     display: flex;
     flex-direction: column;
-    gap: var(--e-4);
+    gap: var(--e-3);
     width: 100%;
     min-width: 0;
   }
-  /* Teléfono: título, «Agregar unidad» a todo el ancho y el resumen. Desde 40 rem: título y botón en una fila, el resumen debajo. */
-  /* El título y «Agregar unidad» (secundario: lo principal es la lista, no agregar) comparten renglón y el botón baja solo si no entra; la línea de resumen, debajo. */
+  /* Celular: el título solo en su renglón, «Agregar unidad» debajo (sin dominar) y el resumen. Desde 40 rem: título y botón en una fila, el resumen debajo. */
   .encabezado {
     display: flex;
     flex-wrap: wrap;
@@ -312,18 +314,26 @@
     gap: var(--e-2) var(--e-3);
   }
   .encabezado h1 {
-    flex: 1 1 auto;
+    flex: 1 1 100%;
     min-width: 0;
   }
   .agregar {
     flex: none;
     display: flex;
   }
+  /* La línea de contexto (15.9.1): 13 px en `--c-tinta-2`. */
   .linea {
     flex: 1 1 100%;
-    color: var(--c-texto-2);
+    font-size: var(--t-chico);
+    line-height: 1.4;
+    color: var(--c-tinta-2);
   }
-  /* ---------- Herramientas: búsqueda, proyecto, orden y filtros ---------- */
+  @media (min-width: 40rem) {
+    .encabezado h1 {
+      flex: 1 1 auto;
+    }
+  }
+  /* ---------- Herramientas: búsqueda, proyecto, orden y filtros (15.5.7: campos de `--alto-control`, borde de 1,5 px, esquinas de 2 px) ---------- */
   .busqueda {
     display: flex;
     flex: 1 1 100%;
@@ -339,6 +349,7 @@
     font-size: var(--t-chico);
     font-weight: 600;
     line-height: 1.4;
+    color: var(--c-tinta);
   }
   .lupa {
     position: absolute;
@@ -346,29 +357,57 @@
     left: var(--e-3);
     display: inline-flex;
     translate: 0 -50%;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
     pointer-events: none;
   }
-  input[type="search"] {
+  input[type="search"],
+  select {
     width: 100%;
-    height: var(--alto-tactil);
-    padding: 0 var(--e-3) 0 calc(var(--e-3) + 1.25rem + var(--e-2));
-    border: 1px solid var(--c-borde-fuerte);
-    border-radius: var(--r-2);
-    background: var(--c-superficie);
-    color: var(--c-texto);
-    font-size: var(--t-cuerpo); /* 16 px: evita el zoom automático de iOS */
+    min-width: 0;
+    height: var(--alto-control);
+    border: var(--b-control) solid var(--c-control);
+    border-radius: var(--r-1);
+    background: var(--c-hoja);
+    color: var(--c-tinta);
+    font-size: 1rem; /* 16 px: evita el zoom automático de iOS; desde 64 rem, 14 px (abajo) */
     line-height: 1.5;
+  }
+  input[type="search"] {
+    padding: 0 var(--e-3) 0 calc(var(--e-3) + 1.25rem + var(--e-2));
     -webkit-appearance: none;
     appearance: none;
+  }
+  select {
+    padding: 0 0.875rem;
+    /* La opción elegida no se parte en renglones: si no entra, termina en «…». */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  @media (min-width: 64rem) {
+    input[type="search"],
+    select {
+      font-size: var(--t-cuerpo);
+    }
   }
   input[type="search"]::-webkit-search-cancel-button {
     -webkit-appearance: none;
     appearance: none;
   }
   input::placeholder {
-    color: var(--c-texto-2);
+    color: var(--c-tinta-3);
     opacity: 1;
+  }
+  /* Foco: el anillo general más el borde en tinta. */
+  input[type="search"]:focus-visible,
+  select:focus-visible {
+    border-color: var(--c-tinta);
+  }
+  @media (hover: hover) {
+    input[type="search"]:hover,
+    select:hover {
+      border-color: var(--c-tinta-2);
+    }
   }
   /* Proyecto y Ordenar por, uno al lado del otro (C10): ahorran un renglón entero antes de los resultados. */
   .selector {
@@ -388,34 +427,25 @@
     font-size: var(--t-chico);
     font-weight: 600;
     line-height: 1.4;
-    color: var(--c-texto);
-  }
-  select {
-    width: 100%;
-    min-width: 0;
-    height: var(--alto-tactil);
-    padding: 0 var(--e-3);
-    border: 1px solid var(--c-borde-fuerte);
-    border-radius: var(--r-2);
-    background: var(--c-superficie);
-    color: var(--c-texto);
-    font-size: var(--t-cuerpo);
-    line-height: 1.5;
-  }
-  @media (hover: hover) {
-    input[type="search"]:hover,
-    select:hover {
-      border-color: var(--c-texto-2);
-    }
+    color: var(--c-tinta);
   }
   .filtros {
     flex: 1 1 100%;
     min-width: 0;
   }
-  /* Tableta: proyecto y orden en una fila (cada uno con su rótulo arriba). Escritorio: todo en una línea y el rótulo al costado. */
+  /* Tableta: proyecto y orden en una fila (cada uno con su rótulo arriba). */
   @container panel (min-width: 36rem) {
     .selector {
       flex: 1 1 14rem;
+    }
+  }
+  /* Con lugar (el escritorio con el lateral): búsqueda, proyecto y orden en una sola fila y los filtros debajo. */
+  @container panel (min-width: 52rem) {
+    .busqueda {
+      flex: 2 1 16rem;
+    }
+    .selector {
+      flex: 1 1 11rem;
     }
   }
   @container panel (min-width: 64rem) {
@@ -534,6 +564,17 @@
       justify-items: start;
     }
   }
+  /* Kilómetros en técnica (15.9.2); el número no se parte. */
+  .tecnica {
+    font-family: var(--t-mono);
+    font-size: var(--t-tabla);
+    white-space: nowrap;
+  }
+  /* Fila de baja (15.9.2): tono neutro (lo pone la tabla) y todo el texto en `--c-tinta-2`; sin acciones. */
+  td.baja,
+  td.baja :global(.interno) {
+    color: var(--c-tinta-2);
+  }
   .nota {
     color: var(--c-texto-2);
     /* El motivo de «fuera de servicio» lo escribe la persona: un texto sin espacios no tiene que ensanchar la página. */
@@ -558,7 +599,7 @@
     color: var(--c-critico-t);
   }
 
-  /* ---------- Vacío ---------- */
+  /* ---------- Vacío (15.5.12): caja de 1 px punteada en `--c-control` sobre la hoja, el porqué en cartel a 78 % y 24 px, y la acción que sigue. Sin ilustración ---------- */
   .vacio-bloque {
     display: flex;
     flex-direction: column;
@@ -566,14 +607,17 @@
     gap: var(--e-2);
   }
   .vacio {
-    --icono-tam: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: var(--e-3);
     width: 100%;
-    padding: var(--e-4);
-    border: 1px dashed var(--c-borde-fuerte);
-    border-radius: var(--r-2);
-    color: var(--c-texto-2);
+    padding: var(--e-5) var(--e-4);
+    border: 1px dashed var(--c-control);
+    background: var(--c-hoja);
+    color: var(--c-tinta);
+    font-family: var(--t-familia-titulo);
+    font-stretch: var(--t-ancho-titulo);
+    font-size: var(--t-h2);
+    font-weight: var(--t-peso-cartel);
+    line-height: 1.25;
+    /* El texto puede traer lo que la persona buscó: un texto sin espacios no ensancha la página. */
+    overflow-wrap: anywhere;
   }
 </style>

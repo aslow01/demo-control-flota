@@ -1,27 +1,33 @@
 <script lang="ts">
-  // Inicio del encargado (`#/inicio`, docs/diseno-ui.md 6.1; prototipo «Turno»): 1) la cifra cobre «No disponibles hoy» y cuatro cifras más, cada una con su destino;
-  // 2) «No disponibles hoy»: las unidades y los conductores que no pueden manejar; 3) el horizonte de vencimientos (regla interactiva); 4) la operación diaria.
-  // No tiene reglas de negocio: todo lo que muestra lo arma `app.centroDeAlertas` (lib/estado/centro-alertas.ts: `cifras`, `protagonista`, `vencimientos.regla`, `operacion`).
+  // Inicio del encargado (`#/inicio`, docs/diseno-ui.md 15.9.1): 1) la regla de salida (cuántas unidades pueden salir hoy, una llave por unidad, la «Acción del día» y los cuatro renglones
+  // de lectura); 2) «No disponibles hoy»: la lista de piezas (con su número) y los conductores que no pueden manejar; 3) el horizonte de vencimientos; 4) la operación diaria.
+  // No tiene reglas de negocio: la regla la arma `calcularSalida` (lib/estado/salida.ts) y lo demás `app.centroDeAlertas` (lib/estado/centro-alertas.ts: `protagonista`, `vencimientos.regla`, `operacion`).
   //  - Los diálogos Renovar / Cargar / Corregir son los compartidos (`dialogos`, `DialogosDeDocumento`), con origen «inicio». Un mensaje de lo que pasó se lee en la barra de estado
-  //    del panel que abrió el diálogo, y a ese panel va el foco al guardar (la fila o el punto que lo abrió ya no existe), 5.17. Al cancelar, el foco vuelve al botón.
-  //  - «Abrir el parte diario» cambia la vista a Conductor con el diálogo «Ver como» (`alAbrirParte`, que lo abre el marco).
-  import { formatearFecha } from "../lib/dominio/fechas.ts";
-  import { textoVerTodasEnLaFlota, TEXTO_INICIO } from "../lib/dominio/textos-inicio.ts";
-  import type { AccionDeDocumento, CifraDeInicio, FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
+  //    del panel que abrió el diálogo (o, desde la «Acción del día», en la nota de la regla), y a ese panel (o al título de la regla) va el foco al guardar (la fila o el punto que lo abrió
+  //    ya no existe), 5.17. Al cancelar, el foco vuelve al botón.
+  //  - «Abrir el parte diario» cambia la vista a Conductor con el diálogo «Ver como» (`alAbrirParte`, que lo abre el marco). «Probar como conductor» vive en la «Acción del día».
+  //  - La entrada de la vista (`entrada.ts`, 15.10) corre una vez por sesión: acá solo se pone `data-entrada` y `data-pausa` en el contenedor; el CSS hace el resto. Una acción que cambia
+  //    un dato (renovar un documento) no la vuelve a correr: `empezar` se llama solo al montar la pantalla.
+  import { onDestroy } from "svelte";
+  import { textoAnuncioAlResolver, textoVerTodasEnLaFlota, TEXTO_INICIO } from "../lib/dominio/textos-inicio.ts";
+  import type { AccionDeDocumento, FilaDeConductorSinLicencia } from "../lib/estado/centro-alertas.ts";
   import { aHash } from "../lib/estado/enrutador.ts";
   import { app } from "../lib/estado/instancia.ts";
+  import { leerEntradaAlRecorrido } from "../lib/estado/recorrido.ts";
+  import { calcularSalida } from "../lib/estado/salida.ts";
   import { aspectoDeAptitud, aspectoDeOperacion, origenDeFueraDeServicio } from "./alertas-aspecto.ts";
   import DialogosDeDocumento from "./DialogosDeDocumento.svelte";
   import { dialogos } from "./dialogos-instancia.ts";
+  import { entrada } from "./entrada.ts";
+  import type { SituacionDeEntrada } from "./entrada.ts";
   import Boton from "./Boton.svelte";
-  import CifraQueCuenta from "./CifraQueCuenta.svelte";
   import Etiqueta from "./Etiqueta.svelte";
-  import Forma from "./Forma.svelte";
   import Horizonte from "./Horizonte.svelte";
   import Icono from "./Icono.svelte";
   import Panel from "./Panel.svelte";
   import Patente from "./Patente.svelte";
-  import { TEXTO_ALERTAS as T, TEXTO_PIE } from "./textos-marco.ts";
+  import ReglaDeSalida from "./ReglaDeSalida.svelte";
+  import { TEXTO_ALERTAS as T, TEXTO_NOMBRES_DE_LA_REGLA, TEXTO_PIE } from "./textos-marco.ts";
 
   let {
     alAbrirParte,
@@ -29,22 +35,34 @@
   }: {
     /** «Abrir el parte diario»: el marco abre «Ver como» con Conductor ya elegido. */
     alAbrirParte: () => void;
-    /** «Probar como conductor» (franja bajo el subtítulo): el marco abre «Ver como» con Conductor y este conductor ya elegidos. */
+    /** «Probar como conductor» (en la «Acción del día» de la regla de salida): el marco abre «Ver como» con Conductor y este conductor ya elegidos. */
     alProbarComoConductor: (conductorId: string) => void;
   } = $props();
 
+  const ID_REGLA = "titulo-regla";
   const ID_NODISPONIBLES = "titulo-no-disponibles";
   const ID_VENCIMIENTOS = "titulo-vencimientos";
   const ID_OPERACION = "titulo-operacion";
 
   const c = $derived(app.centroDeAlertas);
-  /** El conductor con el parte bloqueado por un documento vencido: de él sale la franja del recorrido (sin ninguno, no se muestra). */
-  const recorrido = $derived(app.entradaAlRecorrido());
+  /** La regla de salida: sale de los mismos datos y de las mismas cifras que el resto de Inicio (`null` hasta que termina el arranque). */
+  const salida = $derived(c === null || app.estado === null ? null : calcularSalida(app.estado, c, app.hoy));
+  /** El número de pieza de cada unidad que no sale (el del globo de su llave): lo comparte la lista «No disponibles hoy». */
+  const piezas = $derived(new Map<string, number>(salida === null ? [] : salida.llaves.flatMap((l): [string, number][] => (l.pieza === null ? [] : [[l.unidadId, l.pieza]]))));
+  /** El conductor con el parte bloqueado por el seguro vencido de su unidad: de él sale la entrada al recorrido (sin ninguno, no se muestra). Se decide con lo que ya viaja con el marco. */
+  const recorrido = $derived(leerEntradaAlRecorrido(app));
+
+  // ---------- Entrada (15.10) ----------
+  let situacion = $state<SituacionDeEntrada>({ estado: "completa", pausa: true });
+  // `empezar` avisa la situación de ahora enseguida (antes del primer dibujo) y cada cambio después; «Reiniciar demo» la vuelve a pedir sin desmontar la pantalla.
+  onDestroy(entrada.empezar("inicio", (nueva) => (situacion = nueva)));
 
   // ---------- Diálogos ----------
-  /** En qué panel se abrió el último diálogo: ahí se dice lo que pasó y a ese título va el foco (los dos paneles comparten el origen «inicio»). */
-  let panelDelDialogo = $state<"no-disponibles" | "vencimientos">("vencimientos");
+  /** En qué panel se abrió el último diálogo: ahí se dice lo que pasó y a ese título va el foco (los tres comparten el origen «inicio»). «regla» es la «Acción del día». */
+  let panelDelDialogo = $state<"regla" | "no-disponibles" | "vencimientos">("vencimientos");
   const mensaje = $derived(dialogos.mensaje("inicio"));
+  /** Lo que se dice en la nota de la regla al resolver una pieza: el mensaje del diálogo y la medida nueva. */
+  const anuncioDeLaRegla = $derived(panelDelDialogo === "regla" && salida !== null && mensaje.texto !== "" ? textoAnuncioAlResolver(mensaje.texto, salida.disponibles, salida.activas) : "");
 
   function abrirLicencia(conductor: FilaDeConductorSinLicencia): void {
     panelDelDialogo = "no-disponibles";
@@ -54,8 +72,12 @@
     panelDelDialogo = "vencimientos";
     dialogos.abrirRenovar(accion, "inicio");
   }
+  function renovarDesdeLaNota(accion: AccionDeDocumento): void {
+    panelDelDialogo = "regla";
+    dialogos.abrirRenovar(accion, "inicio");
+  }
   function focoDestino(): HTMLElement | null {
-    return document.getElementById(panelDelDialogo === "no-disponibles" ? ID_NODISPONIBLES : ID_VENCIMIENTOS);
+    return document.getElementById(panelDelDialogo === "regla" ? ID_REGLA : panelDelDialogo === "no-disponibles" ? ID_NODISPONIBLES : ID_VENCIMIENTOS);
   }
 
   /** «1 novedad crítica abierta» -> la cifra va grande y el resto al lado. */
@@ -64,51 +86,27 @@
     return m === null ? { cifra: "", resto: texto } : { cifra: m[1] ?? "", resto: m[2] ?? "" };
   }
 
-  const cifrasSecundarias = $derived<CifraDeInicio[]>(c === null ? [] : [c.cifras.vencidos, c.cifras.proximos, c.cifras.partes, c.cifras.novedadCritica]);
   const rotuloDeSolapa = (id: "partes" | "novedades"): string => c?.operacionDiaria.solapas.find((s) => s.id === id)?.rotulo ?? "";
 </script>
 
-{#if c !== null}
+{#if c !== null && salida !== null}
   {@const n = c.cifras.noDisponibles}
-  <div class="pantalla">
+  <div class="pantalla" data-entrada={situacion.estado} data-pausa={situacion.pausa ? "" : undefined}>
     <div class="encabezado">
       <h1 tabindex="-1">{c.titulo}</h1>
       <p class="linea">{c.encabezado.linea}</p>
     </div>
 
-    <!-- Entrada al recorrido: lo mejor de la demo (el parte que se traba por un seguro vencido) a un clic. El estilo es del maquetador (`.entrada-recorrido`). -->
-    {#if recorrido !== null}
-      <div class="entrada-recorrido">
-        <p class="entrada-recorrido-texto">{TEXTO_INICIO.recorrido.texto}</p>
-        <Boton aria-haspopup="dialog" onclick={() => alProbarComoConductor(recorrido.conductorId)}>{TEXTO_INICIO.recorrido.boton}<Icono nombre="flecha" /></Boton>
-      </div>
-    {/if}
-
-    <!-- 1: las cifras. La cobre (principal) lleva al filtro «No disponibles hoy» de Movilidades; cada una de las otras, a su lista. -->
-    <div class="cifras">
-      <a class="foco" class:ok={n.valor === 0} href={n.href}>
-        <!-- La cifra cuenta de 0 a N al abrir la demo; el lector de pantalla lee solo el valor final, aparte. -->
-        <span class="valor num" aria-hidden="true"><CifraQueCuenta valor={n.valor} /></span>
-        <span class="solo-lectores">{n.valor}</span>
-        <span class="rotulo-foco">
-          <span class="titulo-foco">{n.rotulo}</span>
-          <span class="bajada">{n.bajada}</span>
-          <span class="disponibles">{n.disponibles}</span>
-        </span>
-        <span class="flecha"><Icono nombre="chevron" /></span>
-      </a>
-      <ul class="sub">
-        {#each cifrasSecundarias as k (k.href)}
-          <li>
-            <a class="cifra" data-tono={k.tono} href={k.href}>
-              {#if k.forma !== null}<span class="forma-cifra"><Forma forma={k.forma} /></span>{/if}
-              <span class="valor num">{k.valor}</span>
-              <span class="rotulo-cifra">{k.rotulo}</span>
-            </a>
-          </li>
-        {/each}
-      </ul>
-    </div>
+    <!-- 1: la regla de salida. Trae la «Acción del día» (con «Probar como conductor», que antes era una franja aparte) y los cuatro renglones de lectura que reemplazan a las cuatro tarjetas. -->
+    <ReglaDeSalida
+      {salida}
+      idTitulo={ID_REGLA}
+      {recorrido}
+      alRenovar={renovarDesdeLaNota}
+      {alProbarComoConductor}
+      estado={anuncioDeLaRegla}
+      repetir={mensaje}
+    />
 
     <div class="paneles">
       <!-- 2: No disponibles hoy. -->
@@ -117,7 +115,6 @@
           id={ID_NODISPONIBLES}
           titulo={c.protagonista.titulo}
           icono="vencido"
-          meta={c.protagonista.desglose ?? T.alFecha(formatearFecha(app.hoy))}
           estado={panelDelDialogo === "no-disponibles" ? mensaje.texto : ""}
           repetir={mensaje}
           sinRelleno
@@ -126,11 +123,14 @@
             <ul class="filas">
               {#each c.protagonista.items as u (u.unidadId)}
                 {@const aspecto = aspectoDeAptitud(u.categoria, origenDeFueraDeServicio(u.unidadId))}
+                {@const numero = piezas.get(u.unidadId)}
                 <li>
                   <a class="fila" data-tono={aspecto.tono} href={u.href}>
+                    <!-- El número de pieza: el mismo del globo de su llave y de la «Acción del día». -->
+                    {#if numero !== undefined}<span class="globo" data-tono={aspecto.tono}><span class="solo-lectores">{TEXTO_NOMBRES_DE_LA_REGLA.numero(numero)} </span><span aria-hidden="true">{numero}</span></span>{/if}
                     <span class="cuerpo">
                       <span class="linea1">
-                        <span class="solo-lectores">Ficha de </span><Patente patente={u.patente} />
+                        <Patente patente={u.patente} />
                         <span class="interno">{u.interno}</span>
                         <Etiqueta tono={aspecto.tono} variante="texto">{u.etiqueta}</Etiqueta>
                       </span>
@@ -188,7 +188,6 @@
           id={ID_VENCIMIENTOS}
           titulo={c.vencimientos.titulo}
           icono="calendario"
-          meta={c.vencimientos.contexto}
           estado={panelDelDialogo === "vencimientos" ? mensaje.texto : ""}
           repetir={mensaje}
         >
@@ -247,11 +246,12 @@
 {/if}
 
 <style>
+  /* Una pantalla de plano: el encabezado, la regla de salida (con su «Acción del día») y debajo las fichas. Entre piezas, 12 px (15.7: la nota va a 12 px del tablero). */
   .pantalla {
     container: inicio / inline-size;
     display: flex;
     flex-direction: column;
-    gap: var(--e-4);
+    gap: var(--e-3);
     width: 100%;
     min-width: 0;
   }
@@ -260,42 +260,11 @@
     flex-direction: column;
     gap: var(--e-2);
   }
+  /* La línea de contexto (15.9.1): 13 px en `--c-tinta-2`. */
   .linea {
+    font-size: var(--t-chico);
+    line-height: 1.4;
     color: var(--c-texto-2);
-  }
-
-  /* ---------- Entrada al recorrido ----------
-     Una franja de una sola línea con el riel en tinta (el color habla de estado; la tinta, de acción) y el único botón primario de la pantalla.
-     Sin fondo de color ni cifra grande: la que manda sigue siendo la cobre de abajo. En el celular el texto va arriba y el botón a todo el ancho. */
-  .entrada-recorrido {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--e-3) var(--e-5);
-    padding: var(--e-3) var(--e-4);
-    border: 1px solid var(--c-borde);
-    border-inline-start: 4px solid var(--c-tinta);
-    border-radius: 0 var(--r-2) var(--r-2) 0;
-    background: var(--c-superficie);
-  }
-  .entrada-recorrido-texto {
-    flex: 1 1 20rem;
-    min-width: 0;
-    font-weight: 600;
-    line-height: 1.35;
-  }
-  .entrada-recorrido :global(.boton) {
-    --icono-tam: 1rem;
-    flex: none;
-  }
-  @media (max-width: 29.99rem) {
-    .entrada-recorrido {
-      padding-inline-end: var(--e-3);
-    }
-    .entrada-recorrido :global(.boton) {
-      flex: 1 1 100%;
-    }
   }
 
   .autoria {
@@ -311,204 +280,19 @@
     }
   }
 
-  /* ---------- Cifras ----------
-     La cobre manda: en celular y tableta arriba, a todo el ancho; desde 70 rem, la mitad izquierda con la cifra más grande y las otras cuatro en una grilla de 2 × 2 al lado.
-     Sin `overflow: hidden`, para no recortar el anillo de foco. */
-  .cifras {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    min-width: 0;
-  }
-  .valor {
-    font-family: var(--t-familia-titulo);
-    font-stretch: var(--t-ancho-titulo);
-    font-weight: 700;
-    line-height: 0.95;
-  }
-
-  .foco {
-    display: flex;
-    align-items: center;
-    gap: var(--e-4);
-    min-height: 7.5rem;
-    padding: var(--e-4) var(--e-4) var(--e-4) var(--e-5);
-    border-radius: var(--r-2) var(--r-2) 0 0;
-    background: var(--c-critico-solido);
-    color: var(--c-sobre-solido);
-    text-decoration: none;
-    transition: background-color var(--m-rapido) linear;
-  }
-  .foco .valor {
-    flex: none;
-    font-size: var(--t-cifra-grande);
-  }
-  .rotulo-foco {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: var(--e-1);
-    min-width: 0;
-  }
-  .titulo-foco {
-    font-family: var(--t-familia-titulo);
-    font-stretch: var(--t-ancho-titulo);
-    font-size: 1.375rem;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.01em;
-  }
-  .bajada {
-    font-size: var(--t-tabla);
-    font-weight: 600;
-    line-height: 1.35;
-  }
-  .disponibles {
-    font-size: var(--t-tabla);
-    line-height: 1.35;
-    color: var(--c-sobre-solido-2);
-  }
-  .flecha {
-    display: inline-flex;
-    flex: none;
-    margin-inline-start: auto;
-  }
-  @media (hover: hover) {
-    .foco:hover {
-      background: color-mix(in srgb, var(--c-critico-solido) 88%, black);
-    }
-  }
-  .foco:focus-visible {
-    outline: 3px solid var(--c-foco-oscuro);
-    outline-offset: -0.4375rem;
-  }
-  /* Con 0 no disponibles: en verde malaquita, como «en orden». */
-  .foco.ok {
-    background: var(--c-vigente-f);
-    color: var(--c-vigente-t);
-  }
-  .foco.ok .disponibles {
-    color: var(--c-texto-2);
-  }
-  .foco.ok:focus-visible {
-    outline-color: var(--c-foco);
-  }
-
-  .sub {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1px;
-    border: 1px solid var(--c-borde);
-    border-top: 0;
-    border-radius: 0 0 var(--r-2) var(--r-2);
-    background: var(--c-borde);
-  }
-  .sub > li {
-    display: flex;
-    min-width: 0;
-  }
-  .sub > li:nth-child(3) .cifra {
-    border-bottom-left-radius: calc(var(--r-2) - 1px);
-  }
-  .sub > li:nth-child(4) .cifra {
-    border-bottom-right-radius: calc(var(--r-2) - 1px);
-  }
-  .cifra {
-    position: relative;
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: var(--e-1);
-    min-width: 0;
-    min-height: 5.5rem;
-    padding: var(--e-3) var(--e-4);
-    background: var(--c-superficie);
-    color: var(--c-texto);
-    text-decoration: none;
-    transition: background-color var(--m-rapido) linear;
-  }
-  .cifra .valor {
-    font-size: var(--t-cifra);
-    color: var(--tono-t, var(--c-texto));
-  }
-  .rotulo-cifra {
-    font-size: var(--t-chico);
-    font-weight: 600;
-    line-height: 1.25;
-    color: var(--c-texto-2);
-  }
-  .forma-cifra {
-    position: absolute;
-    top: var(--e-3);
-    right: var(--e-3);
-    display: inline-flex;
-    color: var(--tono-r);
-  }
-  .forma-cifra :global(.forma) {
-    --forma-tam: 0.6875rem;
-  }
-  @media (hover: hover) {
-    .cifra:hover {
-      background: var(--c-superficie-2);
-    }
-  }
-  .cifra:focus-visible {
-    outline-offset: -5px;
-    z-index: 1;
-  }
-  /* Los tonos de una cifra con algo que atender salen de `data-tono`; «neutro» deja el texto en su color. */
-  .cifra[data-tono="neutro"] {
-    --tono-t: var(--c-texto);
-  }
-
   /* ---------- Paneles ---------- */
   .paneles {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--e-4);
     min-width: 0;
+    margin-top: var(--e-2);
   }
   .paneles > div {
     min-width: 0;
   }
 
   @media (min-width: 70rem) {
-    .cifras {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
-    .foco {
-      min-height: 12.25rem;
-      padding: var(--e-4) var(--e-6);
-      gap: var(--e-5);
-      border-radius: var(--r-2) 0 0 var(--r-2);
-    }
-    .foco .valor {
-      font-size: 7rem;
-      letter-spacing: -0.02em;
-    }
-    .titulo-foco {
-      font-size: 1.5rem;
-    }
-    .bajada,
-    .disponibles {
-      font-size: 0.9375rem;
-    }
-    .sub {
-      border-top: 1px solid var(--c-borde);
-      border-left: 0;
-      border-radius: 0 var(--r-2) var(--r-2) 0;
-    }
-    .sub > li:nth-child(2) .cifra {
-      border-top-right-radius: calc(var(--r-2) - 1px);
-    }
-    .sub > li:nth-child(3) .cifra {
-      border-bottom-left-radius: 0;
-    }
-    .cifra {
-      min-height: 6rem;
-      padding: var(--e-3) var(--e-5);
-    }
-
     /* La regla sube a la primera pantalla: columna derecha, arriba de la operación diaria. */
     .paneles {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -528,7 +312,7 @@
     }
   }
 
-  /* ---------- Filas: una lista de trabajo con riel de color ---------- */
+  /* ---------- Filas: la lista de piezas del plano, con el precinto de 6 px de su tono a la izquierda (15.6.5) ---------- */
   .filas > li + li {
     border-top: 1px solid var(--c-borde);
   }
@@ -537,12 +321,19 @@
     display: flex;
     align-items: center;
     gap: var(--e-3);
-    min-height: 3.75rem;
-    padding: var(--e-3) var(--e-3) var(--e-3) calc(var(--e-4) + 2px);
-    box-shadow: inset 4px 0 0 var(--tono-r, transparent);
+    min-height: 3.375rem;
+    padding: var(--e-2) var(--e-3) var(--e-2) 1.125rem;
     color: var(--c-texto);
     text-decoration: none;
     transition: background-color var(--m-rapido) linear;
+  }
+  .fila::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--tono-r, var(--c-crit-marca)) 0 1.5px, transparent 1.5px 5px);
   }
   .fila:focus-visible {
     outline-offset: -3px;
@@ -585,17 +376,18 @@
     }
   }
 
+  /* Rótulo del grupo: técnica de 12 px, mayúsculas. */
   .subtitulo {
     padding: var(--e-4) var(--e-4) var(--e-2);
     border-top: 1px solid var(--c-borde);
-    font-family: var(--t-familia);
+    font-family: var(--t-mono);
     font-stretch: 100%;
-    font-size: var(--t-chico);
-    font-weight: 700;
+    font-size: var(--t-rotulo);
+    font-weight: 500;
     line-height: 1.3;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--c-texto-2);
+    color: var(--c-texto-3);
   }
   .conductor {
     display: flex;
@@ -603,8 +395,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--e-2) var(--e-3);
-    padding: var(--e-3) var(--e-4) var(--e-3) calc(var(--e-4) + 2px);
-    box-shadow: inset 4px 0 0 var(--tono-r);
+    padding: var(--e-2) var(--e-4) var(--e-3);
   }
   .texto-conductor {
     display: flex;
@@ -657,12 +448,6 @@
   :global(.panel .controles) .enlace-flecha {
     padding-inline: var(--e-3);
   }
-  /* «Vencimientos»: el contexto («3 vencidos o faltantes · 9 vencen en 30 días») es largo; baja siempre a su renglón, alineado con el título, y «Ver todos» queda arriba a la derecha. */
-  .p-vencimientos :global(.barra .meta) {
-    order: 2;
-    flex: 1 0 100%;
-    padding: 0 0 var(--e-2) calc(1.25rem + var(--e-2));
-  }
 
   /* Operación diaria: la cifra grande de cada fila, en el tono de su gravedad. */
   .compactas .fila {
@@ -678,14 +463,18 @@
     font-size: var(--t-chico);
     color: var(--c-texto-2);
   }
+  /* La cifra de cada fila es de cartel y de 28 px; solo la crítica lleva el color de su tono (el ámbar no se usa para texto en cifras grandes: la forma y la franja ya lo dicen). */
   .cifra-fila {
     flex: none;
-    min-width: 1.5rem;
+    min-width: 2rem;
     font-family: var(--t-familia-titulo);
-    font-stretch: var(--t-ancho-titulo);
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-stretch: var(--t-ancho-cifra);
+    font-size: 1.75rem;
+    font-weight: var(--t-peso-cifra);
     line-height: 1;
+    text-align: center;
+  }
+  .fila-operacion[data-tono="critico"] .cifra-fila {
     color: var(--tono-t);
   }
   /* «Así lo carga el conductor: Abrir el parte diario → (cambia la vista a Conductor)»: las tres partes juntas, en el mismo renglón si entran. */
@@ -759,37 +548,16 @@
   }
 
   /* ---------- Texto agrandado (200 %): el contenido mide 17 rem o menos (272 px con el texto normal) ----------
-     La cifra cobre pasa a una columna, las cuatro cifras a una por renglón y las filas se apilan: ningún texto parte una palabra (docs/diseno-ui.md, 12). */
+     Las filas se apilan: ningún texto parte una palabra (docs/diseno-ui.md, 12). */
   @container inicio (max-width: 17rem) {
-    .foco {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--e-2);
-      padding: var(--e-3);
-    }
-    .foco .valor {
-      font-size: var(--t-cifra);
-    }
-    .flecha,
     .siguiente {
       display: none;
     }
-    .sub {
-      grid-template-columns: minmax(0, 1fr);
+    .fila {
+      padding-inline: calc(var(--e-2) + 6px) var(--e-2);
     }
-    .sub > li .cifra {
-      border-radius: 0;
-    }
-    .sub > li:last-child .cifra {
-      border-radius: 0 0 calc(var(--r-2) - 1px) calc(var(--r-2) - 1px);
-    }
-    .cifra {
-      min-height: 4.5rem;
-      padding: var(--e-2) var(--e-3);
-    }
-    .fila,
     .conductor {
-      padding-inline: calc(var(--e-2) + 4px) var(--e-2);
+      padding-inline: var(--e-2);
     }
     .fila-operacion {
       flex-wrap: wrap;
@@ -812,16 +580,11 @@
 
   /* ---------- Colores forzados ---------- */
   @media (forced-colors: active) {
-    .foco {
-      border: 2px solid CanvasText;
-    }
-    .fila,
-    .conductor {
+    .fila {
       border-inline-start: 4px solid CanvasText;
-      box-shadow: none;
     }
-    .entrada-recorrido {
-      border-color: CanvasText;
+    .fila::before {
+      display: none;
     }
     .marca-vacia::before,
     .marca-vacia i {

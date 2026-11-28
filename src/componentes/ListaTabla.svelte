@@ -94,17 +94,21 @@
     overflow-wrap: anywhere;
   }
 
-  /* ---------- Tabla completa ---------- */
+  /* ---------- Tabla completa (15.5.5) ----------
+     Encabezado en técnica de 12 px y mayúsculas, `--c-tinta-3` sobre la hoja, con un filete inferior de 1,5 px en tinta; filas de 46 px como mínimo con un filete inferior; las que
+     tienen tono llevan un precinto de 6 px a la izquierda con el color de marca del tono (las filas en orden no llevan nada). */
   th[scope="col"] {
     padding: var(--e-2) var(--e-3);
-    border-bottom: 1px solid var(--c-borde-fuerte);
+    background: var(--c-hoja);
+    border-bottom: var(--b-fuerte) solid var(--c-tinta);
+    font-family: var(--t-mono);
     font-size: var(--t-rotulo);
     line-height: 1.3;
-    font-weight: 700;
-    letter-spacing: 0.07em;
+    font-weight: 500;
+    letter-spacing: 0.06em;
     text-align: left;
     text-transform: uppercase;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-3);
     /* Ninguna cabecera se parte dentro de una palabra («KILOMETRA / JE»): si una no entra, que se vea en la revisión. */
     overflow-wrap: normal;
     word-break: normal;
@@ -112,29 +116,28 @@
   }
   .grupo th {
     padding: var(--e-4) var(--e-3) var(--e-2);
-    border-bottom: 1px solid var(--c-borde);
+    border-bottom: 1px solid var(--c-filete);
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: var(--t-peso-fuerte);
     line-height: 1.3;
     text-align: left;
-    color: var(--c-texto);
+    color: var(--c-tinta);
   }
+  /* El grupo es un título de la lista, en la letra de texto (el cartel es del `h1` y de las secciones sueltas). */
   .titulo-grupo {
     display: inline-flex;
     align-items: center;
     gap: var(--e-2);
-    font-family: var(--t-familia-titulo);
+    font-family: var(--t-familia);
   }
   .fila :global(td) {
-    height: 3.5rem;
+    height: 2.875rem;
     padding: var(--e-2) var(--e-3);
-    border-bottom: 1px solid var(--c-borde);
+    border-bottom: 1px solid var(--c-filete);
     vertical-align: middle;
   }
-  /* Franja de 4 px del tono de la alerta, a la izquierda de la fila. */
   .fila :global(td:first-of-type) {
     padding-left: var(--e-4);
-    box-shadow: inset 4px 0 0 var(--tono-r, transparent);
   }
   .fila :global(td[data-col="vence"]),
   .fila :global(td[data-col="fecha"]) {
@@ -193,9 +196,17 @@
       padding-left: var(--e-4);
     }
   }
+  /* Tabla completa: el precinto de 6 px del tono, en la primera celda. Solo `background-image`: el cursor encima cambia el color de fondo sin apagarlo. */
+  @container lista (min-width: 65rem) {
+    .fila[data-tono] :global(td:first-of-type) {
+      background-image: repeating-linear-gradient(-45deg, var(--tono-r) 0 1.5px, transparent 1.5px 7px);
+      background-repeat: no-repeat;
+      background-size: 6px 100%;
+    }
+  }
   @media (hover: hover) {
     .fila:hover :global(td) {
-      background: var(--c-superficie-2);
+      background-color: var(--c-papel-2);
     }
   }
 
@@ -227,9 +238,14 @@
       column-gap: var(--e-4);
       row-gap: var(--e-1);
       min-height: 3.5rem;
-      padding: var(--e-3) var(--e-3) var(--e-3) var(--e-4);
-      border-bottom: 1px solid var(--c-borde);
-      box-shadow: inset 4px 0 0 var(--tono-r, transparent);
+      padding: var(--e-3) var(--e-3) var(--e-3) calc(var(--e-4) + 2px);
+      border-bottom: 1px solid var(--c-filete);
+    }
+    /* Compacta y tarjetas: el precinto de 6 px va en la fila entera. */
+    .fila[data-tono] {
+      background-image: repeating-linear-gradient(-45deg, var(--tono-r) 0 1.5px, transparent 1.5px 7px);
+      background-repeat: no-repeat;
+      background-size: 6px 100%;
     }
     .fila :global(td),
     .fila :global(td:first-of-type) {
@@ -247,7 +263,7 @@
     }
     @media (hover: hover) {
       .fila:hover {
-        background: var(--c-superficie-2);
+        background-color: var(--c-papel-2);
       }
       .fila:hover :global(td) {
         background: none;
@@ -338,7 +354,7 @@
     [data-variante="vencimientos"] .fila :global(td[data-col="proyecto"]) {
       order: 4;
       font-size: var(--t-chico);
-      color: var(--c-texto-2);
+      color: var(--c-tinta-2);
     }
     [data-variante="vencimientos"] .fila :global(td[data-col="vence"])::before {
       content: "· ";
@@ -464,7 +480,7 @@
     }
     [data-variante="flota"] .fila :global(td[data-col="proyecto"]) {
       font-size: var(--t-chico);
-      color: var(--c-texto-2);
+      color: var(--c-tinta-2);
     }
   }
 
@@ -535,8 +551,10 @@
       grid-template-columns: minmax(0, 1fr);
       row-gap: var(--e-2);
       margin-top: var(--e-3);
-      border: 1px solid var(--c-borde);
-      border-radius: var(--r-2);
+      background-color: var(--c-hoja);
+      border: 1px solid var(--c-filete-medio);
+      border-top: var(--b-fuerte) solid var(--c-tinta); /* la cabeza de la tarjeta: un filete de 1,5 px en tinta */
+      border-radius: var(--r-0);
     }
     [data-variante="documentos"] .fila :global(td[data-etiqueta])::before {
       content: attr(data-etiqueta);
@@ -547,7 +565,7 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--c-texto-2);
+      color: var(--c-tinta-2);
     }
     .fila :global(td[data-col="accion"] > *) {
       width: 100%;

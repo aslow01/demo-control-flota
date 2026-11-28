@@ -78,11 +78,53 @@ export async function comprobarLimpia(page: Page, vigilancia: Vigilancia, titulo
 
 /** Cambia el perfil a «Conductor» (el de `e2e/ejemplo.ts`, con una unidad apta) como lo haría la persona: «Ver como», elegir y «Aplicar». Termina en Hoy. */
 export async function verComoConductor(page: Page): Promise<void> {
-  await page.getByRole("button", { name: /^Ver como: Encargado/ }).click();
+  await page.getByRole("button", { name: /^Ver como Encargado/ }).click();
   const dialogo = page.getByRole("dialog", { name: "Ver como" });
   await dialogo.getByRole("radio", { name: /^Conductor/ }).check();
   await dialogo.getByRole("radio", { name: new RegExp(`^${CONDUCTOR}`) }).check();
   await dialogo.getByRole("button", { name: "Aplicar" }).click();
   await expect(dialogo).toBeHidden();
   await esperarPantalla(page, "Hoy");
+}
+
+// ---------- Ayudantes de la etapa 2 del rediseño (regla de salida, movimiento y apariencia) ----------
+
+/** Espera la regla de salida de Inicio: su título «Disponibles hoy» y ya no el cuadro cero del arranque. */
+export async function esperarRegla(page: Page): Promise<void> {
+  await expect(page.locator("section.salida h2")).toHaveText("Disponibles hoy");
+  await page.evaluate(() => document.fonts.ready);
+}
+
+/** Lo que dice la regla para lectores («Disponibles hoy: 19 de 23 unidades activas.»), como números. Es el valor final desde el primer cuadro. */
+export async function leerLaRegla(page: Page): Promise<{ disponibles: number; activas: number; texto: string }> {
+  const texto = (await page.locator("section.salida > .solo-lectores").first().textContent()) ?? "";
+  const m = /Disponibles hoy: (\d+) de (\d+) unidades? activas?\./.exec(texto);
+  if (m === null) throw new Error(`El párrafo de la regla no dice lo esperado: «${texto}»`);
+  return { disponibles: Number(m[1]), activas: Number(m[2]), texto };
+}
+
+/** Empieza a sumar los saltos de diseño (`layout-shift` sin entrada de la persona) antes de que se cargue nada. Se lee con `saltoDeDiseno`. */
+export async function vigilarSaltos(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __salto: number };
+    w.__salto = 0;
+    new PerformanceObserver((lista) => {
+      for (const e of lista.getEntries() as unknown as { value: number; hadRecentInput: boolean }[]) if (!e.hadRecentInput) w.__salto += e.value;
+    }).observe({ type: "layout-shift", buffered: true });
+  });
+}
+
+/** El salto de diseño acumulado desde que empezó la vigilancia. */
+export async function saltoDeDiseno(page: Page): Promise<number> {
+  return page.evaluate(() => (window as unknown as { __salto?: number }).__salto ?? 0);
+}
+
+/** Mide si el borde de abajo de `selector` queda por encima del borde de arriba de la barra inferior (o de la ventana, si no hay barra). */
+export async function entraEnLaPrimeraPantalla(page: Page, selector: string): Promise<{ entra: boolean; abajo: number; limite: number }> {
+  const caja = await page.locator(selector).first().boundingBox();
+  const barra = await page.locator('nav[aria-label="Secciones"]:visible').first().boundingBox();
+  const ventana = page.viewportSize();
+  if (caja === null || ventana === null) throw new Error(`No se pudo medir «${selector}»`);
+  const limite = barra?.y ?? ventana.height;
+  return { entra: caja.y + caja.height <= limite, abajo: caja.y + caja.height, limite };
 }

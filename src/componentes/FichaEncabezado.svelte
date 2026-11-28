@@ -145,16 +145,19 @@
       --tam: 1.25rem;
     }
   }
+  /* La línea de la unidad (15.9.5): el interno en técnica y tinta, el modelo en `--c-tinta-2`, separados por un filete. */
   .identidad {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--e-1) 0;
+    /* En línea (no `flex`): si no entra, el modelo sigue en el renglón de abajo sin dejar el filete solo al principio. */
     min-width: 0;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
     overflow-wrap: anywhere; /* marca y modelo los escribe la persona */
   }
-  .identidad span {
-    min-width: 0;
+  .identidad span:first-child {
+    font-family: var(--t-mono);
+    font-size: var(--t-chico);
+    font-weight: 600;
+    line-height: 1.5rem;
+    color: var(--c-tinta);
   }
   .identidad span + span::before {
     content: "";
@@ -162,31 +165,48 @@
     width: 1px;
     height: 1em;
     margin-inline: var(--e-3);
-    background: var(--c-borde-fuerte);
+    background: var(--c-control);
     vertical-align: -0.125em;
   }
 
-  /* ---------- Banda del estado ---------- */
+  /* ---------- Banda del estado (15.9.5) ----------
+     Es el aviso del tono que corresponde: borde de 1,5 px en el color de texto del tono, fondo del tono y esquinas rectas; lo crítico y lo que vence esta semana suman el precinto de 6 px
+     a la izquierda. El grafito (taller, baja) es una hoja con borde de tinta, como el aviso neutro, y «Disponible» no lleva fondo ni borde: lo normal no se pinta. */
   .banda {
     display: flex;
     flex-direction: column;
     gap: var(--e-1);
-    padding: var(--e-3) var(--e-4) var(--e-3) 0.875rem;
+    padding: 0.75rem 0.875rem;
     background: var(--tono-f);
-    border-left: 4px solid var(--tono-r);
-    border-radius: 0 var(--r-1) var(--r-1) 0;
+    border: var(--b-control) solid var(--tono-t);
+    border-radius: var(--r-0);
     min-width: 0;
+  }
+  .banda[data-tono="critico"],
+  .banda[data-tono="semana"] {
+    padding-left: 1.25rem;
+    box-shadow: inset 6px 0 0 var(--tono-r);
+  }
+  .banda[data-tono="neutro"] {
+    --tono-f: var(--c-hoja);
+    --tono-t: var(--c-tinta);
+  }
+  .banda[data-tono="vigente"] {
+    padding: 0;
+    background: none;
+    border: 0;
   }
   .estado :global(.etiqueta) {
     padding-inline: 0;
     min-height: 0;
     font-size: 0.875rem;
+    font-weight: 600;
   }
   .porque {
     font-size: var(--t-h3);
-    font-weight: 700;
+    font-weight: var(--t-peso-fuerte);
     line-height: 1.3;
-    color: var(--c-texto);
+    color: var(--c-tinta);
     /* El motivo lo escribe la persona: un texto sin espacios no tiene que ensanchar la página. */
     overflow-wrap: anywhere;
   }
@@ -197,11 +217,11 @@
     padding-left: var(--e-5);
     margin-top: var(--e-1);
     list-style: disc;
-    color: var(--c-texto);
+    color: var(--c-tinta);
     overflow-wrap: anywhere;
   }
   .motivos li::marker {
-    color: var(--c-texto-2);
+    color: var(--c-tinta-3);
   }
 
   /* ---------- Datos ---------- */
@@ -211,15 +231,8 @@
     gap: var(--e-3) var(--e-4);
     width: 100%;
   }
-  .datos :global(dt) {
-    font-size: var(--t-rotulo);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--c-texto-3);
-  }
+  /* El rótulo (técnica de 12 px) y el valor (14 px, peso 600) los pone `Dato` (15.5.9). */
   .datos :global(dd) {
-    font-weight: 600;
     overflow-wrap: anywhere;
   }
   .conductor {
@@ -256,10 +269,10 @@
     width: 100%;
     padding-block: var(--e-2);
   }
-  /* Con dos columnas y un número impar, la última (casi siempre «Más acciones») ocupa todo el ancho. */
-  @media (max-width: 29.4rem) {
-    .acciones > :global(:last-child:nth-child(odd)) {
-      grid-column: 1 / -1;
+  /* Celular (menos de 30 rem): cada acción a todo el ancho, de 44 px (15.9.5); la primera es la que sigue. */
+  @media (max-width: 29.99rem) {
+    .acciones {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
   /* Tableta: en fila, cada botón con el ancho de su texto. */
@@ -299,6 +312,11 @@
   @media (forced-colors: active) {
     .identidad span + span::before {
       background: CanvasText;
+    }
+    .banda[data-tono="critico"],
+    .banda[data-tono="semana"] {
+      box-shadow: none;
+      border-left-width: 6px;
     }
   }
 </style>

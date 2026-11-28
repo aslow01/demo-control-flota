@@ -145,17 +145,19 @@
   .campo[data-grande] {
     --alto: var(--alto-segmento);
   }
+  /* Pie de rey (15.5.7): rótulo de 13 px y peso 600 arriba, ayuda de 13 px en `--c-tinta-3`, control de `--alto-control` (48 px con `grande`) con borde de 1,5 px y esquinas
+     de 2 px; el mensaje de error con rombo, en el crítico. */
   label {
     font-size: var(--t-chico);
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.4;
-    color: var(--c-texto-2);
+    color: var(--c-tinta);
   }
   .ayuda,
   .contador {
     font-size: var(--t-chico);
     line-height: 1.4;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-3);
   }
   .contador {
     text-align: right;
@@ -165,9 +167,9 @@
     align-items: flex-start;
     gap: var(--e-2);
     font-size: var(--t-chico);
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.4;
-    color: var(--c-critico-t);
+    color: var(--c-crit);
   }
   .error :global(.forma) {
     margin-block: 0.3125rem 0;
@@ -192,7 +194,7 @@
   .sufijo {
     flex: none;
     font-size: var(--t-cuerpo);
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
 
   input,
@@ -203,12 +205,30 @@
     width: 100%;
     height: var(--alto);
     padding: 0 0.875rem;
-    border: var(--b-control) solid var(--c-borde-fuerte);
+    border: var(--b-control) solid var(--c-control);
     border-radius: var(--r-1);
-    background: var(--c-superficie);
-    color: var(--c-texto);
-    font-size: var(--t-cuerpo); /* 16 px: evita el zoom automático de iOS */
+    background: var(--c-hoja);
+    color: var(--c-tinta);
+    font-size: 1rem; /* 16 px: evita el zoom automático de iOS; desde 64 rem, 14 px (abajo) */
     line-height: 1.5;
+  }
+  @media (min-width: 64rem) {
+    input,
+    select,
+    textarea {
+      font-size: var(--t-cuerpo);
+    }
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--c-tinta-3);
+    opacity: 1;
+  }
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    background: var(--c-papel-2);
+    color: var(--c-tinta-3);
   }
   /* B5 de la etapa 7: la opción elegida de un `select` no se parte en renglones; si no entra (la de un conductor sin licencia vigente, a 360 px), termina en «…» y no en un «·» suelto. */
   select {
@@ -235,29 +255,32 @@
   }
 
   @media (hover: hover) {
-    input:hover,
-    select:hover,
-    textarea:hover {
-      border-color: var(--c-texto-2);
+    input:hover:not(:disabled),
+    select:hover:not(:disabled),
+    textarea:hover:not(:disabled) {
+      border-color: var(--c-tinta-2);
     }
   }
 
-  /* Con el foco el borde pasa al azurita (el anillo de 3 px sigue afuera, pegado al campo). */
+  /* Con el foco el borde pasa a tinta (el anillo de 3 px sigue afuera, pegado al campo). */
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
     outline-offset: 0;
-    border-color: var(--c-foco);
+    border-color: var(--c-tinta);
   }
 
-  /* Inválido: borde cobre con un filete adentro (más grueso sin mover nada) y el hover no lo apaga. */
+  /* Inválido: borde crítico y una barra interior de 3 px a la izquierda en el mismo color (no mueve nada); el hover y el foco no la apagan. */
   input[aria-invalid="true"],
   select[aria-invalid="true"],
   textarea[aria-invalid="true"],
   input[aria-invalid="true"]:hover,
   select[aria-invalid="true"]:hover,
-  textarea[aria-invalid="true"]:hover {
-    border-color: var(--c-critico-r);
-    box-shadow: inset 0 0 0 1px var(--c-critico-r);
+  textarea[aria-invalid="true"]:hover,
+  input[aria-invalid="true"]:focus-visible,
+  select[aria-invalid="true"]:focus-visible,
+  textarea[aria-invalid="true"]:focus-visible {
+    border-color: var(--c-crit-marca);
+    box-shadow: inset 3px 0 0 var(--c-crit-marca);
   }
 </style>

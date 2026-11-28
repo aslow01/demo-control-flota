@@ -418,15 +418,20 @@
   .pantalla {
     display: flex;
     flex-direction: column;
-    gap: var(--e-5);
+    gap: var(--e-4);
     width: 100%;
     min-width: 0;
   }
+  /* Patente inexistente (15.9.5): título, párrafo y enlace; sin precinto ni chapa. */
   .no-encontrada {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: var(--e-3);
+    max-width: 40rem;
+  }
+  .parrafo {
+    color: var(--c-tinta-2);
   }
 
   .cuerpo {
@@ -436,8 +441,8 @@
   }
 
   /* ---------- Solapas (celular y tableta) ----------
-     Pestañas de archivo: la elegida es del color de la hoja, lleva una barra de tinta arriba y el corte en diagonal a la derecha. La fila se desplaza sola si no entran todas
-     (con el texto agrandado); no desplaza la página. Los 3 px de la barra y el borde de 1 px de la hoja se solapan con `margin-bottom: -1px`. */
+     Pestañas de archivo de «Pie de rey»: la elegida es de la hoja, lleva una barra de tinta de 3 px arriba y el corte en diagonal a la derecha; las demás, de `--c-papel-2`. La fila se desplaza sola
+     si no entran todas (con el texto agrandado); no desplaza la página. Los 3 px de la barra y el filete de la hoja se solapan con `margin-bottom: -1px`. Una sola pieza se mueve: la elegida. */
   .solapas {
     --corte: 0.5rem;
     position: relative;
@@ -460,11 +465,11 @@
     padding: 0 calc(0.125rem + var(--corte)) 0 0.5rem;
     border: 0;
     background: none;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
     font-family: var(--t-familia-titulo);
-    font-stretch: 75%;
-    font-size: 0.90625rem;
-    font-weight: 650;
+    font-stretch: var(--t-ancho-cifra);
+    font-size: 0.9375rem;
+    font-weight: var(--t-peso-cartel);
     cursor: pointer;
   }
   .solapa::before {
@@ -472,24 +477,24 @@
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: var(--c-superficie-2);
-    border-radius: var(--r-2) 0 0 0;
+    background: var(--c-papel-2);
+    border-radius: var(--r-1) 0 0 0;
     clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% 100%, 0 100%);
   }
   @media (hover: hover) {
     .solapa:hover {
-      color: var(--c-texto);
+      color: var(--c-tinta);
     }
     .solapa:hover::before {
-      background: color-mix(in srgb, var(--c-superficie-2) 70%, var(--c-borde-fuerte));
+      background: color-mix(in srgb, var(--c-papel-2) 70%, var(--c-control));
     }
   }
   .solapa[aria-selected="true"] {
-    color: var(--c-texto);
+    color: var(--c-tinta);
   }
   .solapa[aria-selected="true"]::before {
-    background: var(--c-superficie);
-    box-shadow: inset 1px 1px 0 var(--c-borde);
+    background: var(--c-hoja);
+    box-shadow: inset 1px 1px 0 var(--c-filete-medio);
   }
   .solapa[aria-selected="true"]::after {
     content: "";
@@ -503,30 +508,33 @@
   .solapa:focus-visible {
     outline-offset: -3px;
   }
-  /* El número: cuántos documentos vencidos o faltantes y cuántas novedades abiertas (el lector de pantalla lo dice con palabras). */
+  /* El número: cuántos documentos vencidos o faltantes y cuántas novedades abiertas (el lector de pantalla lo dice con palabras). Técnica de 12 px, caja recta. */
   .n {
     display: inline-grid;
     place-items: center;
     min-width: 1.375rem;
     height: 1.25rem;
     padding: 0 0.375rem;
-    border-radius: var(--r-pildora);
-    background: var(--c-superficie-2);
-    color: var(--c-texto-2);
-    font-family: var(--t-familia);
+    border: 1px solid var(--c-filete-medio);
+    border-radius: var(--r-0);
+    background: var(--c-hoja);
+    color: var(--c-tinta-2);
+    font-family: var(--t-mono);
     font-stretch: 100%;
-    font-size: 0.8125rem;
-    font-weight: 700;
+    font-size: var(--t-rotulo);
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
   .solapa[aria-selected="true"] .n {
-    background: var(--c-texto-2);
-    color: var(--c-superficie);
+    border-color: var(--c-tinta);
+    background: var(--c-tinta);
+    color: var(--c-sobre-tinta);
   }
   .n.critica,
   .solapa[aria-selected="true"] .n.critica {
-    background: var(--c-critico-solido);
+    border-color: var(--c-crit-relleno);
+    background: var(--c-crit-relleno);
     color: var(--c-sobre-solido);
   }
   @media (forced-colors: active) {
@@ -536,11 +544,6 @@
     .n {
       border: 1px solid CanvasText;
     }
-  }
-
-  /* La hoja de debajo de las solapas pierde la esquina de arriba a la izquierda (las solapas nacen ahí). */
-  .paneles.con-solapas :global(.panel) {
-    border-top-left-radius: 0;
   }
 
   /* Celular y tableta: una columna, un panel a la vez (el de la solapa elegida). El orden del DOM es el de Tab: en escritorio Kilometraje se ve a la derecha, bajo Novedades, y viene
@@ -573,8 +576,8 @@
   }
   @media (min-width: 64rem) {
     .paneles {
-      /* La columna de la derecha mide entre 18 y 22 rem (la tabla de kilometraje necesita más de 17); documentos toma el resto. */
-      grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+      /* Documentos ocupa dos tercios y la columna de la derecha el tercio restante (15.9.5), con 18 rem como mínimo: la tabla de kilometraje necesita más de 17. */
+      grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
       /* Documentos ocupa dos filas: lo que sobre de su altura va a la segunda, no entre Novedades y Kilometraje. */
       grid-template-rows: auto 1fr;
       grid-template-areas:

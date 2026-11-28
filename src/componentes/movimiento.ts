@@ -3,7 +3,8 @@
 //  - `conMovimiento` envuelve la barra de direcciones: cuando el aviso de cambio trae OTRA PANTALLA (no un filtro ni una letra del buscador), el
 //    cambio de estado corre dentro de `document.startViewTransition`. La salida dura 110 ms y la entrada, 230 ms (CSS en `base.css`).
 //    La patente viaja de la fila de la lista al título de la ficha y vuelve (`view-transition-name` puesto por CSSOM, nunca por atributo `style`: la CSP no lo permite).
-//  - Sin `startViewTransition` (otros navegadores) entra una animación CSS equivalente (`main.entra`). Con `prefers-reduced-motion: reduce`, nada.
+//  - Sin `startViewTransition` (otros navegadores) entra una animación CSS equivalente (`main.entra`). Con `prefers-reduced-motion: reduce` o con «Sin animaciones» (`data-movimiento="quieto"`), nada.
+//  - `esperarTransicion` dice cuándo termina la transición en curso: la entrada de una vista (`entrada.ts`) la espera antes de soltar su coreografía.
 //  - Los cambios que hace la propia aplicación (`app.irA`, perfil, reinicio) ya dibujaron el estado antes de que llegue el aviso: no llevan movimiento.
 import { tick } from "svelte";
 import { clavePantalla, parsearHash } from "../lib/estado/enrutador.ts";
@@ -15,8 +16,17 @@ const NOMBRE_DE_LA_PATENTE = "patente-viaja";
 /** Lo más que se espera a que llegue el título de una pantalla que se baja al entrar (ficha, parte, conductor) antes de sacar la foto nueva. */
 const ESPERA_MAXIMA_MS = 400;
 
+/** «Menos movimiento»: lo pide el sistema (`prefers-reduced-motion: reduce`) o la persona con «Sin animaciones» (`data-movimiento="quieto"` en <html>, lo pone `main.ts`). */
 export function quiereMenosMovimiento(): boolean {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.dataset.movimiento === "quieto";
+}
+
+/** La transición entre pantallas que está corriendo ahora (`null` si no hay ninguna). La entrada de una vista espera a que termine antes de soltar su coreografía. */
+let transicionEnCurso: Promise<void> | null = null;
+
+/** Se cumple cuando no hay ninguna transición entre pantallas en curso (enseguida, si no hay). Una transición saltada o rota cuenta como terminada. */
+export function esperarTransicion(): Promise<void> {
+  return transicionEnCurso ?? Promise.resolve();
 }
 
 /**
@@ -73,12 +83,26 @@ async function esperarLaPantalla(): Promise<void> {
   }
 }
 
+/** Lo más que se espera a que avise `animationend` de la entrada con CSS (dura 230 ms): si nunca llega (pestaña oculta, animación sin efecto), la espera se suelta igual. */
+const TOPE_DE_LA_ENTRADA_CON_CSS_MS = 600;
+let terminarEntradaConCss: (() => void) | null = null;
+
 /** Para navegadores sin View Transitions: la pantalla nueva entra con la misma subida corta. */
 function entradaConCss(aplicar: () => void): void {
   aplicar();
+  // Para `esperarTransicion`: la entrada «termina» cuando acaba la animación (o enseguida, si no hay `#principal` donde correrla, o pasado el tope).
+  terminarEntradaConCss?.();
+  const terminada = new Promise<void>((listo) => {
+    terminarEntradaConCss = listo;
+    setTimeout(listo, TOPE_DE_LA_ENTRADA_CON_CSS_MS);
+  });
+  transicionEnCurso = terminada;
+  void terminada.then(() => {
+    if (transicionEnCurso === terminada) transicionEnCurso = null;
+  });
   void tick().then(() => {
     const principal = document.getElementById("principal");
-    if (principal === null) return;
+    if (principal === null) return terminarEntradaConCss?.();
     // Un solo oyente para todas las entradas (el mismo, agregarlo otra vez no hace nada): al terminar la animación se saca la clase.
     principal.addEventListener("animationend", alTerminarLaEntrada);
     principal.classList.remove(CLASE_DE_ENTRADA);
@@ -87,7 +111,9 @@ function entradaConCss(aplicar: () => void): void {
   });
 }
 function alTerminarLaEntrada(e: AnimationEvent): void {
-  if (e.target === e.currentTarget && e.currentTarget instanceof HTMLElement) e.currentTarget.classList.remove(CLASE_DE_ENTRADA);
+  if (e.target !== e.currentTarget || !(e.currentTarget instanceof HTMLElement)) return;
+  e.currentTarget.classList.remove(CLASE_DE_ENTRADA);
+  terminarEntradaConCss?.();
 }
 
 function conTransicion(aplicar: () => void, antes: string, despues: string): void {
@@ -112,57 +138,19 @@ function conTransicion(aplicar: () => void, antes: string, despues: string): voi
   // falló `aplicar` (el cambio de estado): eso sí se informa, no se traga. `finished` repite ese rechazo, así que acá solo se limpia.
   transicion.ready.catch(() => {});
   transicion.updateCallbackDone.catch((error: unknown) => console.error(error));
+  // `terminada` se cumple siempre (también si la transición se salta o se rompe): quien espera no se queda colgado.
+  const terminada = transicion.finished.then(
+    () => undefined,
+    () => undefined,
+  );
+  transicionEnCurso = terminada;
   const limpiar = (): void => {
     document.documentElement.classList.remove(CLASE_EN_TRANSICION);
     sacar(viejo);
     sacar(nuevo);
+    if (transicionEnCurso === terminada) transicionEnCurso = null;
   };
   void transicion.finished.then(limpiar, limpiar);
-}
-
-// ---------- La cifra cobre de Inicio cuenta de 0 a N (al abrir la demo y al reiniciarla) ----------
-// Es solo lo que se ve: el valor final está siempre en el DOM para los lectores de pantalla (`CifraQueCuenta`), y nada de esto se anuncia.
-const EVENTO_DE_CUENTA = "cuenta-de-cifras";
-const DURACION_DE_LA_CUENTA_MS = 650;
-let cuentaPendiente = true;
-
-/** Pide que la cifra vuelva a contar (después de reiniciar la demo). */
-export function pedirCuenta(): void {
-  cuentaPendiente = true;
-  document.dispatchEvent(new Event(EVENTO_DE_CUENTA));
-}
-
-/** ¿Toca contar ahora? Lo gasta: cuenta una vez por pedido (la primera, al abrir). Con menos movimiento nunca cuenta. */
-export function consumirCuenta(): boolean {
-  const toca = cuentaPendiente && !quiereMenosMovimiento();
-  cuentaPendiente = false;
-  return toca;
-}
-
-export function alPedirseLaCuenta(oyente: () => void): () => void {
-  document.addEventListener(EVENTO_DE_CUENTA, oyente);
-  return () => document.removeEventListener(EVENTO_DE_CUENTA, oyente);
-}
-
-/** Cuenta de 0 a `fin` frenando al final (curva cúbica). Devuelve cómo cortarla; `alPaso` recibe cada número y termina siempre en `fin`. */
-export function contarHasta(fin: number, alPaso: (n: number) => void, alTerminar: () => void): () => void {
-  // Sin nada que contar, o con «menos movimiento» (que puede cambiar entre que se pidió la cuenta y que arranca): el valor final de una vez.
-  if (fin <= 0 || quiereMenosMovimiento()) {
-    alPaso(fin);
-    alTerminar();
-    return () => {};
-  }
-  const inicio = performance.now();
-  let cuadro = 0;
-  const paso = (ahora: number): void => {
-    const avance = Math.min(1, Math.max(0, (ahora - inicio) / DURACION_DE_LA_CUENTA_MS));
-    alPaso(Math.round(fin * (1 - (1 - avance) ** 3)));
-    if (avance < 1) cuadro = requestAnimationFrame(paso);
-    else alTerminar();
-  };
-  alPaso(0);
-  cuadro = requestAnimationFrame(paso);
-  return () => cancelAnimationFrame(cuadro);
 }
 
 export function conMovimiento(base: Ubicacion): Ubicacion {

@@ -184,19 +184,29 @@
     flex-direction: column;
     gap: var(--e-4);
   }
+  /* Error al guardar (15.5.11): se dice dentro del cuerpo, con el crítico: borde de 1,5 px, fondo suave y un precinto de 6 px a la izquierda (el texto va en su propia columna). */
   .error-general {
     --icono-tam: 1rem;
+    position: relative;
     display: flex;
     align-items: flex-start;
     gap: var(--e-2);
-    padding: var(--e-3);
-    background: var(--c-critico-f);
-    border-left: 4px solid var(--c-critico-r);
-    border-radius: var(--r-2);
+    padding: var(--e-3) var(--e-3) var(--e-3) calc(var(--e-3) + 6px);
+    background: var(--c-crit-fondo);
+    border: var(--b-fuerte) solid var(--c-crit);
+    border-radius: var(--r-1);
     font-size: var(--t-chico);
     font-weight: 600;
     line-height: 1.4;
-    color: var(--c-critico-t);
+    color: var(--c-crit);
+  }
+  .error-general::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--c-crit-marca) 0 1.5px, transparent 1.5px 7px);
   }
   .error-general :global(.icono) {
     margin-top: 0.1rem;

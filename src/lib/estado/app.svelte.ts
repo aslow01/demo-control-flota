@@ -38,7 +38,7 @@ import { avisoEntrePestanas, type AvisoEntrePestanas } from "../persistencia/pes
 import { RepositorioMemoria } from "../persistencia/memoria.ts";
 import { ErrorDeRepositorio, type Repositorio } from "../persistencia/repositorio.ts";
 import type { ResultadoDeBorrador } from "./autoguardado.ts";
-import { conductorConParteBloqueadoPorDocumento, conductoresParaProbar, inicioDelConductor as armarInicio, misPartes as armarMisPartes, opcionesParaElegirConductor as armarOpcionesDeConductor, type InicioDelConductor, type MisPartes, type OpcionParaElegirConductor } from "./conductor.ts";
+import { opcionesParaElegirConductor, type OpcionParaElegirConductor } from "./conductor-opciones.ts";
 import { centroDeAlertas, contarVencimientos, type CentroDeAlertas } from "./centro-alertas.ts";
 import { aHash, claveConsulta, clavePantalla, nombreDePantalla, resolverRuta, rutaPadre, rutaPorDefecto, tituloDePagina, type Ruta } from "./enrutador.ts";
 import { generarId } from "./ids.ts";
@@ -205,8 +205,9 @@ export class EstadoApp {
   centroDeAlertas = $derived<CentroDeAlertas | null>(
     this.estado === null || this.alertas === null ? null : centroDeAlertas(this.estado, this.alertas, this.hoy, EMPRESA.nombre),
   );
-  // La flota (6.2), la ficha (6.3) y el parte (6.5) las arman sus propios módulos, que se bajan con su pantalla: `leerPanelDeFlota(app)` (estado/flota.ts), `leerFicha(app)` (estado/ficha.ts)
-  // y `leerParte(app)` (estado/parte.ts).
+  // La flota (6.2), la ficha (6.3), el parte (6.5) y las pantallas del conductor (6.4) las arman sus propios módulos, que se bajan con su pantalla: `leerPanelDeFlota(app)` (estado/flota.ts),
+  // `leerFicha(app)` (estado/ficha.ts), `leerParte(app)` (estado/parte.ts), y `leerInicioDelConductor(app)` y `leerMisPartes(app)` (estado/conductor.ts). La entrada al recorrido de Inicio
+  // es `leerEntradaAlRecorrido(app)` (estado/recorrido.ts, liviano: viaja con el marco).
   /** Se llegó a una ficha desde otra pantalla con algo que decir (hoy, «Unidad agregada…»): patente y mensaje. Se va al salir de esa ficha. */
   private llegada = $state<{ patente: string; mensaje: string } | null>(null);
   /** El mensaje de llegada a la ficha que se está mirando (la barra de estado arranca con él); `null` si no hay. La vista lo reemplaza con los suyos. */
@@ -642,36 +643,11 @@ export class EstadoApp {
   // Los dos perfiles pueden usarlos (sección 8); con el perfil Conductor el conductor del parte es siempre quien lo completa.
 
   /**
-   * La pantalla del perfil Conductor (6.4). `unidadElegidaId` es lo que eligió con «Usar otra unidad» (estado de la vista). `null` con el perfil Encargado o antes de
-   * terminar el arranque. Se llama dentro de un `$derived` de la vista: se recalcula con cada cambio de datos.
+   * Las opciones del diálogo «¿Quién completa el parte?»: todo conductor activo, con su unidad y si su licencia ampara hoy (L1). Las marcas «Para probar» (M1) no viajan con el marco:
+   * salen de `leerSugerenciasDeVerComo(app)` (estado/conductor.ts), que el marco baja al abrir el diálogo y suma con `conSugerencias`.
    */
-  inicioDelConductor(unidadElegidaId: string | null = null): InicioDelConductor | null {
-    if (this.estado === null || this.alertas === null) return null;
-    return armarInicio(this.estado, this.alertas, this.hoy, this.perfil, unidadElegidaId);
-  }
-
-  /** La pantalla Mis partes (`#/conductor/partes`): los últimos cinco partes cerrados del conductor del perfil. `null` con el perfil Encargado o antes de terminar el arranque. */
-  misPartes(): MisPartes | null {
-    return this.estado === null ? null : armarMisPartes(this.estado, this.perfil);
-  }
-
-  /**
-   * Las opciones del diálogo «¿Quién completa el parte?»: todo conductor activo, con su unidad y si su licencia ampara hoy (L1). `paraProbar` (M1) marca a los que sirven para ver
-   * cada caso (`conductoresParaProbar`); el diálogo los pone primero.
-   */
-  opcionesDeConductor(): (OpcionParaElegirConductor & { paraProbar: { etiqueta: string; sinLicencia: boolean } | null })[] {
-    if (this.estado === null) return [];
-    const sugeridos = new Map((this.alertas === null ? [] : conductoresParaProbar(this.estado, this.alertas, this.hoy)).map((s) => [s.conductorId, s]));
-    return armarOpcionesDeConductor(this.estado, this.hoy).map((o) => {
-      const s = sugeridos.get(o.id);
-      return { ...o, paraProbar: s === undefined ? null : { etiqueta: s.etiqueta, sinLicencia: s.caso === "sin-licencia" } };
-    });
-  }
-
-  /** La entrada al recorrido de Inicio: el conductor cuyo parte está bloqueado por el seguro vencido de su unidad, o `null` (la franja no se muestra). */
-  entradaAlRecorrido(): { conductorId: string } | null {
-    if (this.estado === null || this.alertas === null) return null;
-    return conductorConParteBloqueadoPorDocumento(this.estado, this.alertas, this.hoy);
+  opcionesDeConductor(): OpcionParaElegirConductor[] {
+    return this.estado === null ? [] : opcionesParaElegirConductor(this.estado, this.hoy);
   }
 
   /** El contexto de un ensayo (comando que no se escribe): no gasta ids del generador. Lo usa `parte-escritura.ts`. */

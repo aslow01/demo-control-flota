@@ -91,39 +91,35 @@
 </fieldset>
 
 <style>
-  /* Una fila del checklist dentro de la tarjeta de la revisión (que pone el divisor entre filas). El riel va con `box-shadow` interior: no ocupa lugar. */
+  /* Pie de rey (15.5.10). Una fila del checklist dentro de la tarjeta de la revisión (que pone el divisor entre filas). Sin riel de estado: lo que se respondió lo dicen las dos opciones
+     (llenas). Con error (sin responder tras intentar enviar), un precinto crítico de 6 px en el borde izquierdo del ítem; el texto no va sobre él (el relleno lo deja libre). */
   .item {
-    --riel: var(--c-superficie-2);
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: var(--e-3);
     min-width: 0;
-    padding: var(--e-3) var(--e-4) var(--e-4) calc(var(--e-4) + 2px);
-    box-shadow: inset 4px 0 0 var(--riel);
-    transition:
-      box-shadow var(--m-medio) linear,
-      background-color var(--m-medio) linear;
+    padding: var(--e-3) var(--e-4) var(--e-4) calc(var(--e-4) + 6px);
   }
-  .item[data-resp="orden"] {
-    --riel: var(--c-vigente-r);
+  .item.con-error::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--c-crit-marca) 0 1.5px, transparent 1.5px 7px);
   }
-  .item[data-resp="novedad"] {
-    --riel: var(--c-critico-r);
-    background: color-mix(in srgb, var(--c-critico-f) 40%, var(--c-superficie));
-  }
-  .item.con-error {
-    --riel: var(--c-critico-r);
-  }
-  /* Texto agrandado (el parte mide 17 rem o menos): casi sin relleno a los lados (el riel de 4 px y un poco más) y el nombre del punto en el tamaño del cuerpo, para que una palabra\n     como «Documentación» entre entera en su renglón (S5 de la etapa 7). */
+  /* Texto agrandado (el parte mide 17 rem o menos): casi sin relleno a los lados (el precinto de 6 px y un poco más) y el nombre del punto en el tamaño del cuerpo, para que una palabra
+     como «Documentación» entre entera en su renglón (S5 de la etapa 7). */
   @container parte (max-width: 17rem) {
     .item {
-      padding-inline: calc(var(--e-1) + 4px) var(--e-1);
+      padding-inline: calc(var(--e-1) + 6px) var(--e-1);
     }
   }
   /* 320 px con el texto agrandado (el parte mide 8 rem): sin relleno a la derecha, para que una palabra de 7 rem entre entera. */
   @container parte (max-width: 8.5rem) {
     .item {
-      padding-inline: calc(var(--e-1) + 2px) 0;
+      padding-inline: calc(var(--e-1) + 6px) 0;
     }
   }
   /* El nombre y la marca de «Punto crítico» en un renglón; si no entran, la marca baja. Flotado, el `legend` deja de ser «el rótulo sobre el borde» y es un hijo más:
@@ -141,17 +137,11 @@
     clear: both;
   }
   .nombre {
-    font-size: 1.0625rem;
-    font-weight: 650;
+    font-size: 0.9375rem;
+    font-weight: 600;
     line-height: 1.3;
     /* m1 de la etapa 7: si el nombre del punto no entra ni en su propio renglón (320 px con el texto al 200 %), se parte en vez de ensanchar la página. */
     overflow-wrap: anywhere;
-  }
-  @container parte (max-width: 17rem) {
-    .nombre {
-      font-size: var(--t-cuerpo);
-      font-weight: 600;
-    }
   }
 
   .error {
@@ -159,9 +149,9 @@
     align-items: flex-start;
     gap: var(--e-2);
     font-size: var(--t-chico);
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.4;
-    color: var(--c-critico-t);
+    color: var(--c-crit);
     overflow-wrap: anywhere;
   }
   .error :global(.forma),
@@ -181,18 +171,19 @@
     }
   }
 
-  /* Dos segmentos, 50 % y 50 %, 48 px. El radio ocupa toda la caja y no se ve: el segmento dice si está elegido. */
+  /* Dos opciones, 50 % y 50 %, 48 px. El radio ocupa toda la caja y no se ve: la opción dice si está elegida. */
   .segmentos {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--e-2);
   }
-  /* Texto agrandado: los dos segmentos uno debajo del otro (va después de la regla base: a igual especificidad, gana la última). */
+  /* Texto agrandado: las dos opciones una debajo de la otra (va después de la regla base: a igual especificidad, gana la última). */
   @container parte (max-width: 17rem) {
     .segmentos {
       grid-template-columns: minmax(0, 1fr);
     }
   }
+  /* Sin elegir: hoja, borde de 1,5 px en tinta y sombra dura de 2 px. */
   .segmento {
     position: relative;
     display: flex;
@@ -200,12 +191,13 @@
     justify-content: center;
     min-height: var(--alto-segmento);
     padding: 0 var(--e-2);
-    background: var(--c-superficie);
-    border: var(--b-control) solid var(--c-borde-fuerte);
+    background: var(--c-hoja);
+    border: var(--b-control) solid var(--c-tinta);
     border-radius: var(--r-1);
-    color: var(--c-texto);
+    box-shadow: var(--s-dura) var(--c-tinta);
+    color: var(--c-tinta);
     font-size: 0.9375rem;
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.2;
     text-align: center;
     cursor: pointer;
@@ -220,29 +212,53 @@
     opacity: 0;
     cursor: pointer;
   }
+  .segmento > span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e-2);
+  }
   @media (hover: hover) {
     .segmento:not(:has(input:checked)):hover {
-      background: var(--c-superficie-2);
+      background: var(--c-papel-2);
     }
   }
-  /* Elegido: «En orden» en tinta (la acción), «Con novedad» en cobre sólido; con un filete interior que da el contraste del borde también en oscuro. */
+  /* Elegida: «En orden» en tinta con la marca de verificación; «Con novedad» en crítico sólido con el rombo. Las dos marcas se dibujan con CSS (el `<script>` no cambia) y son
+     decorativas: la opción se nombra por su texto y su radio. */
   .segmento[data-respuesta="en-orden"]:has(input:checked) {
     background: var(--c-tinta);
-    border-color: var(--c-tinta);
     color: var(--c-sobre-tinta);
   }
   .segmento[data-respuesta="con-novedad"]:has(input:checked) {
-    background: var(--c-critico-solido);
-    border-color: var(--c-critico-r);
-    box-shadow: inset 0 0 0 1px var(--c-critico-r);
+    background: var(--c-crit-relleno);
+    border-color: var(--c-crit-relleno);
+    box-shadow: var(--s-dura) var(--c-crit-relleno);
     color: var(--c-sobre-solido);
   }
-  .item.con-error .segmento:not(:has(input:checked)) {
-    border-color: var(--c-critico-r);
+  .segmento:has(input:checked) > span::before {
+    content: "";
+    flex: none;
   }
+  .segmento[data-respuesta="en-orden"]:has(input:checked) > span::before {
+    width: 0.625rem;
+    height: 0.3125rem;
+    border: solid currentColor;
+    border-width: 0 0 2px 2px;
+    transform: rotate(-45deg) translate(1px, -1px);
+  }
+  .segmento[data-respuesta="con-novedad"]:has(input:checked) > span::before {
+    width: 0.5rem;
+    height: 0.5rem;
+    background: currentColor;
+    transform: rotate(45deg);
+  }
+  /* Foco: el anillo general por fuera; sobre la opción roja, `--c-foco-oscuro` por dentro (el anillo de afuera no se mediría contra el fondo de la ficha, sino contra el rojo). */
   .segmento:has(input:focus-visible) {
     outline: 3px solid var(--c-foco);
     outline-offset: 2px;
+  }
+  .segmento[data-respuesta="con-novedad"]:has(input:checked):has(input:focus-visible) {
+    outline-color: var(--c-foco-oscuro);
+    outline-offset: -6px;
   }
 
   .novedad {
@@ -258,19 +274,21 @@
     gap: var(--e-2);
     font-size: var(--t-chico);
     line-height: 1.4;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
     overflow-wrap: anywhere;
   }
 
   @media (forced-colors: active) {
-    .item {
-      border-left: 4px solid CanvasText;
+    .item.con-error::before {
+      forced-color-adjust: none;
+      background-image: repeating-linear-gradient(-45deg, CanvasText 0 1.5px, transparent 1.5px 7px);
+    }
+    .segmento {
       box-shadow: none;
     }
     .segmento:has(input:checked) {
       background: Highlight;
       color: HighlightText;
-      box-shadow: none;
       forced-color-adjust: none;
     }
   }

@@ -33,6 +33,9 @@
 
 /* ---------- Fuentes de reemplazo con las medidas corregidas ----------
    Cifras medidas en Chromium (25/11/2026) con un texto en español de unos 230 caracteres: ancho de la fuente propia ÷ ancho de Arial (o Courier New).
+   Bricolage se vuelve a medir el 28/11/2026 (T6): los títulos pasaron del 85 % de ancho al 78 % y las cifras al 75 % (`--t-ancho-titulo` y `--t-ancho-cifra`), y con eso cambia su
+   proporción contra Arial: peso 760 contra Arial Bold, 91,8 % al 100 % de ancho, 76,7 % al 85 % (el 75 % que había), 69,7 % al 78 % y 66,7 % al 75 %. Queda en 70 %, el de los títulos
+   (las cifras del 75 % quedan unos 3 puntos más anchas en la fuente de reemplazo, que dura lo que tarda en llegar la propia, precargada). Los márgenes de línea son 0,93 y 0,27 ÷ 70 %.
    Los márgenes de línea son (ascenso o descenso de la propia) ÷ size-adjust. Si el sistema no tiene la fuente local, se sigue con el resto de la lista y no pasa nada. */
 @font-face {
   font-family: "Schibsted Grotesk Ajustada";
@@ -56,18 +59,18 @@
   font-family: "Bricolage Grotesque Ajustada";
   font-weight: 400 500;
   src: local("Arial"), local("ArialMT");
-  size-adjust: 75%;
-  ascent-override: 124%;
-  descent-override: 36%;
+  size-adjust: 66%;
+  ascent-override: 140.9%;
+  descent-override: 40.9%;
   line-gap-override: 0%;
 }
 @font-face {
   font-family: "Bricolage Grotesque Ajustada";
   font-weight: 600 800;
   src: local("Arial Bold"), local("Arial-BoldMT");
-  size-adjust: 75%;
-  ascent-override: 124%;
-  descent-override: 36%;
+  size-adjust: 70%;
+  ascent-override: 132.9%;
+  descent-override: 38.6%;
   line-gap-override: 0%;
 }
 @font-face {

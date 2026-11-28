@@ -52,36 +52,28 @@
 </Dialogo>
 
 <style>
+  /* Pie de rey (15.5.11, #15): cada aviso con su ícono en el color de su tono, en filas separadas por un filete (sin fondo de color: el texto va sobre la hoja). */
   .avisos {
     display: flex;
     flex-direction: column;
-    gap: var(--e-3);
+    border-top: 1px solid var(--c-filete);
   }
   .aviso {
     display: flex;
     align-items: flex-start;
     gap: var(--e-3);
-    padding: var(--e-3) var(--e-4);
-    background: var(--tono-f);
-    border: 1px solid transparent;
-    border-left: 4px solid var(--tono-r);
-    border-radius: 0 var(--r-1) var(--r-1) 0;
+    padding: var(--e-3) 0;
+    border-bottom: 1px solid var(--c-filete);
     line-height: 1.5;
   }
   @container dialogo (max-width: 17rem) {
     .aviso {
       flex-wrap: wrap;
       gap: var(--e-1) var(--e-2);
-      padding: var(--e-2);
+      padding-block: var(--e-2);
     }
     .texto {
       flex: 1 1 7rem;
-    }
-  }
-  /* 320 px con el texto agrandado (el diálogo mide 10 rem): otro escalón menos de relleno, para que «documentación» (7 rem) entre entera. */
-  @container dialogo (max-width: 10.5rem) {
-    .aviso {
-      padding-inline: var(--e-1);
     }
   }
   .icono-aviso {

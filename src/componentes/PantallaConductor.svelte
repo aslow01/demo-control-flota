@@ -1,6 +1,6 @@
 <script lang="ts">
   // Inicio del conductor (6.4, `#/conductor`): 1) qué unidad es y qué hay que hacer hoy con el parte, 2) lo pendiente de otros días, 3) su licencia, 4) sus últimos
-  // partes. No tiene reglas de negocio: todo lo arma `app.inicioDelConductor(unidadElegida)` (lib/estado/parte.ts).
+  // partes. No tiene reglas de negocio: todo lo arma `leerInicioDelConductor(app, unidadElegida)` (lib/estado/conductor.ts, que se baja con esta pantalla).
   //  - Panel «Hoy», en ocho estados (el primero que aplica gana; los decide `inicioDelConductor`): sin unidad (solo el `select`), cerrado («Cerrado a las 18:42» o, si no salió, el
   //    aviso crítico de la revisión con «hasta mañana»; «Ver el parte»), en uso («En uso desde las 06:52» y «Cerrar el parte»), unidad fuera de servicio (aviso: no hace falta parte),
   //    licencia que no ampara hoy (aviso de bloqueo, sin primario y sin «Usar otra unidad»: no cambia nada), «Cerrar antes» (estado 5 bis: aviso semana y «Cerrar el parte anterior»),
@@ -9,9 +9,13 @@
   //  - «Usar otra unidad» abre un `select` de las unidades en servicio; elegir una cambia a qué parte lleva el botón (la unidad elegida es estado de esta pantalla).
   //  - «Descartar borrador» no deja otro botón en su lugar: el foco va al título del panel y la barra de estado dice «Borrador descartado.».
   //  - Los paneles «Pendientes» y «Su licencia» existen solo si hay algo que decir.
-  import { tick } from "svelte";
+  import { onDestroy, tick } from "svelte";
   import { TEXTO_INICIO_CONDUCTOR, textoAvisoDeDocumento, textoFraseDelAviso } from "../lib/dominio/textos-conductor.ts";
+  import { leerInicioDelConductor } from "../lib/estado/conductor.ts";
   import { app } from "../lib/estado/instancia.ts";
+  import { veredictoDelDia } from "../lib/estado/veredicto.ts";
+  import { entrada } from "./entrada.ts";
+  import type { SituacionDeEntrada } from "./entrada.ts";
   import BotonConfirmar from "./BotonConfirmar.svelte";
   import Boton from "./Boton.svelte";
   import Campo from "./Campo.svelte";
@@ -31,10 +35,16 @@
   const ID_AVISO_CERRAR_ANTES = `${uid}-aviso-cerrar-antes`;
   const idSelect = `${uid}-unidad`;
 
+  // Entrada de la vista (15.10): una vez por sesión; acá solo se pone `data-entrada` y `data-pausa` y el CSS hace el resto.
+  let situacion = $state<SituacionDeEntrada>({ estado: "completa", pausa: true });
+  onDestroy(entrada.empezar("conductor", (nueva) => (situacion = nueva)));
+
   // Lo que eligió con «Usar otra unidad» (`""` = la asignada).
   let seleccion = $state("");
   let mostrandoSelect = $state(false);
-  const inicio = $derived(app.inicioDelConductor(seleccion === "" ? null : seleccion));
+  const inicio = $derived(leerInicioDelConductor(app, seleccion === "" ? null : seleccion));
+  // El veredicto de la llave (15.8, DE3): sale del estado del día; con el aviso de «no puede salir» arriba del botón (P9) no puede decir «sale». `null` sin unidad asignada.
+  const veredicto = $derived(inicio === null ? null : veredictoDelDia(inicio.hoyEstado, inicio.avisoAptitud !== null));
   // Con «Cerrar antes» (estado 5 bis) el aviso ya lleva a ese parte: «Pendientes» no lo repite (los demás siguen).
   const pendientes = $derived.by(() => {
     if (inicio === null) return [];
@@ -55,6 +65,9 @@
   }
 
   // Elegir otra unidad cambia patente, interno, último registro y destino del botón: se dice en la barra de estado del panel.
+  /** El motivo de «no puede salir» sin su remate «La unidad no puede salir.»: el veredicto del pie de la llave («No puede salir hoy») ya lo dice y repetirlo es ruido (T17). El texto de dominio no cambia. */
+  const sinElRemate = (motivo: string): string => motivo.replace(/ La unidad no puede salir.$/, "");
+
   function alElegirUnidad(): void {
     const u = inicio?.unidad;
     if (seleccion === "" || u === null || u === undefined) return;
@@ -71,7 +84,7 @@
 </script>
 
 {#if inicio !== null}
-  <div class="pantalla">
+  <div class="pantalla" data-entrada={situacion.estado} data-pausa={situacion.pausa ? "" : undefined}>
     <div class="encabezado">
       <h1 tabindex="-1" aria-describedby={inicio.hoyEstado.tipo === "cierre-pendiente" ? ID_AVISO_CERRAR_ANTES : undefined}>{inicio.titulo}</h1>
     </div>
@@ -81,13 +94,19 @@
       <div class="col-hoy">
         <Panel id={idHoy} titulo={inicio.hoy.titulo} icono="parte" estado={mensaje.texto} repetir={mensaje.n}>
           {#if inicio.unidad !== null}
+            <!-- La llave (15.8): un objeto de papel que cuelga de un gancho; la chapa grande, los datos y, en el pie, el veredicto. `.objeto` va en el cuerpo dibujado. -->
             <div class="unidad">
-              <p class="identidad">
-                <Patente patente={inicio.unidad.patente} tamano="grande" />
-                <span class="interno">{inicio.unidad.interno}</span>
-              </p>
-              <p class="descripcion">{inicio.unidad.descripcion}</p>
-              <p class="nota">{inicio.unidad.ultimoRegistro}</p>
+              <div class="llave objeto" data-veredicto={veredicto?.tipo} data-corto={veredicto !== null && veredicto.texto.length <= 12 ? "" : undefined} data-largo={veredicto !== null && veredicto.texto.length > 20 ? "" : undefined}>
+                <p class="chapa"><Patente patente={inicio.unidad.patente} tamano="grande" /></p>
+                <p class="datos"><span class="interno">{inicio.unidad.interno}</span><span class="separador" aria-hidden="true">{" · "}</span><span class="descripcion">{inicio.unidad.descripcion}</span></p>
+                <p class="nota">{inicio.unidad.ultimoRegistro}</p>
+                <!-- El veredicto (15.8): un párrafo, no una región viva; está escrito desde el primer cuadro y a la vista en el pie de la llave. -->
+                {#if veredicto !== null}
+                  <p class="veredicto" data-veredicto={veredicto.tipo}>
+                    <span class="marca">{#if veredicto.tipo === "sale"}<Icono nombre="circulo-check" />{:else if veredicto.tipo === "no-sale"}<Icono nombre="rombo-alerta" />{:else}<Forma forma="triangulo" tono="semana" />{/if}</span><span class="texto-veredicto">{veredicto.texto}</span>
+                  </p>
+                {/if}
+              </div>
             </div>
           {/if}
 
@@ -118,14 +137,16 @@
             </div>
           {:else if inicio.hoyEstado.tipo === "en-uso"}
             {@const u = inicio.hoyEstado}
-            <p class="enviado"><EtiquetaParte tipo="en-uso" texto={u.etiqueta} /></p>
+            <!-- «En uso desde las 06:52» ya es el veredicto de la llave: la etiqueta de abajo no se repite. -->
+            {#if veredicto?.texto !== u.etiqueta}<p class="enviado"><EtiquetaParte tipo="en-uso" texto={u.etiqueta} /></p>{/if}
             <p class="nota-estado">{u.texto}</p>
             <div class="accion-principal"><EnlaceAccion href={u.primario.href} variante="primario" tamano="grande">{u.primario.texto}</EnlaceAccion></div>
           {:else if inicio.hoyEstado.tipo === "enviado"}
             {@const e = inicio.hoyEstado}
             {#if e.sinSalida !== null}
               <Aviso tono="critico" icono="octogono"><span class="largo">{e.sinSalida}</span></Aviso>
-            {:else}
+            {:else if veredicto?.texto !== e.etiqueta}
+              <!-- Con «Cerrado a las 18:42» como veredicto la etiqueta no se repite abajo. -->
               <p class="enviado"><EtiquetaParte tipo="cerrado" texto={e.etiqueta} /></p>
             {/if}
             {#if e.hastaManana !== null}<p class="nota-estado">{e.hastaManana}</p>{/if}
@@ -135,7 +156,7 @@
           {:else if inicio.hoyEstado.tipo === "licencia-no-vigente" || inicio.hoyEstado.tipo === "no-puede-salir"}
             <!-- Estados 5 (L1) y 5 ter (P21, la documentación de la unidad): el bloqueo se dice sin rol de alerta (el foco ya fue al h1 y esto es lo primero que se lee en el panel) y sin primario: no se deshabilita nada, se explica. -->
             {@const l = inicio.hoyEstado}
-            <Aviso tono="critico" icono="vencido" accion={l.renglon2}>{l.renglon1}</Aviso>
+            <Aviso tono="critico" icono="vencido" accion={l.renglon2}>{sinElRemate(l.renglon1)}</Aviso>
             {#if l.borrador !== null}
               {@const b = l.borrador}
               <p class="estado-dia">{b.texto}</p>
@@ -271,31 +292,197 @@
     }
   }
 
+  /* ---------- La llave de Hoy (15.8) ----------
+     Un objeto de papel que cuelga de un gancho de 3 px: borde de 2 px, esquinas de 6 px arriba y de 22 px abajo, agujero de 12 px. Adentro, la chapa grande (franja de 12 px), el interno
+     con la descripción y el último registro (13 px, centrados) y, en el pie y separado por un filete de 1,5 px, el veredicto en cartel. Mide como mucho 24 rem y va centrada. */
   .unidad {
+    position: relative;
+    width: min(100%, 24rem);
+    min-width: 0;
+    margin-inline: auto;
+    padding-top: 1rem;
+  }
+  .unidad::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: calc(50% - 1.5px);
+    width: 3px;
+    height: 1.75rem;
+    background: var(--c-tinta);
+  }
+  .llave {
+    container: llave / inline-size;
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: var(--e-1);
-    min-width: 0;
-  }
-  .identidad {
-    display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: var(--e-2) var(--e-3);
+    gap: var(--e-1);
+    padding-top: 2.125rem;
+    overflow: hidden;
+    background: var(--obj-hoja);
+    border: var(--b-caja) solid var(--obj-tinta);
+    border-radius: 6px 6px 22px 22px;
+    box-shadow: 0 16px 26px -14px rgb(0 0 0 / 0.55);
+    transform-origin: 50% -1rem;
+  }
+  /* El agujero de la argolla. */
+  .llave::before {
+    content: "";
+    position: absolute;
+    top: 0.625rem;
+    left: calc(50% - 6px);
+    width: 12px;
+    height: 12px;
+    background: var(--obj-papel);
+    border: var(--b-control) solid var(--obj-tinta);
+    border-radius: var(--r-redondo);
+  }
+  .chapa {
+    margin-bottom: var(--e-1);
+  }
+  /* La chapa es la de siempre con el tamaño de la llave: letra de 28 px (34 desde 22,5 rem) y franja de 12 px. */
+  .chapa :global(.patente[data-tamano="grande"]) {
+    --tam: var(--t-patente-llave);
+    --banda: 12px;
+    padding: calc(var(--banda) + 0.25rem) 0.875rem 0.25rem;
+  }
+  .datos,
+  .nota {
+    padding-inline: var(--e-4);
+    font-size: var(--t-chico);
+    line-height: 1.4;
+    color: var(--c-tinta-2);
+    text-align: center;
+    overflow-wrap: anywhere;
   }
   .interno {
     font-weight: 650;
+    color: var(--c-tinta);
   }
-  .descripcion {
+  .nota {
+    padding-bottom: var(--e-3);
+  }
+
+  /* El veredicto: cartel a 75 % (peso 780), 60 px; con más de una palabra o los «no sale», 46 px en dos renglones (`text-wrap: balance`). Marca de 42 px (36 por debajo de 23,75 rem). */
+  .veredicto {
+    --marca: 2.625rem;
+    --separacion: var(--e-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--separacion);
+    align-self: stretch;
+    min-width: 0;
+    padding: var(--e-3) var(--e-4) var(--e-4);
+    border-top: var(--b-fuerte) solid var(--obj-tinta);
+    font-family: var(--t-familia-titulo);
+    font-stretch: var(--t-ancho-cifra);
+    font-weight: var(--t-peso-cifra);
+    font-size: var(--t-veredicto-2);
+    line-height: 0.86;
+    color: var(--obj-tinta);
+  }
+  .llave[data-corto] .veredicto {
+    /* «Puede salir» nunca en dos renglones: 60 px, y si el ancho de la llave no alcanza, baja con él. */
+    font-size: min(var(--t-veredicto), 17cqi);
+    white-space: nowrap;
+  }
+  /* «En uso desde las 06:52» lleva la hora: con tres renglones de 46 px la llave se alarga de más; baja a 36 px y queda en dos. */
+  .llave[data-largo] .veredicto {
+    font-size: 2.25rem;
+  }
+  .marca {
+    --icono-tam: var(--marca);
+    display: inline-flex;
+    flex: none;
+  }
+  .texto-veredicto {
+    min-width: 0;
+    text-wrap: balance;
     overflow-wrap: anywhere;
   }
+  /* El triángulo de «Cierre pendiente» es de tinta (no del tono): no es un bloqueo. */
+  .marca :global(.forma) {
+    width: var(--marca);
+    height: var(--marca);
+    background: var(--obj-tinta);
+  }
+  @media (max-width: 23.74rem) {
+    .veredicto {
+      --marca: 2.25rem;
+      --separacion: var(--e-2);
+    }
+  }
+  /* No sale: el texto y la marca en rojo, la llave con borde del relleno crítico y, al pie, el precinto de 10 px. */
+  .llave[data-veredicto="no-sale"] {
+    border-color: var(--obj-crit-relleno);
+  }
+  .llave[data-veredicto="no-sale"] .veredicto {
+    padding-bottom: calc(var(--e-4) + 10px);
+    color: var(--obj-crit);
+  }
+  .llave[data-veredicto="no-sale"]::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 10px;
+    background: var(--obj-crit-relleno) repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.22) 0 2px, transparent 2px 7px);
+  }
+
+  /* Entrada (15.10), solo con `data-entrada="completa"`: la llave se balancea una vez desde su gancho y, cuando para, el veredicto se estampa. Una pieza por vez; el estado final es el de arriba. */
+  :global([data-entrada="completa"]) .llave {
+    animation: balanceo 520ms var(--m-curva-resorte);
+  }
+  :global([data-entrada="completa"]) .veredicto {
+    animation: estampa 380ms var(--m-curva) 520ms backwards;
+  }
+  :global([data-pausa]) .llave,
+  :global([data-pausa]) .veredicto {
+    animation-play-state: paused;
+  }
+  @keyframes balanceo {
+    0% {
+      transform: rotate(0deg);
+    }
+    20% {
+      transform: rotate(4deg);
+    }
+    60% {
+      transform: rotate(-3deg);
+    }
+    100% {
+      transform: rotate(0deg);
+    }
+  }
+  @keyframes estampa {
+    from {
+      opacity: 0;
+      transform: scale(1.18) rotate(-2.5deg);
+    }
+  }
+  @media (forced-colors: active) {
+    .llave {
+      forced-color-adjust: none;
+      background: Canvas;
+      color: CanvasText;
+      border-color: CanvasText;
+    }
+    .veredicto {
+      color: CanvasText;
+    }
+    .llave[data-veredicto="no-sale"]::after {
+      background: CanvasText;
+    }
+  }
+
   .estado-dia {
     font-weight: 600;
   }
-  /* Estado 3 (en uso): lo que falta hacer, en letra chica debajo de la etiqueta. */
+  /* Estado 3 (en uso): lo que falta hacer, en letra chica. */
   .nota-estado {
     font-size: var(--t-chico);
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
   /* Estados 5 y 5 bis: los avisos de dos renglones son el compacto de `Aviso.svelte`; sobre el fondo crítico el texto va en `--c-texto` (13,68 en claro, 12,99 en oscuro). */
   .largo {
@@ -482,10 +669,18 @@
 
   /* Texto agrandado (va al final: a igual especificidad gana la última regla). C9 y m1 de la etapa 7: con el texto agrandado (el interior mide 17 rem o menos) la patente grande, que no se parte, sale de su caja; pasa a su tamaño chico (5.5). */
   @container interior (max-width: 17rem) {
-    .identidad :global(.patente[data-tamano="grande"]) {
-      --alto: 1.5rem;
-      --relleno: 0.375rem;
+    .chapa :global(.patente[data-tamano="grande"]) {
       --tam: var(--t-patente-chica);
+      --banda: 6px;
+      padding-inline: 0.375rem;
+    }
+    .unidad {
+      width: 100%;
+    }
+    .datos,
+    .nota,
+    .veredicto {
+      padding-inline: var(--e-2);
     }
     .pendiente :global(.enlace-accion) {
       grid-column: 1 / -1;

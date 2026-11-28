@@ -75,17 +75,18 @@
     flex-direction: column;
     gap: var(--e-2);
     padding: var(--e-3) var(--e-4);
-    background: var(--c-superficie-2);
-    border: 1px solid var(--c-borde);
-    border-radius: var(--r-2);
+    background: var(--c-papel);
+    border: 1px solid var(--c-filete-medio);
+    border-radius: var(--r-0);
   }
   .rotulo-novedad {
+    font-family: var(--t-mono);
     font-size: var(--t-rotulo);
     font-weight: 600;
     letter-spacing: 0.06em;
     line-height: 1.3;
     text-transform: uppercase;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-3);
   }
   .cabecera {
     display: flex;

@@ -121,10 +121,12 @@
 {/if}
 
 <style>
+  /* Operación diaria (FL-04, 15.9.4): título y línea de contexto, las solapas (enlaces) y una ficha por solapa con sus grupos. Un solo campo pleno por pantalla: acá no hay ninguno
+     (la solapa elegida lleva una barra de tinta). Entre piezas, 12 px, como en Movilidades. */
   .pantalla {
     display: flex;
     flex-direction: column;
-    gap: var(--e-5);
+    gap: var(--e-3);
     width: 100%;
     min-width: 0;
   }
@@ -134,49 +136,51 @@
     align-items: flex-start;
     gap: var(--e-2);
   }
+  /* La línea de contexto (15.9.1): 13 px en `--c-tinta-2`, con la cuenta en tinta. */
   .linea {
-    color: var(--c-texto-2);
+    font-size: var(--t-chico);
+    line-height: 1.4;
+    color: var(--c-tinta-2);
   }
   .linea b {
-    color: var(--c-texto);
+    color: var(--c-tinta);
     font-weight: 600;
   }
   .cuerpo {
     display: flex;
     flex-direction: column;
+    gap: var(--e-3);
     min-width: 0;
   }
 
-  /* La hoja de debajo de las solapas pierde la esquina de arriba a la izquierda (las solapas nacen ahí). */
-  .hoja :global(.panel) {
-    border-top-left-radius: 0;
-  }
-
+  /* ---------- Grupos de la solapa (técnica de 12 px en mayúsculas, como el encabezado de la tabla densa) ---------- */
   .grupo + .grupo {
-    border-top: 1px solid var(--c-borde);
+    border-top: 1px solid var(--c-filete);
   }
   .grupo h3 {
-    padding: var(--e-4) var(--e-4) var(--e-2);
-    font-family: var(--t-familia);
+    padding: var(--e-3) var(--e-4) var(--e-2);
+    font-family: var(--t-mono);
     font-stretch: 100%;
-    font-size: var(--t-chico);
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-size: var(--t-rotulo);
+    font-weight: 600;
+    letter-spacing: 0.04em;
     line-height: 1.3;
     text-transform: uppercase;
-    color: var(--c-texto-2);
+    color: var(--c-tinta-3);
   }
   .sin-filas {
     padding: var(--e-1) var(--e-4) var(--e-4);
-    color: var(--c-texto-3);
+    font-size: var(--t-chico);
+    color: var(--c-tinta-2);
   }
 
   /* Pie de la solapa Novedades: una línea de aclaración, con el mismo filete y tamaño que el pie de Partes. */
   .pie-hoja {
     padding: var(--e-3) var(--e-4);
-    border-top: 1px solid var(--c-borde);
-    font-size: var(--t-tabla);
-    color: var(--c-texto-2);
+    border-top: 1px solid var(--c-filete);
+    font-size: var(--t-chico);
+    line-height: 1.4;
+    color: var(--c-tinta-2);
   }
 
   /* «Así lo carga el conductor: Abrir el parte diario → (cambia la vista a Conductor)»: las tres partes juntas, en el mismo renglón si entran. */
@@ -186,11 +190,11 @@
     align-items: center;
     column-gap: var(--e-1);
     padding: var(--e-2) var(--e-4);
-    border-top: 1px solid var(--c-borde);
-    font-size: var(--t-tabla);
-    color: var(--c-texto-2);
+    border-top: 1px solid var(--c-filete);
+    font-size: var(--t-chico);
+    color: var(--c-tinta-2);
   }
   .aclaracion {
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
 </style>

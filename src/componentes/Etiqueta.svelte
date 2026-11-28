@@ -24,26 +24,45 @@
 <span class="etiqueta" class:texto={variante === "texto"} data-tono={tono}><Forma forma={formaDeTono(tono)} />{@render children()}</span>
 
 <style>
+  /* Pie de rey (15.5.3). Con fondo: 22 px de alto, técnica de 12 px en mayúsculas, forma antes de la palabra, texto `-t`, fondo `-f`, borde de 1 px (`-t` al 40 %) y esquinas rectas.
+     No es un control. */
   .etiqueta {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    min-height: 1.5rem;
-    padding: 0.125rem 0.5rem;
-    /* El borde es transparente: solo se ve en colores forzados, donde el fondo desaparece. */
-    border: 1px solid transparent;
-    border-radius: var(--r-1);
+    min-height: 1.375rem;
+    padding: 0 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--tono-t) 40%, transparent);
+    border-radius: 0;
     background: var(--tono-f);
     color: var(--tono-t);
-    font-size: var(--t-chico);
-    font-weight: 650;
-    line-height: 1.35;
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    text-transform: uppercase;
     vertical-align: middle;
     /* Las columnas se dimensionan para que la etiqueta entre en un renglón; con el texto agrandado (1.4.4) baja de renglón en lugar de empujar la página. */
     max-width: 100%;
   }
-  /* Variante texto (5.7, D1): el borde sigue ahí (transparente) para que la forma quede en la misma columna que la de las etiquetas con fondo. */
+  /* Variante texto («Disponible», «Bloqueada» en una fila): sin fondo ni borde, forma y palabra en el color del tono, en la letra de texto de 13 px y sin mayúsculas forzadas.
+     El borde sigue ahí (transparente) para que la forma quede en la misma columna que la de las etiquetas con fondo. */
   .texto {
+    border-color: transparent;
     background: transparent;
+    font-family: var(--t-familia);
+    font-size: var(--t-chico);
+    letter-spacing: 0;
+    line-height: 1.35;
+    text-transform: none;
+  }
+  @media (forced-colors: active) {
+    .etiqueta {
+      border-color: CanvasText;
+    }
+    .texto {
+      border-color: transparent;
+    }
   }
 </style>

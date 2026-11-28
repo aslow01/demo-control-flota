@@ -122,7 +122,7 @@
         {#if vista.tipo === "no-disponible" && vista.cerrarAntes !== null}
           <Aviso tono="semana" icono="lapiz" accion={vista.cerrarAntes.renglon2} idTexto={ID_AVISO_CERRAR_ANTES}>{vista.cerrarAntes.renglon1}</Aviso>
         {:else}
-          <p class="parrafo largo">{vista.mensaje}</p>
+          <p class="parrafo largo" class:bloqueo={vista.tipo === "no-disponible"}>{vista.mensaje}</p>
         {/if}
         {#if vista.tipo === "no-disponible" && vista.nota !== null}<p class="parrafo largo">{vista.nota}</p>{/if}
       </div>
@@ -227,17 +227,49 @@
   .encabezado > :global(.aviso) {
     align-self: stretch;
   }
+  /* Bloqueado por documento o por licencia (pantalla E, 15.9.6): una ficha sobre la hoja con el precinto crítico de 6 px a la izquierda y el motivo al lado. El texto no va sobre el rayado:
+     el relleno izquierdo lo deja libre. */
+  .bloqueo {
+    position: relative;
+    align-self: stretch;
+    padding: var(--e-4) var(--e-4) var(--e-4) calc(var(--e-4) + 6px + var(--e-1));
+    background: var(--c-hoja);
+    border: 1px solid var(--c-filete-medio);
+    color: var(--c-tinta);
+  }
+  .bloqueo::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--c-crit-marca) 0 1.5px, transparent 1.5px 7px);
+  }
+  @media (forced-colors: active) {
+    .bloqueo::before {
+      background-image: repeating-linear-gradient(-45deg, CanvasText 0 1.5px, transparent 1.5px 7px);
+    }
+  }
+  /* Con el texto agrandado (la pantalla mide 17 rem o menos): menos relleno, para que el motivo conserve el ancho. */
+  @container pagina-parte (max-width: 17rem) {
+    .bloqueo {
+      padding-inline: calc(6px + var(--e-1)) var(--e-2);
+    }
+  }
 
-  /* La revisión de la unidad, dentro del panel de lectura: separada de los datos por una línea. */
+  /* La revisión de la unidad, dentro de la hoja de lectura: separada de los datos por un filete de 1,5 px en tinta (15.9.6). */
   .revision {
     display: flex;
     flex-direction: column;
     gap: var(--e-3);
     padding-top: var(--e-4);
-    border-top: 1px solid var(--c-borde);
+    border-top: var(--b-fuerte) solid var(--c-tinta);
   }
   .revision h2 {
-    font-size: var(--t-h3);
-    line-height: 1.3;
+    font-family: var(--t-familia-titulo);
+    font-stretch: var(--t-ancho-titulo);
+    font-size: var(--t-h2);
+    font-weight: var(--t-peso-cartel);
+    line-height: 1.1;
   }
 </style>

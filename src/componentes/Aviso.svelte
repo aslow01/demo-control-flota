@@ -72,6 +72,7 @@
 </div>
 
 <style>
+  /* Pie de rey (15.5.6): borde de 1,5 px en el color de texto del tono, fondo del tono, esquinas rectas. El neutro es una hoja con borde de tinta. */
   .aviso {
     display: flex;
     flex-wrap: wrap;
@@ -79,17 +80,19 @@
     gap: var(--e-2) var(--e-3);
     padding: 0.75rem 0.875rem;
     background: var(--tono-f);
-    border: 1px solid transparent;
-    border-left: 4px solid var(--tono-r);
-    border-radius: 0 var(--r-1) var(--r-1) 0;
-    color: var(--c-texto);
+    border: var(--b-control) solid var(--tono-t);
+    border-radius: var(--r-0);
+    color: var(--c-tinta);
+  }
+  .aviso[data-tono="neutro"] {
+    --tono-f: var(--c-hoja);
+    --tono-t: var(--c-tinta);
   }
   .icono-aviso {
-    --icono-tam: 1.125rem;
+    --icono-tam: 1.25rem;
     display: inline-flex;
     flex: none;
     align-self: flex-start;
-    margin-top: 0.1875rem;
     color: var(--tono-t);
   }
   .texto {
@@ -107,6 +110,7 @@
     font-weight: 600;
   }
   .aviso-accion {
+    color: var(--c-tinta-2);
     font-size: var(--t-chico);
     line-height: 1.4;
   }

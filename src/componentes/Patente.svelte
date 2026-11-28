@@ -19,25 +19,28 @@
 
 {#if href !== undefined}
   <a class="enlace-patente" {href} data-tamano={tamano}>
-    <span class="solo-lectores">Ficha de </span><span class="patente" data-tamano={tamano}>{texto}</span>
+    <span class="solo-lectores">Ficha de </span><span class="patente objeto" data-tamano={tamano}>{texto}</span>
   </a>
 {:else}
-  <span class="patente" data-tamano={tamano}>{texto}</span>
+  <span class="patente objeto" data-tamano={tamano}>{texto}</span>
 {/if}
 
 <style>
+  /* La chapa (15.5.2): un objeto de papel claro de día y de noche (`.objeto`, base.css, va en `.patente` y no en el enlace: el anillo de foco del enlace usa el plano). Tinta
+     sobre `--obj-hoja`, borde de 1,5 px, esquinas de 3 px y una franja cobalto arriba. Sin leyenda, escudo ni bandera: no imita la placa oficial. */
   .patente {
     --tam: var(--t-patente-chica);
-    --banda: 4px;
+    --banda: 3px;
     --borde: 1.5px;
-    --color-banda: var(--c-patente-banda);
+    position: relative;
     display: inline-block;
-    padding: 0.0625rem 0.375rem 0.125rem;
-    background: var(--c-patente-fondo);
-    color: var(--c-texto);
-    border: var(--borde) solid var(--c-borde-fuerte);
-    border-top: var(--banda) solid var(--color-banda);
-    border-radius: 3px;
+    /* La franja ocupa los primeros píxeles del relleno de arriba y el texto queda debajo. */
+    padding: calc(var(--banda) + 0.1875rem) 0.375rem 0.1875rem;
+    background: var(--obj-hoja);
+    color: var(--obj-tinta);
+    border: var(--borde) solid var(--obj-tinta);
+    border-radius: var(--r-chapa);
+    box-shadow: var(--s-pieza);
     font-family: var(--t-mono);
     font-size: var(--tam);
     font-weight: 600;
@@ -46,13 +49,19 @@
     white-space: nowrap;
     vertical-align: middle;
   }
-  /* La grande es la de la ficha: banda de 6 px en el color del texto. */
+  .patente::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: var(--banda);
+    background: var(--obj-franja);
+  }
+  /* La grande es la del título de la ficha y del parte: borde de 2 px y franja de 8 px. */
   .patente[data-tamano="grande"] {
     --tam: var(--t-patente-grande);
-    --banda: 6px;
+    --banda: 8px;
     --borde: 2px;
-    --color-banda: var(--c-texto);
-    padding: 0.125rem 0.75rem 0.25rem;
+    padding: calc(var(--banda) + 0.25rem) 0.75rem 0.25rem;
   }
   @media (max-width: 22.5rem) {
     .patente[data-tamano="grande"] {
@@ -77,16 +86,30 @@
     inset-inline: -0.25rem;
     inset-block: 0;
   }
+  .enlace-patente .patente {
+    transition:
+      transform var(--m-rapido) linear,
+      box-shadow var(--m-rapido) linear;
+  }
+  /* Cursor encima: la chapa sube 1 px y se levanta del papel; pulsada, baja 1 px y pierde la sombra. */
   @media (hover: hover) {
     .enlace-patente:hover .patente {
-      border-color: var(--c-texto);
+      transform: translateY(-1px);
+      box-shadow: var(--s-flotante);
     }
+  }
+  .enlace-patente:active .patente {
+    transform: translateY(1px);
+    box-shadow: none;
   }
 
   @media (forced-colors: active) {
     .patente {
       border-color: CanvasText;
-      border-top: var(--banda) solid CanvasText;
+    }
+    .patente::before {
+      forced-color-adjust: none;
+      background: CanvasText;
     }
   }
 </style>

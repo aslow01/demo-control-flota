@@ -61,7 +61,7 @@
   <div class="solo-lectores" role="status">{anuncio}</div>
 
   {#if filas.length === 0}
-    <p class="vacio"><Icono nombre="guion" />{vacio}</p>
+    <p class="vacio">{vacio}</p>
   {:else}
     <ul class="lista">
       {#each filas as n (n.novedadId)}
@@ -108,9 +108,10 @@
     flex-direction: column;
     align-items: flex-start;
     gap: var(--e-1);
-    padding: var(--e-3) var(--e-3) var(--e-3) var(--e-4);
-    border-bottom: 1px solid var(--c-borde);
-    box-shadow: inset 4px 0 0 var(--tono-r, transparent);
+    padding: var(--e-3) var(--e-3) var(--e-3) 1.25rem;
+    border-bottom: 1px solid var(--c-filete);
+    /* Precinto de 6 px a la izquierda con el color de marca del tono (15.5.5); las novedades resueltas no llevan. */
+    box-shadow: inset 6px 0 0 var(--tono-r, transparent);
   }
   li:last-child {
     border-bottom: 0;
@@ -122,8 +123,9 @@
     gap: var(--e-1) var(--e-3);
   }
   .fecha {
-    font-size: var(--t-chico);
-    color: var(--c-texto-2);
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
+    color: var(--c-tinta-3);
   }
   .texto {
     font-weight: 600;
@@ -137,7 +139,7 @@
     font-size: var(--t-chico);
     font-weight: 600;
     line-height: 1.4;
-    color: var(--c-critico-t);
+    color: var(--c-crit);
   }
   .resolucion {
     overflow-wrap: anywhere;
@@ -148,20 +150,21 @@
   .cargar {
     display: flex;
   }
+  /* Vacío (15.5.12): caja de 1 px punteada en `--c-control` sobre la hoja y el porqué en letra de texto (un vacío no puede ser lo más fuerte de una ficha tranquila: la cifra de cartel es una sola por pantalla). Sin ilustración ni ícono; la acción que sigue, si hay, es el botón de abajo. */
   .vacio {
-    --icono-tam: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: var(--e-3);
-    padding: var(--e-4);
-    border: 1px dashed var(--c-borde-fuerte);
-    border-radius: var(--r-2);
+    padding: var(--e-5) var(--e-4);
+    border: 1px dashed var(--c-control);
+    background: var(--c-hoja);
     color: var(--c-texto-2);
+    font-size: var(--t-cuerpo);
+    line-height: 1.4;
+    /* El texto puede traer lo que escribió la persona: un texto sin espacios no ensancha la página. */
+    overflow-wrap: anywhere;
   }
   @media (forced-colors: active) {
     li[data-tono] {
       box-shadow: none;
-      border-left: 4px solid CanvasText;
+      border-left: 6px solid CanvasText;
     }
   }
 </style>

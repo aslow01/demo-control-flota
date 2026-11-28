@@ -52,17 +52,36 @@
     flex-direction: column;
     gap: var(--e-3);
   }
+  /* Como el `Aviso` (15.5.6): fondo del tono, borde de 1,5 px en el color de texto del tono y esquinas rectas. El ícono (alerta u octógono) lleva la forma; la novedad crítica suma el precinto
+     de 6 px a la izquierda, y el texto queda fuera del rayado por el relleno. */
   .novedad {
+    position: relative;
     display: flex;
     align-items: flex-start;
     gap: var(--e-3);
     padding: var(--e-3) var(--e-4);
     background: var(--tono-f);
-    border: 1px solid transparent;
-    border-left: 4px solid var(--tono-r);
-    border-radius: 0 var(--r-1) var(--r-1) 0;
+    border: var(--b-control) solid var(--tono-t);
+    border-radius: var(--r-0);
+    color: var(--c-tinta);
     line-height: 1.5;
     overflow-wrap: anywhere;
+  }
+  .novedad[data-tono="critico"] {
+    padding-left: calc(var(--e-4) + 6px + var(--e-1));
+  }
+  .novedad[data-tono="critico"]::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 6px;
+    background-image: repeating-linear-gradient(-45deg, var(--c-crit-marca) 0 1.5px, transparent 1.5px 7px);
+  }
+  @media (forced-colors: active) {
+    .novedad[data-tono="critico"]::before {
+      background-image: repeating-linear-gradient(-45deg, CanvasText 0 1.5px, transparent 1.5px 7px);
+    }
   }
   .icono-novedad {
     --icono-tam: 1.125rem;
@@ -78,8 +97,9 @@
       flex-wrap: wrap;
       gap: var(--e-1) var(--e-2);
     }
-    .novedad {
-      padding-inline: var(--e-1) 0;
+    .novedad,
+    .novedad[data-tono="critico"] {
+      padding-inline: calc(var(--e-1) + 6px) var(--e-1);
     }
     .novedad > :last-child {
       font-size: var(--t-chico);

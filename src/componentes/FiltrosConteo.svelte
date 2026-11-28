@@ -33,6 +33,7 @@
 </fieldset>
 
 <style>
+  /* Pie de rey (15.5.8): el segmentado. Cajas rectas (radio 2 px) de `--alto-control`, con 6 px entre sí, que bajan de renglón. Elegido: el campo pleno. */
   .filtros {
     min-width: 0;
   }
@@ -42,28 +43,30 @@
     padding: 0;
     font-size: var(--t-chico);
     font-weight: 600;
-    line-height: var(--alto-tactil);
-    color: var(--c-texto-2);
+    line-height: var(--alto-control);
+    color: var(--c-tinta-2);
   }
   .opciones {
     display: grid;
     /* Dos columnas en el teléfono; con el texto agrandado (el rem crece) pasa a una sola en lugar de ensanchar la página. */
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
-    gap: var(--e-2);
+    gap: 0.375rem;
   }
   .opcion {
-    --linea: var(--tono-r, var(--c-acento));
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--e-3);
-    min-height: var(--alto-tactil);
+    min-height: var(--alto-control);
     padding: 0 var(--e-3);
-    background: var(--c-superficie);
-    border: 1px solid var(--c-borde-fuerte);
-    border-radius: var(--r-2);
-    color: var(--c-texto-2);
+    background: var(--c-hoja);
+    border: var(--b-control) solid var(--c-control);
+    border-radius: var(--r-1);
+    color: var(--c-tinta-2);
+    font-size: var(--t-chico);
+    font-weight: 600;
+    line-height: 1.2;
     cursor: pointer;
   }
   /* El radio ocupa toda la caja (se puede tocar en cualquier parte) y no se ve: el segmento dice si está elegido. */
@@ -77,23 +80,31 @@
     cursor: pointer;
   }
   .conteo {
-    font-size: var(--t-chico);
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
     font-weight: 600;
+    color: var(--c-tinta-3);
   }
   @media (hover: hover) {
     .opcion:hover {
-      background: var(--c-superficie-2);
+      background: var(--c-papel-2);
+      border-color: var(--c-tinta);
+      color: var(--c-tinta);
     }
   }
-  /* Elegido (S2): fondo de superficie 2 + línea de 3 px del tono + texto firme. El fondo verde azulado (`--c-acento-suave`) quedaba junto a la línea ámbar o roja del tono. */
-  .opcion:has(input:checked) {
-    background: var(--c-superficie-2);
-    box-shadow: inset 0 -3px 0 var(--linea);
-    color: var(--c-texto);
-    font-weight: 600;
+  /* Elegido: fondo pleno, texto y forma `--c-sobre-pleno`, conteo `--c-sobre-pleno-2`. El cero se muestra igual que cualquier otro conteo. */
+  .opcion:has(input:checked),
+  .opcion:has(input:checked):hover {
+    background: var(--c-pleno);
+    border-color: var(--c-pleno);
+    color: var(--c-sobre-pleno);
   }
+  .opcion:has(input:checked) .conteo {
+    color: var(--c-sobre-pleno-2);
+  }
+  /* El anillo general, por fuera y con 2 px de separación: el mismo en el elegido y en los demás. */
   .opcion:has(input:focus-visible) {
-    outline: 2px solid var(--c-foco);
+    outline: 3px solid var(--c-foco);
     outline-offset: 2px;
   }
 
@@ -119,8 +130,10 @@
     .opcion:has(input:checked) {
       background: Highlight;
       color: HighlightText;
-      box-shadow: none;
       forced-color-adjust: none;
+    }
+    .opcion:has(input:checked) .conteo {
+      color: HighlightText;
     }
   }
 </style>

@@ -1,10 +1,11 @@
 <script lang="ts">
   // Mis partes (`#/conductor/partes`), la pantalla del perfil Conductor a la que lleva «Ver todos» de «Mis últimos partes»: los últimos cinco partes cerrados, el más nuevo primero. No tiene reglas de
-  // negocio: todo lo arma `app.misPartes()` (`titulo`, `conductor`, `filas`, `vacio`; lib/estado/parte.ts). Cada fila es un enlace al parte (en lectura): fecha, patente, recorrido y la etiqueta «Cerrado».
+  // negocio: todo lo arma `leerMisPartes(app)` (`titulo`, `conductor`, `filas`, `vacio`; lib/estado/conductor.ts, que se baja con esta pantalla). Cada fila es un enlace al parte (en lectura): fecha, patente, recorrido y la etiqueta «Cerrado».
   //  - La línea de contexto dice de quién son y cuántos hay: «Tamara Olivera (persona ficticia) · los últimos cinco» (los dos textos salen de `textos-conductor.ts` y `textos-marco.ts`).
   //  - Sin partes cerrados no hay lista: el panel dice por qué (`partes.vacio`).
   //  - Se carga bajo demanda como `PantallaConductor` (ver `App.svelte`); el foco va al `h1` al llegar (lo hace `App.svelte`).
   import { TEXTO_INICIO_CONDUCTOR, textoUltimosPartes } from "../lib/dominio/textos-conductor.ts";
+  import { leerMisPartes } from "../lib/estado/conductor.ts";
   import { app } from "../lib/estado/instancia.ts";
   import EtiquetaParte from "./EtiquetaParte.svelte";
   import Icono from "./Icono.svelte";
@@ -13,7 +14,7 @@
   import { TEXTO_ALERTAS } from "./textos-marco.ts";
   import { TEXTO_CONDUCTOR_VISTA as T } from "./textos-marco-parte.ts";
 
-  const partes = $derived(app.misPartes());
+  const partes = $derived(leerMisPartes(app));
 </script>
 
 {#if partes !== null}
@@ -25,7 +26,7 @@
 
     <Panel titulo={TEXTO_INICIO_CONDUCTOR.ultimosTitulo} icono="km" sinRelleno>
       {#if partes.vacio !== null}
-        <p class="vacio"><Icono nombre="guion" />{partes.vacio}</p>
+        <p class="vacio">{partes.vacio}</p>
       {:else}
         <ul class="partes">
           {#each partes.filas as f (f.parteId)}
@@ -50,10 +51,11 @@
 {/if}
 
 <style>
+  /* Mis partes (FL-08, 15.9.8): título, línea de contexto de 13 px y una ficha con la lista. Sin campo pleno: el cobalto no aparece en esta pantalla. Entre piezas, 12 px, como en Movilidades. */
   .pantalla {
     display: flex;
     flex-direction: column;
-    gap: var(--e-4);
+    gap: var(--e-3);
     width: min(100%, 47.5rem);
     min-width: 0;
     margin-inline: auto;
@@ -65,11 +67,13 @@
     gap: var(--e-2);
   }
   .contexto {
-    color: var(--c-texto-2);
+    font-size: var(--t-chico);
+    line-height: 1.4;
+    color: var(--c-tinta-2);
     overflow-wrap: anywhere;
   }
 
-  /* La lista de filas llega hasta los bordes del panel (`sinRelleno`): cada fila trae su relleno. */
+  /* La lista de filas llega hasta los bordes de la ficha (`sinRelleno`): cada fila trae su relleno. */
   .partes {
     /* El umbral mira el ancho de la lista y no el de la pantalla: con el texto al 200 % la etiqueta baja a su renglón. */
     container: partes / inline-size;
@@ -77,8 +81,9 @@
     flex-direction: column;
   }
   .partes li + li {
-    border-top: 1px solid var(--c-borde);
+    border-top: 1px solid var(--c-filete);
   }
+  /* Celular: dos renglones por parte (la fecha y, debajo, la chapa con el recorrido), la etiqueta y la flecha a la derecha. */
   .fila {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
@@ -87,7 +92,7 @@
     column-gap: var(--e-3);
     min-height: 3.5rem;
     padding: var(--e-2) var(--e-3) var(--e-2) var(--e-4);
-    color: var(--c-texto);
+    color: var(--c-tinta);
     text-decoration: none;
   }
   .cuerpo {
@@ -99,7 +104,7 @@
   }
   .fecha {
     font-weight: 700;
-    color: var(--c-acento);
+    color: var(--c-tinta);
     text-decoration: underline;
     text-underline-offset: 3px;
   }
@@ -113,8 +118,12 @@
   .patente-fila {
     white-space: nowrap;
   }
+  /* El recorrido es un dato: en técnica. */
   .recorrido {
-    color: var(--c-texto-2);
+    font-family: var(--t-mono);
+    font-size: var(--t-tabla);
+    color: var(--c-tinta-2);
+    white-space: nowrap;
   }
   .estado {
     grid-area: estado;
@@ -123,14 +132,35 @@
     --icono-tam: 1.25rem;
     grid-area: chev;
     display: inline-flex;
-    color: var(--c-texto-3);
+    color: var(--c-tinta-3);
   }
   @media (hover: hover) {
     .fila:hover {
-      background: var(--c-superficie-2);
+      background: var(--c-papel-2);
     }
     .fila:hover .fecha {
       text-decoration-thickness: 2px;
+    }
+  }
+  /* Con lugar (la lista mide 32 rem o más): un solo renglón, con el recorrido a la derecha, pegado a la etiqueta. */
+  @container partes (min-width: 32rem) {
+    .cuerpo,
+    .detalle {
+      display: contents;
+    }
+    .fila {
+      grid-template-columns: 8.5rem auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "fecha patente recorrido estado chev";
+    }
+    .fecha {
+      grid-area: fecha;
+    }
+    .patente-fila {
+      grid-area: patente;
+    }
+    .recorrido {
+      grid-area: recorrido;
+      justify-self: end;
     }
   }
   /* Poco ancho (la lista mide 20 rem o menos: un celular chico o el texto agrandado): la etiqueta baja debajo de la fecha y el recorrido, y la flecha queda a la derecha. */
@@ -148,16 +178,18 @@
     }
   }
 
+  /* Vacío (15.5.12): caja de 1 px punteada en `--c-control` sobre la hoja y el porqué en cartel a 78 % y 24 px. Sin ilustración. */
   .vacio {
-    --icono-tam: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: var(--e-3);
-    padding: var(--e-4);
-    color: var(--c-texto-2);
-  }
-  .vacio :global(.icono) {
-    flex: none;
-    color: var(--c-texto-3);
+    margin: var(--e-4);
+    padding: var(--e-5) var(--e-4);
+    border: 1px dashed var(--c-control);
+    background: var(--c-hoja);
+    color: var(--c-tinta);
+    font-family: var(--t-familia-titulo);
+    font-stretch: var(--t-ancho-titulo);
+    font-size: var(--t-h2);
+    font-weight: var(--t-peso-cartel);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
   }
 </style>

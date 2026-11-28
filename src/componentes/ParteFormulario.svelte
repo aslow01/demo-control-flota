@@ -392,16 +392,16 @@
     }
   }
 
-  /* Resumen de la revisión (paso 2): una caja del color de la página, sin sombra ni título de panel (no es un campo ni una ventana: es lo que ya se envió). */
+  /* Resumen de la revisión (paso 2): lo que ya se envió, en una hoja con filete fino y sin título de panel (no es un campo ni una ventana). */
   .resumen-revision {
     display: flex;
     flex-direction: column;
     gap: 0;
     min-width: 0;
     padding: var(--e-1) var(--e-3);
-    background: var(--c-fondo);
-    border: 1px solid var(--c-borde);
-    border-radius: var(--r-2);
+    background: var(--c-hoja);
+    border: 1px solid var(--c-filete-medio);
+    border-radius: var(--r-0);
   }
   .linea-revision {
     font-size: var(--t-chico);
@@ -409,7 +409,7 @@
     overflow-wrap: anywhere;
   }
 
-  /* El formulario: cada sección es un título sobre el fondo de la página y, debajo, su tarjeta (borde fino, sin sombra). */
+  /* El formulario (15.9.6): secciones sobre el papel, cada una con su título en cartel y, debajo, su hoja. Entre sección y sección, un filete de 1,5 px en tinta. */
   .hoja {
     display: flex;
     flex-direction: column;
@@ -422,19 +422,23 @@
     gap: var(--e-2);
     min-width: 0;
   }
-  /* Títulos de sección en la fuente de texto (la de títulos queda para el h1 y las cifras), como el título de un panel. */
+  .seccion + .seccion {
+    padding-top: var(--e-4);
+    border-top: var(--b-fuerte) solid var(--c-tinta);
+  }
+  /* Título de sección suelta («1. Kilometraje al salir»): en cartel, a 78 % y peso 760, con `--t-h2` (docs/diseno-ui.md 15.3.5 y 15.9.6). */
   .seccion h2 {
-    font-family: var(--t-familia);
-    font-stretch: 100%;
-    font-size: var(--t-h3);
-    font-weight: 700;
-    line-height: 1.3;
+    font-family: var(--t-familia-titulo);
+    font-stretch: var(--t-ancho-titulo);
+    font-size: var(--t-h2);
+    font-weight: var(--t-peso-cartel);
+    line-height: 1.1;
   }
   .tarjeta {
     min-width: 0;
-    background: var(--c-superficie);
-    border: 1px solid var(--c-borde);
-    border-radius: var(--r-2);
+    background: var(--c-hoja);
+    border: 1px solid var(--c-filete-medio);
+    border-radius: var(--r-0);
     box-shadow: var(--s-panel);
   }
   .campos {
@@ -459,7 +463,8 @@
     }
   }
 
-  /* «Respondidos: 3 de 14» y, al lado, el parte en miniatura: un segmento por punto (gris sin responder, malaquita en orden, cobre con novedad). Sin marca para los críticos: una raya en los primeros siete segmentos vacíos parecía un 50 % hecho con 0 de 14 respondidos. */
+  /* «Respondidos: 3 de 14» y, al lado, el parte en miniatura (15.5.10): un segmento cuadrado por punto, con borde de 1 px en tinta: vacío sin responder, lleno en `--c-ok` en orden y en `--c-crit-marca`
+     con novedad. Sin marca para los críticos: una raya en los primeros siete segmentos vacíos parecía un 50 % hecho con 0 de 14 respondidos. */
   .progreso {
     display: flex;
     flex-wrap: wrap;
@@ -477,23 +482,21 @@
     flex: 1 1 8rem;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
-    gap: 2px;
-    height: 0.5rem;
+    gap: 3px;
+    height: 0.75rem;
   }
   .barra-prog i {
     display: block;
-    border-radius: 1px;
-    background: var(--c-borde);
-    transition:
-      background-color var(--m-medio) linear,
-      transform var(--m-medio) var(--m-curva);
+    border: 1px solid var(--c-tinta);
+    border-radius: var(--r-0);
+    background: transparent;
+    transition: background-color var(--m-medio) linear;
   }
   .barra-prog i[data-resp="orden"] {
-    background: var(--c-vigente-r);
+    background: var(--c-ok);
   }
   .barra-prog i[data-resp="novedad"] {
-    background: var(--c-critico-r);
-    transform: scaleY(1.5);
+    background: var(--c-crit-marca);
   }
   @media (forced-colors: active) {
     .barra-prog i {
@@ -554,9 +557,11 @@
     font-size: var(--t-chico);
     color: var(--c-texto-2);
   }
+  /* El recorrido es un dato: en técnica. */
   .recorrido output {
+    font-family: var(--t-mono);
     font-weight: 600;
-    color: var(--c-texto);
+    color: var(--c-tinta);
   }
 
   .descartar {

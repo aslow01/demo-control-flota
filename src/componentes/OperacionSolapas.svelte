@@ -7,8 +7,8 @@
 
 <script lang="ts">
   // Las dos solapas de Operación diaria (Partes y Novedades): son ENLACES (cada una es una ruta, `#/operacion/partes` y `#/operacion/novedades`), no pestañas con roles de
-  // `tablist`: la elegida lleva `aria-current="page"`, Tab recorre las dos y Enter navega. Pestañas de archivo como las de la ficha: la elegida es del color de la hoja, lleva una barra
-  // de tinta arriba y el corte en diagonal a la derecha. El número es la cuenta de pendientes (en tono crítico si hay una novedad crítica); un lector de pantalla lo oye con palabras.
+  // `tablist`: la elegida lleva `aria-current="page"`, Tab recorre las dos y Enter navega. Pestañas de archivo (15.9.4): la elegida es del color de la hoja y lleva una barra
+  // de tinta abajo. El número es la cuenta de pendientes (en tono crítico si hay una novedad crítica); un lector de pantalla lo oye con palabras.
   import type { PanelSolapaOperacion } from "../lib/estado/centro-alertas.ts";
   import { TEXTO_NAVEGACION } from "./textos-marco.ts";
 
@@ -45,15 +45,14 @@
 </nav>
 
 <style>
-  /* La fila se desplaza sola si no entran las dos (texto muy agrandado); no desplaza la página. Los 3 px de la barra y el borde de 1 px de la hoja se solapan con `margin-bottom: -1px`. */
+  /* Pestañas de archivo del segmentado (15.9.4): enlaces de 36 px en escritorio y 44 por debajo de 64 rem. Caja lisa con borde de 1 px: la elegida sobre la hoja, con la barra de 3 px
+     en tinta abajo (no en el pleno); la otra, sobre el papel-2. El número va en técnica. Nada de texto sobre el grano de la página. */
   .solapas {
-    --corte: 0.5rem;
-    position: relative;
-    z-index: 1;
     display: flex;
-    gap: 2px;
-    margin: 0 -2px -1px;
-    padding: 4px 2px 0;
+    gap: 0.375rem;
+    /* El relleno deja lugar al anillo de foco (3 px + 2 de separación) y el margen negativo lo devuelve; si no entran las dos (texto muy agrandado) la fila se desplaza sola. */
+    margin: calc(var(--e-2) * -1);
+    padding: var(--e-2);
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -61,87 +60,63 @@
     flex: none;
   }
   .solapa {
-    position: relative;
-    isolation: isolate;
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    min-height: var(--alto-tactil);
-    padding: 0 calc(0.125rem + var(--corte)) 0 0.75rem;
-    color: var(--c-texto-2);
-    font-family: var(--t-familia-titulo);
-    font-stretch: 75%;
-    font-size: 1rem;
-    font-weight: 650;
+    gap: var(--e-2);
+    min-height: var(--alto-control);
+    padding: 0 var(--e-4);
+    background: var(--c-papel-2);
+    border: 1px solid var(--c-filete-medio);
+    border-radius: var(--r-1) var(--r-1) 0 0;
+    color: var(--c-tinta-2);
+    font-size: var(--t-cuerpo);
+    font-weight: 600;
+    line-height: 1.2;
     text-decoration: none;
-  }
-  .solapa::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: var(--c-superficie-2);
-    border-radius: var(--r-2) 0 0 0;
-    clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% 100%, 0 100%);
+    white-space: nowrap;
   }
   @media (hover: hover) {
     .solapa:hover {
-      color: var(--c-texto);
-    }
-    .solapa:hover::before {
-      background: color-mix(in srgb, var(--c-superficie-2) 70%, var(--c-borde-fuerte));
+      border-color: var(--c-tinta);
+      color: var(--c-tinta);
     }
   }
   .solapa[aria-current="page"] {
-    color: var(--c-texto);
-  }
-  .solapa[aria-current="page"]::before {
-    background: var(--c-superficie);
-    box-shadow: inset 1px 1px 0 var(--c-borde);
-  }
-  .solapa[aria-current="page"]::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0.625rem;
-    right: calc(var(--corte) + 0.625rem);
-    height: 3px;
-    background: var(--c-tinta);
-  }
-  .solapa:focus-visible {
-    outline-offset: -3px;
+    background: var(--c-hoja);
+    box-shadow: inset 0 -3px 0 var(--c-tinta);
+    color: var(--c-tinta);
+    font-weight: 700;
   }
   .n {
     display: inline-grid;
     place-items: center;
-    min-width: 1.375rem;
+    min-width: 1.25rem;
     height: 1.25rem;
-    padding: 0 0.375rem;
-    border-radius: var(--r-pildora);
-    background: var(--c-superficie-2);
-    color: var(--c-texto-2);
-    font-family: var(--t-familia);
-    font-stretch: 100%;
-    font-size: 0.8125rem;
-    font-weight: 700;
+    padding: 0 0.3125rem;
+    border: 1px solid var(--c-filete-medio);
+    color: var(--c-tinta-2);
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
-  .solapa[aria-current="page"] .n {
-    background: var(--c-texto-2);
-    color: var(--c-superficie);
-  }
-  .n.critica,
-  .solapa[aria-current="page"] .n.critica {
-    background: var(--c-critico-solido);
+  /* Con una novedad crítica el número es una placa roja lisa con texto blanco; el rombo y la palabra «críticas» los dice el texto de la fila. */
+  .n.critica {
+    background: var(--c-crit-relleno);
+    border-color: var(--c-crit-relleno);
     color: var(--c-sobre-solido);
   }
   @media (forced-colors: active) {
-    .solapa[aria-current="page"]::after {
-      background: Highlight;
+    .solapa {
+      border-color: CanvasText;
+    }
+    .solapa[aria-current="page"] {
+      box-shadow: none;
+      border-bottom: 3px solid Highlight;
     }
     .n {
-      border: 1px solid CanvasText;
+      border-color: CanvasText;
     }
   }
 </style>

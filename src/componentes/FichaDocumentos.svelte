@@ -10,7 +10,6 @@
   import Detalles from "./Detalles.svelte";
   import Etiqueta from "./Etiqueta.svelte";
   import Horizonte from "./Horizonte.svelte";
-  import Icono from "./Icono.svelte";
   import ListaTabla, { type GrupoDeLista } from "./ListaTabla.svelte";
   import { CELDA, ENCABEZADO_DE_FILA } from "./lista-roles.ts";
   import Panel from "./Panel.svelte";
@@ -66,7 +65,7 @@
 <Panel id={idTitulo} titulo={documentos.titulo} icono="documento" meta={documentos.rotuloCantidad} {estado} {repetir}>
   <Horizonte horizonte={documentos.horizonte} />
   {#if documentos.filas.length === 0}
-    <p class="vacio"><Icono nombre="guion" />{T.documentos.sinDocumentos}</p>
+    <p class="vacio">{T.documentos.sinDocumentos}</p>
   {:else}
     <ListaTabla
       variante="documentos"
@@ -146,7 +145,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--e-1);
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
   .acciones-fila {
     display: flex;
@@ -156,20 +155,21 @@
   /* Tarjeta angosta (menos de 24 rem): los botones se reparten el ancho; con más lugar, miden lo que dice su texto, como en el prototipo. */
   @container lista (max-width: 23.99rem) {
     .acciones-fila > :global(*) {
-      flex: 1;
+      flex: 1 1 auto; /* base por el contenido: con el texto agrandado un botón pasa al renglón de abajo en vez de achicarse */
     }
   }
   .otro {
     display: flex;
   }
+  /* Vacío (15.5.12): caja de 1 px punteada en `--c-control` sobre la hoja y el porqué en letra de texto (un vacío no puede ser lo más fuerte de una ficha tranquila: la cifra de cartel es una sola por pantalla). Sin ilustración ni ícono; la acción que sigue, si hay, es el botón de abajo. */
   .vacio {
-    --icono-tam: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: var(--e-3);
-    padding: var(--e-4);
-    border: 1px dashed var(--c-borde-fuerte);
-    border-radius: var(--r-2);
+    padding: var(--e-5) var(--e-4);
+    border: 1px dashed var(--c-control);
+    background: var(--c-hoja);
     color: var(--c-texto-2);
+    font-size: var(--t-cuerpo);
+    line-height: 1.4;
+    /* El texto puede traer lo que escribió la persona: un texto sin espacios no ensancha la página. */
+    overflow-wrap: anywhere;
   }
 </style>

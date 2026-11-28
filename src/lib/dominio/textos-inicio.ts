@@ -2,7 +2,7 @@
 
 import { diaDeLaSemana, formatearFecha } from "./fechas.ts";
 import type { FechaCivil, TipoDocumento } from "./tipos.ts";
-import { concordar, NOMBRES_DOCUMENTO, pluralizar } from "./textos-base.ts";
+import { concordar, NOMBRES_DOCUMENTO, pluralizar, textoDesgloseNoDisponibles } from "./textos-base.ts";
 
 /** A8: la cifra «No disponibles hoy» de Inicio (bloqueadas por documentos + fuera de servicio), dicha en una frase. */
 export function textoProtagonista(n: number): string {
@@ -317,4 +317,44 @@ export function textoDocumentoRenovadoEnFicha(tipo: TipoDocumento, titular: stri
 export function textoNovedadResuelta(rotulo: string, patente: string, volvio: boolean, nombraLaUnidad = false, hastaManana = false): string {
   const vuelta = volvio ? ` ${patente} vuelve a servicio${hastaManana ? ", pero no sale hasta mañana" : ""}.` : "";
   return `Novedad resuelta: ${rotulo}${nombraLaUnidad ? ` (${patente})` : ""}.${vuelta}`;
+}
+
+// ---------- La regla de salida de Inicio (etapa 2, docs/diseno-ui.md 15.6, 15.7 y 15.14) ----------
+
+/** Rótulos de la regla de salida y de la «Acción del día». Los textos que se arman con números o con otros textos son las funciones de abajo; los nombres accesibles de las llaves, del sello y de «y N más» están en `componentes/textos-marco.ts` (`TEXTO_NOMBRES_DE_LA_REGLA`), junto al «Ver ficha» que usan. */
+export const TEXTO_REGLA = {
+  /** `h2` de la regla: es lo que mide («Disponibles hoy») y el destino del foco al resolver. Tope de 15 caracteres: el corte de la mordaza angosta está calculado para eso. */
+  titulo: "Disponibles hoy",
+  /** Nombre de la lista de llaves del tablero completo (sin metáforas: quien no ve el dibujo recibe una lista de unidades). */
+  listaCompleta: "Unidades activas",
+  /** Nombre de la lista de los cuatro renglones de lectura. */
+  resumen: "Resumen de hoy",
+  /** Ayuda de teclado del tablero completo: a la vista en el rótulo de cota y, una vez, para lectores (`aria-describedby`). */
+  ayudaTeclado: "Use las flechas para recorrer las unidades.",
+  /** Rótulo de la nota de la acción principal de Inicio. */
+  accionDelDia: "Acción del día",
+  /** Flota vacía (ninguna unidad activa): no se reutiliza «Todavía no hay unidades.», que sería falso con todas las unidades de baja. */
+  sinActivas: "No hay unidades activas.",
+  sinActivasAyuda: "Aquí se verá cuántas pueden salir hoy.",
+  sinActivasEnlace: "Agregar una unidad en Movilidades",
+} as const;
+
+/** Cota de la zona roja: «4 unidades», «1 unidad». */
+export function textoCota(n: number): string {
+  return `${n} ${palabraUnidades(n)}`;
+}
+
+/**
+ * Párrafo de la regla para lectores, con el valor final desde el primer cuadro: «Disponibles hoy: 19 de 23 unidades activas. 4 unidades no disponibles hoy: 2 bloqueadas por
+ * documentos · 2 fuera de servicio.» y, sin no disponibles, «Disponibles hoy: 23 de 23 unidades activas. Ninguna unidad bloqueada ni fuera de servicio.».
+ */
+export function textoLectorDeLaRegla(disponibles: number, activas: number, bloqueadas: number, fuera: number): string {
+  const noDisponibles = bloqueadas + fuera;
+  const resto = noDisponibles === 0 ? `${TEXTO_INICIO.sinNoDisponibles}.` : `${textoProtagonista(noDisponibles)}: ${textoDesgloseNoDisponibles(bloqueadas, fuera)}.`;
+  return `${textoDisponibles(disponibles, activas)} ${resto}`;
+}
+
+/** Anuncio al resolver una pieza: el mensaje que ya da el diálogo y la medida nueva («Seguro de ZK 214 BD renovado. Disponibles hoy: 20 de 23 unidades activas.»). */
+export function textoAnuncioAlResolver(mensaje: string, disponibles: number, activas: number): string {
+  return `${mensaje} ${textoDisponibles(disponibles, activas)}`;
 }

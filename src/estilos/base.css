@@ -1,5 +1,5 @@
-/* Reinicio, página, tonos, foco, utilidades y movimiento reducido (docs/diseno-ui.md, secciones 3, 5 y 9; paleta y tipografía «Turno»).
-   Lo de cada pieza (patente, etiqueta, panel, botón, campo) vive en su componente, en src/componentes. */
+/* Reinicio, página, tonos, objetos, foco, utilidades y movimiento reducido (docs/diseno-ui.md, secciones 3, 5, 9 y 15; paleta y tipografía «Pie de rey»).
+   Lo de cada pieza (patente, etiqueta, panel, botón, campo) vive en su componente, en src/componentes. Los colores salen de tokens.css: acá no hay hexadecimales. */
 
 /* Fuentes alojadas (tienen que ir primero: un @import no vale después de otra regla). */
 @import "./fuentes.css";
@@ -30,10 +30,13 @@ html {
   }
 }
 
+/* La página lleva grano; de noche, además, la exposición y la cuadrícula del plano (`--tx-pagina`, tokens.css). Las hojas (`--c-hoja`) tapan la textura: detrás de un texto de lectura nunca hay grano. */
 body {
   margin: 0;
-  background: var(--c-escritorio);
-  color: var(--c-texto);
+  background-color: var(--c-papel);
+  background-image: var(--tx-pagina);
+  background-size: var(--tx-pagina-tam);
+  color: var(--c-tinta);
   font-family: var(--t-familia);
   font-size: var(--t-cuerpo);
   line-height: 1.5;
@@ -63,26 +66,29 @@ fieldset {
 h1,
 h2,
 h3 {
+  color: var(--c-tinta);
+}
+/* Solo el h1 es de cartel. Los h2 y h3 van en la letra de texto; una sección suelta que quiere cartel lo pide con `--t-h2` en su componente (15.3.5). */
+h1 {
   font-family: var(--t-familia-titulo);
   font-stretch: var(--t-ancho-titulo);
-  color: var(--c-texto);
-}
-h1 {
   /* Un solo tope para todas las pantallas: a 320 px con el texto al 200 % una palabra larga («Vencimientos», 12 letras) no entra con el tamaño
-     de siempre (56 px) y ensanchaba la página. Con más ancho, 14vw supera al token y manda el token. */
+     de siempre y ensanchaba la página. Con más ancho, 14vw supera al token y manda el token. */
   font-size: min(var(--t-h1), 14vw);
-  line-height: 1.15;
-  font-weight: 700;
+  line-height: 1;
+  font-weight: var(--t-peso-cartel);
 }
 h2 {
-  font-size: var(--t-h2);
+  font-family: var(--t-familia);
+  font-size: var(--t-h2-ficha);
   line-height: 1.25;
-  font-weight: var(--t-peso-h2);
+  font-weight: var(--t-peso-fuerte);
 }
 h3 {
+  font-family: var(--t-familia);
   font-size: var(--t-h3);
   line-height: 1.3;
-  font-weight: 600;
+  font-weight: var(--t-peso-fuerte);
 }
 
 ul,
@@ -100,7 +106,7 @@ textarea {
 }
 
 a {
-  color: var(--c-enlace);
+  color: var(--c-pleno-texto);
   text-underline-offset: 3px;
 }
 @media (hover: hover) {
@@ -109,7 +115,14 @@ a {
   }
 }
 
-/* Foco visible en todo: un solo anillo, el azurita (--c-foco). Nunca `outline: none` sin reemplazo. */
+/* Selección de texto: el campo pleno (7,81:1 de día, 6,63:1 de noche). */
+::selection {
+  background: var(--c-pleno);
+  color: var(--c-sobre-pleno);
+}
+
+/* Foco visible en todo: un solo anillo, el cobalto de texto (--c-foco, 6,7:1 o más contra cualquier fondo de la página). Nunca `outline: none` sin reemplazo.
+   Sobre lo oscuro (lateral, barra inferior, zona roja) el componente usa `--c-foco-oscuro`. */
 :focus-visible {
   outline: 3px solid var(--c-foco);
   outline-offset: 2px;
@@ -124,7 +137,7 @@ h1[tabindex="-1"]:focus {
 }
 
 progress {
-  accent-color: var(--c-acento);
+  accent-color: var(--c-tinta);
 }
 
 /* Con un diálogo modal abierto el fondo no se desplaza (lo pone y lo saca Dialogo.svelte). */
@@ -132,7 +145,9 @@ html.dialogo-abierto {
   overflow: hidden;
 }
 
-/* ---------- Tonos de estado: una sola definición; la usan etiquetas, franjas, avisos y mensajes ---------- */
+/* ---------- Tonos de estado: una sola definición; la usan etiquetas, franjas, avisos y mensajes ----------
+   Cada tono trae su texto (-t), su fondo (-f) y su marca (-r). El color nunca va solo: la forma (rombo, triángulo, círculo, aro, tilde, cuadrado) la dibuja
+   `Forma.svelte` con `--tono-r`, y la palabra la pone el componente. Ningún texto va sobre `--tono-r` (es marca). */
 [data-tono="critico"] {
   --tono-t: var(--c-critico-t);
   --tono-f: var(--c-critico-f);
@@ -162,6 +177,83 @@ html.dialogo-abierto {
   --tono-t: var(--c-neutro-t);
   --tono-f: var(--c-neutro-f);
   --tono-r: var(--c-neutro-r);
+}
+
+/* ---------- Objetos: lo que se toca (chapa, llave, rótulo de cota) ----------
+   Son papel claro de día y de noche. Un `color-scheme: light` en un descendiente no vuelve a resolver los tokens de `:root` (prueba de T6, tokens.css), así que
+   `.objeto` reasigna los tokens generales que usa lo de adentro a los `--obj-*`. La lista es CERRADA (15.3.2): un token que no está acá no se usa dentro de un objeto
+   (por ejemplo `--c-tinta-hover`, `--c-pleno-hover`, `--c-sobre-pleno-2` ni los del lateral). Los alias de tono y los filetes se vuelven a declarar porque un token
+   que lleva otro adentro queda resuelto donde se declara.
+   `.objeto` va en el cuerpo dibujado, nunca en el elemento que recibe el foco: el anillo del enlace o botón que lo envuelve usa el `--c-foco` de la página. */
+.objeto {
+  color-scheme: light;
+  color: var(--obj-tinta);
+
+  --c-hoja: var(--obj-hoja);
+  --c-superficie: var(--obj-hoja);
+  --c-papel: var(--obj-papel);
+  --c-papel-2: var(--obj-papel-2);
+  --c-superficie-2: var(--obj-papel-2);
+  --c-tinta: var(--obj-tinta);
+  --c-tinta-2: var(--obj-tinta-2);
+  --c-tinta-3: var(--obj-tinta-3);
+  --c-texto: var(--obj-tinta);
+  --c-texto-2: var(--obj-tinta-2);
+  --c-texto-3: var(--obj-tinta-3);
+  --c-sobre-tinta: var(--obj-hoja);
+  --c-control: var(--obj-control);
+  --c-borde-fuerte: var(--obj-control);
+  --c-filete: color-mix(in srgb, var(--obj-tinta) 14%, transparent);
+  --c-borde: color-mix(in srgb, var(--obj-tinta) 14%, transparent);
+  --c-filete-medio: color-mix(in srgb, var(--obj-tinta) 30%, transparent);
+  --c-ventana-borde: color-mix(in srgb, var(--obj-tinta) 30%, transparent);
+  --c-pleno: var(--obj-franja);
+  --c-sobre-pleno: var(--obj-sobre-franja);
+  --c-pleno-suave: var(--obj-pleno-suave);
+  --c-pleno-texto: var(--obj-enlace);
+  --c-enlace: var(--obj-enlace);
+  --c-foco: var(--obj-enlace);
+  --c-crit: var(--obj-crit);
+  --c-crit-relleno: var(--obj-crit-relleno);
+  --c-crit-marca: var(--obj-crit-relleno);
+  --c-crit-fondo: var(--obj-crit-fondo);
+  --c-aten: var(--obj-aten);
+  --c-aten-relleno: var(--obj-aten-relleno);
+  --c-aten-fondo: var(--obj-aten-fondo);
+  --c-ok: var(--obj-ok);
+  --c-ok-fondo: var(--obj-ok-fondo);
+
+  /* Los alias de tono, con la misma fórmula de tokens.css (15.3.4). */
+  --c-ok-t: var(--c-ok);
+  --c-ok-f: var(--c-ok-fondo);
+  --c-ok-r: var(--c-ok);
+  --c-revisar-t: var(--c-aten);
+  --c-revisar-f: var(--c-aten-fondo);
+  --c-revisar-r: var(--c-aten-relleno);
+  --c-diferencia-t: var(--c-crit);
+  --c-diferencia-f: var(--c-crit-fondo);
+  --c-diferencia-r: var(--c-crit-marca);
+  --c-pendiente-t: var(--c-tinta);
+  --c-pendiente-f: var(--c-papel-2);
+  --c-pendiente-r: var(--c-tinta);
+  --c-neutro-t: var(--c-tinta-2);
+  --c-neutro-f: var(--c-papel-2);
+  --c-neutro-r: var(--c-tinta-3);
+  --c-critico-t: var(--c-diferencia-t);
+  --c-critico-f: var(--c-diferencia-f);
+  --c-critico-r: var(--c-diferencia-r);
+  --c-semana-t: var(--c-revisar-t);
+  --c-semana-f: var(--c-revisar-f);
+  --c-semana-r: var(--c-revisar-r);
+  --c-quincena-t: var(--c-pendiente-t);
+  --c-quincena-f: var(--c-pendiente-f);
+  --c-quincena-r: var(--c-pendiente-r);
+  --c-mes-t: var(--c-neutro-t);
+  --c-mes-f: var(--c-neutro-f);
+  --c-mes-r: var(--c-neutro-r);
+  --c-vigente-t: var(--c-ok-t);
+  --c-vigente-f: var(--c-ok-f);
+  --c-vigente-r: var(--c-ok-r);
 }
 
 /* ---------- Utilidades ---------- */
@@ -196,8 +288,8 @@ html.dialogo-abierto {
   z-index: 100;
   padding: var(--e-3) var(--e-4);
   border-radius: var(--r-2);
-  background: var(--c-acento);
-  color: var(--c-acento-texto);
+  background: var(--c-tinta);
+  color: var(--c-sobre-tinta);
   font-weight: 600;
   transform: translateY(-300%);
 }
@@ -205,19 +297,68 @@ html.dialogo-abierto {
   transform: none;
 }
 
-/* Rótulo: mayúsculas chicas, solo para rótulos y cabeceras de tabla. */
+/* Rótulo: técnica de 12 px en mayúsculas, el mínimo absoluto. Para rótulos y cabeceras de tabla. */
 .rotulo {
+  font-family: var(--t-mono);
   font-size: var(--t-rotulo);
   line-height: 1.3;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+/* Cartel (Bricolage condensada) y técnica (Red Hat Mono) para quien las pide fuera de un título. */
+.cartel {
+  font-family: var(--t-familia-titulo);
+  font-stretch: var(--t-ancho-cifra);
+  font-weight: var(--t-peso-cifra);
+  line-height: 1;
+}
+.tecnica {
+  font-family: var(--t-mono);
+}
+
+/* Precinto: rayado a −45° para lo que no puede salir, está vencido o falta. No depende del color: es una trama. El color es el de marca del tono (`--tono-r`)
+   o el crítico; con `--precinto-color` se pide otro. Nunca lleva texto encima: el texto va en una placa lisa. */
+.precinto {
+  background-image: repeating-linear-gradient(-45deg, var(--precinto-color, var(--tono-r, var(--c-crit-marca))) 0 1.5px, transparent 1.5px 7px);
+}
+
+/* Placa lisa: un rectángulo de color liso, sin grano ni trama detrás, para que el texto no vaya sobre una textura (15.2, regla 8). El contraste se mide contra la placa. */
+.placa {
+  display: inline-block;
+  padding: 0.125rem 0.3125rem;
+  background: var(--placa-fondo, var(--c-hoja));
+  color: var(--placa-tinta, var(--c-tinta));
+  border: 1px solid var(--placa-borde, currentColor);
+}
+.placa[data-tono="critico"] {
+  --placa-fondo: var(--c-crit-relleno);
+  --placa-tinta: var(--c-sobre-solido);
+  --placa-borde: var(--c-sobre-solido);
+}
+.placa[data-tono="semana"] {
+  --placa-fondo: var(--c-aten-fondo);
+  --placa-tinta: var(--c-aten);
+  --placa-borde: var(--c-aten-relleno);
+}
+
+/* Marca de registro (⊕), pintada con el color del texto a través de una máscara (texturas/registro.svg). Decorativa: lleva `aria-hidden`. */
+.registro {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  background: currentColor;
+  -webkit-mask: var(--tx-registro) center / contain no-repeat;
+  mask: var(--tx-registro) center / contain no-repeat;
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .nota {
   font-size: var(--t-chico);
   line-height: 1.4;
-  color: var(--c-texto-2);
+  color: var(--c-tinta-2);
 }
 
 /* Cifras (kilómetros, litros, días, conteos, fechas en tablas). */
@@ -244,10 +385,22 @@ html.dialogo-abierto {
   padding-inline: var(--gutter);
 }
 
-/* ---------- Colores forzados (contraste alto de Windows) ---------- */
+/* ---------- Colores forzados (contraste alto de Windows) ----------
+   Foco con `Highlight`; los bordes de fichas, chapa, llave y caja de la regla los fuerza el sistema a `CanvasText`; la mordaza (Inicio) pasa a `Highlight` de fondo y
+   `HighlightText` de texto en su componente. Las texturas de página se quitan y el precinto se dibuja con `CanvasText`. Ningún dato depende de un color de autor. */
 @media (forced-colors: active) {
   :focus-visible {
     outline-color: Highlight;
+  }
+  body {
+    background-image: none;
+  }
+  .precinto {
+    forced-color-adjust: none;
+    --precinto-color: CanvasText;
+  }
+  .placa {
+    border-color: CanvasText;
   }
 }
 
@@ -292,21 +445,32 @@ main.entra {
   }
 }
 
-/* ---------- Movimiento reducido ---------- */
+/* ---------- Movimiento reducido ----------
+   `prefers-reduced-motion: reduce` y `:root[data-movimiento="quieto"]` (la persona lo elige en la interfaz) valen lo mismo: se apagan TODAS las animaciones y
+   transiciones, también las de las transiciones entre pantallas, y el JavaScript no inicia ninguna (`quiereMenosMovimiento()`). Todo aparece completo y en su estado final. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
     scroll-behavior: auto !important;
   }
-  /* El selector universal no alcanza a los pseudoelementos de las transiciones entre pantallas (movimiento.ts tampoco las inicia con este ajuste). */
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation: none !important;
   }
 }
-
+:root[data-movimiento="quieto"] *,
+:root[data-movimiento="quieto"] *::before,
+:root[data-movimiento="quieto"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+:root[data-movimiento="quieto"]::view-transition-group(*),
+:root[data-movimiento="quieto"]::view-transition-old(*),
+:root[data-movimiento="quieto"]::view-transition-new(*) {
+  animation: none !important;
+}

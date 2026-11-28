@@ -709,3 +709,20 @@ export const TEXTO_ERROR_DESCARGA = {
   /** El trozo ya no existe en el servidor (404, o llega el `index.html` en su lugar): se desplegó otra versión mientras la página estaba abierta. */
   versionNueva: "Hay una versión nueva de la demo. Recargue la página para verla.",
 } as const;
+
+/**
+ * El aviso compacto de dos renglones: el hecho (`titular`, firme) y lo que hay que hacer (`accion`, más chico; vacío si no hay nada que hacer). Lo arma la
+ * lógica: la vista no corta ningún texto.
+ */
+export interface AvisoDeAptitud {
+  titular: string;
+  accion: string;
+}
+
+/**
+ * Aviso sobre una unidad que está en servicio pero no puede salir (documentos): «ZK 214 BD no puede salir: Seguro vencido hace 1 día.» y, solo al conductor,
+ * «Avise al encargado antes de usarla.».
+ */
+export function textoUnidadNoPuedeSalir(patente: string, motivos: readonly string[], alConductor: boolean): AvisoDeAptitud {
+  return { titular: `${patente} no puede salir: ${motivos.join("; ")}.`, accion: alConductor ? "Avise al encargado antes de usarla." : "" };
+}

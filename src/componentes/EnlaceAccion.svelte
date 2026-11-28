@@ -28,56 +28,106 @@
 <a class="enlace-accion" data-variante={variante} data-tamano={tamano} {href} aria-label={etiqueta} onclick={alActivar}>{@render children()}</a>
 
 <style>
+  /* Pie de rey (15.5.1): el mismo aspecto y los mismos estados que `Boton.svelte` (mismas propiedades `--b-*`, mismo cursor de calibre y misma sombra dura). */
   .enlace-accion {
+    --_fondo: var(--b-fondo, var(--c-hoja));
+    --_texto: var(--b-texto, var(--c-tinta));
+    --_borde: var(--b-borde, var(--c-tinta));
+    --_hover: var(--b-fondo-hover, var(--c-papel-2));
+    --_sombra: 2px;
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: var(--alto-tactil);
-    padding: 0 var(--e-4);
-    background: var(--c-superficie);
-    border: var(--b-control) solid var(--c-borde-fuerte);
+    min-height: var(--alto-control);
+    padding: 0 0.875rem;
+    min-width: min-content; /* ver `Boton.svelte`: con `overflow: hidden` el mínimo automático sería 0 */
+    overflow: hidden; /* solo recorta el cursor de calibre */
+    background: var(--_fondo);
+    border: var(--b-control) solid var(--_borde);
     border-radius: var(--r-1);
-    color: var(--c-texto);
-    font-size: 0.9375rem;
-    font-weight: 650;
+    box-shadow: 0 var(--_sombra) 0 var(--_borde);
+    color: var(--_texto);
+    font-size: 0.875rem;
+    font-weight: 600;
     line-height: 1.2;
     text-align: center;
     text-decoration: none;
-    transition: background-color var(--m-rapido) linear;
+    transition:
+      background-color var(--m-rapido) linear,
+      transform var(--m-rapido) linear,
+      box-shadow var(--m-rapido) linear;
   }
   .enlace-accion[data-tamano="grande"] {
-    min-height: 3.5rem;
+    --_sombra: 3px;
+    min-height: 3.25rem;
     padding: 0 var(--e-5);
-    font-size: 1.0625rem;
+    font-size: 1rem;
   }
   .enlace-accion[data-tamano="chico"] {
-    min-height: 2.5rem;
+    min-height: 1.75rem;
     padding: 0 var(--e-3);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
   }
   @media (max-width: 63.99rem) {
     .enlace-accion[data-tamano="chico"] {
-      min-height: var(--alto-tactil);
+      min-height: 2.5rem;
     }
   }
   .enlace-accion[data-variante="primario"] {
-    background: var(--c-acento);
-    border-color: var(--c-acento);
-    color: var(--c-acento-texto);
+    --_fondo: var(--b-fondo, var(--c-tinta));
+    --_texto: var(--b-texto, var(--c-sobre-tinta));
+    --_borde: var(--b-borde, var(--c-tinta-borde));
+    --_hover: var(--b-fondo-hover, var(--c-tinta-hover));
   }
-  /* Texto: sin fondo, acento, subrayado de 1 px (2 px con el cursor encima), como el botón-texto. */
+
+  /* Cursor de calibre (ver `Boton.svelte`): solo en primario y secundario. */
+  .enlace-accion::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent calc(100% - 1.5px), currentColor calc(100% - 1.5px));
+    opacity: 0;
+    pointer-events: none;
+  }
+  @keyframes calibre {
+    from {
+      opacity: 0.35;
+      transform: translateX(-100%);
+    }
+    to {
+      opacity: 0.35;
+      transform: translateX(0);
+    }
+  }
+  @media (hover: hover) {
+    .enlace-accion:hover {
+      background: var(--_hover);
+    }
+    .enlace-accion:hover::after {
+      animation: calibre 520ms var(--m-curva-carro) 1;
+    }
+  }
+  .enlace-accion:active {
+    transform: translateY(2px);
+    box-shadow: none;
+  }
+
+  /* Texto: sin fondo, borde ni sombra, en el color del enlace con subrayado de 1 px (2 px con el cursor encima), como el botón-texto. */
   .enlace-accion[data-variante="texto"] {
-    /* C12: sin relleno horizontal (ver `Boton.svelte`); el alto de 44 px lo da `min-height`. */
+    --_fondo: transparent;
+    --_texto: var(--c-pleno-texto);
+    --_borde: transparent;
+    --_hover: transparent;
+    /* C12: sin relleno horizontal (ver `Boton.svelte`); el alto lo da `min-height`. */
     padding-inline: 0;
-    background: none;
-    border-color: transparent;
-    color: var(--c-acento);
+    box-shadow: none;
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
   }
-  .enlace-accion:active {
-    transform: translateY(1px);
+  .enlace-accion[data-variante="texto"]::after {
+    display: none;
   }
   .enlace-accion[data-variante="texto"]:active {
     transform: none;
@@ -86,23 +136,29 @@
   .enlace-accion[data-variante="texto"]:focus-visible {
     outline-offset: 0.25rem;
   }
-  /* m2: en colores forzados el borde transparente se dibuja con un color del sistema; sin relleno tocaría las letras. */
-  @media (forced-colors: active) {
-    .enlace-accion[data-variante="texto"] {
-      padding-inline: var(--e-2);
+  @media (hover: hover) {
+    .enlace-accion[data-variante="texto"]:hover {
+      text-decoration-thickness: 2px;
     }
   }
-  @media (hover: hover) {
-    .enlace-accion:hover {
-      background: var(--c-superficie-2);
+  /* m2: en colores forzados el borde transparente se dibuja con un color del sistema; sin relleno tocaría las letras. */
+  @media (forced-colors: active) {
+    .enlace-accion {
+      forced-color-adjust: none;
+      background: ButtonFace;
+      border-color: ButtonText;
+      color: ButtonText;
+      box-shadow: none;
     }
-    .enlace-accion[data-variante="primario"]:hover {
-      background: var(--c-acento-hover);
-      border-color: var(--c-acento-hover);
+    .enlace-accion[data-variante="primario"] {
+      background: ButtonText;
+      color: ButtonFace;
     }
-    .enlace-accion[data-variante="texto"]:hover {
-      background: none;
-      text-decoration-thickness: 2px;
+    .enlace-accion[data-variante="texto"] {
+      padding-inline: var(--e-2);
+      background: transparent;
+      border-color: transparent;
+      color: LinkText;
     }
   }
 </style>

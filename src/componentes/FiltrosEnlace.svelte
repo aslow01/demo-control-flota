@@ -52,6 +52,7 @@
 </nav>
 
 <style>
+  /* Pie de rey (15.5.8): el segmentado. Cajas rectas (radio 2 px) de `--alto-control`, 6 px entre sí. Elegido (`aria-current="page"`): el campo pleno. */
   .filtros {
     min-width: 0;
   }
@@ -59,7 +60,7 @@
   ul {
     position: relative;
     display: flex;
-    gap: var(--e-2);
+    gap: 0.375rem;
     margin: calc(var(--e-2) * -1);
     padding: var(--e-2);
     overflow-x: auto;
@@ -73,53 +74,52 @@
     display: inline-flex;
     align-items: center;
     gap: var(--e-2);
-    min-height: var(--alto-tactil);
+    min-height: var(--alto-control);
     padding-inline: var(--e-4);
-    background: var(--c-superficie);
-    border: var(--b-control) solid var(--c-borde-fuerte);
-    border-radius: var(--r-pildora);
-    color: var(--c-texto);
-    font-size: var(--t-tabla);
+    background: var(--c-hoja);
+    border: var(--b-control) solid var(--c-control);
+    border-radius: var(--r-1);
+    color: var(--c-tinta-2);
+    font-size: var(--t-chico);
     font-weight: 600;
     line-height: 1.2;
     text-decoration: none;
     white-space: nowrap;
   }
-  /* Disco de 18 px detrás de la forma: invisible en las pastillas sin elegir (misma medida, sin saltos) y claro en la elegida, donde el color de la forma sobre la tinta no llegaría a 3:1. */
+  /* Caja de 18 px detrás de la forma: invisible en los segmentos sin elegir (misma medida, sin saltos). En el elegido la forma toma el color del texto (15.3.1): el del tono sobre
+     el campo pleno no se lee. */
   .marca {
     display: inline-grid;
     flex: none;
     place-items: center;
     width: 1.125rem;
     height: 1.125rem;
-    border-radius: 50%;
   }
   .conteo {
-    color: var(--c-texto-2);
-    font-weight: 700;
+    font-family: var(--t-mono);
+    font-size: var(--t-rotulo);
+    font-weight: 600;
+    color: var(--c-tinta-3);
   }
   @media (hover: hover) {
     a:hover {
-      background: var(--c-superficie-2);
+      background: var(--c-papel-2);
+      border-color: var(--c-tinta);
+      color: var(--c-tinta);
       text-decoration: none;
     }
   }
-  a[aria-current="page"] {
-    background: var(--c-tinta);
-    border-color: var(--c-tinta);
-    color: var(--c-sobre-tinta);
+  a[aria-current="page"],
+  a[aria-current="page"]:hover {
+    background: var(--c-pleno);
+    border-color: var(--c-pleno);
+    color: var(--c-sobre-pleno);
   }
   a[aria-current="page"] .conteo {
-    color: var(--c-sobre-tinta);
+    color: var(--c-sobre-pleno-2);
   }
-  a[aria-current="page"] .marca {
-    background: var(--c-sobre-tinta);
-  }
-  @media (hover: hover) {
-    a[aria-current="page"]:hover {
-      background: var(--c-tinta-hover);
-      border-color: var(--c-tinta-hover);
-    }
+  a[aria-current="page"] .marca :global(.forma) {
+    --tono-r: var(--c-sobre-pleno);
   }
   /* Con lugar, a renglones (nada que desplazar). */
   @media (min-width: 40rem) {
@@ -138,9 +138,6 @@
     }
     a[aria-current="page"] .conteo {
       color: HighlightText;
-    }
-    a[aria-current="page"] .marca {
-      background: Canvas;
     }
   }
 </style>

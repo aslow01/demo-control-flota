@@ -51,6 +51,6 @@
 
 <style>
   .desde {
-    color: var(--c-texto-2);
+    color: var(--c-tinta-2);
   }
 </style>

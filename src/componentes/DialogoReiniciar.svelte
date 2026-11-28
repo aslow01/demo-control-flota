@@ -51,7 +51,7 @@
     font-size: var(--t-chico);
     font-weight: 600;
     line-height: 1.4;
-    color: var(--c-critico-t);
+    color: var(--c-crit);
   }
   .error :global(.icono) {
     margin-top: 0.1rem;

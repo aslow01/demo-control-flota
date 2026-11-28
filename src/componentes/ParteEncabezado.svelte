@@ -166,6 +166,6 @@
   }
   .indicador.con-error {
     font-weight: 600;
-    color: var(--c-critico-t);
+    color: var(--c-crit);
   }
 </style>
